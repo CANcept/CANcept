@@ -157,8 +157,8 @@ class TreeFilterProxy : public QSortFilterProxyModel
      * 2. Checks search text against DisplayRole.
      * 3. Checks category index against model data.
      */
-    [[nodiscard]] auto filterAcceptsRow(int sourceRow,
-                                        const QModelIndex& sourceParent) const -> bool override;
+    [[nodiscard]] auto filterAcceptsRow(int sourceRow, const QModelIndex& sourceParent) const
+        -> bool override;
 
    private:
     QString m_filterText;
@@ -206,8 +206,8 @@ class SingleMessageProxy : public QSortFilterProxyModel
      *
      * Logic: Returns true ONLY if `sourceParent == m_parentIndex`.
      */
-    [[nodiscard]] auto filterAcceptsRow(int sourceRow,
-                                        const QModelIndex& sourceParent) const -> bool override;
+    [[nodiscard]] auto filterAcceptsRow(int sourceRow, const QModelIndex& sourceParent) const
+        -> bool override;
 
    private:
     QModelIndex m_parentIndex;

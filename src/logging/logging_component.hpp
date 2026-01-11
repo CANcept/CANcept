@@ -1,13 +1,10 @@
-//
 #pragma once
 
 #include <memory>
 
-// Core Interfaces
 #include "core/interface/i_event_broker.hpp"
 #include "core/interface/i_tab_component.hpp"
 
-// MVD Classes
 #include "core/dto/can_dto.hpp"
 #include "core/dto/dbc_dto.hpp"
 #include "logging/delegate/logging_delegate.hpp"
@@ -133,6 +130,9 @@ class LoggingComponent final : public Core::ITabComponent
 
     /** @brief Ownership of the Composite View. */
     std::unique_ptr<LoggingView> m_view;
+
+    LoggingDelegate* m_delegate;
+    std::unique_ptr<MessageSelectionDialog> m_dialog;
 
     /** @brief RAII Handle for raw message reveived event subscription. */
     Core::Connection m_rawMsgConn;

@@ -98,6 +98,37 @@ diagrams:
           - EventBroker
           - Sending
           - Logging
+      exclude:
+        element_types:
+          - enum
+        method_types:
+          - constructor
+          - destructor
+          - operator
+          - assignment
+        elements:
+          - r: '.*qt_create_metaobjectdata.*'
+          - type: method
+            name:
+              r: ".*::(tr|metaObject|qt_metacast|qt_metacall|qt_static_metacall|qt_create_metaobjectdata).*"
+          - type: any
+            name:
+              r: '.*qt_create_metaobjectdata.*'
+          - type: function
+            name:
+              r: ".*qt_create_metaobjectdata.*"
+          - type: member
+            name:
+              r: ".*::(staticMetaObject).*"
+          - type: method
+            name:
+              r: '.*::(get|set).*'
+          - type: class
+            name:
+              r: ".*QPrivateSignal"
+      generate_template_argument_dependencies: false
+      include_relations_also_as_members: false
+      skip_redundant_dependencies: true
       generate_packages: true
       package_type: namespace
   # Sequence Diagrams

@@ -19,3 +19,6 @@
 [submodule "external/qwt"]
 	path = external/qwt
 	url = https://github.com/xantares/qwt-cmake.git
+[submodule "external/spdlog"]
+	path = external/spdlog
+	url = https://github.com/gabime/spdlog.git
