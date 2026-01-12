@@ -39,6 +39,7 @@ endif()
 find_package(Qt6 COMPONENTS Widgets PrintSupport OpenGL REQUIRED)
 find_package(Threads REQUIRED)
 
+add_subdirectory(external/spdlog)
 add_subdirectory(external/entt)
 add_subdirectory(external/libsockcanpp)
 add_subdirectory(external/qwt)
@@ -67,6 +68,7 @@ target_link_libraries(${PROJECT_NAME}Lib PUBLIC
         sockcanpp
         qwt
         Threads::Threads
+        spdlog::spdlog
 )
 
 target_compile_definitions(${PROJECT_NAME}Lib

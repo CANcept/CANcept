@@ -98,6 +98,8 @@ class SendingComponent final : public Core::ITabComponent
     /** @brief View responsible for rendering the sending UI */
     std::unique_ptr<SendingView> m_view;
 
+    SendingDelegate* m_delegate;
+
     /**
      * @brief RAII Handle for success event subscription.
      * This connects to the dbcConfigurationChanged signal in onStart()
