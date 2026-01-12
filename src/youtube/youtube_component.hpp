@@ -8,26 +8,38 @@
 #include <vector>
 #include <random>
 
-// Assuming these interfaces exist in your project
 #include "/core/interface/i_tab_component.hpp"
-#include "/event_broker/event_broker.hpp"
 
-class YoutubeComponent final : public QWidget, public ITabComponent {
+namespace Core {
+
+class YoutubeComponent : public ITabComponent, public QWidget {
     Q_OBJECT
 
 public:
-    explicit YoutubeComponent(EventBroker& eventBroker, QWidget* parent = nullptr);
+    /**
+     * @param broker The EnTT-based EventBroker.
+     * @param id Unique ID for this tab instance.
+     */
+    explicit YoutubeComponent(IEventBroker& broker, QString id, QWidget* parent = nullptr);
+    
     ~YoutubeComponent() override = default;
+
+    // --- ITabComponent Implementation ---
+    auto getView() -> QWidget* override { return this; }
+
+    // --- ILifecycle Implementation ---
+    void onStart() override;
+    void onStop() override;
 
 private:
     void setupUi();
     void loadRandomVideo();
 
-    EventBroker& m_eventBroker;
-    QWebEngineView* m_webView;
+    QWebEngineView* m_webView{nullptr};
     
-    // A small pool of sample videos (IDs)
-    const std::vector<std::string> m_videoPool = {
-        "dQw4w9WgXcQ", "jfKfPfyJRdk", "9bZkp7q19f0", "L_jWHffIx5E"
+    const std::vector<QString> m_videoPool = {
+        "dQw4w9WgXcQ", "jfKfPfyJRdk", "9bZkp7q19f0", "tQ0yjYUFKAE"
     };
 };
+
+} // namespace Core
