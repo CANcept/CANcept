@@ -1,11 +1,8 @@
-#ifndef CANBUSMANAGER_SIGNAL_GRAPH_MODEL_HPP
-#define CANBUSMANAGER_SIGNAL_GRAPH_MODEL_HPP
+#pragma once
 
 #include <QObject>
 
 #include "core/dto/can_dto.hpp"
-
-#endif  // CANBUSMANAGER_SIGNAL_GRAPH_MODEL_HPP
 
 /**
  * @namespace Monitoring

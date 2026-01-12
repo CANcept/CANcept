@@ -10,6 +10,34 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTOUIC ON)
+set(CMAKE_AUTORCC ON)
+
+# Temporary until implementatiom -----------------------------------
+set(SKIP_AUTOMOC_DIRS
+        src/logging
+        src/monitoring
+        src/dbc_file
+        src/sending
+        src/core/widgets
+)
+
+foreach(dir IN LISTS SKIP_AUTOMOC_DIRS)
+    file(GLOB_RECURSE DIR_FILES
+            ${dir}/*.hpp
+            ${dir}/*.cpp
+    )
+
+    if(DIR_FILES)
+        set_source_files_properties(
+                ${DIR_FILES}
+                PROPERTIES SKIP_AUTOMOC ON
+        )
+    endif()
+endforeach()
+#----------------------------------------------------------------------
+
 # 2. Options
 option(ENABLE_TESTS "Build tests using GoogleTest and Benchmark" ON)
 option(ENABLE_CLANG_TIDY "Enable static analysis with Clang-Tidy" OFF)
@@ -49,10 +77,12 @@ set(RAPIDCSV_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external/rapidcsv/src")
 # 5. Core Library
 set(ENTRY_POINT_FILE "${CMAKE_CURRENT_SOURCE_DIR}/src/app_root/entry_point/main.cpp")
 
-file(GLOB_RECURSE SOURCE_FILES "src/*.cpp" "src/*.hpp")
+set(RESOURCE_FILE "${CMAKE_CURRENT_SOURCE_DIR}/resources.qrc")
+
+file(GLOB_RECURSE SOURCE_FILES "src/*.cpp")
 list(FILTER SOURCE_FILES EXCLUDE REGEX "src/app_root/entry_point/main.cpp")
 
-add_library(${PROJECT_NAME}Lib STATIC ${SOURCE_FILES})
+add_library(${PROJECT_NAME}Lib STATIC ${SOURCE_FILES} ${RESOURCE_FILE})
 if(CLANG_TIDY_EXE)
     set_target_properties(${PROJECT_NAME}Lib PROPERTIES CXX_CLANG_TIDY "${DO_CLANG_TIDY}")
 endif()

@@ -40,7 +40,7 @@ class AppRootModel : public QAbstractListModel
      * @param parent The parent index (unused in list models).
      * @return int The count of tab components.
      */
-    [[nodiscard]] int rowCount(const QModelIndex& parent = QModelIndex()) const override;
+    [[nodiscard]] auto rowCount(const QModelIndex& parent = QModelIndex()) const -> int override;
 
     /**
      * @brief Retrieves data for a specific tab and role.
@@ -48,8 +48,8 @@ class AppRootModel : public QAbstractListModel
      * @param role The requested data role (DisplayRole, DecorationRole, etc.).
      * @return QVariant The data associated with the role.
      */
-    [[nodiscard]] QVariant data(const QModelIndex& index,
-                                int role = Qt::DisplayRole) const override;
+    [[nodiscard]] auto data(const QModelIndex& index,
+                            int role = Qt::DisplayRole) const -> QVariant override;
 
     /**
      * @brief Appends a tab and connects its 'updated()' signal to the model's 'dataChanged'.

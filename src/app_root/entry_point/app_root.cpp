@@ -1,11 +1,15 @@
 #include "app_root/entry_point/app_root.hpp"
 
 #include <qcoreapplication.h>
+#include <qfile.h>
+
+#include <QApplication>
 
 #include "app_root/model/app_root_model.hpp"
 #include "app_root/view/app_root_view.hpp"
 #include "can_handler/can_communication_handler/can_communication_handler.hpp"
 #include "can_handler/dbc_handler/dbc_handler.hpp"
+#include "core/constants.hpp"
 #include "core/macro/console_logging.hpp"
 #include "dbc_file/dbc_component.hpp"
 #include "event_broker/event_broker.hpp"
@@ -27,14 +31,29 @@ void AppRoot::bootstrap()
 {
     LOG_INF("AppRoot", "Starting bootstrap...");
 
+    LOG_INF("AppRoot", "Loading theme...");
+    QFile file(Core::Assets::ThemePath);
+    if (file.open(QFile::ReadOnly | QFile::Text))
+    {
+        QTextStream stream(&file);
+        const QString styleSheet = stream.readAll();
+        qApp->setStyleSheet(styleSheet);
+        LOG_INF("AppRoot", "Global theme applied.");
+    } else
+    {
+        LOG_INF("AppRoot", "Failed to load global theme from :assets/qss/light_theme.qss");
+    }
+
     LOG_INF("AppRoot", "Instantiating Event Broker...");
     m_broker = std::make_unique<EventBroker::EventBroker>();
 
+    /*
     LOG_INF("AppRoot", "Instantiating Can Communication Handler...");
     m_can_communication_handler = std::make_unique<CanHandler::CanCommunicationHandler>(*m_broker);
 
     LOG_INF("AppRoot", "Instanciating Dbc Handler");
     m_dbc_handler = std::make_unique<CanHandler::DbcHandler>(*m_broker);
+    */
 
     LOG_INF("AppRoot", "Instantiating App Root MVD...");
     m_model = std::make_unique<AppRootModel>();
@@ -56,10 +75,12 @@ void AppRoot::bootstrap()
     m_tabs.clear();
 
     // Helper to keep bootstrap readable
+    /*
     initTab<DbcFile::DbcComponent>();
     initTab<Monitoring::MonitoringComponent>();
     initTab<Sending::SendingComponent>();
     initTab<Logging::LoggingComponent>();
+    */
 
     LOG_INF("AppRoot", "Bootstrap Complete: launching internal logic.");
     start();

@@ -1,11 +1,8 @@
-#ifndef CANBUSMANAGER_SIGNAL_GRAPH_HPP
-#define CANBUSMANAGER_SIGNAL_GRAPH_HPP
+#pragma once
 #include <QWidget>
 
 #include "monitoring/model/signal_graph_model.hpp"
 #include "qwt_plot.h"
-
-#endif  // CANBUSMANAGER_SIGNAL_GRAPH_HPP
 
 /**
  * @namespace Monitoring

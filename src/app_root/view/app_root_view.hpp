@@ -39,29 +39,29 @@ class AppRootView : public QWidget
      * @brief Sets the delegate for custom tab bar rendering.
      * @param delegate Pointer to the tab delegate.
      */
-    void setDelegate(AppRootDelegate* delegate);
+    void setDelegate(AppRootDelegate* delegate) const;
 
    private slots:
     /**
      * @brief Reacts to model changes to add tabs in the UI.
      */
-    void onRowsInserted(const QModelIndex& parent, int first, int last);
+    void onRowsInserted(const QModelIndex& parent, int first, int last) const;
 
     /**
      * @brief Reacts to model changes to remove tabs in the UI.
      */
-    void onRowsAboutToBeRemoved(const QModelIndex& parent, int first, int last);
+    void onRowsAboutToBeRemoved(const QModelIndex& parent, int first, int last) const;
 
     /**
      * @brief Handles metadata changes (title/icon) from the model.
      */
     void onDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight,
-                       const QList<int>& roles);
+                       const QList<int>& roles = QList<int>()) const;
 
     /**
      * @brief Handles tab switching to keep the stack in sync.
      */
-    void handleTabChanged(int index);
+    void handleTabChanged(int index) const;
 
    private:
     /**
