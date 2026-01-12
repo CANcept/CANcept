@@ -9,6 +9,7 @@
 #include <random>
 
 #include "/core/interface/i_tab_component.hpp"
+#include "/core/interface/i_event_broker.hpp"
 
 namespace YouTube {
 
