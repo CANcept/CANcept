@@ -95,7 +95,8 @@ class AppRoot
      * @related Core::IEventBroker
      */
     std::unique_ptr<Core::IEventBroker> m_broker;
-    std::unique_ptr<Core::ILifecycle> m_can_handler;
+    std::unique_ptr<Core::ILifecycle> m_can_communication_handler;
+    std::unique_ptr<Core::ILifecycle> m_dbc_handler;
 
     /**
      * @brief A tab factory which safes the initialization procedure of tabs.

@@ -7,21 +7,9 @@
 #include <vector>
 
 #include "core/dto/can_dto.hpp"
+#include "core/dto/dbc_dto.hpp"
 
 namespace Logging {
-
-/** * @struct LogEntry
- * @brief Represents a single captured CAN frame or decoded message.
- */
-struct LogEntry {
-    uint32_t messageId;
-    QString timestamp;
-
-    /** @brief Decoded signal values (DBC mode). Example: {"EngineTemp": 90.5} */
-    std::map<std::string, double> signalValues;
-    /** @brief Raw hex bytes (Raw mode). */
-    std::vector<uint8_t> rawData;
-};
 
 /** * @struct LogSession
  * @brief Represents a complete recording period with metadata and captured data.
@@ -32,7 +20,7 @@ struct LogSession {
     QString duration;
     bool isRecording = false;
     QString deviceName;
-    std::vector<LogEntry> entries;
+    uint64_t entryCount = 0;
 };
 
 /**
@@ -71,12 +59,6 @@ class LoggingModel final : public QAbstractTableModel
                         int role = Qt::DisplayRole) const override;
 
     /**
-     * @brief Appends data to the current recording.
-     * @param entry The captured CAN data or decoded signals.
-     */
-    void appendEntry(const LogEntry& entry);
-
-    /**
      * @brief Fetches a session by its unique ID.
      */
     const LogSession* getSession(const QString& sessionId) const;
@@ -90,6 +72,8 @@ class LoggingModel final : public QAbstractTableModel
      * @brief Checks if a recording is currently in progress.
      */
     [[nodiscard]] bool isRecording() const;
+
+    void updateDbcConfig(const Core::DbcConfig& config);
 
    public slots:
     /** @brief Triggered by Component's bridge signal */
@@ -112,6 +96,8 @@ class LoggingModel final : public QAbstractTableModel
    private:
     /** @brief Updates the duration string of the active session based on current time. */
     void updateActiveDuration();
+
+    Core::DbcConfig* m_currentDbc;
 
     std::vector<LogSession> m_sessions;
     int m_activeSessionIndex = -1;

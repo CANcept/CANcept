@@ -6,7 +6,9 @@
 #define CANBUSMANAGER_CAN_COMMUNICATION_HANDLER_HPP
 #include <list>
 
+#include "can_dbc_handler.hpp"
 #include "can_device_handler.hpp"
+#include "can_raw_handler.hpp"
 #include "core/interface/i_lifecycle.hpp"
 #include "i_can_parser.hpp"
 
@@ -27,8 +29,17 @@ class CanCommunicationHandler final : public Core::ILifecycle
     explicit CanCommunicationHandler(Core::IEventBroker& event_broker)
         : ILifecycle(event_broker),
           deviceHandler(CanDeviceHandler(event_broker)){
-
+              /*
+              can_handlers.push_back(CanDbcHandler(event_broker, [this](const CanMessage&
+              canMessage) -> bool { return deviceHandler.sendCanMessage(&canMessage);
+              }));
+              can_handlers.push_back(CanRawHandler(event_broker, [this](const CanMessage&
+              canMessage) -> bool { return deviceHandler.sendCanMessage(&canMessage);
+              }));
+              */
           };
+
+   protected:
     /**
      * @brief Called automatically when the application publishes AppStartedEvent.
      */
@@ -40,17 +51,17 @@ class CanCommunicationHandler final : public Core::ILifecycle
 
    private:
     /**
-     * @brief Method, that gets called periodically to check on new can messages over the bus.
+     * @brief Method that gets called periodically to check on new can messages over the bus.
      * It distributes eventual new messages to the connected can handlers for further processing.
      */
     void checkCanDeviceForMessages();
     /**
-     * @brief A list of connected can handlers, that are responsible for processing the raw messages
+     * @brief A list of connected can handlers that are responsible for processing the raw messages
      * sent over the bus to events usable for the can bus manager.
      */
     std::list<ICanParser> can_handlers;
     /**
-     * @brief The CAN device handler, that handles all events related to the actual CAN device
+     * @brief The CAN device handler that handles all events related to the actual CAN device
      */
     CanDeviceHandler deviceHandler;
 };

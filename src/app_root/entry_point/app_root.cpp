@@ -5,6 +5,7 @@
 #include "app_root/model/app_root_model.hpp"
 #include "app_root/view/app_root_view.hpp"
 #include "can_handler/can_communication_handler/can_communication_handler.hpp"
+#include "can_handler/dbc_handler/dbc_handler.hpp"
 #include "core/macro/console_logging.hpp"
 #include "dbc_file/dbc_component.hpp"
 #include "event_broker/event_broker.hpp"
@@ -29,8 +30,11 @@ void AppRoot::bootstrap()
     LOG_INF("AppRoot", "Instantiating Event Broker...");
     m_broker = std::make_unique<EventBroker::EventBroker>();
 
-    LOG_INF("AppRoot", "Instantiating Can Handler...");
-    m_can_handler = std::make_unique<CanHandler::CanCommunicationHandler>(*m_broker);
+    LOG_INF("AppRoot", "Instantiating Can Communication Handler...");
+    m_can_communication_handler = std::make_unique<CanHandler::CanCommunicationHandler>(*m_broker);
+
+    LOG_INF("AppRoot", "Instanciating Dbc Handler");
+    m_dbc_handler = std::make_unique<CanHandler::DbcHandler>(*m_broker);
 
     LOG_INF("AppRoot", "Instantiating App Root MVD...");
     m_model = std::make_unique<AppRootModel>();
@@ -106,7 +110,8 @@ void AppRoot::shutdown()
     m_mainView.reset();
     m_delegate.reset();
     m_model.reset();
-    m_can_handler.reset();
+    m_can_communication_handler.reset();
+    m_dbc_handler.reset();
     m_broker.reset();
 }
 

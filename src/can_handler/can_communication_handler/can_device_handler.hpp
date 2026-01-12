@@ -13,7 +13,7 @@ namespace CanHandler {
 class CanDeviceHandler
 {
    public:
-    explicit CanDeviceHandler(Core::IEventBroker& event_broker) : broker(event_broker)
+    explicit CanDeviceHandler(Core::IEventBroker& event_broker)
     {
         canDriverChangeEventConnection = event_broker.subscribe<Core::CanDriverChangeEvent>(
             [this](const Core::CanDriverChangeEvent& event) -> void { updateCanDevice(event); });
@@ -25,7 +25,6 @@ class CanDeviceHandler
      */
     auto checkForCanMessage() -> std::list<CanMessage>;
 
-   protected:
     /**
      * @brief Sends a message to the current can driver
      * @param canMessage The message to be sent
@@ -42,7 +41,6 @@ class CanDeviceHandler
      */
     void updateCanDevice(const Core::CanDriverChangeEvent& event);
 
-    Core::IEventBroker& broker;
     /**
      * @brief The current configuration of the can driver, containing the device info for libsockcan
      */

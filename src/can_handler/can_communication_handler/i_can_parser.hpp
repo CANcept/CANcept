@@ -10,9 +10,9 @@ using sockcanpp::CanMessage;
 
 namespace CanHandler {
 /**
- * @brief ICanParser is an abstract class, that is the foundation for a can parser. If you inherit
- * this class you need to implement the parseReceivedMessage method, that parses a can message.
- * It provides a function you pass CAN messages to, in order to send them to the connected can
+ * @brief ICanParser is an abstract class that is the foundation for a can parser. If you inherit
+ * this class, you need to implement the parseReceivedMessage method that parses a can message.
+ * It provides a function you pass CAN message to, to send them to the connected can
  * device. It returns a bool indicating if the message was successfully sent.
  */
 class ICanParser

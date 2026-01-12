@@ -15,10 +15,12 @@ namespace CanHandler {
  * event handler. Equally, it listens to send raw CAN message events and then sends them to the CAN
  * device via the CanCommunicationHandler.
  */
-class CanRawHandler final : ICanParser
+class CanRawHandler final : public ICanParser
 {
    public:
-    explicit CanRawHandler(Core::IEventBroker& eventBroker) : ICanParser(eventBroker)
+    explicit CanRawHandler(Core::IEventBroker& eventBroker,
+                           const std::function<bool(const CanMessage&)>& sendFunction)
+        : ICanParser(eventBroker, sendFunction)
     {
         rawSendEventConnection = eventBroker.subscribe<Core::SendCanMessageRawEvent>(
             [this](const Core::SendCanMessageRawEvent& event) -> void {

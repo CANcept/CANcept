@@ -118,7 +118,7 @@ class SendingModel final : public QAbstractItemModel
     /** @brief Stores which messages are selected for transmission (checkbox state) */
     std::vector<uint32_t> m_selectedMessageIds;
 
-    Core::DbcConfig m_currentDbc;
+    Core::DbcConfig* m_currentDbc;
 
     // Moved from SendingDelegate: The Model now owns the timing source of truth
     QTimer* m_cyclicTimer;

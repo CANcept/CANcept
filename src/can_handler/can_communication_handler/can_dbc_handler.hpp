@@ -20,7 +20,9 @@ namespace CanHandler {
 class CanDbcHandler final : public ICanParser
 {
    public:
-    explicit CanDbcHandler(Core::IEventBroker& eventBroker) : ICanParser(eventBroker)
+    explicit CanDbcHandler(Core::IEventBroker& eventBroker,
+                           const std::function<bool(const CanMessage&)>& sendFunction)
+        : ICanParser(eventBroker, sendFunction)
     {
         dbcSendEventConnection = eventBroker.subscribe<Core::SendCanMessageDbcEvent>(
             [this](const Core::SendCanMessageDbcEvent& event) -> void {
@@ -58,6 +60,10 @@ class CanDbcHandler final : public ICanParser
      * @brief The connection containing the subscription to new DBC configs
      */
     Core::Connection dbcConfigChangeConnection;
+    /**
+     * @brief The current DBC configuration
+     */
+    Core::DbcConfig currentConfig;
 };
 }  // namespace CanHandler
 
