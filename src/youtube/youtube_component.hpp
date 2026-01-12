@@ -10,7 +10,7 @@
 
 #include "/core/interface/i_tab_component.hpp"
 
-namespace Core {
+namespace YouTube {
 
 class YoutubeComponent : public ITabComponent, public QWidget {
     Q_OBJECT
@@ -42,4 +42,4 @@ private:
     };
 };
 
-} // namespace Core
+} // namespace YouTube
