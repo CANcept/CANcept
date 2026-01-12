@@ -5,6 +5,7 @@
 #ifndef CANBUSMANAGER_CAN_DTO_HPP
 #define CANBUSMANAGER_CAN_DTO_HPP
 #include <array>
+#include <ctime>
 #include <list>
 #include <string>
 

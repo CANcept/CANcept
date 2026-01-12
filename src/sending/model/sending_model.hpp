@@ -46,8 +46,8 @@ class SendingModel final : public QAbstractItemModel
     /**
      * @brief Updates internal state (e.g., user changes the interval or toggles cyclic).
      */
-    auto setData(const QModelIndex& index, const QVariant& value, int role = Qt::EditRole)
-        -> bool override;
+    auto setData(const QModelIndex& index, const QVariant& value,
+                 int role = Qt::EditRole) -> bool override;
 
     [[nodiscard]] auto isCyclicEnabled() const -> bool
     {

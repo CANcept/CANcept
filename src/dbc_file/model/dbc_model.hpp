@@ -47,8 +47,8 @@ class DbcModel : public QAbstractItemModel
      * @brief Creates an index for the given row/column and parent.
      * @caller Qt Views (QTreeView, QListView) and Proxies during navigation.
      */
-    [[nodiscard]] auto index(int row, int column, const QModelIndex& parent) const
-        -> QModelIndex override;
+    [[nodiscard]] auto index(int row, int column,
+                             const QModelIndex& parent) const -> QModelIndex override;
 
     /**
      * @brief Returns the parent index of the given child.
