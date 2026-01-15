@@ -5,6 +5,7 @@
 #ifndef CANBUSMANAGER_CAN_DEVICE_HANDLER_H
 #define CANBUSMANAGER_CAN_DEVICE_HANDLER_H
 #include <CanDriver.hpp>
+#include <list>
 using sockcanpp::CanDriver;
 using sockcanpp::CanMessage;
 #include "core/event/can_driver_event.hpp"
@@ -23,14 +24,14 @@ class CanDeviceHandler
      * @brief Checks if new messages were received over the CAN bus.
      * @return A list of received messages
      */
-    auto checkForCanMessage() -> std::list<CanMessage>;
+    auto checkForCanMessage() const -> std::list<CanMessage>;
 
     /**
      * @brief Sends a message to the current can driver
      * @param canMessage The message to be sent
      * @return A bool indicating if the sending was successful
      */
-    auto sendCanMessage(const CanMessage* canMessage) -> bool;
+    auto sendCanMessage(const CanMessage& canMessage) const -> bool;
 
    private:
     /**
@@ -44,7 +45,7 @@ class CanDeviceHandler
     /**
      * @brief The current configuration of the can driver, containing the device info for libsockcan
      */
-    CanDriver canDriver;
+    std::unique_ptr<CanDriver> canDriver;
     /**
      * @brief A connection containing the subscription to the can driver change event
      */

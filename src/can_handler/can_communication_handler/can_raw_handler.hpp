@@ -38,7 +38,7 @@ class CanRawHandler final : public ICanParser
      * device via the CanCommunicationHandler
      * @param event The sending event
      */
-    void handleSendMessage(const Core::SendCanMessageRawEvent& event);
+    void handleSendMessage(const Core::SendCanMessageRawEvent& event) const;
 
    private:
     /**
