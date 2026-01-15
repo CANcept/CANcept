@@ -11,8 +11,7 @@ namespace Core {
 /**
  * @brief Event, that gets published if the name of the current CAN device changes.
  */
-class CanDriverChangeEvent final : Event
-{
+struct CanDriverChangeEvent final : public Event {
     /**
      * @brief The new name of the CAN device.
      */
