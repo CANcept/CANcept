@@ -53,6 +53,29 @@ class CanDbcHandler final : public ICanParser
     void handleNewDbc(const Core::DBCParsedEvent& event);
 
     /**
+     * @brief Parses a received signal based on a signal description
+     * @param signal The signal description for the signal
+     * @param dataLittleEndian The received data in little endian form
+     * @param dataBigEndian The received data in big endian form
+     * @return The parsed signal value
+     */
+    static auto parseReceivedSignal(const Core::DbcSignalDescription& signal,
+                                    const u_int64_t& dataLittleEndian,
+                                    const u_int64_t& dataBigEndian) -> double;
+
+    /**
+     * @brief Parses a signal to send based on a signal description
+     * @param signal The signal description for the signal
+     * @param dataLittleEndian The accumulated, parsed little endian data of the message in little
+     * endian form
+     * @param dataBigEndian The accumulated, parsed big endian data of the message in big endian
+     * form
+     * @param value The value of the signal to parse
+     */
+    static void parseSendSignal(const Core::DbcSignalDescription& signal,
+                                u_int64_t& dataLittleEndian, u_int64_t& dataBigEndian,
+                                const double& value);
+    /**
      * @brief The connection containing the subscription to sending dbc based CAN message events
      */
     Core::Connection dbcSendEventConnection;
