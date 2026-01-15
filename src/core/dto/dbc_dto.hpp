@@ -10,10 +10,19 @@ namespace Core {
 struct DbcSignalDescription {
     std::string signalName;
     bool multiplexer;
-    std::string multiplexedBy;
+    /**
+     * Value when active, = -1 if not multiplexed
+     */
+    int multiplexedBy;
     uint startBit;
     uint signalSize;
+    /**
+     * false = little endian, true = large endian
+     */
     bool byteOrder;
+    /**
+     * false = unsigned, true = signed
+     */
     bool valueType;
     double factor;
     double offset;
