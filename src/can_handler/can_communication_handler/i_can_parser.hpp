@@ -30,7 +30,7 @@ class ICanParser
      */
     virtual void parseReceivedMessage(const sockcanpp::CanMessage* canMessage);
 
-   private:
+   protected:
     /**
      * @brief The event broker to send events to
      */
