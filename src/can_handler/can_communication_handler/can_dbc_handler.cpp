@@ -2,6 +2,8 @@
 // Created by Florian on 14.01.2026.
 //
 #include "can_dbc_handler.hpp"
+
+#include <iostream>
 namespace CanHandler {
 void CanDbcHandler::parseReceivedMessage(const sockcanpp::CanMessage* canMessage)
 {
@@ -68,15 +70,21 @@ void CanDbcHandler::parseReceivedMessage(const sockcanpp::CanMessage* canMessage
                 .value = parseReceivedSignal(signalDescription, dataLittleEndian, dataBigEndian)});
         }
     }
-
+    /*
+    for (const Core::DbcCanSignal signal : receivedMessage.signalValues)
+    {
+        std::cout << signal.name << "   " << signal.value << std::endl;
+    }
+    */
     // Publish to the event broker
-    broker.publish(Core::ReceivedCanDbcEvent(receivedMessage));
+    // broker.publish(Core::ReceivedCanDbcEvent(receivedMessage));
 }
 auto CanDbcHandler::parseReceivedSignal(const Core::DbcSignalDescription& signal,
                                         const u_int64_t& dataLittleEndian,
                                         const u_int64_t& dataBigEndian) -> double
 {
     int64_t rawValue = 0;
+    //std::cout << dataLittleEndian << "   " << dataBigEndian << std::endl;
     if (!signal.byteOrder)  // little endian
     {
         rawValue =
@@ -86,6 +94,7 @@ auto CanDbcHandler::parseReceivedSignal(const Core::DbcSignalDescription& signal
             (sizeof(int64_t) - signal.signalSize);  // shift back (sizeof(int64_t) - signal.startBit
                                                     // - signal.signalSize), remove all data behind
                                                     // data ( +signal.startBit)
+        //std::cout << rawValue << std::endl;
     } else                                          // big endian
     {
         rawValue =
