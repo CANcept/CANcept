@@ -62,7 +62,7 @@ enum DbcRoles {
     /** @brief The name of the sending Node/ECU. @return QString */
     Role_Sender = Qt::UserRole + 12,
 
-    //Applies to both messages and signals
+    // Applies to both messages and signals
 
     /** @brief The total number of signals in this message or messages of this ECU.*/
     Role_ChildCount = Qt::UserRole + 13,

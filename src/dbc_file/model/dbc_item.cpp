@@ -3,8 +3,8 @@
 //
 #include "dbc_item.hpp"
 namespace DbcFile {
-DbcFile::DbcItem::DbcItem(const QList<QVariant>& data, Core::DbcItemType type,
-    DbcItem* parent) : m_type(type), m_parent(parent), m_data(data)
+DbcFile::DbcItem::DbcItem(const QList<QVariant>& data, Core::DbcItemType type, DbcItem* parent)
+    : m_type(type), m_parent(parent), m_data(data)
 {
 }
 
@@ -49,7 +49,7 @@ auto DbcFile::DbcItem::row() const -> int
     if (m_parent)
     {
         const auto& siblings = m_parent->m_children;
-        for (int i = 0; i < static_cast<int>(siblings.size());i++)
+        for (int i = 0; i < static_cast<int>(siblings.size()); i++)
         {
             if (siblings[i].get() == this)
             {
@@ -57,7 +57,7 @@ auto DbcFile::DbcItem::row() const -> int
             }
         }
     }
-    return 0; //if item has no parent it is row 0
+    return 0;  // if item has no parent it is row 0
 }
 auto DbcFile::DbcItem::columnCount() const -> int
 {
@@ -65,8 +65,9 @@ auto DbcFile::DbcItem::columnCount() const -> int
 }
 auto DbcFile::DbcItem::data(int column) const -> QVariant
 {
-    if (column < 0 || column >= m_data.size()) {
-        return QVariant(); //return empty QVariant at invalid column
+    if (column < 0 || column >= m_data.size())
+    {
+        return QVariant();  // return empty QVariant at invalid column
     }
     return m_data[column];
 }
@@ -75,4 +76,4 @@ auto DbcFile::DbcItem::type() const -> Core::DbcItemType
 {
     return m_type;
 }
-}
+}  // namespace DbcFile

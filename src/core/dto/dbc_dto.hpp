@@ -38,8 +38,7 @@ struct DbcSignalValueDescription {
     std::string signalName;
     std::list<DbcValueDescription> signalDescriptions;
 };
-struct DbcMetaData
-{
+struct DbcMetaData {
     std::string version;
     std::string fileName;
 };

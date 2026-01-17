@@ -4,64 +4,58 @@
 #include "dbc_model.hpp"
 namespace Column {
 
-    //Overview Columns
-    constexpr int OV_FIlENAME = 0;
-    constexpr int OV_VERSION = 1;
-    constexpr int OV_ECUCOUNT = 2;
-    constexpr int OV_MSGCOUNT = 3;
-    constexpr int OV_SIGCOUNT = 4;
-    constexpr int OV_ORPHANS = 5;
+// Overview Columns
+constexpr int OV_FIlENAME = 0;
+constexpr int OV_VERSION = 1;
+constexpr int OV_ECUCOUNT = 2;
+constexpr int OV_MSGCOUNT = 3;
+constexpr int OV_SIGCOUNT = 4;
+constexpr int OV_ORPHANS = 5;
 
+// Message Columns
+constexpr int MSG_NAME = 0;
+constexpr int MSG_ID = 1;
+constexpr int MSG_DLC = 2;
+constexpr int MSG_SENDER = 3;
 
+// Signal Columns
+constexpr int SIG_NAME = 0;
+constexpr int SIG_STARTBIT = 1;
+constexpr int SIG_LENGTH = 2;
+constexpr int SIG_FACTOR = 3;
+constexpr int SIG_OFFSET = 4;
+constexpr int SIG_MIN = 5;
+constexpr int SIG_MAX = 6;
+constexpr int SIG_UNIT = 7;
+constexpr int SIG_BYTEORDER = 8;
+constexpr int SIG_VALUETYPE = 9;
+constexpr int SIG_RECEIVERS = 10;
 
-    //Message Columns
-    constexpr int MSG_NAME = 0;
-    constexpr int MSG_ID = 1;
-    constexpr int MSG_DLC = 2;
-    constexpr int MSG_SENDER = 3;
-
-    //Signal Columns
-    constexpr int SIG_NAME = 0;
-    constexpr int SIG_STARTBIT = 1;
-    constexpr int SIG_LENGTH = 2;
-    constexpr int SIG_FACTOR = 3;
-    constexpr int SIG_OFFSET = 4;
-    constexpr int SIG_MIN = 5;
-    constexpr int SIG_MAX = 6;
-    constexpr int SIG_UNIT = 7;
-    constexpr int SIG_BYTEORDER = 8;
-    constexpr int SIG_VALUETYPE = 9;
-    constexpr int SIG_RECEIVERS = 10;
-
-
-}
+}  // namespace Column
 namespace DbcFile {
 
-DbcModel::DbcModel(Core::IEventBroker& broker, QObject* parent) :QAbstractItemModel(parent),
-m_broker(broker)
+DbcModel::DbcModel(Core::IEventBroker& broker, QObject* parent)
+    : QAbstractItemModel(parent), m_broker(broker)
 {
     m_rootItem = std::make_unique<DbcItem>(QList<QVariant>{"Root"}, Core::DbcItemType::Root);
     m_dbcParsedConnection = m_broker.subscribe<Core::DBCParsedEvent>(
-        [this](const Core::DBCParsedEvent& event) {
-            this->onDbcParsed(event);
-        }
-    );
+        [this](const Core::DBCParsedEvent& event) { this->onDbcParsed(event); });
 }
 DbcModel::~DbcModel() = default;
 
-auto DbcModel::index(const int row, const int column, const QModelIndex& parent)
-const -> QModelIndex
+auto DbcModel::index(const int row, const int column, const QModelIndex& parent) const
+    -> QModelIndex
 {
-    if (!hasIndex(row,column, parent)) //return empty index if index does not exist
+    if (!hasIndex(row, column, parent))  // return empty index if index does not exist
     {
         return QModelIndex{};
     }
 
     DbcItem* parentItem;
-    if (!parent.isValid()) //if parent invalid: parent set to root item
+    if (!parent.isValid())  // if parent invalid: parent set to root item
     {
         parentItem = m_rootItem.get();
-    } else //if valid: extract item from parent index
+    } else  // if valid: extract item from parent index
     {
         parentItem = static_cast<DbcItem*>(parent.internalPointer());
     }
@@ -69,7 +63,7 @@ const -> QModelIndex
     {
         return createIndex(row, column, childItem);
     }
-    return QModelIndex{}; //otherwise return empty index
+    return QModelIndex{};  // otherwise return empty index
 }
 auto DbcModel::parent(const QModelIndex& child) const -> QModelIndex
 {
@@ -88,13 +82,13 @@ auto DbcModel::parent(const QModelIndex& child) const -> QModelIndex
 }
 auto DbcModel::rowCount(const QModelIndex& parent) const -> int
 {
-    if (parent.column() > 0) //only first column has children
+    if (parent.column() > 0)  // only first column has children
     {
         return 0;
     }
 
     const DbcItem* parentItem;
-    if (!parent.isValid()) //invalid parent index asks for root item
+    if (!parent.isValid())  // invalid parent index asks for root item
     {
         parentItem = m_rootItem.get();
     } else
@@ -105,16 +99,16 @@ auto DbcModel::rowCount(const QModelIndex& parent) const -> int
 }
 auto DbcModel::columnCount(const QModelIndex& parent) const -> int
 {
-    if (parent.isValid()) //case: parent not root item
+    if (parent.isValid())  // case: parent not root item
     {
         const auto* parentItem = static_cast<DbcItem*>(parent.internalPointer());
         return parentItem->columnCount();
     }
-    return m_rootItem->columnCount(); //case: parent refers to root item
+    return m_rootItem->columnCount();  // case: parent refers to root item
 }
 auto DbcModel::data(const QModelIndex& index, int role) const -> QVariant
 {
-    //Validation
+    // Validation
     if (!index.isValid())
     {
         return {};
@@ -151,26 +145,40 @@ auto DbcModel::data(const QModelIndex& index, int role) const -> QVariant
     {
         switch (role)
         {
-            case DbcRoles::Role_Id: return item->data(Column::MSG_ID);
-            case DbcRoles::Role_Dlc: return item->data(Column::MSG_DLC);
-            case DbcRoles::Role_Sender: return item->data(Column::MSG_SENDER);
-            default: break;
+            case DbcRoles::Role_Id:
+                return item->data(Column::MSG_ID);
+            case DbcRoles::Role_Dlc:
+                return item->data(Column::MSG_DLC);
+            case DbcRoles::Role_Sender:
+                return item->data(Column::MSG_SENDER);
+            default:
+                break;
         }
     }
     if (type == Core::DbcItemType::Signal)
     {
         switch (role)
         {
-            case DbcRoles::Role_StartBit: return item->data(Column::SIG_STARTBIT);
-            case DbcRoles::Role_BitLength: return item->data(Column::SIG_LENGTH);
-            case DbcRoles::Role_Factor: return item->data(Column::SIG_FACTOR);
-            case DbcRoles::Role_Offset: return item->data(Column::SIG_OFFSET);
-            case DbcRoles::Role_Min: return item->data(Column::SIG_MIN);
-            case DbcRoles::Role_Max: return item->data(Column::SIG_MAX);
-            case DbcRoles::Role_ByteOrder: return item->data(Column::SIG_BYTEORDER);
-            case DbcRoles::Role_ValueType: return item->data(Column::SIG_VALUETYPE);
-            case DbcRoles::Role_Receivers: return item->data(Column::SIG_RECEIVERS);
-            default: break;
+            case DbcRoles::Role_StartBit:
+                return item->data(Column::SIG_STARTBIT);
+            case DbcRoles::Role_BitLength:
+                return item->data(Column::SIG_LENGTH);
+            case DbcRoles::Role_Factor:
+                return item->data(Column::SIG_FACTOR);
+            case DbcRoles::Role_Offset:
+                return item->data(Column::SIG_OFFSET);
+            case DbcRoles::Role_Min:
+                return item->data(Column::SIG_MIN);
+            case DbcRoles::Role_Max:
+                return item->data(Column::SIG_MAX);
+            case DbcRoles::Role_ByteOrder:
+                return item->data(Column::SIG_BYTEORDER);
+            case DbcRoles::Role_ValueType:
+                return item->data(Column::SIG_VALUETYPE);
+            case DbcRoles::Role_Receivers:
+                return item->data(Column::SIG_RECEIVERS);
+            default:
+                break;
         }
     }
 
@@ -194,21 +202,34 @@ QVariant DbcModel::headerData(int section, Qt::Orientation orientation, int role
     {
         return {};
     }
-    switch (section) {
-        case Column::MSG_NAME:      return "Name";                  // Col 0
-        case Column::MSG_ID:        return "ID / StartBit";         // Col 1
-        case Column::MSG_DLC:       return "DLC / Length [Bit]";    // Col 2
-        case Column::MSG_SENDER:    return "Sender / Factor";       // Col 3
+    switch (section)
+    {
+        case Column::MSG_NAME:
+            return "Name";  // Col 0
+        case Column::MSG_ID:
+            return "ID / StartBit";  // Col 1
+        case Column::MSG_DLC:
+            return "DLC / Length [Bit]";  // Col 2
+        case Column::MSG_SENDER:
+            return "Sender / Factor";  // Col 3
 
-        case Column::SIG_OFFSET:  return "Offset";                  //Col 4
-        case Column::SIG_MIN:       return "Min";                   // Col 5
-        case Column::SIG_MAX:       return "Max";                   // Col 6
-        case Column::SIG_UNIT:      return "Unit";                  // Col 7
-        case Column::SIG_BYTEORDER: return "Byte Order";            // Col 8
-        case Column::SIG_VALUETYPE: return "Type";                  // Col 9
-        case Column::SIG_RECEIVERS:  return "Receiver";              // Col 10
+        case Column::SIG_OFFSET:
+            return "Offset";  // Col 4
+        case Column::SIG_MIN:
+            return "Min";  // Col 5
+        case Column::SIG_MAX:
+            return "Max";  // Col 6
+        case Column::SIG_UNIT:
+            return "Unit";  // Col 7
+        case Column::SIG_BYTEORDER:
+            return "Byte Order";  // Col 8
+        case Column::SIG_VALUETYPE:
+            return "Type";  // Col 9
+        case Column::SIG_RECEIVERS:
+            return "Receiver";  // Col 10
 
-        default: return {};
+        default:
+            return {};
     }
 }
 void DbcModel::onDbcParsed(const Core::DBCParsedEvent& event)
@@ -227,21 +248,21 @@ void DbcModel::setupRoot()
 void DbcModel::createOverviewItem(const Core::DbcConfig& data, int orphanCount) const
 {
     QList<QVariant> metaData;
-    //add filename to first column
+    // add filename to first column
     metaData.append(QString::fromStdString(data.metaData.fileName));
-    //add version to second column
+    // add version to second column
     metaData.append(QString::fromStdString(data.metaData.version));
-    //add ECU count to third column
+    // add ECU count to third column
     metaData.append(QVariant::fromValue(static_cast<qulonglong>(data.nodeDefinitions.size())));
-    //add message count to 4th column
+    // add message count to 4th column
     metaData.append(QVariant::fromValue(static_cast<qulonglong>(data.messageDefinitions.size())));
-    //add signal count to 5th column
+    // add signal count to 5th column
     metaData.append(static_cast<qulonglong>(countTotalSignals(data)));
-    //add orphan messages count to 6th column
+    // add orphan messages count to 6th column
     metaData.append(orphanCount);
 
-    std::unique_ptr<DbcItem> overviewItem = std::make_unique<DbcItem>(
-    metaData, Core::DbcItemType::Overview, m_rootItem.get());
+    std::unique_ptr<DbcItem> overviewItem =
+        std::make_unique<DbcItem>(metaData, Core::DbcItemType::Overview, m_rootItem.get());
     m_rootItem->prependChild(std::move(overviewItem));
 }
 auto DbcModel::createEcuItems(const Core::DbcConfig& data) const -> QHash<QString, DbcItem*>
@@ -252,8 +273,7 @@ auto DbcModel::createEcuItems(const Core::DbcConfig& data) const -> QHash<QStrin
         QList<QVariant> ecuData;
         QString ecuName = QString::fromStdString(ecu);
         ecuData.append(ecuName);
-        auto ecuItem = std::make_unique<DbcItem>(
-            ecuData, Core::DbcItemType::Ecu, m_rootItem.get());
+        auto ecuItem = std::make_unique<DbcItem>(ecuData, Core::DbcItemType::Ecu, m_rootItem.get());
         auto* ecuPtr = ecuItem.get();
         ecuMap.insert(ecuName, ecuPtr);
         m_rootItem->appendChild(std::move(ecuItem));
@@ -276,8 +296,8 @@ auto DbcModel::createMessageItems(const Core::DbcConfig& data,
     int orphanCount = 0;
     QList<QVariant> orphanData;
     orphanData.append("Orphan Messages:");
-    auto orphanHolder = std::make_unique<DbcItem>(
-        orphanData, Core::DbcItemType::OrphanHolder, m_rootItem.get());
+    auto orphanHolder =
+        std::make_unique<DbcItem>(orphanData, Core::DbcItemType::OrphanHolder, m_rootItem.get());
     for (const Core::DbcMessageDescription msg : data.messageDefinitions)
     {
         QList<QVariant> messageData;
@@ -296,8 +316,8 @@ auto DbcModel::createMessageItems(const Core::DbcConfig& data,
             parent = orphanHolder.get();
             orphanCount++;
         }
-        auto messageItem = std::make_unique<DbcItem>(
-            messageData, Core::DbcItemType::Message, parent);
+        auto messageItem =
+            std::make_unique<DbcItem>(messageData, Core::DbcItemType::Message, parent);
         createSignalItems(msg.signalDescriptions, messageItem.get());
         parent->appendChild(std::move(messageItem));
     }
@@ -306,10 +326,9 @@ auto DbcModel::createMessageItems(const Core::DbcConfig& data,
         m_rootItem->appendChild(std::move(orphanHolder));
     }
     return orphanCount;
-
 }
 auto DbcModel::createSignalItems(const std::list<Core::DbcSignalDescription>& signalDescriptions,
-    DbcItem* messageItem) -> void
+                                 DbcItem* messageItem) -> void
 {
     for (const Core::DbcSignalDescription sig : signalDescriptions)
     {
@@ -331,8 +350,8 @@ auto DbcModel::createSignalItems(const std::list<Core::DbcSignalDescription>& si
         }
         signalData.append(receiverNames.join(", "));
 
-        auto signalItem = std::make_unique<DbcItem>(
-            signalData, Core::DbcItemType::Signal, messageItem);
+        auto signalItem =
+            std::make_unique<DbcItem>(signalData, Core::DbcItemType::Signal, messageItem);
         messageItem->appendChild(std::move(signalItem));
     }
 }
@@ -340,7 +359,7 @@ auto DbcModel::createSignalItems(const std::list<Core::DbcSignalDescription>& si
 void DbcModel::setupData(const Core::DbcConfig& data)
 {
     setupRoot();
-    const QHash<QString,DbcItem*> ecuMap = createEcuItems(data);
+    const QHash<QString, DbcItem*> ecuMap = createEcuItems(data);
     const int orphanCount = createMessageItems(data, ecuMap);
     createOverviewItem(data, orphanCount);
 }

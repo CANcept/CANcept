@@ -42,9 +42,9 @@ class DbcItem
     ~DbcItem();
 
     /**
-    * @brief Setter for the parent item.
-    * @param parent The new parent.
-    */
+     * @brief Setter for the parent item.
+     * @param parent The new parent.
+     */
     auto setParent(DbcItem* parent) -> void;
 
     /**
