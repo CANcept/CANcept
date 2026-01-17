@@ -42,8 +42,8 @@ class MonitoringDelegate : QStyledItemDelegate
      * @param locale The locale used for formatting.
      * @return Localized, formatted display string.
      */
-    [[nodiscard]] auto displayText(const QVariant& value, const QLocale& locale) const
-        -> QString override;
+    [[nodiscard]] auto displayText(const QVariant& value,
+                                   const QLocale& locale) const -> QString override;
     /**
      * @brief Paints a rounded card with an icon and a count badge.
      *

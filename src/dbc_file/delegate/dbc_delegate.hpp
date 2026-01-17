@@ -59,8 +59,7 @@ class DbcDelegate : public QStyledItemDelegate
      * @param locale The current system locale.
      * @return The string representation of the value.
      */
-    [[nodiscard]] auto displayText(const QVariant& value, const QLocale& locale) const
-        -> QString override;
+    [[nodiscard]] auto displayText(const QVariant& value,
+                                   const QLocale& locale) const -> QString override;
 };
-
 }  // namespace DbcFile

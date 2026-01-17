@@ -165,8 +165,8 @@ class OverviewPage : public QWidget
      * @brief Helper to create one of the 4 Statistics cards in the middle section.
      * @caller Internal setupUi().
      */
-    auto createStatCard(const QString& title, QLabel*& valueLabelPtr, const QString& iconName)
-        -> QWidget*;
+    auto createStatCard(const QString& title, QLabel*& valueLabelPtr,
+                        const QString& iconName) -> QWidget*;
 
     QDataWidgetMapper* m_mapper;
 

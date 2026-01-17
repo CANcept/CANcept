@@ -43,8 +43,8 @@ DbcModel::DbcModel(Core::IEventBroker& broker, QObject* parent)
 }
 DbcModel::~DbcModel() = default;
 
-auto DbcModel::index(const int row, const int column, const QModelIndex& parent) const
-    -> QModelIndex
+auto DbcModel::index(const int row, const int column,
+                     const QModelIndex& parent) const -> QModelIndex
 {
     if (!hasIndex(row, column, parent))  // return empty index if index does not exist
     {
