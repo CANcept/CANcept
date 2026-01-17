@@ -53,3 +53,7 @@ doc/*
 
 # Build
 build/
+
+
+.devcontainer/***/.DS_Store
+**/.DS_Store
