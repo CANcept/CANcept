@@ -37,10 +37,10 @@ namespace Column {
 }
 namespace DbcFile {
 
-DbcModel::DbcModel(Core::IEventBroker& broker, QObject* parent) :QAbstractItemModel(parent), m_broker(broker)
+DbcModel::DbcModel(Core::IEventBroker& broker, QObject* parent) :QAbstractItemModel(parent),
+m_broker(broker)
 {
-    m_rootItem = std::make_unique<DbcItem>(QList<QVariant>{"Root"}, Core::DbcItemType::Root); //empty root item
-
+    m_rootItem = std::make_unique<DbcItem>(QList<QVariant>{"Root"}, Core::DbcItemType::Root);
     m_dbcParsedConnection = m_broker.subscribe<Core::DBCParsedEvent>(
         [this](const Core::DBCParsedEvent& event) {
             this->onDbcParsed(event);
@@ -49,7 +49,8 @@ DbcModel::DbcModel(Core::IEventBroker& broker, QObject* parent) :QAbstractItemMo
 }
 DbcModel::~DbcModel() = default;
 
-auto DbcModel::index(const int row, const int column, const QModelIndex& parent) const -> QModelIndex
+auto DbcModel::index(const int row, const int column, const QModelIndex& parent)
+const -> QModelIndex
 {
     if (!hasIndex(row,column, parent)) //return empty index if index does not exist
     {
@@ -66,7 +67,8 @@ auto DbcModel::index(const int row, const int column, const QModelIndex& parent)
     }
     if (DbcItem* childItem = parentItem->child(row))
     {
-        return createIndex(row, column, childItem); //create and return index with pointer to childItem if child exists
+        return createIndex(row, column, childItem); //create and return index with
+        pointer to childItem if child exists
     }
     return QModelIndex{}; //otherwise return empty index
 }
