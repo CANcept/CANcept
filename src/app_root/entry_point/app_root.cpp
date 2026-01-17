@@ -19,7 +19,6 @@
 #include "logging/logging_component.hpp"
 #include "monitoring/monitoring_component.hpp"
 #include "sending/sending_component.hpp"
-#include "stub/MockTabComponent.hpp"
 
 namespace AppRoot {
 
