@@ -67,8 +67,7 @@ const -> QModelIndex
     }
     if (DbcItem* childItem = parentItem->child(row))
     {
-        return createIndex(row, column, childItem); //create and return index with
-        pointer to childItem if child exists
+        return createIndex(row, column, childItem);
     }
     return QModelIndex{}; //otherwise return empty index
 }
