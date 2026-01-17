@@ -32,7 +32,8 @@ class AppRootDelegate : public QAbstractItemDelegate
      * and internal padding.
      * @return QSize The calculated width and height requirements.
      */
-    [[nodiscard]] auto sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const
+    [[nodiscard]] auto sizeHint(const QStyleOptionViewItem& option,
+        const QModelIndex& index) const
         -> QSize override;
 };
 
