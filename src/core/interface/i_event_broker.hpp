@@ -119,8 +119,7 @@ class IEventBroker
      * @brief Implementation-specific logic for storing listeners.
      */
     virtual auto _subscribe(std::type_index type,
-                            std::function<void(const void*)> callback)
-        -> Connection = 0;
+                            std::function<void(const void*)> callback) -> Connection = 0;
 };
 
 }  // namespace Core

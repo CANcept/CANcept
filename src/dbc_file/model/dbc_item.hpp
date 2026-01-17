@@ -51,7 +51,7 @@ class DbcItem
      * Getter for the items children items.
      * @return The children of the item.
      */
-    [[nodiscard]] const std::vector<std::unique_ptr<DbcItem>>& getChildren() const;
+    [[nodiscard]] auto getChildren() const -> const std::vector<std::unique_ptr<DbcItem>>&;
 
     // --- Tree Structure Management ---
     /**

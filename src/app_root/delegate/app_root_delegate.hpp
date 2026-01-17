@@ -33,7 +33,7 @@ class AppRootDelegate : public QAbstractItemDelegate
      * @return QSize The calculated width and height requirements.
      */
     [[nodiscard]] auto sizeHint(const QStyleOptionViewItem& option,
-        const QModelIndex& index) const -> QSize override;
+                                const QModelIndex& index) const -> QSize override;
 };
 
 }  // namespace AppRoot

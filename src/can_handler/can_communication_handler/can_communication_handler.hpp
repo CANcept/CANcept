@@ -28,7 +28,7 @@ class CanCommunicationHandler final : public Core::ILifecycle
    public:
     explicit CanCommunicationHandler(Core::IEventBroker& event_broker)
         : ILifecycle(event_broker),
-          deviceHandler(CanDeviceHandler(event_broker)) {
+          deviceHandler(CanDeviceHandler(event_broker)){
               /*
               can_handlers.push_back(CanDbcHandler(event_broker, [this](const CanMessage&
               canMessage) -> bool { return deviceHandler.sendCanMessage(&canMessage);
