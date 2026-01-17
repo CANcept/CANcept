@@ -11,11 +11,15 @@
 #include "can_handler/dbc_handler/dbc_handler.hpp"
 #include "core/constants.hpp"
 #include "core/macro/console_logging.hpp"
+#include "core/theme/color_themes.hpp"
+#include "core/theme/spacing_themes.hpp"
+#include "core/theme/theme_manager.hpp"
 #include "dbc_file/dbc_component.hpp"
 #include "event_broker/event_broker.hpp"
 #include "logging/logging_component.hpp"
 #include "monitoring/monitoring_component.hpp"
 #include "sending/sending_component.hpp"
+#include "stub/MockTabComponent.hpp"
 
 namespace AppRoot {
 
@@ -32,17 +36,8 @@ void AppRoot::bootstrap()
     LOG_INF("AppRoot", "Starting bootstrap...");
 
     LOG_INF("AppRoot", "Loading theme...");
-    QFile file(Core::Assets::ThemePath);
-    if (file.open(QFile::ReadOnly | QFile::Text))
-    {
-        QTextStream stream(&file);
-        const QString styleSheet = stream.readAll();
-        qApp->setStyleSheet(styleSheet);
-        LOG_INF("AppRoot", "Global theme applied.");
-    } else
-    {
-        LOG_INF("AppRoot", "Failed to load global theme from :assets/qss/light_theme.qss");
-    }
+    Core::ThemeManager::getInstance().setColorTheme(std::make_unique<Core::LightTheme>());
+    Core::ThemeManager::getInstance().setSpacingTheme(std::make_unique<Core::NormalSpacingTheme>());
 
     LOG_INF("AppRoot", "Instantiating Event Broker...");
     m_broker = std::make_unique<EventBroker::EventBroker>();

@@ -9,11 +9,7 @@
 auto main(int argc, char* argv[]) -> int
 {
     QApplication app(argc, argv);
-    // AppRoot::AppRoot kernel;
-    // kernel.bootstrap();
-    QWidget window;
-    window.setWindowTitle("Can Bus Manager");
-    window.resize(400, 300);
-    window.show();
+    AppRoot::AppRoot kernel;
+    kernel.bootstrap();
     return app.exec();
 }

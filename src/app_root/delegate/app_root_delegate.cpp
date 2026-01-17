@@ -33,30 +33,30 @@ void AppRootDelegate::paint(QPainter* painter, const QStyleOptionViewItem& optio
         }
     }
 
-    const int padding = THEME_INT(Core::Theme::SpacingMd);
-    const int radius = THEME_INT(Core::Theme::RadiusMd);
-    const QRect rect = option.rect.adjusted(padding / 2, 2, -padding / 2, -2);
+    const int padding = THEME.spacing().spacingSm;
+    const int radius = THEME.spacing().radiusMd;
+    const QRect rect = option.rect.adjusted(1, 1, -1, -1);
 
     // Defines the states during hovering / when selected
     if (option.state & QStyle::State_Selected)
     {
-        painter->setPen(Qt::NoPen);
-        painter->setBrush(THEME_COLOR(Core::Theme::SurfaceSelected));
-        painter->drawRoundedRect(rect, radius, radius);
+        QPen borderPen(THEME.colors().surfaceForeground);
+        borderPen.setWidth(THEME.spacing().borderThick);
+        painter->setPen(borderPen);
 
-        painter->setBrush(THEME_COLOR(Core::Theme::ColorPrimary));
-        painter->drawRoundedRect(rect.left(), rect.top() + padding,
-                                 THEME_INT(Core::Theme::BorderThick) * 2,
-                                 rect.height() - (padding * 2), 2, 2);
+        painter->setBrush(THEME.colors().surfaceMain);
+
+        const QRectF borderRect = QRectF(rect).adjusted(0.5, 0.5, -0.5, -0.5);
+        painter->drawRoundedRect(borderRect, radius, radius);
     } else if (option.state & QStyle::State_MouseOver)
     {
         painter->setPen(Qt::NoPen);
-        painter->setBrush(THEME_COLOR(Core::Theme::SurfaceHover));
+        painter->setBrush(THEME.colors().colorPrimaryHover);
         painter->drawRoundedRect(rect, radius, radius);
     }
 
-    int iconSize = rect.height() - (padding * 2);
-    const QRect iconRect(rect.left() + padding, rect.top() + padding, iconSize, iconSize);
+    const int iconSize = rect.height() - (padding * 2);
+    const QRect iconRect(rect.left() + padding * 2, rect.top() + padding, iconSize, iconSize);
 
     if (!icon.isNull())
     {
@@ -66,30 +66,26 @@ void AppRootDelegate::paint(QPainter* painter, const QStyleOptionViewItem& optio
         icon.paint(painter, iconRect, Qt::AlignCenter, mode);
     }
 
-    const QColor textColor = (option.state & QStyle::State_Selected)
-                                 ? THEME_COLOR(Core::Theme::ColorPrimary)
-                                 : THEME_COLOR(Core::Theme::TextPrimary);
-
     QFont font = painter->font();
-    font.setPixelSize(THEME_INT(Core::Theme::SizeTextMd));
+    font.setPixelSize(THEME.spacing().fontSizeMd);
     font.setWeight(static_cast<QFont::Weight>((option.state & QStyle::State_Selected)
-                                                  ? THEME_INT(Core::Theme::WeightMedium)
-                                                  : THEME_INT(Core::Theme::WeightNormal)));
+                                                  ? THEME.spacing().fontWeightMedium
+                                                  : THEME.spacing().fontWeightNormal));
     painter->setFont(font);
-    painter->setPen(textColor);
+    painter->setPen(THEME.colors().textPrimary);
 
     // Position text to the right of the icon
-    const QRect textRect = rect.adjusted(iconSize + (padding * 2), 0, -padding, 0);
+    const QRect textRect = rect.adjusted(iconSize + (padding * 3), 0, -padding, 0);
     painter->drawText(textRect, Qt::AlignVCenter | Qt::AlignLeft, text);
 
     painter->restore();
 }
 
-QSize AppRootDelegate::sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const
+auto AppRootDelegate::sizeHint(const QStyleOptionViewItem& option,
+                               const QModelIndex& index) const -> QSize
 {
-    const int baseHeight =
-        THEME_INT(Core::Theme::SizeTextMd) + (THEME_INT(Core::Theme::SpacingLg) * 2);
-    return QSize(200, baseHeight);
+    const int baseHeight = THEME.spacing().fontSizeMd + (THEME.spacing().spacingLg * 2);
+    return {200, baseHeight};
 }
 
 }  // namespace AppRoot

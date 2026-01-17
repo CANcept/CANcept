@@ -64,7 +64,7 @@ if(ENABLE_CLANG_TIDY)
 endif()
 
 # 4. Dependencies (Runtime Libraries)
-find_package(Qt6 COMPONENTS Widgets PrintSupport OpenGL REQUIRED)
+find_package(Qt6 COMPONENTS Widgets PrintSupport OpenGL Svg REQUIRED)
 find_package(Threads REQUIRED)
 
 add_subdirectory(external/spdlog)
@@ -79,10 +79,10 @@ set(ENTRY_POINT_FILE "${CMAKE_CURRENT_SOURCE_DIR}/src/app_root/entry_point/main.
 
 set(RESOURCE_FILE "${CMAKE_CURRENT_SOURCE_DIR}/resources.qrc")
 
-file(GLOB_RECURSE SOURCE_FILES "src/*.cpp")
+file(GLOB_RECURSE SOURCE_FILES CONFIGURE_DEPENDS "src/*.cpp")
 list(FILTER SOURCE_FILES EXCLUDE REGEX "src/app_root/entry_point/main.cpp")
 
-add_library(${PROJECT_NAME}Lib STATIC ${SOURCE_FILES} ${RESOURCE_FILE})
+add_library(${PROJECT_NAME}Lib STATIC ${SOURCE_FILES})
 if(CLANG_TIDY_EXE)
     set_target_properties(${PROJECT_NAME}Lib PROPERTIES CXX_CLANG_TIDY "${DO_CLANG_TIDY}")
 endif()
@@ -94,6 +94,7 @@ target_include_directories(${PROJECT_NAME}Lib PUBLIC
 
 target_link_libraries(${PROJECT_NAME}Lib PUBLIC
         Qt6::Widgets
+        Qt6::Svg
         EnTT::EnTT
         sockcanpp
         qwt
@@ -107,7 +108,7 @@ target_compile_definitions(${PROJECT_NAME}Lib
 )
 
 # 6. Executable
-add_executable(${PROJECT_NAME} ${ENTRY_POINT_FILE})
+add_executable(${PROJECT_NAME} ${ENTRY_POINT_FILE} ${RESOURCE_FILE})
 if(CLANG_TIDY_EXE)
     set_target_properties(${PROJECT_NAME} PROPERTIES CXX_CLANG_TIDY "${DO_CLANG_TIDY}")
 endif()

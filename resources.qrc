@@ -1,5 +1,5 @@
 <!DOCTYPE RCC><RCC version="1.0">
     <qresource prefix="/">
-        <file>assets/qss/light_theme.qss</file>
+        <file>assets/icon/can_bus.svg</file>
     </qresource>
 </RCC>
