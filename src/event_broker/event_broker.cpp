@@ -1,23 +1,34 @@
-#include "event_broker.hpp"
-
+#include "event_broker.hpp";
 namespace EventBroker {
 
-// Stub _publish method
-void EventBroker::_publish(const std::type_index type, const void* data)
+auto EventBroker::_subscribe(std::type_index type,
+                            std::function<void(const void*)> callback)
+    -> Core::Connection
 {
-    // do nothing for now
-    (void)type;
-    (void)data;
+    auto &channel = getChannel(type);
+
+    // Wrap std::function into a callable object
+    struct Wrapper {
+        std::function<void(const void*)> cb;
+
+        void operator()(const void *& data) {
+            cb(data);
+        }
+    };
+
+    auto wrapper = std::make_shared<Wrapper>(Wrapper{std::move(callback)});
+
+    entt::connection conn =
+        channel.sink().connect<&Wrapper::operator()>(*wrapper);
+
+    return Core::Connection(
+        [c = std::move(conn), w = std::move(wrapper)]() mutable {
+            c.release();
+        }
+    );
 }
 
-// Stub _subscribe method
-auto EventBroker::_subscribe(const std::type_index type,
-                             const std::function<void(const void*)> callback) -> Core::Connection
-{
-    // do nothing for now
-    (void)type;
-    (void)callback;
-    return Core::Connection{};  // return default empty connection
+void EventBroker::_publish(std::type_index type, const void* data) {
+    getChannel(type).trigger(data);
 }
-
-}  // namespace EventBroker
+} // namespace EventBroker
