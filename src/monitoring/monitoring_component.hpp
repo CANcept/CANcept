@@ -1,13 +1,10 @@
-#ifndef CANBUSMANAGER_MONITORING_COMPONENT_HPP
-#define CANBUSMANAGER_MONITORING_COMPONENT_HPP
+#pragma once
 
 #include "core/interface/i_event_broker.hpp"
 #include "core/interface/i_tab_component.hpp"
 #include "monitoring/delegate/monitoring_delegate.hpp"
 #include "monitoring/model/monitoring_model.hpp"
 #include "monitoring/view/monitoring_view.hpp"
-
-#endif  // CANBUSMANAGER_MONITORING_COMPONENT_HPP
 
 /**
  * @namespace Monitoring

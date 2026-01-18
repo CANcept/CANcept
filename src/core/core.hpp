@@ -1,8 +1,0 @@
-//
-// Created by Lino on 17.12.2025.
-//
-
-#ifndef CANBUSSIMULATOR_CORE_H
-#define CANBUSSIMULATOR_CORE_H
-
-#endif  // CANBUSSIMULATOR_CORE_H

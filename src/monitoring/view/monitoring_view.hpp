@@ -1,5 +1,4 @@
-#ifndef CANBUSMANAGER_MONITORING_VIEW_HPP
-#define CANBUSMANAGER_MONITORING_VIEW_HPP
+#pragma once
 
 #include <QSortFilterProxyModel>
 #include <QSplitter>
@@ -42,4 +41,3 @@ class MonitoringView : public QWidget
     GraphListView* m_graphListView;
 };
 }  // namespace Monitoring
-#endif  // CANBUSMANAGER_MONITORING_VIEW_HPP
