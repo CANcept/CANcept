@@ -31,7 +31,6 @@ constexpr int SIG_BYTEORDER = 8;
 constexpr int SIG_VALUETYPE = 9;
 constexpr int SIG_RECEIVERS = 10;
 
-
 DbcModel::DbcModel(Core::IEventBroker& broker, QObject* parent)
     : QAbstractItemModel(parent), m_broker(broker)
 {
