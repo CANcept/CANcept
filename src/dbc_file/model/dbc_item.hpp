@@ -39,7 +39,7 @@ class DbcItem
     /**
      * @brief Destructor. Automatically destroys all children (via unique_ptr).
      */
-    ~DbcItem();
+    ~DbcItem() = default;
 
     /**
      * @brief Setter for the parent item.

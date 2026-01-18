@@ -2,6 +2,7 @@
 // Created by Adrian Rupp on 13.01.26.
 //
 #include "dbc_item.hpp"
+
 namespace DbcFile {
 DbcFile::DbcItem::DbcItem(const QList<QVariant>& data, Core::DbcItemType type, DbcItem* parent)
     : m_type(type), m_parent(parent), m_data(data)
