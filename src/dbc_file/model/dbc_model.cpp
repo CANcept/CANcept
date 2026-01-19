@@ -4,15 +4,33 @@
 #include "dbc_model.hpp"
 namespace DbcFile {
 enum ColumnNumbers : int {
-    //Overview Column numbers
-    OvFilename = 0, OvVersion = 1, OvEcuCount = 2, OvMsgCount = 3, OvSigCount = 4, OvOrphans = 5,
+    //Overview column numbers
+    OvFilename = 0,
+    OvVersion = 1,
+    OvEcuCount = 2,
+    OvMsgCount = 3,
+    OvSigCount = 4,
+    OvOrphans = 5,
 
-    //Message Column numbers
-    MsgName = 0, MsgId = 1, MsgDlc = 2, MsgSender = 3,
+    //Message columns numbers
+    MsgName = 0,
+    MsgId = 1,
+    MsgDlc = 2,
+    MsgSender = 3,
 
-    //Signal Column numbers
-    SigName = 0, SigStartbit = 1, SigLength= 2, SigFactor = 3, SigOffset = 4, SigMin = 5,
-    SigMax = 6, SigUnit = 7, SigByteOrder = 8, SigValueType = 9, SigReceivers = 10};
+    //Signal column numbers
+    SigName = 0,
+    SigStartbit = 1,
+    SigLength= 2,
+    SigFactor = 3,
+    SigOffset = 4,
+    SigMin = 5,
+    SigMax = 6,
+    SigUnit = 7,
+    SigByteOrder = 8,
+    SigValueType = 9,
+    SigReceivers = 10
+};
 
 DbcModel::DbcModel(Core::IEventBroker& broker, QObject* parent)
     : QAbstractItemModel(parent), m_broker(broker)
