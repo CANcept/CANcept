@@ -221,7 +221,7 @@ void DbcModel::onDbcParsed(const Core::DBCParsedEvent& event)
 void DbcModel::setupRoot()
 {
     QList<QVariant> rootColumns;
-    constexpr int columnCount = SIG_RECEIVERS + 1;
+    constexpr int columnCount = SigReceivers + 1;
     for (int i = 0; i < columnCount; i++) rootColumns << QVariant();
     m_rootItem = std::make_unique<DbcItem>(rootColumns, Core::DbcItemType::Root);
 }
