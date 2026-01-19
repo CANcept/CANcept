@@ -3,33 +3,16 @@
 //
 #include "dbc_model.hpp"
 namespace DbcFile {
+enum ColumnNumbers : int {
+    //Overview Column numbers
+    OvFilename = 0, OvVersion = 1, OvEcuCount = 2, OvMsgCount = 3, OvSigCount = 4, OvOrphans = 5,
 
-// Overview Columns
-constexpr int OV_FIlENAME = 0;
-constexpr int OV_VERSION = 1;
-constexpr int OV_ECUCOUNT = 2;
-constexpr int OV_MSGCOUNT = 3;
-constexpr int OV_SIGCOUNT = 4;
-constexpr int OV_ORPHANS = 5;
+    //Message Column numbers
+    MsgName = 0, MsgId = 1, MsgDlc = 2, MsgSender = 3,
 
-// Message Columns
-constexpr int MSG_NAME = 0;
-constexpr int MSG_ID = 1;
-constexpr int MSG_DLC = 2;
-constexpr int MSG_SENDER = 3;
-
-// Signal Columns
-constexpr int SIG_NAME = 0;
-constexpr int SIG_STARTBIT = 1;
-constexpr int SIG_LENGTH = 2;
-constexpr int SIG_FACTOR = 3;
-constexpr int SIG_OFFSET = 4;
-constexpr int SIG_MIN = 5;
-constexpr int SIG_MAX = 6;
-constexpr int SIG_UNIT = 7;
-constexpr int SIG_BYTEORDER = 8;
-constexpr int SIG_VALUETYPE = 9;
-constexpr int SIG_RECEIVERS = 10;
+    //Signal Column numbers
+    SigName = 0, SigStartbit = 1, SigLength= 2, SigFactor = 3, SigOffset = 4, SigMin = 5,
+    SigMax = 6, SigUnit = 7, SigByteOrder = 8, SigValueType = 9, SigReceivers = 10};
 
 DbcModel::DbcModel(Core::IEventBroker& broker, QObject* parent)
     : QAbstractItemModel(parent), m_broker(broker)
@@ -103,7 +86,7 @@ auto DbcModel::columnCount(const QModelIndex& parent) const -> int
     }
     return m_rootItem->columnCount();  // case: parent refers to root item
 }
-auto DbcModel::data(const QModelIndex& index, int role) const -> QVariant
+auto DbcModel::data(const QModelIndex& index, const int role) const -> QVariant
 {
     // Validation
     if (!index.isValid())
@@ -122,7 +105,7 @@ auto DbcModel::data(const QModelIndex& index, int role) const -> QVariant
 
     if (role == DbcRoles::Role_IsHex)
     {
-        if (type == Core::DbcItemType::Message && index.column() == MSG_ID)
+        if (type == Core::DbcItemType::Message && index.column() == MsgId)
         {
             return true;
         }
@@ -131,9 +114,9 @@ auto DbcModel::data(const QModelIndex& index, int role) const -> QVariant
 
     if (role == DbcRoles::Role_Unit)
     {
-        if (type == Core::DbcItemType::Signal && index.column() == SIG_UNIT)
+        if (type == Core::DbcItemType::Signal && index.column() == SigUnit)
         {
-            return item->data(SIG_UNIT);
+            return item->data(SigUnit);
         }
         return {};
     }
@@ -143,11 +126,11 @@ auto DbcModel::data(const QModelIndex& index, int role) const -> QVariant
         switch (role)
         {
             case DbcRoles::Role_Id:
-                return item->data(MSG_ID);
+                return item->data(MsgId);
             case DbcRoles::Role_Dlc:
-                return item->data(MSG_DLC);
+                return item->data(MsgDlc);
             case DbcRoles::Role_Sender:
-                return item->data(MSG_SENDER);
+                return item->data(MsgSender);
             default:
                 break;
         }
@@ -157,23 +140,23 @@ auto DbcModel::data(const QModelIndex& index, int role) const -> QVariant
         switch (role)
         {
             case DbcRoles::Role_StartBit:
-                return item->data(SIG_STARTBIT);
+                return item->data(SigStartbit);
             case DbcRoles::Role_BitLength:
-                return item->data(SIG_LENGTH);
+                return item->data(SigLength);
             case DbcRoles::Role_Factor:
-                return item->data(SIG_FACTOR);
+                return item->data(SigFactor);
             case DbcRoles::Role_Offset:
-                return item->data(SIG_OFFSET);
+                return item->data(SigOffset);
             case DbcRoles::Role_Min:
-                return item->data(SIG_MIN);
+                return item->data(SigMin);
             case DbcRoles::Role_Max:
-                return item->data(SIG_MAX);
+                return item->data(SigMax);
             case DbcRoles::Role_ByteOrder:
-                return item->data(SIG_BYTEORDER);
+                return item->data(SigByteOrder);
             case DbcRoles::Role_ValueType:
-                return item->data(SIG_VALUETYPE);
+                return item->data(SigValueType);
             case DbcRoles::Role_Receivers:
-                return item->data(SIG_RECEIVERS);
+                return item->data(SigReceivers);
             default:
                 break;
         }
@@ -201,29 +184,29 @@ auto DbcModel::headerData(int section, Qt::Orientation orientation, int role) co
     }
     switch (section)
     {
-        case MSG_NAME:
+        case MsgName:
             return "Name";  // Col 0
-        case MSG_ID:
+        case MsgId:
             return "ID / StartBit";  // Col 1
-        case MSG_DLC:
+        case MsgDlc:
             return "DLC / Length [Bit]";  // Col 2
-        case MSG_SENDER:
+        case MsgSender:
             return "Sender / Factor";  // Col 3
 
-        case SIG_OFFSET:
+        case SigOffset:
             return "Offset";  // Col 4
-        case SIG_MIN:
+        case SigMin:
             return "Min";  // Col 5
-        case SIG_MAX:
+        case SigMax:
             return "Max";  // Col 6
-        case SIG_UNIT:
+        case SigUnit:
             return "Unit";  // Col 7
-        case SIG_BYTEORDER:
+        case SigByteOrder:
             return "Byte Order";  // Col 8
-        case SIG_VALUETYPE:
+        case SigValueType:
             return "Type";  // Col 9
-        case SIG_RECEIVERS:
-            return "Receiver";  // Col 10
+        case SigReceivers:
+            return "Receivers";  // Col 10
 
         default:
             return {};
