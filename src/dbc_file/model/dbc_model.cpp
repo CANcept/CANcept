@@ -4,7 +4,7 @@
 #include "dbc_model.hpp"
 namespace DbcFile {
 enum ColumnNumbers : int {
-    //Overview column numbers
+    // Overview column numbers
     OvFilename = 0,
     OvVersion = 1,
     OvEcuCount = 2,
@@ -12,16 +12,16 @@ enum ColumnNumbers : int {
     OvSigCount = 4,
     OvOrphans = 5,
 
-    //Message columns numbers
+    // Message columns numbers
     MsgName = 0,
     MsgId = 1,
     MsgDlc = 2,
     MsgSender = 3,
 
-    //Signal column numbers
+    // Signal column numbers
     SigName = 0,
     SigStartbit = 1,
-    SigLength= 2,
+    SigLength = 2,
     SigFactor = 3,
     SigOffset = 4,
     SigMin = 5,
