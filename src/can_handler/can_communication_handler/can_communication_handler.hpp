@@ -28,15 +28,15 @@ class CanCommunicationHandler final : public Core::ILifecycle
 {
    public:
     explicit CanCommunicationHandler(Core::IEventBroker& event_broker)
-        : ILifecycle(event_broker), deviceHandler(CanDeviceHandler(event_broker))
+        : ILifecycle(event_broker), deviceHandler(std::make_unique<CanDeviceHandler>(event_broker))
     {
         can_handlers.push_back(
-            *new CanDbcHandler(event_broker, [this](const CanMessage& canMessage) -> bool {
-                return deviceHandler.sendCanMessage(canMessage);
+            std::make_unique<CanDbcHandler>(event_broker, [this](const CanMessage& canMessage) -> bool {
+                return deviceHandler->sendCanMessage(canMessage);
             }));
         can_handlers.push_back(
-            *new CanRawHandler(event_broker, [this](const CanMessage& canMessage) -> bool {
-                return deviceHandler.sendCanMessage(canMessage);
+            std::make_unique<CanRawHandler>(event_broker, [this](const CanMessage& canMessage) -> bool {
+                return deviceHandler->sendCanMessage(canMessage);
             }));
     };
 
@@ -60,11 +60,11 @@ class CanCommunicationHandler final : public Core::ILifecycle
      * @brief A list of connected can handlers that are responsible for processing the raw messages
      * sent over the bus to events usable for the can bus manager.
      */
-    std::list<ICanParser> can_handlers;
+    std::list<std::unique_ptr<ICanParser>> can_handlers;
     /**
      * @brief The CAN device handler that handles all events related to the actual CAN device
      */
-    CanDeviceHandler deviceHandler;
+    std::unique_ptr<CanDeviceHandler> deviceHandler;
     /**
      * @brief Flag indicating if the CanCommunicationHandler should check for new CAN messages
      * periodically

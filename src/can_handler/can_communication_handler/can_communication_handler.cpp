@@ -5,18 +5,18 @@
 namespace CanHandler {
 void CanCommunicationHandler::checkCanDeviceForMessages() const
 {
-    for (const std::list<CanMessage> messages = deviceHandler.checkForCanMessage();
+    for (const std::list<CanMessage> messages = deviceHandler->checkForCanMessage();
          CanMessage message : messages)
     {
-        for (ICanParser parser : can_handlers)
+        for (const std::unique_ptr<ICanParser> &parser : can_handlers)
         {
-            parser.parseReceivedMessage(&message);
+            parser->parseReceivedMessage(&message);
         }
     }
 }
 void CanCommunicationHandler::onStart()
 {
-    // Create thread, that checks on the messages every 100 ms
+    // Create a thread that checks on the messages every 100 ms
     _execute = true;
     message_check_thread = std::thread([this]() {
         long long lastExecution = 0;
@@ -41,10 +41,10 @@ void CanCommunicationHandler::onStop()
 {
     _execute = false;
     message_check_thread.join();
-    for (const ICanParser parser : can_handlers)
+    for (std::unique_ptr<ICanParser> &parser : can_handlers)
     {
-        delete &parser;
+        parser.reset();
     }
-    delete &deviceHandler;
+    deviceHandler.reset();
 }
 }  // namespace CanHandler
