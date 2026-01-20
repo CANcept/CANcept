@@ -9,4 +9,7 @@
         <file>assets/icon/load_new.svg</file>
         <file>assets/icon/dbc_file_tab.svg</file>
     </qresource>
+    <qresource prefix="/icons">
+        <file alias="upload.svg">assets/icon/upload.svg</file>
+    </qresource>
 </RCC>
