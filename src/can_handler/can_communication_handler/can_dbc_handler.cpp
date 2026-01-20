@@ -11,8 +11,9 @@ void CanDbcHandler::parseReceivedMessage(const sockcanpp::CanMessage* canMessage
     {
         return;
     }
-    const Core::DbcMessageDescription *currentMessageDescription = dbcMessages.at(canMessage->getRawFrame().can_id);
-    if (currentMessageDescription == nullptr) // no fitting message description
+    const Core::DbcMessageDescription* currentMessageDescription =
+        dbcMessages.at(canMessage->getRawFrame().can_id);
+    if (currentMessageDescription == nullptr)  // no fitting message description
     {
         return;
     }
@@ -70,7 +71,6 @@ void CanDbcHandler::parseReceivedMessage(const sockcanpp::CanMessage* canMessage
         }
     }
 
-
     // Publish to the event broker
     broker.publish(Core::ReceivedCanDbcEvent(receivedMessage));
 }
@@ -81,22 +81,18 @@ auto CanDbcHandler::parseReceivedSignal(const Core::DbcSignalDescription& signal
     int64_t rawValue = 0;
     if (!signal.byteOrder)  // little endian
     {
-        rawValue =
-            dataLittleEndian << (64 - signal.startBit -
-                                 signal.signalSize)  // remove all data in front of data
-            >>
-            (64 - signal.signalSize);  // shift back (sizeof(int64_t) - signal.startBit
-                                                    // - signal.signalSize), remove all data behind
-                                                    // data ( +signal.startBit)
-        //std::cout << rawValue << std::endl;
-    } else                                          // big endian
+        rawValue = dataLittleEndian << (64 - signal.startBit -
+                                        signal.signalSize)  // remove all data in front of data
+                   >> (64 - signal.signalSize);  // shift back (sizeof(int64_t) - signal.startBit
+                                                 // - signal.signalSize), remove all data behind
+                                                 // data ( +signal.startBit)
+    } else                                       // big endian
     {
         rawValue =
-            dataBigEndian << (64 -
-                              signal.startBit)  // remove all data in front of data
-            >> (64 -
-                signal.signalSize);  // shift back (sizeof(int64_t) - signal.startBit), remove all
-                                     // data behind data ( +signal.startBit - signal.signalSize)
+            dataBigEndian << (64 - signal.startBit)  // remove all data in front of data
+            >>
+            (64 - signal.signalSize);  // shift back (sizeof(int64_t) - signal.startBit), remove all
+                                       // data behind data ( +signal.startBit - signal.signalSize)
     }
     if (signal.valueType)  // signed
     {
@@ -113,7 +109,8 @@ void CanDbcHandler::handleSendMessage(const Core::SendCanMessageDbcEvent& event)
     {
         return;
     }
-    const Core::DbcMessageDescription *currentMessageDescription = dbcMessages[event.canMessage.messageId];
+    const Core::DbcMessageDescription* currentMessageDescription =
+        dbcMessages[event.canMessage.messageId];
     if (currentMessageDescription == nullptr)
     {
         return;
@@ -169,10 +166,9 @@ void CanDbcHandler::parseSendSignal(const Core::DbcSignalDescription& signal,
         dataBigEndian =
             dataBigEndian +
             (rawValue << (64 - signal.signalSize)  // cut of eventual 1 in sign
-             >> (64 -
-                 signal.startBit)  // shift back (sizeof(int64_t) - signal.signalSize) and in the
-                                   // other direction for the starting bit (- (signal.startBit -
-                                   // signal.signalSize))
+             >> (64 - signal.startBit)  // shift back (sizeof(int64_t) - signal.signalSize) and in
+                                        // the other direction for the starting bit (-
+                                        // (signal.startBit - signal.signalSize))
             );
     }
 }
@@ -180,7 +176,7 @@ void CanDbcHandler::parseSendSignal(const Core::DbcSignalDescription& signal,
 void CanDbcHandler::handleNewDbc(const Core::DBCParsedEvent& event)
 {
     // clear array
-    for (auto & dbcMessage : dbcMessages)
+    for (auto& dbcMessage : dbcMessages)
     {
         dbcMessage = nullptr;
     }
@@ -190,7 +186,8 @@ void CanDbcHandler::handleNewDbc(const Core::DBCParsedEvent& event)
     {
         if (messageDescription->messageId < dbcMessages.size())
         {
-            dbcMessages[messageDescription->messageId] = const_cast<Core::DbcMessageDescription*>(&*messageDescription);
+            dbcMessages[messageDescription->messageId] =
+                const_cast<Core::DbcMessageDescription*>(&*messageDescription);
             std::advance(messageDescription, sizeof(Core::DbcMessageDescription));
         }
     }

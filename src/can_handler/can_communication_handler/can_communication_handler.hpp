@@ -30,12 +30,12 @@ class CanCommunicationHandler final : public Core::ILifecycle
     explicit CanCommunicationHandler(Core::IEventBroker& event_broker)
         : ILifecycle(event_broker), deviceHandler(std::make_unique<CanDeviceHandler>(event_broker))
     {
-        can_handlers.push_back(
-            std::make_unique<CanDbcHandler>(event_broker, [this](const CanMessage& canMessage) -> bool {
+        can_handlers.push_back(std::make_unique<CanDbcHandler>(
+            event_broker, [this](const CanMessage& canMessage) -> bool {
                 return deviceHandler->sendCanMessage(canMessage);
             }));
-        can_handlers.push_back(
-            std::make_unique<CanRawHandler>(event_broker, [this](const CanMessage& canMessage) -> bool {
+        can_handlers.push_back(std::make_unique<CanRawHandler>(
+            event_broker, [this](const CanMessage& canMessage) -> bool {
                 return deviceHandler->sendCanMessage(canMessage);
             }));
     };
