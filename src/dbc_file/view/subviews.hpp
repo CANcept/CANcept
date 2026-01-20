@@ -7,9 +7,9 @@
 #include <QFrame>
 #include <QLabel>
 #include <QListView>
+#include <QPainter>
 #include <QSplitter>
 #include <QWidget>
-#include <QPainter>
 
 // Include generic widgets (SearchableFilterTable, SearchableFilterTree)
 #include "searchable_filter_widgets.hpp"
