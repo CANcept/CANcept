@@ -22,16 +22,17 @@ class CanDbcHandler final : public ICanParser
    public:
     explicit CanDbcHandler(Core::IEventBroker& eventBroker,
                            const std::function<bool(const CanMessage&)>& sendFunction)
-        : ICanParser(eventBroker, sendFunction)
-    {
-        dbcSendEventConnection = eventBroker.subscribe<Core::SendCanMessageDbcEvent>(
-            [this](const Core::SendCanMessageDbcEvent& event) -> void {
-                handleSendMessage(event);
-            });
-        dbcConfigChangeConnection = eventBroker.subscribe<Core::DBCParsedEvent>(
-            [this](const Core::DBCParsedEvent& event) -> void { handleNewDbc(event); });
+        : ICanParser(eventBroker, sendFunction) {
+              dbcSendEventConnection = eventBroker.subscribe<Core::SendCanMessageDbcEvent>(
+                  [this](const Core::SendCanMessageDbcEvent& event) -> void {
+                      handleSendMessage(event);
+                  });
+              dbcConfigChangeConnection = eventBroker.subscribe<Core::DBCParsedEvent>(
+                  [this](const Core::DBCParsedEvent& event) -> void { handleNewDbc(event); });
+          };
+    ~CanDbcHandler() override {
+
     };
-    ~CanDbcHandler() override = default;
 
    private:
     /**
@@ -86,7 +87,7 @@ class CanDbcHandler final : public ICanParser
     /**
      * @brief The current DBC configuration
      */
-    Core::DbcConfig currentConfig;
+    std::array<Core::DbcMessageDescription*, 2048> dbcMessages;
 };
 }  // namespace CanHandler
 

@@ -3,19 +3,18 @@
 //
 #include "can_dbc_handler.hpp"
 
-#include <iostream>
 namespace CanHandler {
 void CanDbcHandler::parseReceivedMessage(const sockcanpp::CanMessage* canMessage)
 {
     // Get right message description
-    Core::DbcMessageDescription currentMessageDescription;
-    for (const Core::DbcMessageDescription messageDescription : currentConfig.messageDefinitions)
+    if (canMessage->getRawFrame().can_id >= dbcMessages.size())
     {
-        if (messageDescription.messageId == canMessage->getRawFrame().can_id)
-        {
-            currentMessageDescription = messageDescription;
-            break;
-        }
+        return;
+    }
+    const Core::DbcMessageDescription *currentMessageDescription = dbcMessages.at(canMessage->getRawFrame().can_id);
+    if (currentMessageDescription == nullptr) // no fitting message description
+    {
+        return;
     }
 
     // Check if message length = 8
@@ -25,7 +24,7 @@ void CanDbcHandler::parseReceivedMessage(const sockcanpp::CanMessage* canMessage
     u_int64_t dataLittleEndian = 0, dataBigEndian = 0;
     for (int i = 0; i < 8; i++)
     {
-        dataLittleEndian += canMessage->getRawFrame().data[i] << (i * 8);
+        dataLittleEndian += static_cast<u_int64_t>(canMessage->getRawFrame().data[i]) << (i * 8);
         dataBigEndian = (dataBigEndian << 8) + canMessage->getRawFrame().data[i];
     }
     // Multiplex signal initialization
@@ -39,7 +38,7 @@ void CanDbcHandler::parseReceivedMessage(const sockcanpp::CanMessage* canMessage
 
     // Parse signals
     for (const Core::DbcSignalDescription signalDescription :
-         currentMessageDescription.signalDescriptions)
+         currentMessageDescription->signalDescriptions)
     {
         if (signalDescription.multiplexedBy != -1)
         {
@@ -70,44 +69,39 @@ void CanDbcHandler::parseReceivedMessage(const sockcanpp::CanMessage* canMessage
                 .value = parseReceivedSignal(signalDescription, dataLittleEndian, dataBigEndian)});
         }
     }
-    /*
-    for (const Core::DbcCanSignal signal : receivedMessage.signalValues)
-    {
-        std::cout << signal.name << "   " << signal.value << std::endl;
-    }
-    */
+
+
     // Publish to the event broker
-    // broker.publish(Core::ReceivedCanDbcEvent(receivedMessage));
+    broker.publish(Core::ReceivedCanDbcEvent(receivedMessage));
 }
 auto CanDbcHandler::parseReceivedSignal(const Core::DbcSignalDescription& signal,
                                         const u_int64_t& dataLittleEndian,
                                         const u_int64_t& dataBigEndian) -> double
 {
     int64_t rawValue = 0;
-    //std::cout << dataLittleEndian << "   " << dataBigEndian << std::endl;
     if (!signal.byteOrder)  // little endian
     {
         rawValue =
-            dataLittleEndian << (sizeof(int64_t) - signal.startBit -
+            dataLittleEndian << (64 - signal.startBit -
                                  signal.signalSize)  // remove all data in front of data
             >>
-            (sizeof(int64_t) - signal.signalSize);  // shift back (sizeof(int64_t) - signal.startBit
+            (64 - signal.signalSize);  // shift back (sizeof(int64_t) - signal.startBit
                                                     // - signal.signalSize), remove all data behind
                                                     // data ( +signal.startBit)
         //std::cout << rawValue << std::endl;
     } else                                          // big endian
     {
         rawValue =
-            dataBigEndian << (sizeof(int64_t) -
+            dataBigEndian << (64 -
                               signal.startBit)  // remove all data in front of data
-            >> (sizeof(int64_t) -
+            >> (64 -
                 signal.signalSize);  // shift back (sizeof(int64_t) - signal.startBit), remove all
                                      // data behind data ( +signal.startBit - signal.signalSize)
     }
     if (signal.valueType)  // signed
     {
-        rawValue = rawValue << (sizeof(int64_t) - signal.signalSize) >>
-                   (sizeof(int64_t) - signal.signalSize);  // let the shift operator sign the value
+        rawValue = rawValue << (64 - signal.signalSize) >>
+                   (64 - signal.signalSize);  // let the shift operator sign the value
     }
     return rawValue * signal.factor + signal.offset;
 }
@@ -115,14 +109,14 @@ auto CanDbcHandler::parseReceivedSignal(const Core::DbcSignalDescription& signal
 void CanDbcHandler::handleSendMessage(const Core::SendCanMessageDbcEvent& event)
 {
     // Get right message description
-    Core::DbcMessageDescription currentMessageDescription;
-    for (const Core::DbcMessageDescription messageDescription : currentConfig.messageDefinitions)
+    if (event.canMessage.messageId >= dbcMessages.size())
     {
-        if (messageDescription.messageId == event.canMessage.messageId)
-        {
-            currentMessageDescription = messageDescription;
-            break;
-        }
+        return;
+    }
+    const Core::DbcMessageDescription *currentMessageDescription = dbcMessages[event.canMessage.messageId];
+    if (currentMessageDescription == nullptr)
+    {
+        return;
     }
     // Data frames for data to be parsed
     u_int64_t dataLittleEndian = 0, dataBigEndian = 0;
@@ -131,7 +125,7 @@ void CanDbcHandler::handleSendMessage(const Core::SendCanMessageDbcEvent& event)
     for (Core::DbcCanSignal signal : event.canMessage.signalValues)
     {
         for (Core::DbcSignalDescription signalDescription :
-             currentMessageDescription.signalDescriptions)
+             currentMessageDescription->signalDescriptions)
         {
             if (signalDescription.signalName == signal.name)
             {
@@ -165,8 +159,8 @@ void CanDbcHandler::parseSendSignal(const Core::DbcSignalDescription& signal,
     {
         dataLittleEndian =
             dataLittleEndian +
-            (rawValue << (sizeof(int64_t) - signal.signalSize)  // cut of eventual 1 in sign
-             >> (sizeof(int64_t) - signal.signalSize -
+            (rawValue << (64 - signal.signalSize)  // cut of eventual 1 in sign
+             >> (64 - signal.signalSize -
                  signal.startBit)  // shift back (sizeof(int64_t) - signal.signalSize) and in the
                                    // other direction for the starting bit (- signal.startBit)
             );
@@ -174,8 +168,8 @@ void CanDbcHandler::parseSendSignal(const Core::DbcSignalDescription& signal,
     {
         dataBigEndian =
             dataBigEndian +
-            (rawValue << (sizeof(int64_t) - signal.signalSize)  // cut of eventual 1 in sign
-             >> (sizeof(int64_t) -
+            (rawValue << (64 - signal.signalSize)  // cut of eventual 1 in sign
+             >> (64 -
                  signal.startBit)  // shift back (sizeof(int64_t) - signal.signalSize) and in the
                                    // other direction for the starting bit (- (signal.startBit -
                                    // signal.signalSize))
@@ -185,6 +179,20 @@ void CanDbcHandler::parseSendSignal(const Core::DbcSignalDescription& signal,
 
 void CanDbcHandler::handleNewDbc(const Core::DBCParsedEvent& event)
 {
-    currentConfig = event.config;
+    // clear array
+    for (auto & dbcMessage : dbcMessages)
+    {
+        dbcMessage = nullptr;
+    }
+    // input message definitions into array
+    auto messageDescription = event.config.messageDefinitions.begin();
+    for (int i = 0; i < event.config.messageDefinitions.size(); i++)
+    {
+        if (messageDescription->messageId < dbcMessages.size())
+        {
+            dbcMessages[messageDescription->messageId] = const_cast<Core::DbcMessageDescription*>(&*messageDescription);
+            std::advance(messageDescription, sizeof(Core::DbcMessageDescription));
+        }
+    }
 }
 }  // namespace CanHandler
