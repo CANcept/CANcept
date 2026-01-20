@@ -3,13 +3,13 @@
 //
 #include "subviews.hpp"
 
-#include <QPainter>
-#include <QVBoxLayout>
 #include <QDragEnterEvent>
 #include <QDragLeaveEvent>
-#include <QMimeData>
-#include <QUrl>
 #include <QFileDialog>
+#include <QMimeData>
+#include <QPainter>
+#include <QUrl>
+#include <QVBoxLayout>
 
 #include "core/theme/theme_manager.hpp"
 namespace DbcFile {
@@ -27,7 +27,8 @@ LoadPage::~LoadPage() = default;
  * @details Calling unpolish() and polish() is required for Qt to re-evaluate
  * dynamic stylesheet selectors like [dragState="valid"].
  */
-static void updateDragStyle(QWidget* widget, const QString& state) {
+static void updateDragStyle(QWidget* widget, const QString& state)
+{
     widget->setProperty("dragState", state);
     widget->style()->unpolish(widget);
     widget->style()->polish(widget);
@@ -46,8 +47,8 @@ void LoadPage::dragEnterEvent(QDragEnterEvent* event)
         {
             // Check if only one file is dragged and for right ending
             if (const QString filePath = urls.first().toLocalFile();
-                urls.size() == 1 && filePath.endsWith(
-                ".dbc", Qt::CaseInsensitive)) {
+                urls.size() == 1 && filePath.endsWith(".dbc", Qt::CaseInsensitive))
+            {
                 isValid = true;
             }
         }
@@ -74,7 +75,8 @@ void LoadPage::dropEvent(QDropEvent* event)
     if (!urls.isEmpty())
     {
         QString file = urls.first().toLocalFile();
-        if (file.endsWith(".dbc", Qt::CaseInsensitive)) {
+        if (file.endsWith(".dbc", Qt::CaseInsensitive))
+        {
             emit fileSelected(file);
         }
     }
@@ -102,12 +104,8 @@ auto LoadPage::eventFilter(QObject* watched, QEvent* event) -> bool
 }
 void LoadPage::onBrowseButtonClicked()
 {
-    QString fileName = QFileDialog::getOpenFileName(
-        this,
-        tr("Choose DBC file"),
-        QString(),
-        tr("DBC files (*.dbc)")
-        );
+    QString fileName = QFileDialog::getOpenFileName(this, tr("Choose DBC file"), QString(),
+                                                    tr("DBC files (*.dbc)"));
 
     if (!fileName.isEmpty())
     {
@@ -196,7 +194,7 @@ void LoadPage::setupUi()
                             "border-color: %6"
                             "}"
 
-                            //Mouse hover style (without drag)
+                            // Mouse hover style (without drag)
                             "#UploadZone:hover { "
                             "background-color: %7;"
                             "border-color: %8; "
