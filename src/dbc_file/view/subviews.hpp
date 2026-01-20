@@ -9,6 +9,7 @@
 #include <QListView>
 #include <QSplitter>
 #include <QWidget>
+#include <QPainter>
 
 // Include generic widgets (SearchableFilterTable, SearchableFilterTree)
 #include "searchable_filter_widgets.hpp"
@@ -45,7 +46,7 @@ class LoadPage : public QWidget
      * @param parent The parent widget.
      */
     explicit LoadPage(QWidget* parent = nullptr);
-    ~LoadPage() override = default;
+    ~LoadPage() override;
 
    signals:
     /**
@@ -71,6 +72,12 @@ class LoadPage : public QWidget
      * @caller Qt Event Loop (when mouse released).
      */
     void dropEvent(QDropEvent* event) override;
+
+    /**
+     * @brief Handles the event of leaving the upload area/zone while dragging data.
+     * When drag leaves the upload area, the style of the upload area changes back to default.
+     */
+    void dragLeaveEvent(QDragLeaveEvent* event) override;
 
     /**
      * @brief Event Filter for the upload Box.

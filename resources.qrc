@@ -2,4 +2,7 @@
     <qresource prefix="/">
         <file>assets/icon/can_bus.svg</file>
     </qresource>
+    <qresource prefix="/icons">
+        <file alias="upload.svg">assets/icon/upload.svg</file>
+    </qresource>
 </RCC>
