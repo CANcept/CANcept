@@ -10,6 +10,35 @@
 
 namespace DbcFile {
 
+/**
+ * @class SidebarDelegate
+ * @brief Simple delegate for the navigation sidebar to handle font weight and item height.
+ *
+ * @details
+ * Since QSS (Stylesheets) often fail to apply font-weight changes on selection in QListViews,
+ * this delegate manually sets the font to Bold when an item is selected.
+ * It also enforces a fixed minimum height to ensure comfortable touch/click targets.
+ */
+class SidebarDelegate : public QStyledItemDelegate
+{
+    Q_OBJECT
+
+   public:
+    explicit SidebarDelegate(QObject* parent = nullptr) : QStyledItemDelegate(parent) {}
+
+    /**
+     * @brief Prepares the style option before painting.
+     * @details Sets the font weight to Bold if the item is selected.
+     */
+    void initStyleOption(QStyleOptionViewItem* option, const QModelIndex& index) const override;
+
+    /**
+     * @brief Defines the size of the sidebar items.
+     * @details Adds vertical padding by enforcing a minimum height (e.g., 40px).
+     */
+    [[nodiscard]] auto sizeHint(const QStyleOptionViewItem& option,
+                                const QModelIndex& index) const -> QSize override;
+};
 // ==============================================================================
 // 1. SidebarDelegate
 // ==============================================================================

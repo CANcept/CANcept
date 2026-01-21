@@ -3,6 +3,8 @@
 //
 #include "searchable_filter_widgets.hpp"
 
+#include <QVBoxLayout>
+
 namespace DbcFile {
 
 // --- SearchableFilterTable ---
@@ -24,6 +26,7 @@ QComboBox* SearchableFilterTable::filterComboBox() const
 }
 void SearchableFilterTable::setupUi()
 {
+    // Minimaler Setup damit es nicht crasht
     m_tableView = new QTableView(this);
     m_searchBar = new QLineEdit(this);
     m_filterCombo = new QComboBox(this);
