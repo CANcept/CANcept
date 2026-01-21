@@ -21,12 +21,12 @@ namespace DbcFile {
  * @brief The main container for the DBC Tab (Composite View).
  *
  * @details
- * RESPONSIBILITIES:
- * 1. Layout: Manages the Sidebar navigation and the central Page Stack
+ * **RESPONSIBILITIES:**
+ * 1. **Layout:** Manages the Sidebar navigation and the central Page Stack
  *    (Load, Overview, ECUs, Messages, Signals).
- * 2. Data Wiring: Owns the Proxy Models, connects them to the Source Model,
+ * 2. **Data Wiring:** Owns the Proxy Models, connects them to the Source Model,
  *    and injects them into the specific Pages.
- * 3. Interaction Logic: Connects Search Bars, Filter Combos, and Selection Signals
+ * 3. **Interaction Logic:** Connects Search Bars, Filter Combos, and Selection Signals
  *    from the Pages to the corresponding Proxies.
  */
 class DbcView : public QWidget
@@ -39,12 +39,15 @@ class DbcView : public QWidget
 
     /**
      * @brief Getter for the m_loadPage
-     * @return Pointer to m_loadPage
+     * @return
      */
     [[nodiscard]] auto getLoadPage() const -> LoadPage&;
 
     /**
      * @brief Initializes the view with the source data.
+     *
+     * @caller DbcComponent::onDbcParsed().
+     *
      * @details
      * 1. Instantiates all Proxy Models.
      * 2. Injects the source model into proxies.
@@ -57,6 +60,9 @@ class DbcView : public QWidget
 
     /**
      * @brief Sets the formatting delegate for tables.
+     *
+     * @caller DbcComponent (Constructor).
+     *
      * @details
      * Applies the `DbcDelegate` to the Messages Master Table and the Signals Table
      * to ensure Hex values and Units are displayed correctly.
@@ -65,11 +71,14 @@ class DbcView : public QWidget
 
     /**
      * @brief Unlocks navigation (Sidebar) after a successful file load.
+     *
+     * @caller DbcComponent::onDbcParsed().
+     *
      * @details
      * Initially, only the LoadPage is accessible. Once data is loaded,
      * this enables the sidebar so the user can switch views.
      */
-    void setNavigationEnabled(bool enabled) const;
+    void setNavigationEnabled(bool enabled);
 
    signals:
     /**
@@ -85,10 +94,7 @@ class DbcView : public QWidget
    private slots:
     /**
      * @brief Handles sidebar navigation to switch the active page in the stack.
-     * @details Connects to QListView::clicked signal from the Sidebar and handles switching to the
-     * page in m_contentStack that corresponds to the given index.
-     * Also handles reset to default style of the m_loadPage UI when switching back to m_loadPage
-     * from another page.
+     * @caller Sidebar QListView (clicked signal).
      */
     void onSidebarSelectionChanged(const QModelIndex& index);
 
@@ -149,79 +155,8 @@ class DbcView : public QWidget
 
    private:
     /**
-     * @brief Describes a single entry in the sidebar model.
-     *
-     * @details
-     * This structure defines the data required to create one sidebar item,
-     * including its icon, display title, and initial enabled state. It is
-     * used to populate the sidebar model in a structured and maintainable
-     * way.
-     */
-    struct SidebarEntry {
-        QString iconPath;
-        QString title;
-        bool enabled;
-    };
-
-    /**
-     * @brief Prevents deselection of items in the sidebar list.
-     *
-     * @details
-     * This method ensures that the selection in the sidebar list (`m_sidebarList`) cannot
-     * be completely cleared when the user clicks on an empty area. It connects a lambda
-     * to the `selectionChanged` signal of the `QItemSelectionModel`. If the new selection
-     * is empty (e.g., a click on an empty space), the previously selected items are
-     * reselected so that at least one item remains selected at all times.
-     */
-    void disableSidebarDeselection();
-
-    /**
-     * @brief Initializes and configures the sidebar list view.
-     *
-     * @details
-     * This method sets up the `m_sidebarList` as a `QListView` with specific visual and
-     * interaction properties. It configures the list for single selection of rows, disables
-     * editing and selection rectangle visibility, sets a maximum width, and removes the frame.
-     *
-     * Additionally, it applies a stylesheet based on the application's theme, defining
-     * background colors, borders, text colors, font size, item padding/margins, border
-     * radius, and selection highlighting. The colors and spacing values are retrieved from
-     * the `Core::ThemeManager` to ensure consistency with the overall application theme.
-     */
-    void setupSidebarList();
-
-    /**
-     * @brief Sets up the model for the sidebar list.
-     *
-     * @details
-     * This method creates a `QStandardItemModel` for `m_sidebarList` and populates it
-     * with predefined sidebar items. The items include:
-     *   1. "Load New" – always enabled and initially selected.
-     *   2. "Overview" – initially disabled.
-     *   3. "ECUs" – initially disabled.
-     *   4. "Messages" – initially disabled.
-     *   5. "Signals" – initially disabled.
-     *
-     * Each item is created with a corresponding icon and title from the `Constants::Sidebar`
-     * namespace. After all items are added, the model is set on `m_sidebarList`, deselection of
-     * sidebar items is disabled to ensure a persistent selection and the
-     * first item ("Load New") is selected by default.
-     */
-    void setSidebarModel();
-
-    /**
-     * @brief Initializes and assembles the user interface of the DBC view.
-     *
-     * @details
-     * This method builds the main UI layout for the DBC view. It creates the main horizontal
-     * layout, and sets up the sidebar and content area.
-     *
-     * The sidebar is initialized, populated with its model, assigned a custom item
-     * delegate, and added to the main layout.
-     *
-     * Additionally, a `QStackedWidget` is created to hold the different content pages.
-     * Subviews are created and signal-slot connections are established to complete
-     * the UI setup.
+     * @brief Initializes layout, creates sidebar, stack, and page instances.
+     * @caller Constructor.
      */
     void setupUi();
 

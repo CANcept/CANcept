@@ -88,7 +88,7 @@ class DbcComponent : public Core::ITabComponent
      *
      * @param filePath Path to the selected DBC file.
      */
-    void onFileLoadRequested(const QString& filePath);
+    void onFileLoadRequested(const QString& filePath) const;
 
    private:
     /**
