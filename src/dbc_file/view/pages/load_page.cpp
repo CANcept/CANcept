@@ -1,19 +1,22 @@
 //
-// Created by Adrian Rupp on 19.01.26.
+// Created by Adrian Rupp on 21.01.26.
 //
-#include "subviews.hpp"
+#include "load_page.hpp"
 
 #include <QDragEnterEvent>
-#include <QDragLeaveEvent>
 #include <QFileDialog>
+#include <QLabel>
+#include <QMessageBox>
 #include <QMimeData>
 #include <QPainter>
-#include <QUrl>
+#include <QStyle>
 #include <QVBoxLayout>
+#include <QWidget>
 
+#include "core/constants.hpp"
 #include "core/theme/theme_manager.hpp"
-namespace DbcFile {
 
+namespace DbcFile {
 LoadPage::LoadPage(QWidget* parent) : QWidget(parent)
 {
     // Activate Drag and Drop
@@ -32,22 +35,57 @@ static void updateDragStyle(QWidget* widget, const QString& state)
     widget->setProperty("dragState", state);
     widget->style()->unpolish(widget);
     widget->style()->polish(widget);
+    widget->update();
+}
+
+void LoadPage::showStatusMessage(const QString& message, const bool isError) const
+{
+    m_statusLabel->setText(message);
+    m_statusLabel->show();
+
+    if (isError)
+    {
+        m_statusLabel->setStyleSheet(
+            "color: #E53935;"
+            " font-weight: bold; "
+            " font-size: 13px; "
+            " margin-top: 10px;");
+        updateDragStyle(m_uploadBoxFrame, "invalid");
+    } else
+    {
+        m_statusLabel->setStyleSheet(
+            "color: #1E88E5; "
+            " font-weight: bold; "
+            " font-size: 13px; "
+            " margin-top: 10px;");
+        updateDragStyle(m_uploadBoxFrame, "");  // Rahmen normal
+    }
+}
+void LoadPage::resetStatus() const
+{
+    m_statusLabel->hide();
+    m_statusLabel->clear();
+    updateDragStyle(m_uploadBoxFrame, "");
 }
 
 void LoadPage::dragEnterEvent(QDragEnterEvent* event)
 {
+    resetStatus();
     bool isValid = false;
+
     // Check if dragged data contain URLS
     if (event->mimeData()->hasUrls())
     {
         // extract URLS
         const QList<QUrl>& urls = event->mimeData()->urls();
 
-        if (!urls.isEmpty())
+        // Check if only one file is being dragges
+        if (urls.size() == 1)
         {
-            // Check if only one file is dragged and for right ending
-            if (const QString filePath = urls.first().toLocalFile();
-                urls.size() == 1 && filePath.endsWith(".dbc", Qt::CaseInsensitive))
+            const QString filePath = urls.first().toLocalFile();
+
+            // Check if file has correct ending
+            if (filePath.endsWith(".dbc", Qt::CaseInsensitive))
             {
                 isValid = true;
             }
@@ -57,29 +95,43 @@ void LoadPage::dragEnterEvent(QDragEnterEvent* event)
     {
         // Update dragstyle to change upload zone border color to indicate dragged data is valid
         updateDragStyle(m_uploadBoxFrame, "valid");
-        event->acceptProposedAction();
     } else
     {
         // Update dragstyle to change upload zone border color to indicate dragged data in invalid
         updateDragStyle(m_uploadBoxFrame, "invalid");
-        event->ignore();
     }
+    event->acceptProposedAction();
 }
 
 void LoadPage::dropEvent(QDropEvent* event)
 {
     // Return to default style of upload zone
     updateDragStyle(m_uploadBoxFrame, "");
+
     const auto urls = event->mimeData()->urls();
-    // Double check validity of data to be dropped
-    if (!urls.isEmpty())
+    if (urls.isEmpty())
     {
-        QString file = urls.first().toLocalFile();
-        if (file.endsWith(".dbc", Qt::CaseInsensitive))
-        {
-            emit fileSelected(file);
-        }
+        return;
     }
+    // Too many files warning
+    if (urls.size() > 1)
+    {
+        QMessageBox::warning(this, tr("Too many files"),
+                             tr("Please drop only <b>one</b> DBC file at a time."));
+        return;
+    }
+
+    const QString filePath = urls.first().toLocalFile();
+    // Wrong ending warning
+    if (!filePath.endsWith(".dbc", Qt::CaseInsensitive))
+    {
+        QMessageBox::warning(this, tr("Invalid file"), tr("Not a DBC file"));
+        return;
+    }
+
+    // Success
+    emit fileSelected(filePath);
+    showStatusMessage("Parsing...", false);
     event->acceptProposedAction();
 }
 void LoadPage::dragLeaveEvent(QDragLeaveEvent* event)
@@ -104,13 +156,20 @@ auto LoadPage::eventFilter(QObject* watched, QEvent* event) -> bool
 }
 void LoadPage::onBrowseButtonClicked()
 {
-    QString fileName = QFileDialog::getOpenFileName(this, tr("Choose DBC file"), QString(),
-                                                    tr("DBC files (*.dbc)"));
+    const QString fileName = QFileDialog::getOpenFileName(this, tr("Choose DBC file"), QString(),
+                                                          tr("DBC files (*.dbc);;All files (*.*)"));
 
-    if (!fileName.isEmpty())
+    if (fileName.isEmpty()) return;  // file selection canceled
+
+    // Check ending of selected file
+    if (!fileName.endsWith(".dbc", Qt::CaseInsensitive))
     {
-        emit fileSelected(fileName);
+        QMessageBox::warning(this, tr("Invalid File"), tr("Please select a valid DBC file."));
+        return;
     }
+
+    emit fileSelected(fileName);
+    showStatusMessage("Parsing...", false);
 }
 
 void LoadPage::setupUi()
@@ -135,7 +194,7 @@ void LoadPage::setupUi()
                             "border: %2px solid %3; "
                             "border-radius: %4px; "
                             "}")
-                            .arg(colors.colorPrimary.name())
+                            .arg(colors.surfaceMain.name())
                             .arg(spacing.borderThin)
                             .arg(colors.borderSubtle.name())
                             .arg(spacing.radiusSm);
@@ -153,7 +212,7 @@ void LoadPage::setupUi()
     title->setStyleSheet(QString("font-size: %1px;"
                                  "font-weight: %2;"
                                  "color: %3;")
-                             .arg(spacing.fontSizeMd)
+                             .arg(spacing.fontSizeLg)
                              .arg(spacing.fontWeightNormal)
                              .arg(colors.textPrimary.name()));
     cardLayout->addWidget(title);
@@ -199,14 +258,14 @@ void LoadPage::setupUi()
                             "background-color: %7;"
                             "border-color: %8; "
                             "}")
-                            .arg(colors.colorPrimary.name())
-                            .arg(spacing.borderThick)
+                            .arg(colors.surfaceMain.name())
+                            .arg(spacing.borderThin)
                             .arg(colors.borderStrong.name())
                             .arg(spacing.radiusSm)
                             .arg(colors.statusSuccess.name())
                             .arg(colors.statusError.name())
-                            .arg(colors.colorPrimaryHover.name())
-                            .arg(colors.borderSubtle.name());
+                            .arg(colors.surfaceHover.name())
+                            .arg(colors.borderStrong.name());
 
     m_uploadBoxFrame->setStyleSheet(zoneStyle);
     m_uploadBoxFrame->installEventFilter(this);
@@ -219,7 +278,7 @@ void LoadPage::setupUi()
     auto* iconLabel = new QLabel(m_uploadBoxFrame);
     iconLabel->setAlignment(Qt::AlignCenter);
 
-    QIcon icon(":/icons/upload.svg");
+    QIcon icon(Core::Assets::UploadIconPath);
     if (!icon.isNull())
     {
         QPixmap pixmap = icon.pixmap(48, 48);
@@ -250,6 +309,11 @@ void LoadPage::setupUi()
     // add line break
     textLabel->setText("Click to upload or drag and drop a file here<br>DBC file (*.dbc)");
     zoneLayout->addWidget(textLabel);
-}
 
+    // Content of the upload zone: parsing status label
+    m_statusLabel = new QLabel("", m_uploadBoxFrame);
+    m_statusLabel->setAlignment(Qt::AlignCenter);
+    m_statusLabel->hide();  // initially invisible
+    zoneLayout->addWidget(m_statusLabel);
+}
 }  // namespace DbcFile
