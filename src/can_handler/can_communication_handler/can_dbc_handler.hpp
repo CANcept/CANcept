@@ -89,6 +89,10 @@ class CanDbcHandler final : public ICanParser
      * @brief The current DBC configuration
      */
     std::array<Core::DbcMessageDescription*, 2048> dbcMessages;
+    /**
+     * @brief Mutex guarding the dbc configuration
+     */
+    std::mutex dbcMutex;
 };
 }  // namespace CanHandler
 

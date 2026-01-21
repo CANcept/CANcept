@@ -6,7 +6,9 @@
 namespace CanHandler {
 void CanDbcHandler::parseReceivedMessage(const sockcanpp::CanMessage* canMessage)
 {
-    // Get right message description
+    // Lock the mutex for data safety
+    dbcMutex.lock();
+    // Get the right message description
     if (canMessage->getRawFrame().can_id >= dbcMessages.size())
     {
         return;
@@ -70,6 +72,7 @@ void CanDbcHandler::parseReceivedMessage(const sockcanpp::CanMessage* canMessage
                 .value = parseReceivedSignal(signalDescription, dataLittleEndian, dataBigEndian)});
         }
     }
+    dbcMutex.unlock();
 
     // Publish to the event broker
     broker.publish(Core::ReceivedCanDbcEvent(receivedMessage));
@@ -104,6 +107,8 @@ auto CanDbcHandler::parseReceivedSignal(const Core::DbcSignalDescription& signal
 
 void CanDbcHandler::handleSendMessage(const Core::SendCanMessageDbcEvent& event)
 {
+    // Lock the mutex for data safety
+    dbcMutex.lock();
     // Get right message description
     if (event.canMessage.messageId >= dbcMessages.size())
     {
@@ -131,6 +136,7 @@ void CanDbcHandler::handleSendMessage(const Core::SendCanMessageDbcEvent& event)
             }
         }
     }
+    dbcMutex.unlock();
 
     // Add raw data values
     std::string data;
@@ -175,6 +181,7 @@ void CanDbcHandler::parseSendSignal(const Core::DbcSignalDescription& signal,
 
 void CanDbcHandler::handleNewDbc(const Core::DBCParsedEvent& event)
 {
+    dbcMutex.lock();
     // clear array
     for (auto& dbcMessage : dbcMessages)
     {
@@ -191,5 +198,6 @@ void CanDbcHandler::handleNewDbc(const Core::DBCParsedEvent& event)
             std::advance(messageDescription, sizeof(Core::DbcMessageDescription));
         }
     }
+    dbcMutex.unlock();
 }
 }  // namespace CanHandler
