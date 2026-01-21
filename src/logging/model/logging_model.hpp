@@ -27,7 +27,7 @@ struct LogSession {
  * @class LoggingModel
  * @brief The central data authority for the Logging module.
  * * @details
- * This model manages the lifecycle of logging sessions. It acts as a, list and data provider.
+ * This model manages the lifecycle of logging sessions. It acts as a list and data provider.
  */
 class LoggingModel final : public QAbstractTableModel
 {
