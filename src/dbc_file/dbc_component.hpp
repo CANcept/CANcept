@@ -16,8 +16,6 @@
 
 // Forward declarations for Events
 namespace Core {
-struct DbcParsedEvent;
-struct DbcParseErrorEvent;
 }  // namespace Core
 
 namespace DbcFile {
@@ -92,7 +90,7 @@ class DbcComponent : public Core::ITabComponent
      *
      * @param filePath The absolute path to the file.
      */
-    void onFileLoadRequested(const QString& filePath);
+    void onFileLoadRequested(const QString& filePath) const;
 
    private:
     /**
@@ -104,14 +102,14 @@ class DbcComponent : public Core::ITabComponent
      * Used to update the UI state (e.g., call `m_view->setNavigationEnabled(true)`).
      * The Model updates its data automatically via its own subscription.
      */
-    void onDbcParsed(const Core::DbcParsedEvent& event);
+    void onDbcParsed(const Core::DBCParsedEvent& event);
 
     /**
      * @brief Callback: Triggered when parsing failed.
      * @caller EventBroker (lambda callback).
      * @details Shows an error message to the user (e.g., via QMessageBox).
      */
-    void onDbcParseError(const Core::DbcParseErrorEvent& event);
+    void onDbcParseError(const Core::DBCParseErrorEvent& event);
 
     /**
      * @brief Sets up internal connections between View signals and Component slots.

@@ -7,8 +7,12 @@
 #include <QWidget>
 #include <memory>
 
+#include "pages/ecus_page.hpp"
+#include "pages/load_page.hpp"
+#include "pages/messages_page.hpp"
+#include "pages/overview_page.hpp"
+#include "pages/signals_page.hpp"
 #include "proxies.hpp"
-#include "subviews.hpp"
 
 namespace DbcFile {
 
@@ -32,6 +36,12 @@ class DbcView : public QWidget
    public:
     explicit DbcView(QWidget* parent = nullptr);
     ~DbcView() override;
+
+    /**
+     * @brief Getter for the m_loadPage
+     * @return
+     */
+    [[nodiscard]] auto getLoadPage() const -> LoadPage&;
 
     /**
      * @brief Initializes the view with the source data.
@@ -176,37 +186,37 @@ class DbcView : public QWidget
 
     // --- Data Proxies (Owned by the View) ---
 
-    /**
-     * @brief Hierarchy filter for the ECU Page.
-     * Maintains tree structure (Root->ECU->Message->Signal).
-     */
-    std::unique_ptr<TreeFilterProxy> m_ecuTreeProxy;
-
-    /**
-     * @brief Flat list of ECUs for the Overview Page (Tiles).
-     * Flattens the tree to just show ECU nodes.
-     */
-    std::unique_ptr<FlatListProxy> m_ecuOverviewProxy;
-
-    /**
-     * @brief Flat list of Messages.
-     * SHARED by:
-     * 1. Overview Page (Messages Tile List)
-     * 2. Messages Page (Master Table)
-     */
-    std::unique_ptr<FlatListProxy> m_messagesProxy;
-
-    /**
-     * @brief Detail filter for Messages Page.
-     * Shows only signals of the currently selected message.
-     */
-    std::unique_ptr<SingleMessageProxy> m_messageDetailProxy;
-
-    /**
-     * @brief Flat list of ALL Signals in the system.
-     * Used for the Signals Page table.
-     */
-    std::unique_ptr<FlatListProxy> m_allSignalsProxy;
+    // /**
+    //  * @brief Hierarchy filter for the ECU Page.
+    //  * Maintains tree structure (Root->ECU->Message->Signal).
+    //  */
+    // std::unique_ptr<TreeFilterProxy> m_ecuTreeProxy;
+    //
+    // /**
+    //  * @brief Flat list of ECUs for the Overview Page (Tiles).
+    //  * Flattens the tree to just show ECU nodes.
+    //  */
+    // std::unique_ptr<FlatListProxy> m_ecuOverviewProxy;
+    //
+    // /**
+    //  * @brief Flat list of Messages.
+    //  * SHARED by:
+    //  * 1. Overview Page (Messages Tile List)
+    //  * 2. Messages Page (Master Table)
+    //  */
+    // std::unique_ptr<FlatListProxy> m_messagesProxy;
+    //
+    // /**
+    //  * @brief Detail filter for Messages Page.
+    //  * Shows only signals of the currently selected message.
+    //  */
+    // std::unique_ptr<SingleMessageProxy> m_messageDetailProxy;
+    //
+    // /**
+    //  * @brief Flat list of ALL Signals in the system.
+    //  * Used for the Signals Page table.
+    //  */
+    // std::unique_ptr<FlatListProxy> m_allSignalsProxy;
 };
 
 }  // namespace DbcFile
