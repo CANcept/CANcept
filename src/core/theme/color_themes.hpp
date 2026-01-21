@@ -26,14 +26,14 @@ struct ColorTheme {
     QColor colorPrimaryHover = QColor(0xB2B2B2);
 
     // Borders
-    QColor borderSubtle = QColor(230, 230, 230); // black 10% as grey on white
-    QColor borderStrong = QColor(128, 128, 128); //black 50% as grey on white
+    QColor borderSubtle = QColor(230, 230, 230);  // black 10% as grey on white
+    QColor borderStrong = QColor(128, 128, 128);  // black 50% as grey on white
 
     // Status
     // QColor statusSuccess = QColor(0xA1, 0x45, 0xc3, 0x5D);
     // QColor statusError = QColor(0x02, 0, 0xc3, 0xDC);
     QColor statusWarning = QColor(0x8a, 0x04, 0xc3, 0xca);
-    QColor statusError   = QColor(255, 0, 0, 255);   // Rot
+    QColor statusError = QColor(255, 0, 0, 255);  // Rot
     QColor statusSuccess = QColor(0, 255, 0, 255);
 };
 
