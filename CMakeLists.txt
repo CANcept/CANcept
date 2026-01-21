@@ -14,11 +14,10 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
-# Temporary until implementatiom -----------------------------------
+# Temporary until implementation -----------------------------------
 set(SKIP_AUTOMOC_DIRS
         src/logging
         src/monitoring
-        src/dbc_file
         src/sending
         src/core/widgets
 )

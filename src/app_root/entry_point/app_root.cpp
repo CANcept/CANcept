@@ -69,8 +69,8 @@ void AppRoot::bootstrap()
     m_tabs.clear();
 
     // Helper to keep bootstrap readable
-    /*
     initTab<DbcFile::DbcComponent>();
+    /*
     initTab<Monitoring::MonitoringComponent>();
     initTab<Sending::SendingComponent>();
     initTab<Logging::LoggingComponent>();
