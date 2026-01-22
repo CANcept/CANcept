@@ -3,7 +3,6 @@
 //
 #include "searchable_filter_widgets.hpp"
 
-
 namespace DbcFile {
 
 // --- SearchableFilterTable ---
