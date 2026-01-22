@@ -102,14 +102,14 @@ class DbcComponent : public Core::ITabComponent
      * Used to update the UI state (e.g., call `m_view->setNavigationEnabled(true)`).
      * The Model updates its data automatically via its own subscription.
      */
-    void onDbcParsed(const Core::DBCParsedEvent& event);
+    void onDbcParsed(const Core::DBCParsedEvent& event) const;
 
     /**
      * @brief Callback: Triggered when parsing failed.
      * @caller EventBroker (lambda callback).
      * @details Shows an error message to the user (e.g., via QMessageBox).
      */
-    void onDbcParseError(const Core::DBCParseErrorEvent& event);
+    void onDbcParseError(const Core::DBCParseErrorEvent& event) const;
 
     /**
      * @brief Sets up internal connections between View signals and Component slots.
