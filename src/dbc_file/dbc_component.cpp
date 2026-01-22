@@ -8,7 +8,7 @@
 namespace DbcFile {
 
 DbcComponent::DbcComponent(Core::IEventBroker& broker)
-    : Core::ITabComponent(broker, "dbc-tab", "Dbc File", QIcon(Constants::Component::TabIcon))
+    : Core::ITabComponent(broker, Constants::Component::TabId, Constants::Component::TabTitle, QIcon(Constants::Component::TabIcon))
 {
     m_view = std::make_unique<DbcView>();
 
@@ -28,14 +28,14 @@ void DbcComponent::onFileLoadRequested(const QString& filePath) const
     event.filePath = filePath.toStdString();
     m_eventBroker.publish(event);
 }
-void DbcComponent::onDbcParsed(const Core::DBCParsedEvent& event)
+void DbcComponent::onDbcParsed(const Core::DBCParsedEvent& event) const
 {
-    m_view->getLoadPage().showStatusMessage("File parsed successfully!", false);
+    m_view->getLoadPage().showStatusMessage(Constants::Status::Success, false);
     m_view->setNavigationEnabled(true);
 }
-void DbcComponent::onDbcParseError(const Core::DBCParseErrorEvent& event)
+void DbcComponent::onDbcParseError(const Core::DBCParseErrorEvent& event) const
 {
-    QString errorMsg = "Error: " + QString::fromStdString(event.errorMessage);
+    QString errorMsg = Constants::Status::ErrorPrefix + QString::fromStdString(event.errorMessage);
     m_view->getLoadPage().showStatusMessage(errorMsg, true);
 }
 void DbcComponent::setupConnections() {}

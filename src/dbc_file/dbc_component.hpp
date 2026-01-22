@@ -100,7 +100,7 @@ class DbcComponent : public Core::ITabComponent
      *
      * @param event Event containing the parsed DBC result.
      */
-    void onDbcParsed(const Core::DBCParsedEvent& event);
+    void onDbcParsed(const Core::DBCParsedEvent& event) const;
 
     /**
      * @brief Handles DBC parsing errors.
@@ -111,7 +111,7 @@ class DbcComponent : public Core::ITabComponent
      *
      * @param event Event containing error details.
      */
-    void onDbcParseError(const Core::DBCParseErrorEvent& event);
+    void onDbcParseError(const Core::DBCParseErrorEvent& event) const;
 
     /**
      * @brief Sets up signal-slot and event broker connections.
