@@ -161,6 +161,13 @@ class DbcView : public QWidget
     void setupUi();
 
     /**
+     * @brief Disables deselection of items in sidebar when clicking below the items of the sidebar.
+     * @details Establishes lambda slot connection to &QItemSelectionModel::selectionChanged signal
+     * that re-selects the previous selection if new selection has empty index.
+     */
+    void disableSidebarDeselection();
+
+    /**
      * @brief Helper to instantiate all Page Widgets.
      * @caller setupUi().
      */

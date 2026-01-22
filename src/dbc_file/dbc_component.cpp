@@ -8,7 +8,8 @@
 namespace DbcFile {
 
 DbcComponent::DbcComponent(Core::IEventBroker& broker)
-    : Core::ITabComponent(broker, Constants::Component::TabId, Constants::Component::TabTitle, QIcon(Constants::Component::TabIcon))
+    : Core::ITabComponent(broker, Constants::Component::TabId, Constants::Component::TabTitle,
+                          QIcon(Constants::Component::TabIcon))
 {
     m_view = std::make_unique<DbcView>();
 

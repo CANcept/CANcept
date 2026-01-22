@@ -63,6 +63,26 @@ void DbcFile::DbcView::onMessageFilterTypeChanged(int index) {}
 void DbcFile::DbcView::onMessageSelected(const QModelIndex& proxyIndex) {}
 void DbcFile::DbcView::onSignalFilterTextChanged(const QString& text) {}
 void DbcFile::DbcView::onSignalFilterTypeChanged(int index) {}
+
+void DbcView::disableSidebarDeselection()
+{
+    auto* selectionModel = m_sidebarList->selectionModel();
+    connect(selectionModel, &QItemSelectionModel::selectionChanged, this,
+            [selectionModel](const QItemSelection& selected, const QItemSelection& deselected) {
+                // Check: is new selection empty? (= click in empty space)
+                if (selected.indexes().isEmpty())
+                {
+                    // Reselect previous selection again
+                    if (!deselected.indexes().isEmpty())
+                    {
+                        selectionModel->select(
+                            deselected, QItemSelectionModel::Select | QItemSelectionModel::Rows);
+                        selectionModel->setCurrentIndex(deselected.indexes().first(),
+                                                        QItemSelectionModel::NoUpdate);
+                    }
+                }
+            });
+}
 void DbcFile::DbcView::setupUi()
 {
     // Get application theme
@@ -78,6 +98,9 @@ void DbcFile::DbcView::setupUi()
     // 1. Sidebar ---------------------------
 
     m_sidebarList = new QListView(this);
+    m_sidebarList->setSelectionMode(
+        QAbstractItemView::SingleSelection);  // Standard, aber gut zu setzen
+    m_sidebarList->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_sidebarList->setFixedWidth(200);
     m_sidebarList->setFrameShape(QFrame::NoFrame);
     m_sidebarList->setEditTriggers(QAbstractItemView::NoEditTriggers);
@@ -140,6 +163,7 @@ void DbcFile::DbcView::setupUi()
     const QModelIndex firstIndex = sidebarModel->index(0, 0);
     m_sidebarList->setCurrentIndex(firstIndex);  // set "Load New" button selected at start
     mainLayout->addWidget(m_sidebarList);
+    disableSidebarDeselection();
 
     // 2. Content stack --------------------------
 
