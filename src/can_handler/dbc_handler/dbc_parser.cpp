@@ -8,44 +8,39 @@
 namespace CanHandler {
 void DbcParser::provideNewFile(const std::string& newFile)
 {
+    std::scoped_lock guard(fileMutex);
     file = newFile;
 }
 auto DbcParser::parseDbc() -> Core::DbcConfig*
 {
-    lastParseValid = true;
+    std::scoped_lock guard(fileMutex);
+    parsingValid = true;
+    parsedObject = true;
     const auto config = new Core::DbcConfig();
-    std::string* version = parseVersion();
-    if (version == nullptr)
-    {
-        config->metaData.version = "";
-    } else
-    {
-        config->metaData.version = *version;
-    }
+    const std::string version = parseVersion();
+    config->metaData.version = version;
     parseNewSymbols();
-    if (!lastParseValid)
+    if (!parsingValid)
     {
         delete config;
         return nullptr;
     }
     parseBitTiming();
-    if (!lastParseValid)
+    if (!parsingValid)
     {
         delete config;
         return nullptr;
     }
-    std::list<std::string>* nodes = parseNodes();
-    if (!lastParseValid || nodes == nullptr)
+    std::list<std::string> nodes = parseNodes();
+    if (!parsingValid)
     {
         delete config;
-        delete nodes;
         return nullptr;
     }
-    config->nodeDefinitions = *nodes;
-    delete nodes;
+    config->nodeDefinitions = nodes;
     while (parseValueTable())
     {
-        if (!lastParseValid)
+        if (!parsingValid)
         {
             delete config;
             return nullptr;
@@ -53,22 +48,21 @@ auto DbcParser::parseDbc() -> Core::DbcConfig*
     }
     while (true)
     {
-        const Core::DbcMessageDescription* messageDescription = parseMessage();
-        if (messageDescription == nullptr)
+        const Core::DbcMessageDescription messageDescription = parseMessage();
+        if (!parsedObject)
         {
-            if (!lastParseValid)
+            if (!parsingValid)
             {
                 delete config;
                 return nullptr;
             }
             break;
         }
-        config->messageDefinitions.push_back(*messageDescription);
-        delete messageDescription;
+        config->messageDefinitions.push_back(messageDescription);
     }
     while (parseMessageTransmitter())
     {
-        if (!lastParseValid)
+        if (!parsingValid)
         {
             delete config;
             return nullptr;
@@ -76,21 +70,21 @@ auto DbcParser::parseDbc() -> Core::DbcConfig*
     }
     while (parseEnvironmentVariable())
     {
-        if (!lastParseValid)
+        if (!parsingValid)
         {
             delete config;
             return nullptr;
         }
     }
     parseEnvironmentVariableData();
-    if (!lastParseValid)
+    if (!parsingValid)
     {
         delete config;
         return nullptr;
     }
     while (parseSignalType())
     {
-        if (!lastParseValid)
+        if (!parsingValid)
         {
             delete config;
             return nullptr;
@@ -98,22 +92,21 @@ auto DbcParser::parseDbc() -> Core::DbcConfig*
     }
     while (true)
     {
-        const std::string* comment = parseComment();
-        if (comment == nullptr)
+        const std::string comment = parseComment();
+        if (!parsedObject)
         {
-            if (!lastParseValid)
+            if (!parsingValid)
             {
                 delete config;
                 return nullptr;
             }
             break;
         }
-        config->comments.push_back(*comment);
-        delete comment;
+        config->comments.push_back(comment);
     }
     while (parseAttributeDefinition())
     {
-        if (!lastParseValid)
+        if (!parsingValid)
         {
             delete config;
             return nullptr;
@@ -121,7 +114,7 @@ auto DbcParser::parseDbc() -> Core::DbcConfig*
     }
     while (parseAttributeDefault())
     {
-        if (!lastParseValid)
+        if (!parsingValid)
         {
             delete config;
             return nullptr;
@@ -129,7 +122,7 @@ auto DbcParser::parseDbc() -> Core::DbcConfig*
     }
     while (parseAttributeValue())
     {
-        if (!lastParseValid)
+        if (!parsingValid)
         {
             delete config;
             return nullptr;
@@ -137,39 +130,38 @@ auto DbcParser::parseDbc() -> Core::DbcConfig*
     }
     while (true)
     {
-        const Core::DbcSignalValueDescription* valueDescription = parseSignalValue();
-        if (valueDescription == nullptr)
+        const Core::DbcSignalValueDescription valueDescription = parseSignalValue();
+        if (!parsedObject)
         {
-            if (!lastParseValid)
+            if (!parsingValid)
             {
                 delete config;
                 return nullptr;
             }
             break;
         }
-        if (valueDescription->messageId == static_cast<uint>(-1))
+        if (valueDescription.messageId == static_cast<uint>(-1))
         {
             continue;
         }
-        config->signalValueDescriptions.push_back(*valueDescription);
-        delete valueDescription;
+        config->signalValueDescriptions.push_back(valueDescription);
     }
     while (parseSignalTypeReference())
     {
-        if (!lastParseValid)
+        if (!parsingValid)
         {
             delete config;
             return nullptr;
         }
     }
     parseSignalGroup();
-    if (!lastParseValid)
+    if (!parsingValid)
     {
         delete config;
         return nullptr;
     }
     parseSignalExtendedValueTypeList();
-    if (!lastParseValid)
+    if (!parsingValid)
     {
         delete config;
         return nullptr;
@@ -182,162 +174,144 @@ auto DbcParser::parseDbc() -> Core::DbcConfig*
     }
     return config;
 }
-auto DbcParser::parseComment() -> std::string*
+auto DbcParser::parseComment() -> std::string
 {
     eraseSpaces();
     if (!file.starts_with("CM_"))
     {
-        return nullptr;
+        parsedObject = false;
+        return "";
     }
     file = file.substr(3);
-    std::string* comment = parseString();
-    if (comment == nullptr)
+    std::string comment = parseString();
+    if (!parsingValid)
     {
-        lastParseValid = false;
-        delete comment;
-        return nullptr;
+        parsedObject = false;
+        return "";
     }
     eraseSpaces();
     if (!file.starts_with(";"))
     {
-        delete comment;
-        lastParseValid = false;
-        return nullptr;
+        parsedObject = false;
+        parsingValid = false;
+        return "";
     }
     file = file.substr(1);
+    parsedObject = true;
     return comment;
 }
-auto DbcParser::parseMessage() -> Core::DbcMessageDescription*
+auto DbcParser::parseMessage() -> Core::DbcMessageDescription
 {
     eraseSpaces();
     if (!file.starts_with("BO_"))
     {
-        return nullptr;
+        parsedObject = false;
+        return Core::DbcMessageDescription();
     }
     file = file.substr(3);
-    const uint* messageId = parseUInt();
-    if (messageId == nullptr)
+    const uint messageId = parseUInt();
+    if (!parsingValid)
     {
-        lastParseValid = false;
-        return nullptr;
+        parsedObject = false;
+        return Core::DbcMessageDescription();
     }
-    const std::string* messageName = parseCIdentifier();
-    if (messageName == nullptr)
+    const std::string messageName = parseCIdentifier();
+    if (!parsingValid)
     {
-        lastParseValid = false;
-        delete messageId;
-        return nullptr;
+        parsedObject = false;
+        return Core::DbcMessageDescription();
     }
     eraseSpaces();
     if (!file.starts_with(":"))
     {
-        lastParseValid = false;
-        delete messageId;
-        delete messageName;
-        return nullptr;
+        parsingValid = false;
+        parsedObject = false;
+        return Core::DbcMessageDescription();
     }
     file = file.substr(1);
-    const uint* messageSize = parseUInt();
-    if (messageSize == nullptr)
+    const uint messageSize = parseUInt();
+    if (!parsingValid)
     {
-        lastParseValid = false;
-        delete messageId;
-        delete messageName;
-        return nullptr;
+        parsedObject = false;
+        return Core::DbcMessageDescription();
     }
-    const std::string* transmitter = parseCIdentifier();
-    if (transmitter == nullptr)
+    const std::string transmitter = parseCIdentifier();
+    if (!parsingValid)
     {
-        lastParseValid = false;
-        delete messageId;
-        delete messageName;
-        delete messageSize;
-        return nullptr;
+        parsedObject = false;
+        return Core::DbcMessageDescription();
     }
-    Core::DbcMessageDescription* messageDescription =
-        new Core::DbcMessageDescription{.messageId = *messageId,
-                                        .messageName = *messageName,
-                                        .messageSize = *messageSize,
-                                        .transmitterName = *transmitter};
+    Core::DbcMessageDescription messageDescription{.messageId = messageId,
+                                                   .messageName = messageName,
+                                                   .messageSize = messageSize,
+                                                   .transmitterName = transmitter};
     while (true)
     {
-        const Core::DbcSignalDescription* signalDescription = parseSignal();
-        if (signalDescription == nullptr)
+        const Core::DbcSignalDescription signalDescription = parseSignal();
+        if (!parsedObject)
         {
-            delete signalDescription;
-            if (!lastParseValid)
+            if (!parsingValid)
             {
-                delete messageId;
-                delete messageName;
-                delete messageSize;
-                delete transmitter;
-                delete messageDescription;
-                return nullptr;
+                parsedObject = false;
+                return Core::DbcMessageDescription();
             }
             break;
         }
-        messageDescription->signalDescriptions.push_back(*signalDescription);
-        delete signalDescription;
+        messageDescription.signalDescriptions.push_back(signalDescription);
     }
-    delete messageId;
-    delete messageName;
-    delete messageSize;
-    delete transmitter;
-    lastParseValid = true;
+    parsedObject = true;
     return messageDescription;
 }
-auto DbcParser::parseNodes() -> std::list<std::string>*
+auto DbcParser::parseNodes() -> std::list<std::string>
 {
     eraseSpaces();
     if (!file.starts_with("BU_:"))
     {
-        lastParseValid = false;
-        return nullptr;
+        parsingValid = false;
+        parsedObject = false;
+        return std::list<std::string>();
     }
     file = file.substr(4);
-    std::list<std::string>* nodes = new std::list<std::string>;
+    std::list<std::string> nodes{};
     while (true)
     {
-        std::string* node = parseCIdentifier();
-        if (node == nullptr)
+        std::string node = parseCIdentifier();
+        if (!parsingValid)
         {
-            delete node;
-            delete nodes;
-            lastParseValid = false;
-            return nullptr;
+            parsedObject = false;
+            return std::list<std::string>();
         }
-        if (symbols.contains(*node))
+        if (symbols.contains(node))
         {
-            file = *node + file;
-            delete node;
+            file = node + file;
             break;
         }
-        nodes->push_back(*node);
-        delete node;
+        nodes.push_back(node);
     }
+    parsedObject = true;
     return nodes;
 }
-auto DbcParser::parseSignal() -> Core::DbcSignalDescription*
+auto DbcParser::parseSignal() -> Core::DbcSignalDescription
 {
-    std::string* signalName;
+    std::string signalName;
     bool valueType = false;
-    std::string* unit;
+    std::string unit;
     std::list<std::string> receivers;
     bool multiplexor = false;
-    int* multiplexerSwitchValue = new int(-1);
-    uint* startBit;
-    uint* signalSize;
-    uint* byteOrderInt;
-    double* factor;
-    double* offset;
-    double* minimum;
-    double* maximum;
+    int multiplexerSwitchValue = -1;
+    uint startBit;
+    uint signalSize;
+    uint byteOrderInt;
+    double factor;
+    double offset;
+    double minimum;
+    double maximum;
 
     eraseSpaces();
     if (!file.starts_with("SG_"))
     {
-        delete multiplexerSwitchValue;
-        return nullptr;
+        parsedObject = false;
+        return Core::DbcSignalDescription();
     }
     file = file.substr(3);
     signalName = parseCIdentifier();
@@ -351,28 +325,27 @@ auto DbcParser::parseSignal() -> Core::DbcSignalDescription*
         } else if (file.starts_with("m"))
         {
             file = file.substr(1);
-            delete multiplexerSwitchValue;
-            multiplexerSwitchValue = reinterpret_cast<int*>(parseUInt());
+            multiplexerSwitchValue = parseUInt();
         }
     }
     eraseSpaces();
     if (!file.starts_with(":"))
     {
-        lastParseValid = false;
+        parsingValid = false;
     }
     file = file.substr(1);
     startBit = parseUInt();
     eraseSpaces();
     if (!file.starts_with("|"))
     {
-        lastParseValid = false;
+        parsingValid = false;
     }
     file = file.substr(1);
     signalSize = parseUInt();
     eraseSpaces();
     if (!file.starts_with("@"))
     {
-        lastParseValid = false;
+        parsingValid = false;
     }
     file = file.substr(1);
     byteOrderInt = parseUInt();
@@ -387,60 +360,57 @@ auto DbcParser::parseSignal() -> Core::DbcSignalDescription*
         file = file.substr(1);
     } else
     {
-        lastParseValid = false;
+        parsingValid = false;
     }
     eraseSpaces();
     if (!file.starts_with("("))
     {
-        lastParseValid = false;
+        parsingValid = false;
     }
     file = file.substr(1);
     factor = parseDouble();
     eraseSpaces();
     if (!file.starts_with(","))
     {
-        lastParseValid = false;
+        parsingValid = false;
     }
     file = file.substr(1);
     offset = parseDouble();
     eraseSpaces();
     if (!file.starts_with(")"))
     {
-        lastParseValid = false;
+        parsingValid = false;
     }
     file = file.substr(1);
     eraseSpaces();
     if (!file.starts_with("["))
     {
-        lastParseValid = false;
+        parsingValid = false;
     }
     file = file.substr(1);
     minimum = parseDouble();
     eraseSpaces();
     if (!file.starts_with("|"))
     {
-        lastParseValid = false;
+        parsingValid = false;
     }
     file = file.substr(1);
     maximum = parseDouble();
     eraseSpaces();
     if (!file.starts_with("]"))
     {
-        lastParseValid = false;
+        parsingValid = false;
     }
     file = file.substr(1);
     unit = parseString();
     while (true)
     {
-        std::string* receiver = parseCIdentifier();
-        if (receiver == nullptr)
+        std::string receiver = parseCIdentifier();
+        if (!parsingValid)
         {
-            lastParseValid = false;
-            delete receiver;
             break;
         }
-        receivers.push_back(*receiver);
-        delete receiver;
+        receivers.push_back(receiver);
         eraseSpaces();
         if (!file.starts_with(","))
         {
@@ -448,61 +418,38 @@ auto DbcParser::parseSignal() -> Core::DbcSignalDescription*
         }
         file = file.substr(1);
     }
-    if (!lastParseValid || signalName == nullptr  || unit == nullptr ||
-        multiplexerSwitchValue == nullptr || startBit == nullptr || signalSize == nullptr ||
-        byteOrderInt == nullptr || factor == nullptr || offset == nullptr || minimum == nullptr ||
-        maximum == nullptr ||
-        !(*byteOrderInt == 0 || *byteOrderInt == 1))
+    if (!parsingValid || !(byteOrderInt == 0 || byteOrderInt == 1))
     {
-        delete signalName;
-        delete unit;
-        delete multiplexerSwitchValue;
-        delete startBit;
-        delete signalSize;
-        delete byteOrderInt;
-        delete factor;
-        delete offset;
-        delete minimum;
-        delete maximum;
-        lastParseValid = false;
-        return nullptr;
+        parsedObject = false;
+        parsingValid = false;
+        return Core::DbcSignalDescription();
     }
-    Core::DbcSignalDescription* signalDescription =
-        new Core::DbcSignalDescription{.signalName = *signalName,
-                                       .multiplexer = multiplexor,
-                                       .multiplexedBy = *multiplexerSwitchValue,
-                                       .startBit = *startBit,
-                                       .signalSize = *signalSize,
-                                       .byteOrder = (*byteOrderInt == 1),
-                                       .valueType = valueType,
-                                       .factor = *factor,
-                                       .offset = *offset,
-                                       .minimum = *minimum,
-                                       .maximum = *maximum,
-                                       .unit = *unit,
-                                       .receivers = receivers};
-    delete signalName;
-    delete unit;
-    delete multiplexerSwitchValue;
-    delete startBit;
-    delete signalSize;
-    delete byteOrderInt;
-    delete factor;
-    delete offset;
-    delete minimum;
-    delete maximum;
-    return signalDescription;
+    parsedObject = true;
+    return Core::DbcSignalDescription{.signalName = signalName,
+                                      .multiplexer = multiplexor,
+                                      .multiplexedBy = multiplexerSwitchValue,
+                                      .startBit = startBit,
+                                      .signalSize = signalSize,
+                                      .byteOrder = (byteOrderInt == 1),
+                                      .valueType = valueType,
+                                      .factor = factor,
+                                      .offset = offset,
+                                      .minimum = minimum,
+                                      .maximum = maximum,
+                                      .unit = unit,
+                                      .receivers = receivers};
 }
-auto DbcParser::parseSignalValue() -> Core::DbcSignalValueDescription*
+auto DbcParser::parseSignalValue() -> Core::DbcSignalValueDescription
 {
-    uint* messageId;
-    std::string* signalName;
+    uint messageId;
+    std::string signalName;
     std::list<Core::DbcValueDescription> valueDescriptions;
 
     eraseSpaces();
     if (!file.starts_with("VAL_"))
     {
-        return nullptr;
+        parsedObject = false;
+        return Core::DbcSignalValueDescription();
     }
     file = file.substr(4);
     messageId = parseUInt();
@@ -515,56 +462,43 @@ auto DbcParser::parseSignalValue() -> Core::DbcSignalValueDescription*
             file = file.substr(1);
             break;
         }
-        const Core::DbcValueDescription* valueDescription = parseValueDescription();
-        if (valueDescription == nullptr)
+        const Core::DbcValueDescription valueDescription = parseValueDescription();
+        if (!parsingValid)
         {
-            lastParseValid = false;
-            delete valueDescription;
             break;
         }
-        valueDescriptions.push_back(*valueDescription);
-        delete valueDescription;
+        valueDescriptions.push_back(valueDescription);
     }
-    if (!lastParseValid || messageId == nullptr || signalName == nullptr)
+    if (!parsingValid)
     {
-        lastParseValid = false;
-        delete signalName;
-        delete messageId;
-        return nullptr;
+        parsedObject = false;
+        return Core::DbcSignalValueDescription();
     }
-    Core::DbcSignalValueDescription* signalValueDescription =
-        new Core::DbcSignalValueDescription{.messageId = *messageId,
-                                            .signalName = *signalName,
-                                            .signalDescriptions = valueDescriptions};
-    delete signalName;
-    delete messageId;
-    return signalValueDescription;
+    parsedObject = true;
+    return Core::DbcSignalValueDescription{
+        .messageId = messageId, .signalName = signalName, .signalDescriptions = valueDescriptions};
 }
-auto DbcParser::parseValueDescription() -> Core::DbcValueDescription*
+auto DbcParser::parseValueDescription() -> Core::DbcValueDescription
 {
-    const double* value = parseDouble();
-    const std::string* meaning = parseString();
-    if (value == nullptr || meaning == nullptr)
+    const double value = parseDouble();
+    const std::string meaning = parseString();
+    if (!parsingValid)
     {
-        delete value;
-        delete meaning;
-        lastParseValid = false;
-        return nullptr;
+        parsedObject = false;
+        return Core::DbcValueDescription();
     }
-    Core::DbcValueDescription* signalValueDescription =
-        new Core::DbcValueDescription{.value = *value, .meaning = *meaning};
-    delete meaning;
-    delete value;
-    return signalValueDescription;
+    return Core::DbcValueDescription{.value = value, .meaning = meaning};
 }
-auto DbcParser::parseVersion() -> std::string*
+auto DbcParser::parseVersion() -> std::string
 {
     eraseSpaces();
     if (!file.starts_with("VERSION"))
     {
-        return nullptr;
+        parsedObject = false;
+        return "";
     }
     file = file.substr(7);
+    parsedObject = true;
     return parseString();
 }
 bool DbcParser::parseAttributeDefault()
@@ -572,8 +506,10 @@ bool DbcParser::parseAttributeDefault()
     eraseSpaces();
     if (!file.starts_with("BA_DEF_DEF_"))
     {
+        parsedObject = false;
         return false;
     }
+    parsedObject = true;
     return truncateToNextSemicolon();
 }
 bool DbcParser::parseAttributeDefinition()
@@ -581,8 +517,10 @@ bool DbcParser::parseAttributeDefinition()
     eraseSpaces();
     if (!file.starts_with("BA_DEF_"))
     {
+        parsedObject = false;
         return false;
     }
+    parsedObject = true;
     return truncateToNextSemicolon();
 }
 bool DbcParser::parseAttributeValue()
@@ -590,8 +528,10 @@ bool DbcParser::parseAttributeValue()
     eraseSpaces();
     if (!file.starts_with("BA_"))
     {
+        parsedObject = false;
         return false;
     }
+    parsedObject = true;
     return truncateToNextSemicolon();
 }
 void DbcParser::parseEnvironmentVariableData()
@@ -599,8 +539,10 @@ void DbcParser::parseEnvironmentVariableData()
     eraseSpaces();
     if (!file.starts_with("ENVVAR_DATA_"))
     {
+        parsedObject = false;
         return;
     }
+    parsedObject = true;
     truncateToNextSemicolon();
 }
 bool DbcParser::parseEnvironmentVariable()
@@ -608,8 +550,10 @@ bool DbcParser::parseEnvironmentVariable()
     eraseSpaces();
     if (!file.starts_with("EV_"))
     {
+        parsedObject = false;
         return false;
     }
+    parsedObject = true;
     return truncateToNextSemicolon();
 }
 void DbcParser::parseEnvironmentVariableValueDefinitions()
@@ -617,8 +561,10 @@ void DbcParser::parseEnvironmentVariableValueDefinitions()
     eraseSpaces();
     if (!file.starts_with("VAL_"))
     {
+        parsedObject = false;
         return;
     }
+    parsedObject = true;
     truncateToNextSemicolon();
 }
 bool DbcParser::parseMessageTransmitter()
@@ -626,8 +572,10 @@ bool DbcParser::parseMessageTransmitter()
     eraseSpaces();
     if (!file.starts_with("BO_TX_BU_"))
     {
+        parsedObject = false;
         return false;
     }
+    parsedObject = true;
     return truncateToNextSemicolon();
 }
 void DbcParser::parseNewSymbols()
@@ -635,32 +583,32 @@ void DbcParser::parseNewSymbols()
     eraseSpaces();
     if (!file.starts_with("NS_"))
     {
+        parsedObject = false;
         return;
     }
     file = file.substr(3);
     eraseSpaces();
     if (!file.starts_with(":"))
     {
-        lastParseValid = false;
+        parsingValid = false;
+        parsedObject = false;
         return;
     }
     file = file.substr(1);
     while (true)
     {
-        const std::string* symbol = parseCIdentifier();
-        if (symbol == nullptr)
+        const std::string symbol = parseCIdentifier();
+        if (!parsingValid)
         {
-            lastParseValid = true;
-            delete symbol;
+            parsingValid = true;
+            parsedObject = true;
             return;
         }
         if (file.starts_with(":"))
         {
-            file = *symbol + file;
-            delete symbol;
+            file = symbol + file;
             break;
         }
-        delete symbol;
     }
 }
 void DbcParser::parseSignalExtendedValueTypeList()
@@ -668,8 +616,10 @@ void DbcParser::parseSignalExtendedValueTypeList()
     eraseSpaces();
     if (!file.starts_with("SIG_VALTYPE_"))
     {
+        parsedObject = false;
         return;
     }
+    parsedObject = true;
     truncateToNextSemicolon();
 }
 void DbcParser::parseSignalGroup()
@@ -677,8 +627,10 @@ void DbcParser::parseSignalGroup()
     eraseSpaces();
     if (!file.starts_with("SIG_GROUP_"))
     {
+        parsedObject = false;
         return;
     }
+    parsedObject = true;
     truncateToNextSemicolon();
 }
 bool DbcParser::parseSignalType()
@@ -686,8 +638,10 @@ bool DbcParser::parseSignalType()
     eraseSpaces();
     if (!file.starts_with("SGTYPE_"))
     {
+        parsedObject = false;
         return false;
     }
+    parsedObject = true;
     return truncateToNextSemicolon();
 }
 bool DbcParser::parseSignalTypeReference()
@@ -695,8 +649,10 @@ bool DbcParser::parseSignalTypeReference()
     eraseSpaces();
     if (!file.starts_with("SGTYPE_"))
     {
+        parsedObject = false;
         return false;
     }
+    parsedObject = true;
     return truncateToNextSemicolon();
 }
 auto DbcParser::parseValueTable() -> bool
@@ -704,8 +660,10 @@ auto DbcParser::parseValueTable() -> bool
     eraseSpaces();
     if (!file.starts_with("VAL_TABLE_"))
     {
+        parsedObject = false;
         return false;
     }
+    parsedObject = true;
     return truncateToNextSemicolon();
 }
 void DbcParser::parseBitTiming()
@@ -713,34 +671,39 @@ void DbcParser::parseBitTiming()
     eraseSpaces();
     if (!file.starts_with("BS_:"))
     {
-        lastParseValid = false;
+        parsingValid = false;
+        parsedObject = false;
         return;
     }
     file = file.substr(4);
     eraseSpaces();
-    delete parseUInt();
-    if (!lastParseValid)
+    parseUInt();
+    if (!parsingValid)
     {
-        lastParseValid = true;
+        parsingValid = true;
+        parsedObject = false;
         return;
     }
     eraseSpaces();
     if (!file.starts_with(":"))
     {
-        lastParseValid = false;
+        parsingValid = false;
+        parsedObject = false;
         return;
     }
     file = file.substr(1);
     eraseSpaces();
-    delete parseUInt();
+    parseUInt();
     eraseSpaces();
     if (!file.starts_with(","))
     {
-        lastParseValid = false;
+        parsingValid = false;
+        parsedObject = false;
         return;
     }
     file = file.substr(1);
-    delete parseUInt();
+    parsedObject = true;
+    parseUInt();
 }
 void DbcParser::eraseSpaces()
 {
@@ -749,76 +712,86 @@ void DbcParser::eraseSpaces()
         file.erase(file.begin());
     }
 }
-auto DbcParser::parseCIdentifier() -> std::string*
+auto DbcParser::parseCIdentifier() -> std::string
 {
     eraseSpaces();
     if (!regex_match(file, std::regex("([A-Z]|[a-z]|_)(\\w)+( |:).*")))
     {
-        lastParseValid = false;
-        return nullptr;
+        parsingValid = false;
+        parsedObject = false;
+        return "";
     }
     const int pos = std::min(file.find(' '), file.find(':'));
-    std::string* identifier = new std::string(file.substr(0, pos));
+    std::string identifier = file.substr(0, pos);
     file = file.substr(pos);
-    lastParseValid = true;
+    parsingValid = true;
+    parsedObject = true;
     return identifier;
 }
-auto DbcParser::parseString() -> std::string*
+auto DbcParser::parseString() -> std::string
 {
     eraseSpaces();
     if (!std::regex_match(file, std::regex("\".*\".*")))
     {
-        lastParseValid = false;
-        return nullptr;
+        parsingValid = false;
+        parsedObject = false;
+        return "";
     }
     file = file.substr(1);
     const int hyphenPos = file.find('\"');
-    std::string* string = new std::string(file.substr(0, hyphenPos));
+    std::string string = file.substr(0, hyphenPos);
     file = file.substr(hyphenPos + 1);
-    lastParseValid = true;
+    parsingValid = true;
+    parsedObject = true;
     return string;
 }
-auto DbcParser::parseDouble() -> double*
+auto DbcParser::parseDouble() -> double
 {
     eraseSpaces();
-    const int pos = std::min({file.find(' '), file.find(':'), file.find(';'), file.find(','), file.find('|'),
-                  file.find(']'), file.find('@'), file.find(')')});
+    const int pos = std::min({file.find(' '), file.find(':'), file.find(';'), file.find(','),
+                              file.find('|'), file.find(']'), file.find('@'), file.find(')')});
     if (pos == std::string::npos)
     {
-        lastParseValid = false;
-        return nullptr;
+        parsingValid = false;
+        parsedObject = false;
+        return 0;
     }
     const std::string possibleDouble = file.substr(0, pos);
     if (!std::regex_match(possibleDouble, std::regex("(\\+|-)?\\d+(\\.\\d+)?")))
     {
-        lastParseValid = false;
-        return nullptr;
+        parsingValid = false;
+        parsedObject = false;
+        return 0;
     }
     file = file.substr(pos);
-    lastParseValid = true;
-    return new double(strtod(possibleDouble.c_str(), nullptr));
+    parsingValid = true;
+    parsedObject = true;
+    return strtod(possibleDouble.c_str(), nullptr);
 }
-auto DbcParser::parseInt() -> int*
+auto DbcParser::parseInt() -> int
 {
     eraseSpaces();
-    const int pos = std::min({file.find(' '), file.find(':'), file.find(';'), file.find(','), file.find('|'),
-                  file.find(']'), file.find('@'), file.find(')')});
+    const int pos = std::min({file.find(' '), file.find(':'), file.find(';'), file.find(','),
+                              file.find('|'), file.find(']'), file.find('@'), file.find(')')});
     if (pos == std::string::npos)
     {
-        lastParseValid = false;
-        return nullptr;
+        parsingValid = false;
+        parsedObject = false;
+        return 0;
     }
     const std::string possibleInt = file.substr(0, pos);
     if (!std::regex_match(possibleInt, std::regex("(\\+|-)?\\d+")))
     {
-        lastParseValid = false;
-        return nullptr;
+        parsingValid = false;
+        parsedObject = false;
+        return 0;
     }
     file = file.substr(pos);
-    lastParseValid = true;
-    return new int(std::stoi(possibleInt));
+    parsingValid = true;
+    parsedObject = true;
+    return std::stoi(possibleInt);
 }
-auto DbcParser::parseUInt() -> uint*
+auto DbcParser::parseUInt() -> uint
 {
     eraseSpaces();
     const int pos =
@@ -826,28 +799,33 @@ auto DbcParser::parseUInt() -> uint*
                   file.find(']'), file.find('+'), file.find('-'), file.find('@'), file.find(')')});
     if (pos == std::string::npos)
     {
-        lastParseValid = false;
-        return nullptr;
+        parsingValid = false;
+        parsedObject = false;
+        return 0;
     }
     const std::string possibleInt = file.substr(0, pos);
     if (!std::regex_match(possibleInt, std::regex("\\d+")))
     {
-        lastParseValid = false;
-        return nullptr;
+        parsingValid = false;
+        parsedObject = false;
+        return 0;
     }
     file = file.substr(pos);
-    lastParseValid = true;
-    return new uint(std::stoi(possibleInt));
+    parsingValid = true;
+    parsedObject = true;
+    return std::stoi(possibleInt);
 }
 auto DbcParser::truncateToNextSemicolon() -> bool
 {
     const int semicolonPos = file.find(';');
     if (semicolonPos == std::string::npos)
     {
-        lastParseValid = false;
+        parsingValid = false;
+        parsedObject = false;
         return false;
     }
     file = file.substr(semicolonPos);
+    parsedObject = true;
     return true;
 }
 

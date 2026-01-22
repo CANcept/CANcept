@@ -5,6 +5,7 @@
 #ifndef CANBUSMANAGER_DBC_PARSER_HPP
 #define CANBUSMANAGER_DBC_PARSER_HPP
 #include <cstdint>
+#include <mutex>
 #include <set>
 #include <string>
 
@@ -29,38 +30,38 @@ class DbcParser
      * @brief tries to parse the start of the provided file to a signal (SG_:)
      * @return The parsed signal or a null pointer if no signal was parsed
      */
-    auto parseSignal() -> Core::DbcSignalDescription *;
+    auto parseSignal() -> Core::DbcSignalDescription;
     /**
      * @brief tries to parse the start of the provided file to a message (BO_:)
      * @return The parsed message or a null pointer if no message was parsed
      */
-    auto parseMessage() -> Core::DbcMessageDescription *;
+    auto parseMessage() -> Core::DbcMessageDescription;
     /**
      * @brief tries to parse the start of the provided file to a value description
      * @return The parsed value description or a null pointer if no value description was parsed
      */
-    auto parseValueDescription() -> Core::DbcValueDescription *;
+    auto parseValueDescription() -> Core::DbcValueDescription;
     /**
      * @brief tries to parse the start of the provided file to a signal value description (VAL_:)
      * @return The parsed signal value description or a null pointer if no signal value description
      * was parsed
      */
-    auto parseSignalValue() -> Core::DbcSignalValueDescription *;
+    auto parseSignalValue() -> Core::DbcSignalValueDescription;
     /**
      * @brief tries to parse the start of the provided file to a list of nodes (BU_:)
      * @return The parsed list of nodes or a null pointer if no list of nodes was parsed
      */
-    auto parseNodes() -> std::list<std::string> *;
+    auto parseNodes() -> std::list<std::string>;
     /**
      * @brief tries to parse the start of the provided file to a comment (CM_:)
      * @return The parsed comment or a null pointer if no comment was parsed
      */
-    auto parseComment() -> std::string *;
+    auto parseComment() -> std::string;
     /**
      * @brief tries to parse the start of the provided file to a version (Version:)
      * @return The parsed version or a null pointer if no version was parsed
      */
-    auto parseVersion() -> std::string *;
+    auto parseVersion() -> std::string;
     /**
      * @brief Parses the new symbols field (NS_:)
      */
@@ -89,17 +90,19 @@ class DbcParser
     void parseSignalExtendedValueTypeList();
     void parseBitTiming();
     void eraseSpaces();
-    auto parseCIdentifier() -> std::string *;
-    auto parseString() -> std::string *;
-    auto parseUInt() -> uint *;
-    auto parseInt() -> int *;
-    auto parseDouble() -> double *;
+    auto parseCIdentifier() -> std::string;
+    auto parseString() -> std::string;
+    auto parseUInt() -> uint;
+    auto parseInt() -> int;
+    auto parseDouble() -> double;
     auto truncateToNextSemicolon() -> bool;
     /**
      * @brief The current file to parse, truncated to the point of the current parse
      */
     std::string file = "";
-    bool lastParseValid = false;
+    bool parsingValid = false;
+    bool parsedObject = false;
+    std::mutex fileMutex;
     const std::pmr::set<std::string> symbols{"CM_",
                                              "BA_DEF_",
                                              "BA_",
