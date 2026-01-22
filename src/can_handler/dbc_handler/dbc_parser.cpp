@@ -6,6 +6,12 @@
 #include <iostream>
 #include <regex>
 namespace CanHandler {
+#define IF_PARSING_INVALID_RETURN(returnValue) \
+    if (!parsingValid)                         \
+    {                                          \
+        parsedObject = false; \
+        return returnValue;                    \
+    }
 void DbcParser::provideNewFile(const std::string& newFile)
 {
     std::scoped_lock guard(fileMutex);
@@ -16,163 +22,100 @@ auto DbcParser::parseDbc() -> Core::DbcConfig*
     std::scoped_lock guard(fileMutex);
     parsingValid = true;
     parsedObject = true;
-    const auto config = new Core::DbcConfig();
     const std::string version = parseVersion();
-    config->metaData.version = version;
     parseNewSymbols();
-    if (!parsingValid)
-    {
-        delete config;
-        return nullptr;
-    }
+    IF_PARSING_INVALID_RETURN(nullptr)
     parseBitTiming();
-    if (!parsingValid)
-    {
-        delete config;
-        return nullptr;
-    }
+    IF_PARSING_INVALID_RETURN(nullptr)
     std::list<std::string> nodes = parseNodes();
-    if (!parsingValid)
-    {
-        delete config;
-        return nullptr;
-    }
-    config->nodeDefinitions = nodes;
+    IF_PARSING_INVALID_RETURN(nullptr)
     while (parseValueTable())
     {
-        if (!parsingValid)
-        {
-            delete config;
-            return nullptr;
-        }
+        IF_PARSING_INVALID_RETURN(nullptr)
     }
+    std::list<Core::DbcMessageDescription> messageDescriptions;
     while (true)
     {
         const Core::DbcMessageDescription messageDescription = parseMessage();
         if (!parsedObject)
         {
-            if (!parsingValid)
-            {
-                delete config;
-                return nullptr;
-            }
+            IF_PARSING_INVALID_RETURN(nullptr)
             break;
         }
-        config->messageDefinitions.push_back(messageDescription);
+        messageDescriptions.push_back(messageDescription);
     }
     while (parseMessageTransmitter())
     {
-        if (!parsingValid)
-        {
-            delete config;
-            return nullptr;
-        }
+        IF_PARSING_INVALID_RETURN(nullptr)
     }
     while (parseEnvironmentVariable())
     {
-        if (!parsingValid)
-        {
-            delete config;
-            return nullptr;
-        }
+        IF_PARSING_INVALID_RETURN(nullptr)
     }
     parseEnvironmentVariableData();
-    if (!parsingValid)
-    {
-        delete config;
-        return nullptr;
-    }
+    IF_PARSING_INVALID_RETURN(nullptr)
     while (parseSignalType())
     {
-        if (!parsingValid)
-        {
-            delete config;
-            return nullptr;
-        }
+        IF_PARSING_INVALID_RETURN(nullptr)
     }
+    std::list<std::string> comments;
     while (true)
     {
         const std::string comment = parseComment();
         if (!parsedObject)
         {
-            if (!parsingValid)
-            {
-                delete config;
-                return nullptr;
-            }
+            IF_PARSING_INVALID_RETURN(nullptr)
             break;
         }
-        config->comments.push_back(comment);
+        comments.push_back(comment);
     }
     while (parseAttributeDefinition())
     {
-        if (!parsingValid)
-        {
-            delete config;
-            return nullptr;
-        }
+        IF_PARSING_INVALID_RETURN(nullptr)
     }
     while (parseAttributeDefault())
     {
-        if (!parsingValid)
-        {
-            delete config;
-            return nullptr;
-        }
+        IF_PARSING_INVALID_RETURN(nullptr)
     }
     while (parseAttributeValue())
     {
-        if (!parsingValid)
-        {
-            delete config;
-            return nullptr;
-        }
+        IF_PARSING_INVALID_RETURN(nullptr)
     }
+    std::list<Core::DbcSignalValueDescription> valueDescriptions;
     while (true)
     {
         const Core::DbcSignalValueDescription valueDescription = parseSignalValue();
         if (!parsedObject)
         {
-            if (!parsingValid)
-            {
-                delete config;
-                return nullptr;
-            }
+            IF_PARSING_INVALID_RETURN(nullptr)
             break;
         }
         if (valueDescription.messageId == static_cast<uint>(-1))
         {
             continue;
         }
-        config->signalValueDescriptions.push_back(valueDescription);
+        valueDescriptions.push_back(valueDescription);
     }
     while (parseSignalTypeReference())
     {
-        if (!parsingValid)
-        {
-            delete config;
-            return nullptr;
-        }
+        IF_PARSING_INVALID_RETURN(nullptr)
     }
     parseSignalGroup();
-    if (!parsingValid)
-    {
-        delete config;
-        return nullptr;
-    }
+    IF_PARSING_INVALID_RETURN(nullptr)
     parseSignalExtendedValueTypeList();
-    if (!parsingValid)
-    {
-        delete config;
-        return nullptr;
-    }
+    IF_PARSING_INVALID_RETURN(nullptr)
     eraseSpaces();
     if (file != "")
     {
-        delete config;
         return nullptr;
     }
-    return config;
+    return new Core::DbcConfig{.nodeDefinitions = nodes,
+                               .messageDefinitions = messageDescriptions,
+                               .signalValueDescriptions = valueDescriptions,
+                               .comments = comments,
+                               .metaData = {.version = version}
+
+    };
 }
 auto DbcParser::parseComment() -> std::string
 {
@@ -184,11 +127,7 @@ auto DbcParser::parseComment() -> std::string
     }
     file = file.substr(3);
     std::string comment = parseString();
-    if (!parsingValid)
-    {
-        parsedObject = false;
-        return "";
-    }
+    IF_PARSING_INVALID_RETURN("")
     eraseSpaces();
     if (!file.starts_with(";"))
     {
@@ -210,17 +149,9 @@ auto DbcParser::parseMessage() -> Core::DbcMessageDescription
     }
     file = file.substr(3);
     const uint messageId = parseUInt();
-    if (!parsingValid)
-    {
-        parsedObject = false;
-        return Core::DbcMessageDescription();
-    }
+    IF_PARSING_INVALID_RETURN(Core::DbcMessageDescription())
     const std::string messageName = parseCIdentifier();
-    if (!parsingValid)
-    {
-        parsedObject = false;
-        return Core::DbcMessageDescription();
-    }
+    IF_PARSING_INVALID_RETURN(Core::DbcMessageDescription())
     eraseSpaces();
     if (!file.starts_with(":"))
     {
@@ -230,17 +161,9 @@ auto DbcParser::parseMessage() -> Core::DbcMessageDescription
     }
     file = file.substr(1);
     const uint messageSize = parseUInt();
-    if (!parsingValid)
-    {
-        parsedObject = false;
-        return Core::DbcMessageDescription();
-    }
+    IF_PARSING_INVALID_RETURN(Core::DbcMessageDescription())
     const std::string transmitter = parseCIdentifier();
-    if (!parsingValid)
-    {
-        parsedObject = false;
-        return Core::DbcMessageDescription();
-    }
+    IF_PARSING_INVALID_RETURN(Core::DbcMessageDescription())
     Core::DbcMessageDescription messageDescription{.messageId = messageId,
                                                    .messageName = messageName,
                                                    .messageSize = messageSize,
@@ -250,11 +173,7 @@ auto DbcParser::parseMessage() -> Core::DbcMessageDescription
         const Core::DbcSignalDescription signalDescription = parseSignal();
         if (!parsedObject)
         {
-            if (!parsingValid)
-            {
-                parsedObject = false;
-                return Core::DbcMessageDescription();
-            }
+            IF_PARSING_INVALID_RETURN(Core::DbcMessageDescription())
             break;
         }
         messageDescription.signalDescriptions.push_back(signalDescription);
@@ -276,11 +195,7 @@ auto DbcParser::parseNodes() -> std::list<std::string>
     while (true)
     {
         std::string node = parseCIdentifier();
-        if (!parsingValid)
-        {
-            parsedObject = false;
-            return std::list<std::string>();
-        }
+        IF_PARSING_INVALID_RETURN(std::list<std::string>())
         if (symbols.contains(node))
         {
             file = node + file;
@@ -469,11 +384,7 @@ auto DbcParser::parseSignalValue() -> Core::DbcSignalValueDescription
         }
         valueDescriptions.push_back(valueDescription);
     }
-    if (!parsingValid)
-    {
-        parsedObject = false;
-        return Core::DbcSignalValueDescription();
-    }
+    IF_PARSING_INVALID_RETURN(Core::DbcSignalValueDescription())
     parsedObject = true;
     return Core::DbcSignalValueDescription{
         .messageId = messageId, .signalName = signalName, .signalDescriptions = valueDescriptions};
@@ -482,11 +393,7 @@ auto DbcParser::parseValueDescription() -> Core::DbcValueDescription
 {
     const double value = parseDouble();
     const std::string meaning = parseString();
-    if (!parsingValid)
-    {
-        parsedObject = false;
-        return Core::DbcValueDescription();
-    }
+    IF_PARSING_INVALID_RETURN(Core::DbcValueDescription())
     return Core::DbcValueDescription{.value = value, .meaning = meaning};
 }
 auto DbcParser::parseVersion() -> std::string
@@ -598,12 +505,7 @@ void DbcParser::parseNewSymbols()
     while (true)
     {
         const std::string symbol = parseCIdentifier();
-        if (!parsingValid)
-        {
-            parsingValid = true;
-            parsedObject = true;
-            return;
-        }
+        IF_PARSING_INVALID_RETURN()
         if (file.starts_with(":"))
         {
             file = symbol + file;
@@ -678,12 +580,7 @@ void DbcParser::parseBitTiming()
     file = file.substr(4);
     eraseSpaces();
     parseUInt();
-    if (!parsingValid)
-    {
-        parsingValid = true;
-        parsedObject = false;
-        return;
-    }
+    IF_PARSING_INVALID_RETURN()
     eraseSpaces();
     if (!file.starts_with(":"))
     {
