@@ -13,8 +13,8 @@
 #include <QVBoxLayout>
 #include <QWidget>
 
-#include "core/constants.hpp"
 #include "core/theme/theme_manager.hpp"
+#include "dbc_file/constants.hpp"
 
 namespace DbcFile {
 LoadPage::LoadPage(QWidget* parent) : QWidget(parent)
@@ -58,7 +58,7 @@ void LoadPage::showStatusMessage(const QString& message, const bool isError) con
             " font-weight: bold; "
             " font-size: 13px; "
             " margin-top: 10px;");
-        updateDragStyle(m_uploadBoxFrame, "");  // Rahmen normal
+        updateDragStyle(m_uploadBoxFrame, "");  // reset to default style
     }
 }
 void LoadPage::resetStatus() const
@@ -79,13 +79,13 @@ void LoadPage::dragEnterEvent(QDragEnterEvent* event)
         // extract URLS
         const QList<QUrl>& urls = event->mimeData()->urls();
 
-        // Check if only one file is being dragges
+        // Check if only one file is being dragged
         if (urls.size() == 1)
         {
             const QString filePath = urls.first().toLocalFile();
 
             // Check if file has correct ending
-            if (filePath.endsWith(".dbc", Qt::CaseInsensitive))
+            if (filePath.endsWith(Constants::LoadPage::FileExt, Qt::CaseInsensitive))
             {
                 isValid = true;
             }
@@ -93,11 +93,11 @@ void LoadPage::dragEnterEvent(QDragEnterEvent* event)
     }
     if (isValid)
     {
-        // Update dragstyle to change upload zone border color to indicate dragged data is valid
+        // Update drag style to change upload zone border color to indicate dragged data is valid
         updateDragStyle(m_uploadBoxFrame, "valid");
     } else
     {
-        // Update dragstyle to change upload zone border color to indicate dragged data in invalid
+        // Update drag style to change upload zone border color to indicate dragged data in invalid
         updateDragStyle(m_uploadBoxFrame, "invalid");
     }
     event->acceptProposedAction();
@@ -116,22 +116,23 @@ void LoadPage::dropEvent(QDropEvent* event)
     // Too many files warning
     if (urls.size() > 1)
     {
-        QMessageBox::warning(this, tr("Too many files"),
-                             tr("Please drop only <b>one</b> DBC file at a time."));
+        QMessageBox::warning(this, tr(Constants::LoadPage::Errors::TooManyFilesTitle),
+                             tr(Constants::LoadPage::Errors::TooManyFilesBody));
         return;
     }
 
     const QString filePath = urls.first().toLocalFile();
     // Wrong ending warning
-    if (!filePath.endsWith(".dbc", Qt::CaseInsensitive))
+    if (!filePath.endsWith(Constants::LoadPage::FileExt, Qt::CaseInsensitive))
     {
-        QMessageBox::warning(this, tr("Invalid file"), tr("Not a DBC file"));
+        QMessageBox::warning(this, tr(Constants::LoadPage::Errors::InvalidFileTitle),
+            tr(Constants::LoadPage::Errors::InvalidFileBody));
         return;
     }
 
     // Success
     emit fileSelected(filePath);
-    showStatusMessage("Parsing...", false);
+    showStatusMessage(Constants::LoadPage::StatusParsing, false);
     event->acceptProposedAction();
 }
 void LoadPage::dragLeaveEvent(QDragLeaveEvent* event)
@@ -156,20 +157,21 @@ auto LoadPage::eventFilter(QObject* watched, QEvent* event) -> bool
 }
 void LoadPage::onBrowseButtonClicked()
 {
-    const QString fileName = QFileDialog::getOpenFileName(this, tr("Choose DBC file"), QString(),
-                                                          tr("DBC files (*.dbc);;All files (*.*)"));
+    const QString fileName = QFileDialog::getOpenFileName(this, tr(Constants::LoadPage::FileDialogTitle), QString(),
+                                                          tr(Constants::LoadPage::FileDialogFilter));
 
     if (fileName.isEmpty()) return;  // file selection canceled
 
     // Check ending of selected file
-    if (!fileName.endsWith(".dbc", Qt::CaseInsensitive))
+    if (!fileName.endsWith(Constants::LoadPage::FileExt, Qt::CaseInsensitive))
     {
-        QMessageBox::warning(this, tr("Invalid File"), tr("Please select a valid DBC file."));
+        QMessageBox::warning(this, tr(Constants::LoadPage::Errors::InvalidFileTitle),
+            tr(Constants::LoadPage::Errors::InvalidFileBody));
         return;
     }
 
     emit fileSelected(fileName);
-    showStatusMessage("Parsing...", false);
+    showStatusMessage(Constants::LoadPage::StatusParsing, false);
 }
 
 void LoadPage::setupUi()
@@ -208,7 +210,7 @@ void LoadPage::setupUi()
     cardLayout->setSpacing(15);
 
     // Title "Upload DBC File" in the left of the load card
-    auto* title = new QLabel("Upload DBC File", loadCard);
+    auto* title = new QLabel(Constants::LoadPage::CardTitle, loadCard);
     title->setStyleSheet(QString("font-size: %1px;"
                                  "font-weight: %2;"
                                  "color: %3;")
@@ -218,7 +220,7 @@ void LoadPage::setupUi()
     cardLayout->addWidget(title);
 
     // Subtitle "Load a DBC file to analyze its content" below the title in the upper left
-    auto* subTitle = new QLabel("Load a DBC file to analyze its content", loadCard);
+    auto* subTitle = new QLabel(Constants::LoadPage::CardSubtitle, loadCard);
     subTitle->setStyleSheet(QString("font-size: %1px;"
                                     "font-weight: %2;"
                                     "color: %3;")
@@ -278,7 +280,7 @@ void LoadPage::setupUi()
     auto* iconLabel = new QLabel(m_uploadBoxFrame);
     iconLabel->setAlignment(Qt::AlignCenter);
 
-    QIcon icon(Core::Assets::UploadIconPath);
+    QIcon icon(Constants::LoadPage::CardIcon);
     if (!icon.isNull())
     {
         QPixmap pixmap = icon.pixmap(48, 48);
@@ -292,7 +294,7 @@ void LoadPage::setupUi()
     } else
     {
         // Fallback
-        iconLabel->setText("⬆");
+        iconLabel->setText(Constants::LoadPage::CardIconFallback);
         iconLabel->setStyleSheet(
             QString("font-size: 40px; color: %1;").arg(colors.textSecondary.name()));
     }
@@ -307,7 +309,7 @@ void LoadPage::setupUi()
                             .arg(colors.textSecondary.name());
     textLabel->setStyleSheet(fontStyle);
     // add line break
-    textLabel->setText("Click to upload or drag and drop a file here<br>DBC file (*.dbc)");
+    textLabel->setText(Constants::LoadPage::CardInstruction);
     zoneLayout->addWidget(textLabel);
 
     // Content of the upload zone: parsing status label

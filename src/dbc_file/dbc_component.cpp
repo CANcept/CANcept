@@ -3,12 +3,12 @@
 //
 #include "dbc_component.hpp"
 
-#include "core/constants.hpp"
+#include "constants.hpp"
 
 namespace DbcFile {
 
 DbcComponent::DbcComponent(Core::IEventBroker& broker)
-    : Core::ITabComponent(broker, "dbc-tab", "Dbc File", QIcon(Core::Assets::DbcFileTabIconPath))
+    : Core::ITabComponent(broker, "dbc-tab", "Dbc File", QIcon(Constants::Component::TabIcon))
 {
     m_view = std::make_unique<DbcView>();
 
