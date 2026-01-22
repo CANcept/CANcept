@@ -7,6 +7,7 @@
 
 #include "core/constants.hpp"
 #include "core/theme/theme_manager.hpp"
+#include "dbc_file/constants.hpp"
 #include "dbc_file/delegate/page_delegates.hpp"
 
 namespace DbcFile {
@@ -21,10 +22,34 @@ auto DbcView::getLoadPage() const -> LoadPage&
 }
 void DbcFile::DbcView::setSourceModel(QAbstractItemModel* model) {}
 void DbcFile::DbcView::setDataItemDelegate(QAbstractItemDelegate* delegate) {}
-void DbcFile::DbcView::setNavigationEnabled(bool enabled) {}
+void DbcFile::DbcView::setNavigationEnabled(bool enabled)
+{
+    auto* sidebarModel = static_cast<QStandardItemModel*>(m_sidebarList->model()); // auto return QAbstractItemModel
+    for (int i = 1; i < sidebarModel->rowCount(); i++)
+    {
+        if (auto* item = sidebarModel->item(i))
+        {
+            item->setEnabled(enabled);
+        }
+    }
+
+    if (!enabled) // if nav not enabled: stay at Load Page
+    {
+        m_contentStack->setCurrentIndex(0);
+        m_sidebarList->setCurrentIndex(sidebarModel->index(0,0));
+    } else // if nav enabled: jump to Overview?
+    {
+        m_contentStack->setCurrentIndex(1);
+        m_sidebarList->setCurrentIndex(sidebarModel->index(1,0));
+    }
+}
 void DbcFile::DbcView::onSidebarSelectionChanged(const QModelIndex& index)
 {
     if (!index.isValid())
+    {
+        return;
+    }
+    if (!(index.flags() & Qt::ItemIsEnabled))
     {
         return;
     }
@@ -83,12 +108,31 @@ void DbcFile::DbcView::setupUi()
                                      .arg(colors.surfacePrimary.name())
                                      .arg(colors.textPrimary.name()));
 
+    // Create model for sidebar
     auto* sidebarModel = new QStandardItemModel(this);
-    sidebarModel->appendRow(new QStandardItem(QIcon(Core::Assets::LoadNewIconPath), "Load New"));
-    sidebarModel->appendRow(new QStandardItem(QIcon(Core::Assets::OverviewIconPath), "Overview"));
-    sidebarModel->appendRow(new QStandardItem(QIcon(Core::Assets::ECUsIconPath), "ECUs"));
-    sidebarModel->appendRow(new QStandardItem(QIcon(Core::Assets::MessagesIconPath), "Messages"));
-    sidebarModel->appendRow(new QStandardItem(QIcon(Core::Assets::SignalsIconPath), "Signals"));
+    // 1. Load New item: always active, all other items initially inactive
+    auto* itemLoad = new QStandardItem(QIcon(Constants::Sidebar::IconLoadNew), "Load New");
+    sidebarModel->appendRow(itemLoad);
+
+    // 2. Overview item
+    auto* itemOverview = new QStandardItem(QIcon(Constants::Sidebar::IconOverview), "Overview");
+    itemOverview->setEnabled(false);
+    sidebarModel->appendRow(itemOverview);
+
+    // 3. ECUs item
+    auto* itemEcus = new QStandardItem(QIcon(Constants::Sidebar::IconEcus), "ECUs");
+    itemEcus->setEnabled(false);
+    sidebarModel->appendRow(itemEcus);
+
+    // 4. Messages item
+    auto* itemMessages = new QStandardItem(QIcon(Constants::Sidebar::IconMessages), "Messages");
+    itemMessages->setEnabled(false);
+    sidebarModel->appendRow(itemMessages);
+
+    // 5. Signals item
+    auto* itemSignals = new QStandardItem(QIcon(Constants::Sidebar::IconSignals), "Signals");
+    itemSignals->setEnabled(false);
+    sidebarModel->appendRow(itemSignals);
 
     m_sidebarList->setModel(sidebarModel);
     m_sidebarList->setItemDelegate(new SidebarDelegate(this));
