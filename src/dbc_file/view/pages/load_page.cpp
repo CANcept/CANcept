@@ -126,7 +126,7 @@ void LoadPage::dropEvent(QDropEvent* event)
     if (!filePath.endsWith(Constants::LoadPage::FileExt, Qt::CaseInsensitive))
     {
         QMessageBox::warning(this, tr(Constants::LoadPage::Errors::InvalidFileTitle),
-            tr(Constants::LoadPage::Errors::InvalidFileBody));
+                             tr(Constants::LoadPage::Errors::InvalidFileBody));
         return;
     }
 
@@ -157,8 +157,9 @@ auto LoadPage::eventFilter(QObject* watched, QEvent* event) -> bool
 }
 void LoadPage::onBrowseButtonClicked()
 {
-    const QString fileName = QFileDialog::getOpenFileName(this, tr(Constants::LoadPage::FileDialogTitle), QString(),
-                                                          tr(Constants::LoadPage::FileDialogFilter));
+    const QString fileName =
+        QFileDialog::getOpenFileName(this, tr(Constants::LoadPage::FileDialogTitle), QString(),
+                                     tr(Constants::LoadPage::FileDialogFilter));
 
     if (fileName.isEmpty()) return;  // file selection canceled
 
@@ -166,7 +167,7 @@ void LoadPage::onBrowseButtonClicked()
     if (!fileName.endsWith(Constants::LoadPage::FileExt, Qt::CaseInsensitive))
     {
         QMessageBox::warning(this, tr(Constants::LoadPage::Errors::InvalidFileTitle),
-            tr(Constants::LoadPage::Errors::InvalidFileBody));
+                             tr(Constants::LoadPage::Errors::InvalidFileBody));
         return;
     }
 

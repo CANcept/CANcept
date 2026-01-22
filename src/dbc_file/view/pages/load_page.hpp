@@ -63,14 +63,14 @@ class LoadPage : public QWidget
 
    protected:
     /**
-    * @brief Validates dragged data when it enters the widget area.
-    *
-    * @details
-    * - Resets previous status messages.
-    * - Checks if the mime data contains exactly one file ending in `.dbc`.
-    * - Updates the border style (Green for valid, Red for invalid).
-    * - Always accepts the proposed action to allow `dropEvent` to handle final logic.
-    */
+     * @brief Validates dragged data when it enters the widget area.
+     *
+     * @details
+     * - Resets previous status messages.
+     * - Checks if the mime data contains exactly one file ending in `.dbc`.
+     * - Updates the border style (Green for valid, Red for invalid).
+     * - Always accepts the proposed action to allow `dropEvent` to handle final logic.
+     */
     void dragEnterEvent(QDragEnterEvent* event) override;
 
     /**
@@ -106,16 +106,16 @@ class LoadPage : public QWidget
 
    private:
     /**
-         * @brief Initializes the visual components, layout structure, and styling.
-         *
-         * @details
-         * 1. Retrieves theme colors/spacing from Core::ThemeManager.
-         * 2. Creates the main centered card frame.
-         * 3. Creates the Title and Subtitle labels.
-         * 4. Constructs the interactive `m_uploadBoxFrame` and installs the event filter.
-         * 5. Populates the upload box with the SVG Icon and instruction text.
-         * 6. Initializes the hidden `m_statusLabel` for feedback messages.
-         */
+     * @brief Initializes the visual components, layout structure, and styling.
+     *
+     * @details
+     * 1. Retrieves theme colors/spacing from Core::ThemeManager.
+     * 2. Creates the main centered card frame.
+     * 3. Creates the Title and Subtitle labels.
+     * 4. Constructs the interactive `m_uploadBoxFrame` and installs the event filter.
+     * 5. Populates the upload box with the SVG Icon and instruction text.
+     * 6. Initializes the hidden `m_statusLabel` for feedback messages.
+     */
     void setupUi();
 
     /** @brief The interactive frame for dropping files and opening file browser. */

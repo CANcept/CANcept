@@ -24,7 +24,8 @@ void DbcFile::DbcView::setSourceModel(QAbstractItemModel* model) {}
 void DbcFile::DbcView::setDataItemDelegate(QAbstractItemDelegate* delegate) {}
 void DbcFile::DbcView::setNavigationEnabled(bool enabled)
 {
-    auto* sidebarModel = static_cast<QStandardItemModel*>(m_sidebarList->model()); // auto return QAbstractItemModel
+    auto* sidebarModel =
+        static_cast<QStandardItemModel*>(m_sidebarList->model());  // auto return QAbstractItemModel
     for (int i = 1; i < sidebarModel->rowCount(); i++)
     {
         if (auto* item = sidebarModel->item(i))
@@ -33,14 +34,14 @@ void DbcFile::DbcView::setNavigationEnabled(bool enabled)
         }
     }
 
-    if (!enabled) // if nav not enabled: stay at Load Page
+    if (!enabled)  // if nav not enabled: stay at Load Page
     {
         m_contentStack->setCurrentIndex(0);
-        m_sidebarList->setCurrentIndex(sidebarModel->index(0,0));
-    } else // if nav enabled: jump to Overview?
+        m_sidebarList->setCurrentIndex(sidebarModel->index(0, 0));
+    } else  // if nav enabled: jump to Overview?
     {
         m_contentStack->setCurrentIndex(1);
-        m_sidebarList->setCurrentIndex(sidebarModel->index(1,0));
+        m_sidebarList->setCurrentIndex(sidebarModel->index(1, 0));
     }
 }
 void DbcFile::DbcView::onSidebarSelectionChanged(const QModelIndex& index)

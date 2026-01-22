@@ -16,6 +16,5 @@ auto EcusPage::getFilterCombo() const -> QComboBox*
 void EcusPage::setupUi()
 {
     m_treeWidget = new SearchableFilterTree(this);
-
 }
 }  // namespace DbcFile
