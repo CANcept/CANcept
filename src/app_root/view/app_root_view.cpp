@@ -9,6 +9,7 @@
 #include <QVBoxLayout>
 
 #include "core/constants.hpp"
+#include "core/macro/console_logging.hpp"
 #include "core/macro/theme.hpp"
 
 namespace AppRoot {
@@ -139,6 +140,7 @@ void AppRootView::setDelegate(AppRootDelegate* delegate) const
 
 void AppRootView::handleTabChanged(const int index) const
 {
+    LOG_INF("AppRoot", "Switching tab...")
     if (index >= 0 && index < m_contentStack->count())
     {
         m_contentStack->setCurrentIndex(index);

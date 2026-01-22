@@ -4,6 +4,7 @@
 #include <qfile.h>
 
 #include <QApplication>
+#include <algorithm>
 
 #include "app_root/model/app_root_model.hpp"
 #include "app_root/view/app_root_view.hpp"
@@ -19,6 +20,7 @@
 #include "logging/logging_component.hpp"
 #include "monitoring/monitoring_component.hpp"
 #include "sending/sending_component.hpp"
+#include "stub/MockTabComponent.hpp"
 
 namespace AppRoot {
 
@@ -81,13 +83,17 @@ void AppRoot::bootstrap()
     LOG_INF("AppRoot", "Adding and Instatiating Tabs...");
     m_tabs.clear();
 
+    initTab<Mocks::DashboardTab>();
+    initTab<Mocks::CanBusTab>();
+
     // Helper to keep bootstrap readable
     initTab<DbcFile::DbcComponent>();
     /*
     initTab<Monitoring::MonitoringComponent>();
-    initTab<Sending::SendingComponent>();
     initTab<Logging::LoggingComponent>();
     */
+
+    initTab<Sending::SendingComponent>();
 
     LOG_INF("AppRoot", "Bootstrap Complete: launching internal logic.");
     start();
@@ -148,7 +154,7 @@ void AppRoot::shutdown()
 // - Infrastructure modules (broker, CAN) are fatal
 void AppRoot::restartModule(const Core::ModuleStoppedEvent& event)
 {
-    const auto it = std::find_if(m_tabs.begin(), m_tabs.end(), [&](const auto& t) -> auto {
+    const auto it = std::ranges::find_if(m_tabs, [&](const auto& t) -> auto {
         return std::type_index(typeid(*t)) == event.module_index;
     });
 

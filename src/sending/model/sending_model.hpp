@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QAbstractItemModel>
+#include <QTimer>
 #include <string>
 #include <vector>
 

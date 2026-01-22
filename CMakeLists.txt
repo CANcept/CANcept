@@ -18,8 +18,6 @@ set(CMAKE_AUTORCC ON)
 set(SKIP_AUTOMOC_DIRS
         src/logging
         src/monitoring
-        src/sending
-        src/core/widgets
 )
 
 foreach(dir IN LISTS SKIP_AUTOMOC_DIRS)

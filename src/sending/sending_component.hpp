@@ -92,6 +92,16 @@ class SendingComponent final : public Core::ITabComponent
     void onSendDbcRequested(const Core::DbcCanMessage& message);
 
    private:
+    /**
+     * @brief Initializes all signal/slot connections between components.
+     */
+    void setupConnections();
+
+    /**
+     * @brief Subscribes to broker events.
+     */
+    void setupBrokerSubscriptions();
+
     /** @brief Model holding CAN sending configuration and data */
     std::unique_ptr<SendingModel> m_model;
 

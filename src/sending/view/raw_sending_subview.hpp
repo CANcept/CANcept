@@ -57,7 +57,6 @@ class RawSendingSubView final : public QWidget
     /**
      * @name Control Accessors
      * Used by the Delegate to sync hardware availability and trigger sends.
-     * @{
      */
     [[nodiscard]] auto deviceSelector() const -> QComboBox*
     {
@@ -67,7 +66,6 @@ class RawSendingSubView final : public QWidget
     {
         return m_sendButton;
     }
-    /** @} */
 
     /**
      * @brief Populates the device dropdown (Called by Delegate).
