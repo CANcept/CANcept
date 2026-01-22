@@ -580,7 +580,12 @@ void DbcParser::parseBitTiming()
     file = file.substr(4);
     eraseSpaces();
     parseUInt();
-    IF_PARSING_INVALID_RETURN()
+    if (!parsingValid)
+    {
+        parsingValid = true;
+        parsedObject = false;
+        return;
+    }
     eraseSpaces();
     if (!file.starts_with(":"))
     {
