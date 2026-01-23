@@ -117,7 +117,7 @@ void SendingView::setAvailableDevices(const std::vector<std::string>& devices)
 {
     if (m_rawView)
     {
-        m_rawView->setAvailableDevices(devices);
+        m_rawView->setAvailableInterfaces(devices);
     }
     if (m_dbcView)
     {
@@ -125,10 +125,14 @@ void SendingView::setAvailableDevices(const std::vector<std::string>& devices)
     }
 }
 
-void SendingView::setAvailableSpeeds(const std::vector<uint32_t>& /*speeds*/)
+void SendingView::setAvailableSpeeds(const std::vector<uint32_t>& speeds)
 {
-    // Speed selection not currently in UI design
-    // Can be added later if needed
+    // Set baud rates for raw view
+    if (m_rawView)
+    {
+        m_rawView->setAvailableBaudRates(speeds);
+    }
+    // DBC view doesn't have baud rate selection (uses global configuration)
 }
 
 }  // namespace Sending

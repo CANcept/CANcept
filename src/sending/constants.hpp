@@ -17,6 +17,9 @@ namespace Constants {
 /** @brief Icon used for the Tab */
 inline const QString SENDING_ICON_PATH = ":/assets/icon/sending/sending.svg";
 
+/** @brief Icon used for the send button */
+inline const QString SEND_BUTTON_ICON_PATH = ":/assets/icon/sending/send.svg";
+
 /** @brief Icon used for the raw sub Tab */
 inline const QString RAW_SENDING_ICON_PATH = ":/assets/icon/sending/raw_based_send_icon.svg";
 
@@ -61,6 +64,12 @@ inline const std::string DEFAULT_CAN_ID_HEX = "000";
 
 /** @brief Default hex string for empty data bytes */
 inline const std::string DEFAULT_BYTE_HEX = "00";
+
+/** @brief Default placeholder for CAN ID input with 0x prefix */
+inline const QString DEFAULT_CAN_ID_PLACEHOLDER = "0x 1A2B";
+
+/** @brief Default placeholder for message data input */
+inline const QString DEFAULT_MESSAGE_DATA_PLACEHOLDER = "01 02 03 04 05 06 07 08";
 
 /** @brief Maximum length for hex input strings  */
 inline constexpr int MAX_HEX_INPUT_LENGTH = 8;

@@ -1,5 +1,6 @@
 #include "sending_component.hpp"
 
+#include <QRegularExpression>
 #include <ctime>
 
 #include "constants.hpp"
@@ -63,10 +64,10 @@ auto SendingComponent::getView() -> QWidget*
 void SendingComponent::setupConnections()
 {
     // Device selection changes - Raw mode
-    connect(m_view->rawSubView()->deviceSelector(),
+    connect(m_view->rawSubView()->interfaceSelector(),
             QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this]() {
                 const auto deviceName =
-                    m_view->rawSubView()->deviceSelector()->currentText().toStdString();
+                    m_view->rawSubView()->interfaceSelector()->currentText().toStdString();
                 onDeviceChanged(deviceName);
             });
 
@@ -83,9 +84,17 @@ void SendingComponent::setupConnections()
         Core::RawCanMessage message{};
         message.receiveTime = std::time(nullptr);
 
-        // Parse CAN ID (hex format)
+        // Parse CAN ID (hex format, may have "0x" prefix and spaces)
+        QString canIdText = m_view->rawSubView()->canIdEditor()->text().trimmed();
+        // Remove "0x" prefix if present
+        if (canIdText.startsWith("0x", Qt::CaseInsensitive))
+        {
+            canIdText = canIdText.mid(2);
+        }
+        canIdText = canIdText.remove(' ');  // Remove any spaces
+
         bool ok = false;
-        const uint32_t canId = m_view->rawSubView()->idEditor()->text().toUInt(&ok, 16);
+        const uint32_t canId = canIdText.toUInt(&ok, 16);
         if (!ok)
         {
             LOG_ERR("SendingComponent", "Failed to parse CAN ID from input");
@@ -93,26 +102,39 @@ void SendingComponent::setupConnections()
         }
         message.messageId = static_cast<char>(canId & 0xFF);
 
-        // Get DLC for determining how many bytes to read
-        const int dlc = m_view->rawSubView()->dlcSpinBox()->value();
-
-        // Parse data bytes (hex format) into fixed array
-        const auto& byteEditors = m_view->rawSubView()->byteEditors();
+        // Parse message data from single input field (space-separated hex bytes)
+        QString messageDataText = m_view->rawSubView()->messageDataEditor()->text().trimmed();
         message.data.fill(0);  // Initialize all bytes to 0
 
-        for (int i = 0; i < dlc && i < static_cast<int>(Constants::MAX_CAN_DLC); ++i)
+        if (!messageDataText.isEmpty())
         {
-            const uint8_t byte = byteEditors[i]->text().toUInt(&ok, 16);
-            if (!ok)
+            // Split by whitespace and parse each byte
+            QStringList byteStrings =
+                messageDataText.split(QRegularExpression("\\s+"), Qt::SkipEmptyParts);
+
+            int dlc = 0;
+            for (int i = 0; i < byteStrings.size() && i < static_cast<int>(Constants::MAX_CAN_DLC);
+                 ++i)
             {
-                LOG_ERR("SendingComponent", "Failed to parse data byte {} from input", i);
-                return;
+                const uint8_t byte = byteStrings[i].toUInt(&ok, 16);
+                if (!ok)
+                {
+                    LOG_ERR("SendingComponent", "Failed to parse data byte {} from input: '{}'", i,
+                            byteStrings[i].toStdString());
+                    return;
+                }
+                message.data[static_cast<size_t>(i)] = static_cast<char>(byte);
+                dlc++;
             }
-            message.data[static_cast<size_t>(i)] = static_cast<char>(byte);
+
+            LOG_INF("SendingComponent", "Raw send button clicked: ID=0x{:02X}, DLC={}",
+                    static_cast<uint8_t>(message.messageId), dlc);
+        } else
+        {
+            LOG_INF("SendingComponent", "Raw send button clicked: ID=0x{:02X}, DLC=0 (no data)",
+                    static_cast<uint8_t>(message.messageId));
         }
 
-        LOG_INF("SendingComponent", "Raw send button clicked: ID=0x{:02X}, DLC={}",
-                static_cast<uint8_t>(message.messageId), dlc);
         onSendRawRequested(message);
     });
 
@@ -210,7 +232,7 @@ void SendingComponent::setupBrokerSubscriptions()
 void SendingComponent::onDeviceChanged(const std::string& deviceName)
 {
     LOG_INF("SendingComponent", "CAN device changed to: {}", deviceName);
-    //TODO
+    // TODO
 }
 
 void SendingComponent::onSendRawRequested(const Core::RawCanMessage& message)

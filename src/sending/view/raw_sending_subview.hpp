@@ -1,23 +1,26 @@
 #pragma once
 
 #include <QComboBox>
-#include <QGroupBox>
+#include <QFrame>
 #include <QLineEdit>
 #include <QPushButton>
-#include <QSpinBox>
 #include <QWidget>
-#include <vector>
 
 namespace Sending {
 
 /**
  * @class RawSendingSubView
- * @brief The specialized view for bit-level CAN frame composition.
- * * @section Layout Architecture
- * The view is organized into three vertical logical groups based on the transmission workflow:
- * 1. Header (Frame Config): Arbitration ID, Extended Flag, and DLC.
- * 2. Body (Payload): A visual grid of 8 byte editors.
- * 3. Footer (Control): Physical interface selection and the execution trigger.
+ * @brief Modern card-based view for raw CAN frame composition.
+ *
+ * @section Layout Architecture
+ * The view uses a card-based design matching the Figma mockups:
+ * 1. CAN-Bus Configuration Card: Interface and Baud Rate selection
+ * 2. CAN Frame Card: Single-line hex inputs for ID and Message Data
+ * 3. Repeat Settings Card: (Optional - not yet implemented)
+ * 4. Floating Send Message button at bottom right
+ *
+ * @note The Message Data field is a single input where users enter space-separated
+ * hex bytes (e.g., "01 02 03 04"). DLC is calculated dynamically from the input.
  *
  * @note This class is a "Passive View." It exposes widgets via accessors
  * so the @ref SendingDelegate can map them to the @ref SendingModel.
@@ -32,59 +35,70 @@ class RawSendingSubView final : public QWidget
 
     /**
      * @name Configuration Accessors
-     * Used by the Delegate to bind ID/DLC to the Model.
      * @{
      */
-    [[nodiscard]] auto idEditor() const -> QLineEdit*
+    [[nodiscard]] auto interfaceSelector() const -> QComboBox*
     {
-        return m_idEditor;
+        return m_interfaceCombo;
     }
-    [[nodiscard]] auto dlcSpinBox() const -> QSpinBox*
+    [[nodiscard]] auto baudRateSelector() const -> QComboBox*
     {
-        return m_dlcSpin;
+        return m_baudRateCombo;
     }
     /** @} */
 
     /**
-     * @name Payload Accessors
-     * @return A vector of 8 line edits representing Byte 0 - Byte 7.
+     * @name Frame Data Accessors
+     * @{
      */
-    [[nodiscard]] auto byteEditors() const -> const std::vector<QLineEdit*>&
+    [[nodiscard]] auto canIdEditor() const -> QLineEdit*
     {
-        return m_byteEditors;
+        return m_canIdEditor;
     }
+    [[nodiscard]] auto messageDataEditor() const -> QLineEdit*
+    {
+        return m_messageDataEditor;
+    }
+    /** @} */
 
     /**
      * @name Control Accessors
-     * Used by the Delegate to sync hardware availability and trigger sends.
+     * @{
      */
-    [[nodiscard]] auto deviceSelector() const -> QComboBox*
-    {
-        return m_deviceCombo;
-    }
     [[nodiscard]] auto sendButton() const -> QPushButton*
     {
         return m_sendButton;
     }
+    /** @} */
 
     /**
-     * @brief Populates the device dropdown (Called by Delegate).
-     * @param devices List of available CAN interface names (e.g., "can0", "vcan0").
+     * @brief Populates the interface dropdown (Called by Delegate).
+     * @param interfaces List of available CAN interface names (e.g., "can0", "vcan0").
      */
-    void setAvailableDevices(const std::vector<std::string>& devices);
+    void setAvailableInterfaces(const std::vector<std::string>& interfaces);
+
+    /**
+     * @brief Populates the baud rate dropdown (Called by Delegate).
+     * @param baudRates List of available baud rates (e.g., 125000, 250000, 500000).
+     */
+    void setAvailableBaudRates(const std::vector<uint32_t>& baudRates);
 
    private:
     void setupUi();
+    [[nodiscard]] auto createCard(const QString& title,
+                                  const QString& subtitle = QString()) -> QFrame*;
 
-    QGroupBox* m_configGroup;
-    QLineEdit* m_idEditor;
-    QSpinBox* m_dlcSpin;
+    // CAN-Bus Configuration Card
+    QFrame* m_configCard;
+    QComboBox* m_interfaceCombo;
+    QComboBox* m_baudRateCombo;
 
-    QGroupBox* m_payloadGroup;
-    std::vector<QLineEdit*> m_byteEditors;
+    // CAN Frame Card
+    QFrame* m_frameCard;
+    QLineEdit* m_canIdEditor;
+    QLineEdit* m_messageDataEditor;
 
-    QGroupBox* m_actionGroup;
-    QComboBox* m_deviceCombo;
+    // Floating Send Button
     QPushButton* m_sendButton;
 };
 

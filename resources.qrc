@@ -11,5 +11,6 @@
         <file>assets/icon/sending/sending.svg</file>
         <file>assets/icon/sending/raw_based_send_icon.svg</file>
         <file>assets/icon/sending/dbc_based_send_icon.svg</file>
+        <file>assets/icon/sending/send.svg</file>
     </qresource>
 </RCC>
