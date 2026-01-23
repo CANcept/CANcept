@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QAbstractItemModel>
 #include <QStyledItemDelegate>
 
 #include "monitoring/view/monitoring_view.hpp"
@@ -15,20 +16,25 @@ namespace Monitoring {
  * * Owns the transmission logic, including the cyclic timer. It bridges
  * the passive Model/View to the Component's broker slots.
  */
-class MonitoringDelegate : QStyledItemDelegate
+class MonitoringDelegate : public QStyledItemDelegate
 {
+    Q_OBJECT
    public:
     /**
      * @brief Constructs the monitoring delegate.
-     *
-     * @param parent Optional Qt parent object.
      */
-    explicit MonitoringDelegate(QObject* parent = nullptr);
+    explicit MonitoringDelegate();
 
     /**
      * @brief Default destructor.
      */
     ~MonitoringDelegate() override = default;
+
+    /**
+     * Sets a model for the delegate.
+     * @param model contains the model to be added
+     */
+    void setModel(QAbstractItemModel* model);
 
     /**
      * @brief Returns the formatted display text for a model value.
@@ -41,8 +47,8 @@ class MonitoringDelegate : QStyledItemDelegate
      * @param locale The locale used for formatting.
      * @return Localized, formatted display string.
      */
-    [[nodiscard]] auto displayText(const QVariant& value,
-                                   const QLocale& locale) const -> QString override;
+    [[nodiscard]] auto displayText(const QVariant& value, const QLocale& locale) const
+        -> QString override;
     /**
      * @brief Paints a rounded card with an icon and a count badge.
      *

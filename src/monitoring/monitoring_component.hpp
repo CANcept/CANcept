@@ -1,5 +1,6 @@
 #pragma once
 
+#include "core/event/can_event.hpp"
 #include "core/interface/i_event_broker.hpp"
 #include "core/interface/i_tab_component.hpp"
 #include "monitoring/delegate/monitoring_delegate.hpp"
@@ -66,28 +67,32 @@ class MonitoringComponent final : public Core::ITabComponent
 
    signals:
     /**
-     * @brief Signal emitted when a new dbcConfiguration is available.
+     * @brief Signal emitted when a new dbcConfiguration is used.
      * The available ECUs and signals refresh, no signal is selected for plotting.
      */
     void dbcConfigurationChanged();
 
     /**
-     * @brief Updates the message data when a CAN frame is received.
+     * @brief Updates the message data when a dbc decoded CAN frame is received.
      *
      * Adds new frames or updates existing ones and refreshes the signal
      * values associated with the frame.
      *
-     * @param message Reference to the received CAN message.
+     * @param message Reference to the received dbc decoded CAN message.
      */
-    void frameReceived(Core::DbcCanMessage& message);
+    void dbcFrameReceived(const Core::DbcCanMessage& message);
+
+    /**
+     * @brief Updates the message data when a raw CAN frame is received.
+     *
+     * Adds new frames or updates existing ones and refreshes the signal
+     * values associated with the frame.
+     *
+     * @param message Reference to the received raw CAN message.
+     */
+    void rawFrameReceived(const Core::RawCanMessage& message);
 
    private slots:
-    /**
-     * @brief Triggered when the user selects a different CAN interface.
-     * It also publishes the CanDriverChangeEvent.
-     * @param deviceName The identifier of the newly selected hardware.
-     */
-    void onSourceChanged(const std::string& deviceName);
 
     /**
      * @brief Triggered when the user checks a signal to display in a graph
@@ -110,11 +115,11 @@ class MonitoringComponent final : public Core::ITabComponent
     /** @brief Model holding CAN sending configuration and data */
     std::unique_ptr<MonitoringModel> m_model;
 
-    /** @brief View responsible for rendering the sending UI */
-    std::unique_ptr<MonitoringView> m_view;
-
     /** @brief Delegate handling user actions and coordination */
     std::unique_ptr<MonitoringDelegate> m_delegate;
+
+    /** @brief View responsible for rendering the sending UI */
+    std::unique_ptr<MonitoringView> m_view;
 
     /**
      * @brief RAII Handle for success event subscription.
@@ -124,5 +129,11 @@ class MonitoringComponent final : public Core::ITabComponent
 
     /** @brief RAII Handle for error event subscription. */
     Core::Connection m_parseErrorConn;
+
+    /** @brief RAII Handle for incoming CAN frames subscription. */
+    Core::Connection m_rawFrameReceivedConn;
+
+    /** @brief RAII Handle for incoming CAN frames subscription. */
+    Core::Connection m_decodedFrameReceivedConn;
 };
 }  // namespace Monitoring

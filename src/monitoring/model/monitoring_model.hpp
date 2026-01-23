@@ -28,9 +28,8 @@ class MonitoringModel final : public QAbstractItemModel
     /**
      * @brief Constructs the signal tree model.
      *
-     * @param parent Optional Qt parent object.
      */
-    explicit MonitoringModel(QObject* parent = nullptr);
+    explicit MonitoringModel();
 
     /**
      * @name QAbstractItemModel interface implementation
@@ -40,8 +39,8 @@ class MonitoringModel final : public QAbstractItemModel
     /**
      * @brief Returns the model index for the given row and column.
      */
-    [[nodiscard]] auto index(int row, int column,
-                             const QModelIndex& parent) const -> QModelIndex override;
+    [[nodiscard]] auto index(int row, int column, const QModelIndex& parent) const
+        -> QModelIndex override;
 
     /**
      * @brief Returns the parent index of a given model index.
@@ -76,6 +75,26 @@ class MonitoringModel final : public QAbstractItemModel
      * Primarily used to handle check state changes initiated by the view.
      */
     auto setData(const QModelIndex& index, const QVariant& value, int role) -> bool override;
+
+   public slots:
+
+    /**
+     * @brief Triggered when a new dbc decoded frame is incoming
+     *
+     * Adds the data to the batch
+     *
+     * @param message Reference to the received dbc decoded CAN message.
+     */
+    void onIncomingDbcFrame(const Core::DbcCanMessage& message);
+
+    /**
+     * @brief Triggered when a new raw frame is incoming
+     *
+     * Adds the data to the batch.
+     *
+     * @param message Reference to the received raw CAN message.
+     */
+    void onIncomingRawFrame(const Core::RawCanMessage& message);
 
    private:
     /**

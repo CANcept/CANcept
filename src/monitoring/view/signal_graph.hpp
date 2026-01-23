@@ -1,4 +1,6 @@
 #pragma once
+#include <qwt_plot_curve.h>
+
 #include <QWidget>
 
 #include "monitoring/model/signal_graph_model.hpp"
@@ -26,7 +28,7 @@ namespace Monitoring {
  * - Update graphical representation on data changes
  * - Handle removal of a signal from visualization
  */
-class SignalGraph : QWidget
+class SignalGraph : public QWidget
 {
     Q_OBJECT
    public:
@@ -38,7 +40,7 @@ class SignalGraph : QWidget
      *               transferred to the internal model.
      * @param parent Optional Qt parent widget.
      */
-    explicit SignalGraph(const Core::DbcCanSignal&& signal, QWidget* parent = nullptr);
+    explicit SignalGraph(char messageId, std::string signalName, QWidget* parent = nullptr);
 
     /**
      * @brief Destroys the SignalGraph widget and releases associated
@@ -55,7 +57,18 @@ class SignalGraph : QWidget
      * @param signal Rvalue reference containing the latest signal value
      *               to be appended.
      */
-    void appendDataToGraph(Core::DbcCanSignal&& signal);
+    void appendDataToGraph(Core::DbcCanSignal& signal);
+
+    // Getters for identification in the list
+    [[nodiscard]] auto getSignalName() const -> std::string
+    {
+        return m_signalName;
+    }
+
+    [[nodiscard]] auto getMessageId() const -> char
+    {
+        return m_messageId;
+    }
 
     /**
      * @brief Removes the graph corresponding to the given signal.
@@ -67,7 +80,13 @@ class SignalGraph : QWidget
     void deleteGraph(Core::DbcCanSignal& signal);
 
    private:
-    QwtPlot graph;
+    void setupPlot();
+
+    QwtPlot* m_plot;
+    QwtPlotCurve* m_curve;
+
+    char m_messageId;
+    std::string m_signalName;
 
     /**
      * @brief Model holding the time-series data and graph state.
@@ -75,6 +94,6 @@ class SignalGraph : QWidget
      * Responsible for managing signal samples, scaling, and any
      * preprocessing required for visualization.
      */
-    SignalGraphModel model;
+    SignalGraphModel m_model;
 };
 }  // namespace Monitoring
