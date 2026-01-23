@@ -1,6 +1,8 @@
 #pragma once
 
+#include <QElapsedTimer>
 #include <QObject>
+#include <QVector>
 
 #include "core/dto/can_dto.hpp"
 
@@ -32,23 +34,30 @@ class SignalGraphModel : public QObject
      */
     explicit SignalGraphModel(QObject* parent = nullptr);
 
-   public slots:
-    /**
-     * @brief Adds a new signal sample to the model.
-     *
-     * Typically invoked when a new CAN message for the signal is received.
-     *
-     * @param signal Reference to the CAN signal containing the latest value.
-     */
-    void addSignal(Core::DbcCanSignal& signal);
+    // Getters for Qwt
+    const QVector<double>& timestamps() const
+    {
+        return m_timestamps;
+    }
 
-    /**
-     * @brief Removes all data associated with the given signal.
-     *
-     * Used when a signal is no longer monitored or the graph is destroyed.
-     *
-     * @param signal Reference to the CAN signal identifying the data to remove.
-     */
-    void removeSignal(Core::DbcCanSignal& signal);
+    const QVector<double>& values() const
+    {
+        return m_values;
+    }
+
+    void addValue(double value);
+
+    // Set how many seconds of history to keep (e.g., 10.0)
+    void setHistoryLimit(double seconds)
+    {
+        m_historyLimit = seconds;
+    }
+
+   private:
+    QVector<double> m_timestamps;
+    QVector<double> m_values;
+    QElapsedTimer m_timer;
+
+    double m_historyLimit = 10.0;  // Default to 10 seconds of rolling data
 };
 }  // namespace Monitoring

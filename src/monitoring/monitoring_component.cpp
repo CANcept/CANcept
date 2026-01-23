@@ -1,28 +1,107 @@
 #include "monitoring_component.hpp"
 
+#include "core/constants.hpp"
+#include "core/event/can_event.hpp"
+#include "core/event/dbc_event.hpp"
+#include "dbc_file/dbc_component.hpp"
+#include "monitoring/delegate/monitoring_delegate.hpp"
+#include "monitoring/model/monitoring_model.hpp"
+#include "monitoring/view/monitoring_view.hpp"
+
 namespace Monitoring {
 
 // Constructor / destructor
 MonitoringComponent::MonitoringComponent(Core::IEventBroker& broker)
-    : ITabComponent(broker, "stub", "stub"), m_model(nullptr), m_view(nullptr), m_delegate(nullptr)
+    : Core::ITabComponent(broker, "monitoring_tab", "Monitoring",
+                          QIcon(Core::Assets::MonitoringTabIconPath)),
+      m_model(std::make_unique<MonitoringModel>()),
+      m_delegate(std::make_unique<MonitoringDelegate>()),
+      m_view(std::make_unique<MonitoringView>())
 {
+    m_delegate->setModel(m_model.get());
+    m_view->setModel(m_model.get());
+    m_view->setDelegate(m_delegate.get());
+
+    // --- Internal Signal/Slot Connections ---
+
+    // Connect View UI actions to this Component's logic
+    connect(m_view.get(), &MonitoringView::signalChecked, this,
+            &MonitoringComponent::onSignalChecked);
+
+    connect(m_view.get(), &MonitoringView::signalUnchecked, this,
+            &MonitoringComponent::onSignalUnchecked);
+
+    // Forward internal signal to the view to refresh UI (e.g. the TreeView)
+    connect(this, &MonitoringComponent::dbcConfigurationChanged, m_view.get(),
+            &MonitoringView::onDbcConfigurationChanged);
+
+    // Forward dbc decoded frame received signal to the model
+    connect(this, &MonitoringComponent::dbcFrameReceived, m_model.get(),
+            &MonitoringModel::onIncomingDbcFrame);
+
+    // Forward raw frame received signal to the model
+    connect(this, &MonitoringComponent::rawFrameReceived, m_model.get(),
+            &MonitoringModel::onIncomingRawFrame);
 }
 
 MonitoringComponent::~MonitoringComponent() = default;
 
-// Return a dummy QWidget pointer (nullptr for now)
+// Return a QWidget pointer
 auto MonitoringComponent::getView() -> QWidget*
 {
-    return nullptr;
+    // return m_view.get();
+    return {};
 }
 
-// Empty lifecycle methods
-void MonitoringComponent::onStart() {}
-void MonitoringComponent::onStop() {}
+void MonitoringComponent::onStart()
+{
+    // Subscribe to incoming raw CAN traffic
+    m_rawFrameReceivedConn = m_eventBroker.subscribe<Core::ReceivedCanRawEvent>(
+        [this](const Core::ReceivedCanRawEvent& event) -> void {
+            // We emit a signal so the View/Delegate can update the UI safely
+            // on the main thread if the broker operates on a background thread.
+            emit rawFrameReceived(event.canMessage);
+        });
 
-// Dummy slots
-void MonitoringComponent::onSourceChanged(const std::string&) {}
-void MonitoringComponent::onSignalChecked(char, const std::string&) {}
-void MonitoringComponent::onSignalUnchecked(char, const std::string&) {}
+    // 2. Subscribe to DBC Parsing successes
+    m_parseSuccessConn = m_eventBroker.subscribe<Core::DBCParsedEvent>(
+        [this](const Core::DBCParsedEvent& event) -> void {
+            // Logic to update model with new DBC data could go here
+            emit dbcConfigurationChanged();
+        });
 
+    // 3. Subscribe to incoming dbc decoded CAN traffic
+    m_decodedFrameReceivedConn = m_eventBroker.subscribe<Core::ReceivedCanDbcEvent>(
+        [this](const Core::ReceivedCanDbcEvent& event) -> void {
+            // We emit a signal so the View/Delegate can update the UI safely
+            // on the main thread if the broker operates on a background thread.
+            emit dbcFrameReceived(event.canMessage);
+        });
+}
+void MonitoringComponent::onStop()
+{
+    // Disconnect event broker handles to prevent callbacks to a stopped component
+    m_parseSuccessConn = {};
+    m_parseErrorConn = {};
+}
+
+// Slots
+
+void MonitoringComponent::onSignalChecked(char messageId, const std::string& signalName)
+{
+    // Delegate handles the logic of adding the signal to the internal graph list
+    if (m_view)
+    {
+        m_view->getGraphListView()->addGraph(messageId, signalName);
+    }
+}
+
+void MonitoringComponent::onSignalUnchecked(char messageId, const std::string& signalName)
+{
+    // Delegate handles removal and cleanup of the graph
+    if (m_view)
+    {
+        m_view->getGraphListView()->deleteGraph(messageId, signalName);
+    }
+}
 }  // namespace Monitoring
