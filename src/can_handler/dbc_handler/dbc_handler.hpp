@@ -17,8 +17,6 @@ class DbcHandler final : public Core::ILifecycle
    public:
     explicit DbcHandler(Core::IEventBroker& eventBroker) : Core::ILifecycle(eventBroker)
     {
-        parseNewDbcConnection = eventBroker.subscribe<Core::ParseDBCRequestEvent>(
-            [this](const Core::ParseDBCRequestEvent& event) -> void { parseNewDbc(event); });
     };
     ~DbcHandler() override;
 
