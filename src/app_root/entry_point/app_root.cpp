@@ -19,6 +19,7 @@
 #include "logging/logging_component.hpp"
 #include "monitoring/monitoring_component.hpp"
 #include "sending/sending_component.hpp"
+#include "youtube/youtube_component.hpp"
 
 namespace AppRoot {
 
@@ -67,6 +68,8 @@ void AppRoot::bootstrap()
 
     LOG_INF("AppRoot", "Adding and Instatiating Tabs...");
     m_tabs.clear();
+
+    initTab<YouTube::YoutubeComponent>();
 
     // Helper to keep bootstrap readable
     /*

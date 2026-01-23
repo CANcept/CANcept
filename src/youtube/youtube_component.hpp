@@ -2,6 +2,8 @@
 
 #include <QLabel>
 #include <QVBoxLayout>
+#include <QWebEngineFullScreenRequest>
+#include <QWebEngineSettings>
 #include <QWidget>
 #include <QtWebEngineWidgets/QWebEngineView>
 #include <memory>
@@ -52,6 +54,12 @@ class YoutubeComponent final : public Core::ITabComponent
      * Stops video playback to save resources.
      */
     void onStop() override;
+
+   private slots:
+    /**
+     * @brief Handles fullscreen requests from the web page.
+     */
+    void handleFullScreenRequest(QWebEngineFullScreenRequest request);
 
    private:
     /**
