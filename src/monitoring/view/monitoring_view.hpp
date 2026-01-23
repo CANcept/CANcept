@@ -1,42 +1,37 @@
 #pragma once
 
-#include <QComboBox>
-#include <QGroupBox>
-#include <QLabel>
-#include <QPushButton>
 #include <QSortFilterProxyModel>
 #include <QSplitter>
 #include <QTreeView>
 
-#include "can_bus_config_card.hpp"
-#include "monitoring/delegate/monitoring_delegate.hpp"
+#include "graph_list_view.hpp"
 #include "monitoring/model/monitoring_model.hpp"
+
+class MonitoringDelegate;
 
 /**
  * @namespace Monitoring
  * @brief Contains delegate and UI components for CAN signal monitoring.
  */
 namespace Monitoring {
-class GraphListView;
-class MonitoringDelegate;
 class MonitoringView : public QWidget
 {
     Q_OBJECT
    public:
-    explicit MonitoringView(MonitoringModel* model, MonitoringDelegate* delegate);
+    explicit MonitoringView();
     ~MonitoringView() override = default;
 
     /**
      * Sets a model for the view.
      * @param model contains the model to be added
      */
-    void setModel(MonitoringModel* model);
+    void setModel(QAbstractItemModel* model);
 
     /**
      * Sets a model for the view.
      * @param model contains the model to be added
      */
-    void setDelegate(MonitoringDelegate* model);
+    void setDelegate(QAbstractItemDelegate* model);
 
     // Accessors for the Delegate to wire up signals/slots
     QTreeView* getTreeView() const
@@ -76,7 +71,6 @@ class MonitoringView : public QWidget
 
    private:
     void setupUi();
-
     /**
      * @brief Proxy model used to filter and sort the signal tree data.
      *
@@ -91,7 +85,5 @@ class MonitoringView : public QWidget
 
     MonitoringModel* m_model;
     MonitoringDelegate* m_delegate;
-
-    CanBusConfigCard* m_configCard;
 };
 }  // namespace Monitoring

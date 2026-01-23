@@ -1,25 +1,27 @@
 #include "monitoring_component.hpp"
 
-#include "constants.hpp"
+#include "core/constants.hpp"
 #include "core/event/can_event.hpp"
 #include "core/event/dbc_event.hpp"
-#include "core/macro/console_logging.hpp"
 #include "dbc_file/dbc_component.hpp"
 #include "monitoring/delegate/monitoring_delegate.hpp"
 #include "monitoring/model/monitoring_model.hpp"
-#include "monitoring/view/graph_list_view.hpp"
 #include "monitoring/view/monitoring_view.hpp"
 
 namespace Monitoring {
 
 // Constructor / destructor
 MonitoringComponent::MonitoringComponent(Core::IEventBroker& broker)
-    : Core::ITabComponent(broker, Constants::MODULE_IDENTIFIER, Constants::TAB_TITLE,
-                          QIcon(Constants::TAB_ICON_PATH)),
+    : Core::ITabComponent(broker, "monitoring_tab", "Monitoring",
+                          QIcon(Core::Assets::MonitoringTabIconPath)),
       m_model(std::make_unique<MonitoringModel>()),
-      m_delegate(std::make_unique<MonitoringDelegate>(m_model.get())),
-      m_view(std::make_unique<MonitoringView>(m_model.get(), m_delegate.get()))
+      m_delegate(std::make_unique<MonitoringDelegate>()),
+      m_view(std::make_unique<MonitoringView>())
 {
+    m_delegate->setModel(m_model.get());
+    m_view->setModel(m_model.get());
+    m_view->setDelegate(m_delegate.get());
+
     // --- Internal Signal/Slot Connections ---
 
     // Connect View UI actions to this Component's logic
@@ -47,7 +49,8 @@ MonitoringComponent::~MonitoringComponent() = default;
 // Return a QWidget pointer
 auto MonitoringComponent::getView() -> QWidget*
 {
-    return m_view.get();
+    // return m_view.get();
+    return {};
 }
 
 void MonitoringComponent::onStart()

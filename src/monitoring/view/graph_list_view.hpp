@@ -4,7 +4,6 @@
 #include <QScrollArea>
 #include <QVBoxLayout>
 
-#include "monitoring/delegate/monitoring_delegate.hpp"
 #include "monitoring/model/monitoring_model.hpp"
 #include "signal_graph.hpp"
 

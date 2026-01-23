@@ -3,51 +3,29 @@
 #include <QHeaderView>
 #include <QVBoxLayout>
 
-#include "can_bus_config_card.hpp"
-#include "core/macro/theme.hpp"
-#include "graph_list_view.hpp"
-#include "monitoring/constants.hpp"
+#include "monitoring/delegate/monitoring_delegate.hpp"
 #include "monitoring/model/monitoring_model.hpp"
 
 namespace Monitoring {
 
-MonitoringView::MonitoringView(MonitoringModel* model, MonitoringDelegate* delegate)
+MonitoringView::MonitoringView()
     : QWidget(nullptr),
       m_treeProxy(new QSortFilterProxyModel(this)),
       m_signalsTreeView(new QTreeView(this)),
-      m_splitter(new QSplitter(Qt::Horizontal, this))
+      m_splitter(new QSplitter(Qt::Horizontal, this)),
+      m_graphListView(new GraphListView(m_model, m_delegate))
 {
-    m_model = model;
-    m_delegate = delegate;
     setupUi();
 }
 
 void MonitoringView::setupUi()
 {
-    const auto& spacing = THEME.spacing();
-    const auto& colors = THEME.colors();
-
-    m_graphListView = new GraphListView(m_model, m_delegate);
-    m_signalsTreeView->setItemDelegate(m_delegate);
-    m_signalsTreeView->expandAll();
-    m_treeProxy->setSourceModel(m_model);
-    m_signalsTreeView->setModel(m_treeProxy);
-
     auto* mainLayout = new QVBoxLayout(this);
-    mainLayout->setContentsMargins(35, 5, 35, 30);
-    mainLayout->setSpacing(15);
-
-    m_configCard = new CanBusConfigCard(this);
+    mainLayout->setContentsMargins(0, 0, 0, 0);
 
     // Configure Tree View
-    m_signalsTreeView->setStyleSheet("QTreeView { border: none; background-color: transparent;");
-    m_signalsTreeView->setItemDelegate(m_delegate);
-    //  This ensures the tree doesn't cut off your boxes
-    m_signalsTreeView->setUniformRowHeights(false);
-    // Removes the default tiny arrows to make room for your rounded look
-    m_signalsTreeView->setRootIsDecorated(false);
-    m_signalsTreeView->header()->hide();
-    // m_signalsTreeView->header()->setStretchLastSection(true);
+    m_signalsTreeView->setAlternatingRowColors(true);
+    m_signalsTreeView->header()->setStretchLastSection(true);
     m_signalsTreeView->setEditTriggers(QAbstractItemView::NoEditTriggers);
     m_signalsTreeView->setSelectionMode(QAbstractItemView::SingleSelection);
 
@@ -57,11 +35,9 @@ void MonitoringView::setupUi()
 
     // Give the Graph view more initial space (e.g., 30/70 split)
     m_splitter->setStretchFactor(0, 1);
-    m_splitter->setStretchFactor(1, 4);
+    m_splitter->setStretchFactor(1, 3);
 
-    // --- Add to Main Layout ---
-    mainLayout->addWidget(m_configCard, 1);
-    mainLayout->addWidget(m_splitter, 5);
+    mainLayout->addWidget(m_splitter);
 
     // Connect the data changed signal of the model to intercept checkbox toggles
     // We do this via the proxy so we get the correct indices
@@ -88,6 +64,26 @@ void MonitoringView::setupUi()
                     }
                 }
             });
+}
+
+void MonitoringView::setModel(QAbstractItemModel* model)
+{
+    if (model)
+    {
+        m_treeProxy->setSourceModel(model);
+        m_signalsTreeView->setModel(m_treeProxy);
+
+        // Expand the tree by default to show signals
+        m_signalsTreeView->expandAll();
+    }
+}
+
+void MonitoringView::setDelegate(QAbstractItemDelegate* delegate)
+{
+    if (delegate)
+    {
+        m_signalsTreeView->setItemDelegate(delegate);
+    }
 }
 
 void MonitoringView::onDbcConfigurationChanged()
