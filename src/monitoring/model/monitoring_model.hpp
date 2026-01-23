@@ -32,6 +32,11 @@ class MonitoringModel final : public QAbstractItemModel
     explicit MonitoringModel();
 
     /**
+     * @name QAbstractItemModel interface implementation
+     * @{
+     */
+
+    /**
      * @brief Returns the model index for the given row and column.
      */
     [[nodiscard]] auto index(int row, int column, const QModelIndex& parent) const
