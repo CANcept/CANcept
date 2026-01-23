@@ -66,7 +66,7 @@ void YoutubeComponent::onStop()
 void YoutubeComponent::loadVideo()
 {
     // Load the full YouTube website
-    m_webView->setUrl(QUrl("https://www.youtube.com"));
+    m_webView->setUrl(QUrl("https://www.youtube.com/watch?v=dQw4w9WgXcQ"));
 }
 
 void YoutubeComponent::handleFullScreenRequest(QWebEngineFullScreenRequest request)
