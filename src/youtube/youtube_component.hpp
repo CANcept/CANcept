@@ -1,46 +1,77 @@
 #pragma once
 
-#include <QWidget>
-#include <QVBoxLayout>
 #include <QLabel>
+#include <QVBoxLayout>
+#include <QWidget>
 #include <QtWebEngineWidgets/QWebEngineView>
-#include <string>
-#include <vector>
-#include <random>
+#include <memory>
 
-#include "/core/interface/i_tab_component.hpp"
-#include "/core/interface/i_event_broker.hpp"
+#include "core/interface/i_event_broker.hpp"
+#include "core/interface/i_tab_component.hpp"
 
 namespace YouTube {
 
-class YoutubeComponent : public ITabComponent, public QWidget {
+/**
+ * @class YoutubeComponent
+ * @brief A tab component that displays a single YouTube video.
+ *
+ * This component embeds a YouTube video using QWebEngineView.
+ * It implements the ITabComponent interface to integrate with the AppRoot.
+ */
+class YoutubeComponent final : public Core::ITabComponent
+{
     Q_OBJECT
 
-public:
+   public:
     /**
-     * @param broker The EnTT-based EventBroker.
-     * @param id Unique ID for this tab instance.
+     * @brief Constructs the YouTube component.
+     * @param broker Reference to the event broker for communication.
+     * @param videoId The YouTube video ID to display.
      */
-    explicit YoutubeComponent(IEventBroker& broker, QString id, QWidget* parent = nullptr);
-    
-    ~YoutubeComponent() override = default;
+    explicit YoutubeComponent(Core::IEventBroker& broker);
 
-    // --- ITabComponent Implementation ---
-    auto getView() -> QWidget* override { return this; }
+    /**
+     * @brief Destructor.
+     */
+    ~YoutubeComponent() override;
 
-    // --- ILifecycle Implementation ---
+    /**
+     * @brief Returns the main widget for display in the application window.
+     * @return QWidget* Pointer to the view widget.
+     */
+    auto getView() -> QWidget* override;
+
+    /**
+     * @brief Called when the application starts/module is activated.
+     * Loads the YouTube video.
+     */
     void onStart() override;
+
+    /**
+     * @brief Called when the application stops/module is deactivated.
+     * Stops video playback to save resources.
+     */
     void onStop() override;
 
-private:
+   private:
+    /**
+     * @brief Sets up the UI layout and widgets.
+     */
     void setupUi();
-    void loadRandomVideo();
 
+    /**
+     * @brief Loads the configured YouTube video.
+     */
+    void loadVideo();
+
+    /** @brief The YouTube video ID to display. */
+    QString m_videoId;
+
+    /** @brief The root widget containing the UI. */
+    std::unique_ptr<QWidget> m_view;
+
+    /** @brief The web view for displaying the YouTube embed. */
     QWebEngineView* m_webView{nullptr};
-    
-    const std::vector<QString> m_videoPool = {
-        "dQw4w9WgXcQ", "jfKfPfyJRdk", "9bZkp7q19f0", "tQ0yjYUFKAE"
-    };
 };
 
-} // namespace YouTube
+}  // namespace YouTube
