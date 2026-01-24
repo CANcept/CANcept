@@ -37,17 +37,18 @@ void AppRoot::bootstrap()
     const auto& THEME = Core::ThemeManager::getInstance();
     const auto& colors = THEME.colors();
     const auto& spacing = THEME.spacing();
-    qApp->setStyleSheet(QString("QToolTip {"
-                                "background-color: %1;"
-                                "color: %2;"
-                                "border: %3px solid %4;"
-                                "border-radius: %5px;"
-                                "opacity: 250;"
-                                "}")
-                            .arg(colors.surfaceMain.name(), colors.textSecondary.name())
-                            .arg(spacing.borderThin)
-                            .arg(colors.borderStrong.name(QColor::HexArgb))
-                            .arg(spacing.radiusXs));
+    qApp->setStyleSheet(QString(
+                    "QToolTip {"
+                    "background-color: %1;"
+                    "color: %2;"
+                    "border: %3px solid %4;"
+                    "border-radius: %5px;"
+                    "opacity: 250;"
+                    "}")
+                    .arg(colors.surfaceMain.name(), colors.textSecondary.name())
+                    .arg(spacing.borderThin)
+                    .arg(colors.borderStrong.name(QColor::HexArgb))
+                    .arg(spacing.radiusXs));
 
     LOG_INF("AppRoot", "Loading theme...");
     Core::ThemeManager::getInstance().setColorTheme(std::make_unique<Core::LightTheme>());
