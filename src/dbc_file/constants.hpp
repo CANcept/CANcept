@@ -83,6 +83,7 @@ static const QString TitleEcus = "ECUs";
 static const QString TitleMessages = "Messages";
 static const QString TitleSignals = "Signals";
 
+static const QString HoverText = "Load DBC file first";
 // Icons
 static const QString IconLoadNew = ":/assets/icon/load_new.svg";
 static const QString IconOverview = ":/assets/icon/overview.svg";
@@ -98,7 +99,7 @@ static const QString CardSubtitle = "Load a DBC file to analyze its content";
 static const QString CardInstruction =
     "Click to upload or drag and drop a file here<br>DBC file (*.dbc)";
 static const QString CardIconFallback = "⬆";
-static const QString CardIcon = ":/icons/upload.svg";
+static const QString CardIcon = ":/assets/icon/upload.svg";
 static const QString StatusParsing = "Parsing...";
 
 static const char *FileDialogTitle = "Choose DBC file";
