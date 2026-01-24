@@ -75,7 +75,9 @@ class AppRoot
     template <typename T>
     void initTab()
     {
-        m_tabFactory.registerCreator<T>([&]() -> auto { return std::make_unique<T>(*m_broker); });
+        m_tabFactory.registerCreator<T>([this]() -> std::unique_ptr<Core::ITabComponent> {
+            return std::make_unique<T>(*m_broker);
+        });
 
         if (auto tab = m_tabFactory.create<T>())
         {

@@ -62,5 +62,4 @@ class DbcDelegate : public QStyledItemDelegate
     [[nodiscard]] auto displayText(const QVariant& value,
                                    const QLocale& locale) const -> QString override;
 };
-
 }  // namespace DbcFile

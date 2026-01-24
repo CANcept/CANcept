@@ -1,11 +1,7 @@
-#ifndef CANBUSMANAGER_MONITORING_MODEL_HPP
-#define CANBUSMANAGER_MONITORING_MODEL_HPP
+#pragma once
 #include <QAbstractItemModel>
 
 #include "core/dto/can_dto.hpp"
-
-#endif  // CANBUSMANAGER_MONITORING_MODEL_HPP
-
 /**
  * @namespace Monitoring
  * @brief Contains data models and UI components for CAN signal monitoring.

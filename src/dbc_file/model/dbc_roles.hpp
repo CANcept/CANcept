@@ -61,8 +61,11 @@ enum DbcRoles {
     Role_Dlc = Qt::UserRole + 11,
     /** @brief The name of the sending Node/ECU. @return QString */
     Role_Sender = Qt::UserRole + 12,
-    /** @brief The total number of signals in this message. @return int */
-    Role_MsgChildCount = Qt::UserRole + 13,
+
+    // Applies to both messages and signals
+
+    /** @brief The total number of signals in this message or messages of this ECU.*/
+    Role_ChildCount = Qt::UserRole + 13,
 
     // --- Signal Specific Attributes ---
 
@@ -83,7 +86,7 @@ enum DbcRoles {
     /** @brief The value type definition. @return QString ("Signed"/"Unsigned") */
     Role_ValueType = Qt::UserRole + 27,
     /** @brief The name of the receiving Node/ECU. @return QString */
-    Role_Receiver = Qt::UserRole + 28
+    Role_Receivers = Qt::UserRole + 28
 };
 
 }  // namespace DbcFile

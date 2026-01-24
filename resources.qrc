@@ -1,0 +1,5 @@
+<!DOCTYPE RCC><RCC version="1.0">
+    <qresource prefix="/">
+        <file>assets/icon/can_bus.svg</file>
+    </qresource>
+</RCC>

@@ -39,15 +39,32 @@ class DbcItem
     /**
      * @brief Destructor. Automatically destroys all children (via unique_ptr).
      */
-    ~DbcItem();
+    ~DbcItem() = default;
+
+    /**
+     * @brief Setter for the parent item.
+     * @param parent The new parent.
+     */
+    auto setParent(DbcItem* parent) -> void;
+
+    /**
+     * Getter for the items children items.
+     * @return The children of the item.
+     */
+    [[nodiscard]] auto getChildren() const -> const std::vector<std::unique_ptr<DbcItem>>&;
 
     // --- Tree Structure Management ---
-
     /**
      * @brief Adds a child node to this item.
      * The item takes ownership of the child.
      */
     void appendChild(std::unique_ptr<DbcItem> child);
+
+    /**
+     * @brief Adds a child node to this item as the first child item.
+     * @param child Pointer to new child
+     */
+    void prependChild(std::unique_ptr<DbcItem> child);
 
     /**
      * @brief Returns the child at the specific row index.

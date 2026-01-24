@@ -1,8 +1,8 @@
 #pragma once
 
+#include <QLabel>
 #include <QListView>
 #include <QStackedWidget>
-#include <QTabBar>
 #include <QVBoxLayout>
 #include <QWidget>
 
@@ -39,29 +39,46 @@ class AppRootView : public QWidget
      * @brief Sets the delegate for custom tab bar rendering.
      * @param delegate Pointer to the tab delegate.
      */
-    void setDelegate(AppRootDelegate* delegate);
+    void setDelegate(AppRootDelegate* delegate) const;
 
    private slots:
     /**
      * @brief Reacts to model changes to add tabs in the UI.
      */
-    void onRowsInserted(const QModelIndex& parent, int first, int last);
+    void onRowsInserted(const QModelIndex& parent, int first, int last) const;
 
     /**
      * @brief Reacts to model changes to remove tabs in the UI.
      */
-    void onRowsAboutToBeRemoved(const QModelIndex& parent, int first, int last);
+    void onRowsAboutToBeRemoved(const QModelIndex& parent, int first, int last) const;
 
     /**
      * @brief Handles metadata changes (title/icon) from the model.
      */
     void onDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight,
-                       const QList<int>& roles);
+                       const QList<int>& roles = QList<int>()) const;
 
     /**
      * @brief Handles tab switching to keep the stack in sync.
      */
-    void handleTabChanged(int index);
+    void handleTabChanged(int index) const;
+
+   protected:
+    /**
+     * @brief Filters events for the tab view to prevent selection ghosting.
+     * * Intercepts mouse events on the tab bar's viewport to ignore clicks on
+     * empty space, ensuring the current selection remains active and focused.
+     * * @param watched The object being monitored (m_tabView viewport).
+     * @param event The triggered event.
+     * @return true if the event was handled (swallowed), false otherwise.
+     */
+    bool eventFilter(QObject* watched, QEvent* event) override;
+
+    /**
+     * Triggered when the Widget shows itself. Then the first element should be selected.
+     * @param event the event given on show
+     */
+    void showEvent(QShowEvent* event) override;
 
    private:
     /**
@@ -78,6 +95,16 @@ class AppRootView : public QWidget
      * @brief Layout to order The m_tabBar and m_contentStack.
      */
     QVBoxLayout* m_mainLayout;
+
+    /**
+     * @brief Layout to order The top bar of the main window.
+     */
+    QHBoxLayout* m_topBarLayout{nullptr};
+
+    /**
+     * @brief Label showing the icon of the CanBusManager.
+     */
+    QLabel* m_logoLabel{nullptr};
 
     /**
      * @brief Pointer to the injected model.

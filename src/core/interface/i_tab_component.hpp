@@ -44,7 +44,7 @@ class ITabComponent : public QObject, public ILifecycle
     /**
      * @brief Virtual destructor.
      */
-    ~ITabComponent() override = default;
+    virtual ~ITabComponent() override;
 
     /**
      * @brief Returns the Qt widget associated with this tab.

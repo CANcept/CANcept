@@ -1,12 +1,9 @@
-#ifndef CANBUSMANAGER_GRAPH_LIST_VIEW_HPP
-#define CANBUSMANAGER_GRAPH_LIST_VIEW_HPP
+#pragma once
 
 #include <QScrollArea>
 #include <QVBoxLayout>
 
 #include "signal_graph.hpp"
-
-#endif  // CANBUSMANAGER_GRAPH_LIST_VIEW_HPP
 
 /**
  * @namespace Monitoring
