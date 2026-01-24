@@ -47,11 +47,16 @@ struct DbcSignalValueDescription {
     std::string signalName;
     std::list<DbcValueDescription> signalDescriptions;
 };
+struct DbcMetaData {
+    std::string version;
+    std::string fileName;
+};
 struct DbcConfig {
     std::list<std::string> nodeDefinitions;
     std::list<DbcMessageDescription> messageDefinitions;
     std::list<DbcSignalValueDescription> signalValueDescriptions;
     std::list<std::string> comments;
+    DbcMetaData metaData;
 };
 }  // namespace Core
 #endif  // CANBUSMANAGER_DBC_DTO_HPP
