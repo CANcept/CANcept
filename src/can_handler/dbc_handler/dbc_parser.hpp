@@ -100,7 +100,13 @@ class DbcParser
      * @brief The current file to parse, truncated to the point of the current parse
      */
     std::string file = "";
+    /**
+     * @brief Flag indicating if the last parsed object was valid
+     */
     bool parsingValid = false;
+    /**
+     * @brief Flag indicating if the last called function parsed an object
+     */
     bool parsedObject = false;
     std::mutex fileMutex;
     const std::pmr::set<std::string> symbols{"CM_",
