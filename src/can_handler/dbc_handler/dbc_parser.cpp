@@ -9,7 +9,7 @@ namespace CanHandler {
 #define IF_PARSING_INVALID_RETURN(returnValue) \
     if (!parsingValid)                         \
     {                                          \
-        parsedObject = false; \
+        parsedObject = false;                  \
         return returnValue;                    \
     }
 void DbcParser::provideNewFile(const std::string& newFile)

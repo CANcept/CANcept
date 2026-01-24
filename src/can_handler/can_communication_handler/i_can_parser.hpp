@@ -23,12 +23,12 @@ class ICanParser
         : broker(eventBroker), sendFunction(sendFunction)
     {
     }
-    virtual ~ICanParser() = default;
+    virtual ~ICanParser(){};
     /**
      * @brief Virtual method, that parses a message received over a CAN bus.
      * @param canMessage The received message
      */
-    virtual void parseReceivedMessage(const sockcanpp::CanMessage* canMessage);
+    virtual void parseReceivedMessage(const CanMessage* canMessage) {};
 
    protected:
     /**

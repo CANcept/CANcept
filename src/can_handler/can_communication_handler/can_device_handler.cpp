@@ -8,7 +8,10 @@ auto CanDeviceHandler::checkForCanMessage() const -> std::list<CanMessage>
     std::list<CanMessage> canMessages;
     while (true)
     {
-        if (!canDriver->waitForMessages(std::chrono::milliseconds(50))) {break;}
+        if (!canDriver->waitForMessages(std::chrono::milliseconds(50)))
+        {
+            break;
+        }
         CanMessage readMessage = canDriver->readMessage();
         canMessages.push_back(readMessage);
     }

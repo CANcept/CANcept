@@ -22,4 +22,4 @@ auto FileParser::parseFile(const std::string& filePath) -> std::string*
     return dbcString;
 }
 
-}
+}  // namespace CanHandler
