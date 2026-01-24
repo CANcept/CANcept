@@ -6,14 +6,10 @@ namespace CanHandler {
 auto CanDeviceHandler::checkForCanMessage() const -> std::list<CanMessage>
 {
     std::list<CanMessage> canMessages;
-    const CanMessage emptyMessage;
     while (true)
     {
+        if (!canDriver->waitForMessages(std::chrono::milliseconds(50))) {break;}
         CanMessage readMessage = canDriver->readMessage();
-        if (emptyMessage == readMessage)
-        {
-            break;
-        }
         canMessages.push_back(readMessage);
     }
     return canMessages;
@@ -25,7 +21,8 @@ auto CanDeviceHandler::sendCanMessage(const CanMessage& canMessage) const -> boo
 }
 void CanDeviceHandler::updateCanDevice(const Core::CanDriverChangeEvent& event)
 {
-    canDriver.reset(std::make_unique<CanDriver>(event.deviceName, CAN_RAW).get());
+    canDriver.reset(new CanDriver{event.deviceName, CAN_RAW});
+    // canDriver->setReceiveOwnMessages(true);
 }
 
 };  // namespace CanHandler
