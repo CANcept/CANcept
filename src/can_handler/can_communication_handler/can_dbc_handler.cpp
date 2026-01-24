@@ -183,20 +183,23 @@ void CanDbcHandler::handleNewDbc(const Core::DBCParsedEvent& event)
 {
     dbcMutex.lock();
     // clear array
-    for (auto& dbcMessage : dbcMessages)
+    for (const auto& dbcMessage : dbcMessages)
     {
-        dbcMessage = nullptr;
+        if (dbcMessage != nullptr)
+        {
+            delete dbcMessage;
+        }
     }
     // input message definitions into array
-    auto messageDescription = event.config.messageDefinitions.begin();
-    for (int i = 0; i < event.config.messageDefinitions.size(); i++)
+    // auto messageDescription = event.config.messageDefinitions.begin();
+    for (Core::DbcMessageDescription messageDescription : event.config.messageDefinitions)
     {
-        if (messageDescription->messageId < dbcMessages.size())
-        {
-            dbcMessages[messageDescription->messageId] =
-                const_cast<Core::DbcMessageDescription*>(&*messageDescription);
-            std::advance(messageDescription, sizeof(Core::DbcMessageDescription));
-        }
+        dbcMessages[messageDescription.messageId] = new Core::DbcMessageDescription{
+            .messageId = messageDescription.messageId,
+            .messageName = messageDescription.messageName,
+            .messageSize = messageDescription.messageSize,
+            .transmitterName = messageDescription.transmitterName,
+            .signalDescriptions = *(&messageDescription.signalDescriptions)};
     }
     dbcMutex.unlock();
 }
