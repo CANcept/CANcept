@@ -22,17 +22,21 @@ void CanCommunicationHandler::onStart()
         long long lastExecution = 0;
         while (_execute)
         {
-            const auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(
+            const auto millisecondsBeforeParse = std::chrono::duration_cast<std::chrono::milliseconds>(
                                           std::chrono::steady_clock::now().time_since_epoch())
                                           .count();
-            if (milliseconds > lastExecution + 100)
+            if (millisecondsBeforeParse > lastExecution + MILLISECONDS_BETWEEN_PARSE_ATTEMPTS)
             {
-                lastExecution = milliseconds;
+                lastExecution = millisecondsBeforeParse;
 
                 checkCanDeviceForMessages();
             }
-
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            const auto millisecondsAfterParse = std::chrono::duration_cast<std::chrono::milliseconds>(
+                                          std::chrono::steady_clock::now().time_since_epoch()).count();
+            if (millisecondsAfterParse < lastExecution + MILLISECONDS_BETWEEN_PARSE_ATTEMPTS)
+            {
+                std::this_thread::sleep_for(std::chrono::milliseconds(lastExecution + MILLISECONDS_BETWEEN_PARSE_ATTEMPTS - millisecondsAfterParse));
+            }
         }
     });
 }
