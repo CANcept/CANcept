@@ -8,16 +8,20 @@
 #include <QStyledItemDelegate>
 #include <QTreeView>
 
+
 namespace DbcFile {
+
+// ==============================================================================
+// 1. SidebarDelegate
+// ==============================================================================
 
 /**
  * @class SidebarDelegate
- * @brief Simple delegate for the navigation sidebar to handle font weight and item height.
+ * @brief Delegate for the navigation sidebar to control font weight and item height.
  *
  * @details
- * Since QSS (Stylesheets) often fail to apply font-weight changes on selection in QListViews,
- * this delegate manually sets the font to Bold when an item is selected.
- * It also enforces a fixed minimum height to ensure comfortable touch/click targets.
+ * - Applies bold font for selected items (QSS cannot reliably change font-weight in QListView).
+ * - Enforces a minimum item height to ensure consistent spacing and easy clicking/tapping.
  */
 class SidebarDelegate : public QStyledItemDelegate
 {
@@ -27,20 +31,49 @@ class SidebarDelegate : public QStyledItemDelegate
     explicit SidebarDelegate(QObject* parent = nullptr) : QStyledItemDelegate(parent) {}
 
     /**
-     * @brief Prepares the style option before painting.
-     * @details Sets the font weight to Bold if the item is selected.
+     * @brief Prepares the style option before painting an item.
+     *
+     * @details
+     * - Sets the font weight to Bold if the item is selected (QSS cannot reliably change font-weight in QListView).
+     * - Adjusts the icon color based on selection state:
+     *      - Selected: Primary text color
+     *      - Unselected: Secondary text color
+     * - Ensures proper rendering of the item’s icon and text.
+     *
+     * @param option The style options for the item.
+     * @param index The model index of the item being drawn.
      */
     void initStyleOption(QStyleOptionViewItem* option, const QModelIndex& index) const override;
 
     /**
-     * @brief Defines the size of the sidebar items.
-     * @details Adds vertical padding by enforcing a minimum height (e.g., 40px).
+     * @brief Returns the preferred size for each sidebar item.
+     * @details Adds vertical padding by enforcing a minimum height.
+     *
+     * @param option Style options containing font metrics.
+     * @param index The model index of the item.
+     * @return QSize The calculated item size, enforcing a comfortable minimum height (~50px).
      */
     [[nodiscard]] auto sizeHint(const QStyleOptionViewItem& option,
                                 const QModelIndex& index) const -> QSize override;
+
+    /**
+     * @brief Shows a tooltip for disabled items.
+     * @details Displays a static hover message (e.g., "Load DBC file first") when hovering
+     *          over items that are currently disabled.
+     *
+     * @param event The QHelpEvent triggering the tooltip.
+     * @param view The parent view containing the item.
+     * @param option Style options for the item.
+     * @param index The model index of the item.
+     * @return True if a tooltip was shown, otherwise false.
+     */
+    bool helpEvent(QHelpEvent* event,
+                   QAbstractItemView* view,
+                   const QStyleOptionViewItem& option,
+                   const QModelIndex& index) override;
 };
 // ==============================================================================
-// 1. Overview Lists Delegate (Overview Page)
+// 2. Overview Lists Delegate (Overview Page)
 // ==============================================================================
 
 /**
@@ -87,7 +120,7 @@ class OverviewListsDelegate : public QStyledItemDelegate
 };
 
 // ==============================================================================
-// 2. ECU Tree Delegate (ECU Page)
+// 3. ECU Tree Delegate (ECU Page)
 // ==============================================================================
 
 /**
@@ -136,7 +169,7 @@ class EcuTreeDelegate : public QStyledItemDelegate
    private:
     // --- Painting Helpers ---
     void paintEcuCard(QPainter* painter, const QStyleOptionViewItem& option,
-                      const QModelIndex& index) const;
+                      const QModelIndex& index);
     void paintMessageRow(QPainter* painter, const QStyleOptionViewItem& option,
                          const QModelIndex& index) const;
     void paintSignalRow(QPainter* painter, const QStyleOptionViewItem& option,
@@ -150,7 +183,7 @@ class EcuTreeDelegate : public QStyledItemDelegate
 };
 
 // ==============================================================================
-// 3. Message Signal Card Delegate (Message Detail Pane)
+// 4. Message Signal Card Delegate (Message Detail Pane)
 // ==============================================================================
 
 /**
@@ -198,7 +231,7 @@ class MessagesSignalCardDelegate : public QStyledItemDelegate
 };
 
 // ==============================================================================
-// 4. Signal Table Delegate (Global Signals Page)
+// 5. Signal Table Delegate (Global Signals Page)
 // ==============================================================================
 
 /**
