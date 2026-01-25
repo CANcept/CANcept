@@ -66,7 +66,7 @@ static const QString TabIcon = ":/assets/icon/dbc_file_tab.svg";
 }  // namespace Component
 
 namespace Status {
-static const QString Success = "File parsed successfully!";
+static const QString ParseSuccess = "File parsed successfully!";
 static const QString ErrorPrefix = "Error: ";
 }  // namespace Status
 
@@ -106,12 +106,23 @@ static const char *FileDialogTitle = "Choose DBC file";
 static const char *FileDialogFilter = "DBC files (*.dbc);;All files (*.*)";
 static const QString FileExt = ".dbc";
 
+namespace ObjectName {
+constexpr const char* LoadCard = "LoadCard";
+constexpr const char* UploadZone = "UploadZone";
+}
+
 namespace Errors {
-static const char *TooManyFilesTitle = "Too many files";
-static const char *TooManyFilesBody = "Please drop only <b>one</b> DBC file at a time.";
+static const char *TooManyFiles = "Please drop only <b>one</b> DBC file at a time.";
 static const char *InvalidFileTitle = "Invalid file";
 static const char *InvalidFileBody = "Not a DBC file";
-}  // namespace Errors
+}
+
+namespace Drag {
+constexpr const char* Property = "dragState";
+constexpr const char* Valid    = "valid";
+constexpr const char* Invalid  = "invalid";
+constexpr const char* None     = "";
+} // namespace Errors
 }  // namespace LoadPage
 
 // --- Overview Page Specifics ---
