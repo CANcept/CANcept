@@ -107,7 +107,7 @@ auto CanDbcHandler::parseReceivedSignal(const Core::DbcSignalDescription& signal
 void CanDbcHandler::handleSendMessage(const Core::SendCanMessageDbcEvent& event)
 {
     // Lock the mutex for data safety
-    dbcMutex.lock();
+    std::scoped_lock guard(dbcMutex);
     // Get right message description
     if (event.canMessage.messageId >= dbcMessages.size())
     {
