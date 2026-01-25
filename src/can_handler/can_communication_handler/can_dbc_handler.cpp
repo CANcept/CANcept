@@ -7,7 +7,7 @@ namespace CanHandler {
 void CanDbcHandler::parseReceivedMessage(const sockcanpp::CanMessage* canMessage)
 {
     // Lock the mutex for data safety
-    dbcMutex.lock();
+    std::scoped_lock guard(dbcMutex);
     // Get the right message description
     if (canMessage->getRawFrame().can_id >= dbcMessages.size())
     {
@@ -72,7 +72,6 @@ void CanDbcHandler::parseReceivedMessage(const sockcanpp::CanMessage* canMessage
                 .value = parseReceivedSignal(signalDescription, dataLittleEndian, dataBigEndian)});
         }
     }
-    dbcMutex.unlock();
 
     // Publish to the event broker
     broker.publish(Core::ReceivedCanDbcEvent(receivedMessage));
