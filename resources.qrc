@@ -8,9 +8,12 @@
         <file>assets/icon/signals.svg</file>
         <file>assets/icon/load_new.svg</file>
         <file>assets/icon/dbc_file_tab.svg</file>
+        <file>assets/icon/core/arrow_down.svg</file>
         <file>assets/icon/sending/sending.svg</file>
         <file>assets/icon/sending/raw_based_send_icon.svg</file>
         <file>assets/icon/sending/dbc_based_send_icon.svg</file>
         <file>assets/icon/sending/send.svg</file>
+        <file>assets/icon/sending/configuration.svg</file>
+        <file>assets/icon/sending/can_frame.svg</file>
     </qresource>
 </RCC>

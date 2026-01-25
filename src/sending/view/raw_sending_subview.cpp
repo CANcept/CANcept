@@ -1,6 +1,5 @@
 #include "raw_sending_subview.hpp"
 
-#include <QGridLayout>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QRegularExpression>
@@ -16,6 +15,8 @@ namespace Sending {
 RawSendingSubView::RawSendingSubView(QWidget* parent)
     : QWidget(parent),
       m_configCard(nullptr),
+      m_interfaceCard(nullptr),
+      m_baudRateCard(nullptr),
       m_interfaceCombo(nullptr),
       m_baudRateCombo(nullptr),
       m_frameCard(nullptr),
@@ -26,65 +27,11 @@ RawSendingSubView::RawSendingSubView(QWidget* parent)
     setupUi();
 }
 
-auto RawSendingSubView::createCard(const QString& title, const QString& subtitle) -> QFrame*
-{
-    const auto& spacing = THEME.spacing();
-    const auto& colors = THEME.colors();
-
-    auto* card = new QFrame(this);
-    card->setObjectName("card");
-
-    // Apply modern card styling
-    QString cardStyle =
-        QString(
-            "QFrame#card {"
-            "  background-color: %1;"
-            "  border: %2px solid %3;"
-            "  border-radius: %4px;"
-            "}")
-            .arg(colors.surfaceMain.name(QColor::HexArgb))  // Includes Alpha as #AARRGGBB
-            .arg(spacing.borderThin)
-            .arg(colors.borderSubtle.name(QColor::HexArgb))
-            .arg(spacing.radiusSm);
-    card->setStyleSheet(cardStyle);
-
-    auto* cardLayout = new QVBoxLayout(card);
-    cardLayout->setContentsMargins(spacing.spacingLg, spacing.spacingLg, spacing.spacingLg,
-                                   spacing.spacingLg);
-    cardLayout->setSpacing(spacing.spacingMd);
-
-    // Card title
-    if (!title.isEmpty())
-    {
-        auto* titleLabel = new QLabel(title, card);
-        QFont titleFont = titleLabel->font();
-        titleFont.setPointSize(spacing.fontSizeLg);
-        titleFont.setWeight(static_cast<QFont::Weight>(spacing.fontWeightBold));
-        titleLabel->setFont(titleFont);
-        titleLabel->setStyleSheet(QString("color: %1;").arg(colors.textPrimary.name()));
-        cardLayout->addWidget(titleLabel);
-    }
-
-    // Card subtitle (optional)
-    if (!subtitle.isEmpty())
-    {
-        auto* subtitleLabel = new QLabel(subtitle, card);
-        QFont subtitleFont = subtitleLabel->font();
-        subtitleFont.setPointSize(spacing.fontSizeSm);
-        subtitleLabel->setFont(subtitleFont);
-        subtitleLabel->setStyleSheet(QString("color: %1;").arg(colors.textSecondary.name()));
-        cardLayout->addWidget(subtitleLabel);
-    }
-
-    return card;
-}
-
 void RawSendingSubView::setupUi()
 {
     const auto& spacing = THEME.spacing();
     const auto& colors = THEME.colors();
 
-    // Main scroll area for better UX with smaller screens
     auto* scrollArea = new QScrollArea(this);
     scrollArea->setStyleSheet(QString("background-color: %1;").arg(colors.surfaceMain.name()));
     scrollArea->setWidgetResizable(true);
@@ -103,43 +50,35 @@ void RawSendingSubView::setupUi()
                                       spacing.spacingLg);
     contentLayout->setSpacing(spacing.spacingLg);
 
-    // === CAN-Bus Configuration Card ===
-    m_configCard = createCard(tr("CAN-Bus Configuration"));
-    auto* configCardLayout = qobject_cast<QVBoxLayout*>(m_configCard->layout());
+    // CAN-Bus Configuration Card
+    m_configCard = new Core::CardWidget(tr("CAN-Bus Configuration"), QString(),
+                                        Constants::CONFIGURATION_ICON_PATH, this);
 
-    auto* configGrid = new QGridLayout();
-    configGrid->setHorizontalSpacing(spacing.spacingLg);
-    configGrid->setVerticalSpacing(spacing.spacingMd);
+    auto* innerCardsRow = new QHBoxLayout();
+    innerCardsRow->setSpacing(spacing.spacingLg);
 
-    // Interface selector
-    auto* interfaceLabel = new QLabel(tr("Interface"), m_configCard);
-    interfaceLabel->setStyleSheet(QString("color: %1;").arg(colors.textSecondary.name()));
-    m_interfaceCombo = new QComboBox(m_configCard);
+    // Interface Card
+    m_interfaceCard = new Core::CardWidget(QString(), tr("Interface"), QString(), m_configCard);
+    m_interfaceCombo = new Core::StyledComboBox(m_interfaceCard);
     m_interfaceCombo->setPlaceholderText(tr("Select interface..."));
+    m_interfaceCard->contentLayout()->addWidget(m_interfaceCombo);
+    innerCardsRow->addWidget(m_interfaceCard);
 
-    configGrid->addWidget(interfaceLabel, 0, 0);
-    configGrid->addWidget(m_interfaceCombo, 1, 0);
-
-    // Baud rate selector
-    auto* baudRateLabel = new QLabel(tr("Baud Rate"), m_configCard);
-    baudRateLabel->setStyleSheet(QString("color: %1;").arg(colors.textSecondary.name()));
-    m_baudRateCombo = new QComboBox(m_configCard);
+    // Baud Rate Card (nested, no icon)
+    m_baudRateCard = new Core::CardWidget(QString(), tr("Baud Rate"), QString(), m_configCard);
+    m_baudRateCombo = new Core::StyledComboBox(m_baudRateCard);
     m_baudRateCombo->setPlaceholderText(tr("Select baud rate..."));
+    m_baudRateCard->contentLayout()->addWidget(m_baudRateCombo);
+    innerCardsRow->addWidget(m_baudRateCard);
 
-    configGrid->addWidget(baudRateLabel, 0, 1);
-    configGrid->addWidget(m_baudRateCombo, 1, 1);
-
-    // Make both columns stretch equally
-    configGrid->setColumnStretch(0, 1);
-    configGrid->setColumnStretch(1, 1);
-
-    configCardLayout->addLayout(configGrid);
+    m_configCard->contentLayout()->addLayout(innerCardsRow);
     contentLayout->addWidget(m_configCard);
 
-    // === CAN Frame Card ===
-    m_frameCard =
-        createCard(tr("CAN Frame"), tr("Enter CAN ID and message data as hexadecimal values"));
-    auto* frameCardLayout = qobject_cast<QVBoxLayout*>(m_frameCard->layout());
+    // CAN Frame Card
+    m_frameCard = new Core::CardWidget(tr("CAN Frame"),
+                                       tr("Enter CAN ID and message data as hexadecimal values"),
+                                       QString(Constants::CAN_FRAME_ICON_PATH), this);
+    auto* frameCardLayout = m_frameCard->contentLayout();
 
     // CAN ID Input
     auto* canIdLabel = new QLabel(tr("CAN ID (Hexadecimal)"), m_frameCard);

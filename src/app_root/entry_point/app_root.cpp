@@ -10,7 +10,6 @@
 #include "app_root/view/app_root_view.hpp"
 #include "can_handler/can_communication_handler/can_communication_handler.hpp"
 #include "can_handler/dbc_handler/dbc_handler.hpp"
-#include "core/constants.hpp"
 #include "core/macro/console_logging.hpp"
 #include "core/theme/color_themes.hpp"
 #include "core/theme/spacing_themes.hpp"
@@ -20,7 +19,7 @@
 #include "logging/logging_component.hpp"
 #include "monitoring/monitoring_component.hpp"
 #include "sending/sending_component.hpp"
-#include "stub/MockTabComponent.hpp"
+#include "stub/MockTab.hpp"
 
 namespace AppRoot {
 
@@ -83,8 +82,7 @@ void AppRoot::bootstrap()
     LOG_INF("AppRoot", "Adding and Instatiating Tabs...");
     m_tabs.clear();
 
-    initTab<Mocks::DashboardTab>();
-    initTab<Mocks::CanBusTab>();
+    initTab<Core::MockTabComponent>();
 
     // Helper to keep bootstrap readable
     initTab<DbcFile::DbcComponent>();

@@ -4,8 +4,6 @@
 #include <string>
 #include <vector>
 
-#include "core/constants.hpp"
-
 namespace Sending {
 
 /**
@@ -25,6 +23,12 @@ inline const QString RAW_SENDING_ICON_PATH = ":/assets/icon/sending/raw_based_se
 
 /** @brief Icon used for the dbc sub Tab */
 inline const QString DBC_SENDING_ICON_PATH = ":/assets/icon/sending/dbc_based_send_icon.svg";
+
+/** @brief Icon used for the dbc configuration tabs */
+inline const QString CONFIGURATION_ICON_PATH = ":/assets/icon/sending/configuration.svg";
+
+/** @brief Icon used for the dbc configuration tabs */
+inline const QString CAN_FRAME_ICON_PATH = ":/assets/icon/sending/can_frame.svg";
 
 /** @brief Identifier used by the module to communicate with the system */
 inline const std::string MODULE_IDENTIFIER = "SendingComponent";

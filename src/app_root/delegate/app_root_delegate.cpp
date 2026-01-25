@@ -1,13 +1,14 @@
 #include "app_root/delegate/app_root_delegate.hpp"
 
-#include <QApplication>
+#include <algorithm>
 #include <QIcon>
+#include <QListView>
 #include <QMetaType>
 #include <QPainter>
 #include <QStyleOptionViewItem>
 #include <QVariant>
 
-#include "core/constants.hpp"
+#include "app_root/constants.hpp"
 #include "core/macro/theme.hpp"
 
 namespace AppRoot {
@@ -55,27 +56,39 @@ void AppRootDelegate::paint(QPainter* painter, const QStyleOptionViewItem& optio
         painter->drawRoundedRect(rect, radius, radius);
     }
 
-    const int iconSize = rect.height() - (padding * 2);
-    const QRect iconRect(rect.left() + padding * 2, rect.top() + padding, iconSize, iconSize);
-
-    if (!icon.isNull())
-    {
-        // Decide icon mode based on state
-        const QIcon::Mode mode =
-            (option.state & QStyle::State_Selected) ? QIcon::Selected : QIcon::Normal;
-        icon.paint(painter, iconRect, Qt::AlignCenter, mode);
-    }
-
+    // Set up font for text measurement
     QFont font = painter->font();
     font.setPixelSize(THEME.spacing().fontSizeMd);
     font.setWeight(static_cast<QFont::Weight>((option.state & QStyle::State_Selected)
                                                   ? THEME.spacing().fontWeightMedium
                                                   : THEME.spacing().fontWeightNormal));
     painter->setFont(font);
-    painter->setPen(THEME.colors().textPrimary);
 
-    // Position text to the right of the icon
-    const QRect textRect = rect.adjusted(iconSize + (padding * 3), 0, -padding, 0);
+    // Calculate dimensions for centering
+    const int iconSize = rect.height() - (padding * 2);
+    const int spacing = padding;
+    const int textWidth = painter->fontMetrics().horizontalAdvance(text);
+    const int contentWidth = iconSize + spacing + textWidth;
+    const int startX = rect.left() + (rect.width() - contentWidth) / 2;
+
+    // Draw icon centered
+    const QRect iconRect(startX, rect.top() + padding, iconSize, iconSize);
+    if (!icon.isNull())
+    {
+        const qreal dpr = painter->device()->devicePixelRatioF();
+        QPixmap pixmap = icon.pixmap(iconRect.size(), dpr);
+
+        QPainter iconPainter(&pixmap);
+        iconPainter.setCompositionMode(QPainter::CompositionMode_SourceIn);
+        iconPainter.fillRect(pixmap.rect(), THEME.colors().surfaceForeground);
+        iconPainter.end();
+
+        painter->drawPixmap(iconRect, pixmap);
+    }
+
+    // Draw text
+    painter->setPen(THEME.colors().textPrimary);
+    const QRect textRect(startX + iconSize + spacing, rect.top(), textWidth, rect.height());
     painter->drawText(textRect, Qt::AlignVCenter | Qt::AlignLeft, text);
 
     painter->restore();
@@ -85,7 +98,18 @@ auto AppRootDelegate::sizeHint(const QStyleOptionViewItem& option,
                                const QModelIndex& index) const -> QSize
 {
     const int baseHeight = THEME.spacing().fontSizeMd + (THEME.spacing().spacingLg * 2);
-    return {200, baseHeight};
+
+    // Calculate dynamic width based on available space and tab count
+    const auto* view = qobject_cast<const QListView*>(option.widget);
+
+    if (const int tabCount = index.model() ? index.model()->rowCount() : 1; view && tabCount > 0)
+    {
+        const int availableWidth = view->viewport()->width();
+        const int tabWidth = std::max(availableWidth / tabCount, Constants::MIN_TAB_WIDTH);
+        return {tabWidth, baseHeight};
+    }
+
+    return {Constants::MIN_TAB_WIDTH, baseHeight};
 }
 
 }  // namespace AppRoot

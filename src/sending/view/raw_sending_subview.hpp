@@ -1,10 +1,11 @@
 #pragma once
 
-#include <QComboBox>
-#include <QFrame>
 #include <QLineEdit>
 #include <QPushButton>
 #include <QWidget>
+
+#include "core/widgets/card_widget.hpp"
+#include "core/widgets/styled_combo_box.hpp"
 
 namespace Sending {
 
@@ -85,16 +86,16 @@ class RawSendingSubView final : public QWidget
 
    private:
     void setupUi();
-    [[nodiscard]] auto createCard(const QString& title,
-                                  const QString& subtitle = QString()) -> QFrame*;
 
-    // CAN-Bus Configuration Card
-    QFrame* m_configCard;
-    QComboBox* m_interfaceCombo;
-    QComboBox* m_baudRateCombo;
+    // CAN-Bus Configuration Card (outer) with nested cards
+    Core::CardWidget* m_configCard;
+    Core::CardWidget* m_interfaceCard;
+    Core::CardWidget* m_baudRateCard;
+    Core::StyledComboBox* m_interfaceCombo;
+    Core::StyledComboBox* m_baudRateCombo;
 
     // CAN Frame Card
-    QFrame* m_frameCard;
+    Core::CardWidget* m_frameCard;
     QLineEdit* m_canIdEditor;
     QLineEdit* m_messageDataEditor;
 
