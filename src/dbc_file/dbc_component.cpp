@@ -37,7 +37,7 @@ void DbcComponent::onFileLoadRequested(const QString& filePath)
 }
 void DbcComponent::onDbcParsed(const Core::DBCParsedEvent& event)
 {
-    m_view->getLoadPage().showStatusMessage(Constants::Status::Success, false);
+    m_view->getLoadPage().showStatusMessage(Constants::Status::ParseSuccess, false);
     m_view->setNavigationEnabled(true);
 }
 void DbcComponent::onDbcParseError(const Core::DBCParseErrorEvent& event)
