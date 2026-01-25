@@ -34,7 +34,7 @@ struct ColorTheme {
     // QColor statusError = QColor(0x02, 0, 0xc3, 0xDC);
     // QColor statusWarning = QColor(0x8a, 0x04, 0xc3, 0xca);
     QColor statusSuccess = QColor(0x4C, 0xAF, 0x50, 0xFF);  // Grün, volle Deckkraft
-    QColor statusError   = QColor(0xF4, 0x43, 0x36, 0xFF);  // Rot, volle Deckkraft
+    QColor statusError = QColor(0xF4, 0x43, 0x36, 0xFF);    // Rot, volle Deckkraft
     QColor statusWarning = QColor(0xFF, 0x98, 0x00, 0xFF);  // Orange, volle Deckkraft
     QColor statusRunning = QColor(0xFF, 0xC1, 0x07, 0xFF);
 };

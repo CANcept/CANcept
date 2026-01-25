@@ -26,8 +26,7 @@ void DbcFile::DbcView::setDataItemDelegate(QAbstractItemDelegate* delegate) {}
 void DbcFile::DbcView::setNavigationEnabled(const bool enabled) const
 {
     // Get Model of m_sideBar (QListView)
-    const auto* sidebarModel =
-        static_cast<QStandardItemModel*>(m_sidebarList->model());
+    const auto* sidebarModel = static_cast<QStandardItemModel*>(m_sidebarList->model());
 
     // Enable (or disable) all items (~pages)
     for (int i = 1; i < sidebarModel->rowCount(); i++)
@@ -45,7 +44,7 @@ void DbcFile::DbcView::onSidebarSelectionChanged(const QModelIndex& index)
     {
         return;
     }
-    if (!(index.flags() & Qt::ItemIsEnabled)) // do nothing if item is already enabled
+    if (!(index.flags() & Qt::ItemIsEnabled))  // do nothing if item is already enabled
     {
         return;
     }
@@ -91,8 +90,7 @@ void DbcView::setupSidebarList()
     const auto& spacing = THEME.spacing();
 
     m_sidebarList = new QListView(this);
-    m_sidebarList->setSelectionMode(
-    QAbstractItemView::SingleSelection);
+    m_sidebarList->setSelectionMode(QAbstractItemView::SingleSelection);
     m_sidebarList->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_sidebarList->setMaximumWidth(200);
     m_sidebarList->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
@@ -136,11 +134,21 @@ void DbcView::setSidebarModel()
 {
     auto* sidebarModel = new QStandardItemModel(this);
     const QList<SidebarEntry> sidebarEntries = {
-        { .iconPath=Constants::Sidebar::IconLoadNew, .title=Constants::Sidebar::TitleLoadNew, .enabled=true  },
-        { .iconPath=Constants::Sidebar::IconOverview, .title=Constants::Sidebar::TitleOverview, .enabled=false },
-        { .iconPath=Constants::Sidebar::IconEcus,     .title=Constants::Sidebar::TitleEcus,     .enabled=false },
-        { .iconPath=Constants::Sidebar::IconMessages, .title=Constants::Sidebar::TitleMessages, .enabled=false },
-        { .iconPath=Constants::Sidebar::IconSignals,  .title=Constants::Sidebar::TitleSignals,  .enabled=false },
+        {.iconPath = Constants::Sidebar::IconLoadNew,
+         .title = Constants::Sidebar::TitleLoadNew,
+         .enabled = true},
+        {.iconPath = Constants::Sidebar::IconOverview,
+         .title = Constants::Sidebar::TitleOverview,
+         .enabled = false},
+        {.iconPath = Constants::Sidebar::IconEcus,
+         .title = Constants::Sidebar::TitleEcus,
+         .enabled = false},
+        {.iconPath = Constants::Sidebar::IconMessages,
+         .title = Constants::Sidebar::TitleMessages,
+         .enabled = false},
+        {.iconPath = Constants::Sidebar::IconSignals,
+         .title = Constants::Sidebar::TitleSignals,
+         .enabled = false},
     };
 
     for (const auto& entry : sidebarEntries)
@@ -197,8 +205,7 @@ void DbcFile::DbcView::createSubViews()
 void DbcFile::DbcView::setupConnections()
 {
     connect(m_sidebarList, &QListView::clicked, this, &DbcFile::DbcView::onSidebarSelectionChanged);
-    connect(m_loadPage, &LoadPage::fileSelected, this, [this] (const QString& path) {
-        emit fileLoadRequested(path);
-    });
+    connect(m_loadPage, &LoadPage::fileSelected, this,
+            [this](const QString& path) { emit fileLoadRequested(path); });
 }
 }  // namespace DbcFile
