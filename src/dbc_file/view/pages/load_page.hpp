@@ -2,6 +2,8 @@
 // Created by Adrian Rupp on 21.01.26.
 //
 #pragma once
+#include <QVBoxLayout>
+
 #include <QLabel>
 #include <QWidget>
 namespace DbcFile {
@@ -10,11 +12,11 @@ namespace DbcFile {
  * @brief The landing page for the DBC File module (SRS 6.1 "Load New").
  *
  * @details
- * **VISUALS:**
+ * VISUALS:
  * Renders a centered "Card" layout with an upload zone within, utilizing the
  * application's ThemeManager for colors and spacing.
  *
- * **LOGIC:**
+ * LOGIC:
  * - Handles file uploads via Drag & Drop or File Dialog.
  * - Validates file extensions (*.dbc) and count (single file).
  * - Provides immediate visual feedback (borders colors, status messages).
@@ -26,22 +28,21 @@ class LoadPage : public QWidget
    public:
     /**
      * @brief Constructs the LoadPage widget.
-     * @caller DbcView::createSubViews().
-     * @param parent The parent widget.
+     * @param parent Optional parent widget.
      */
     explicit LoadPage(QWidget* parent = nullptr);
+
+    /**
+     * @brief Destructor for LoadPage.
+     */
     ~LoadPage() override;
 
     /**
-     * @brief Displays a status message (Info or Error) inside the upload zone.
+     * @brief Displays a status message in the upload zone.
+     * @param message The text of the message.
+     * @param isError True if this is an error message, false for success/info.
      *
-     * @details
-     * - Sets the text of the internal status label.
-     * - Changes text color (Red for error, Blue for info).
-     * - Updates the frame's border style (Red for error) via dynamic properties.
-     *
-     * @param message The text to display (e.g. "Parsing...").
-     * @param isError If true, applies error styling; otherwise applies info styling.
+     * @details Updates the label text, color, and visibility according to the theme.
      */
     void showStatusMessage(const QString& message, bool isError = false) const;
 
@@ -69,19 +70,18 @@ class LoadPage : public QWidget
      * - Resets previous status messages.
      * - Checks if the mime data contains exactly one file ending in `.dbc`.
      * - Updates the border style (Green for valid, Red for invalid).
-     * - Always accepts the proposed action to allow `dropEvent` to handle final logic.
+    * - Accepts the proposed action so the drag operation may continue and be finalized by
+    * `dropEvent`.
      */
     void dragEnterEvent(QDragEnterEvent* event) override;
 
     /**
-     * @brief Handles the final drop action.
-     *
-     * @details
-     * - Resets the visual border style.
-     * - Performs final validation (count and extension).
-     * - If invalid: Shows a QMessageBox warning.
-     * - If valid: Emits `fileSelected` and calls `showStatusMessage("Parsing...")`.
-     */
+    * @details
+    * - Resets the visual border style.
+    * - Performs final validation (count and extension).
+    * - If invalid: Displays an inline error status message.
+    * - If valid: Emits `fileSelected` and shows a parsing status message.
+    */
     void dropEvent(QDropEvent* event) override;
 
     /**
@@ -104,23 +104,39 @@ class LoadPage : public QWidget
      */
     void onBrowseButtonClicked();
 
+    /**
+     * @brief Creates and styles the load card frame container.
+     * @param parentLayout The main layout where the card should be added.
+     * @return The internal layout of the created card, used to add further content.
+     */
+    auto createCardFrame(QVBoxLayout* parentLayout) -> QVBoxLayout*;
+
+    /**
+     * @brief Adds the Title and Subtitle labels to the card layout.
+     * @param layout The layout of the card frame.
+     */
+    static void setupHeader(QVBoxLayout* layout);
+
+    /**
+     * @brief Creates the interactive Upload Zone frame.
+     * @details Instantiates m_uploadBoxFrame, applies the drag-state stylesheet,
+     * installs the event filter, and populates it with the icon and instruction text.
+     * Adds the m_statusLabel (initially hidden).
+     * @param layout The layout of the card frame.
+     */
+    void setupUploadZone(QVBoxLayout* layout);
+
    private:
     /**
-     * @brief Initializes the visual components, layout structure, and styling.
-     *
-     * @details
-     * 1. Retrieves theme colors/spacing from Core::ThemeManager.
-     * 2. Creates the main centered card frame.
-     * 3. Creates the Title and Subtitle labels.
-     * 4. Constructs the interactive `m_uploadBoxFrame` and installs the event filter.
-     * 5. Populates the upload box with the SVG Icon and instruction text.
-     * 6. Initializes the hidden `m_statusLabel` for feedback messages.
-     */
+    * @brief Orchestrates the complete UI initialization at construction.
+    */
     void setupUi();
 
     /** @brief The interactive frame for dropping files and opening file browser. */
     QFrame* m_uploadBoxFrame;
     /** @brief Hidden label used to show parsing status or error messages. */
     QLabel* m_statusLabel;
+
+    bool m_isDragValid = false;
 };
 }  // namespace DbcFile
