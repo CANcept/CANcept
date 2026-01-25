@@ -88,7 +88,7 @@ class DbcComponent : public Core::ITabComponent
      *
      * @param filePath Path to the selected DBC file.
      */
-    void onFileLoadRequested(const QString& filePath) const;
+    void onFileLoadRequested(const QString& filePath);
 
    private:
     /**
@@ -100,7 +100,7 @@ class DbcComponent : public Core::ITabComponent
      *
      * @param event Event containing the parsed DBC result.
      */
-    void onDbcParsed(const Core::DBCParsedEvent& event) const;
+    void onDbcParsed(const Core::DBCParsedEvent& event);
 
     /**
      * @brief Handles DBC parsing errors.
@@ -111,7 +111,7 @@ class DbcComponent : public Core::ITabComponent
      *
      * @param event Event containing error details.
      */
-    void onDbcParseError(const Core::DBCParseErrorEvent& event) const;
+    void onDbcParseError(const Core::DBCParseErrorEvent& event);
 
     /**
      * @brief Sets up signal-slot and event broker connections.
