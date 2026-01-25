@@ -202,7 +202,7 @@ void CanDbcHandler::handleNewDbc(const Core::DBCParsedEvent& event)
     }
     dbcMutex.unlock();
 }
- CanDbcHandler::~CanDbcHandler()
+CanDbcHandler::~CanDbcHandler()
 {
     for (const auto& dbcMessage : dbcMessages)
     {
