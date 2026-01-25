@@ -8,6 +8,10 @@ auto CanDeviceHandler::checkForCanMessage() const -> std::list<CanMessage>
     std::list<CanMessage> canMessages;
     while (true)
     {
+        if (canDriver.get() == nullptr)
+        {
+            return {};
+        }
         if (!canDriver->waitForMessages(std::chrono::milliseconds(50)))
         {
             break;
