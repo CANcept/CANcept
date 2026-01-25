@@ -613,7 +613,7 @@ void DbcParser::eraseSpaces()
 auto DbcParser::parseCIdentifier() -> std::string
 {
     eraseSpaces();
-    if (!regex_match(file, std::regex("([A-Z]|[a-z]|_)(\\w)+( |:).*")))
+    if (!regex_match(file, FILE_STARTS_WITH_C_IDENTIFIER_REGEX))
     {
         parsingValid = false;
         parsedObject = false;
@@ -629,7 +629,7 @@ auto DbcParser::parseCIdentifier() -> std::string
 auto DbcParser::parseString() -> std::string
 {
     eraseSpaces();
-    if (!std::regex_match(file, std::regex("\".*\".*")))
+    if (!std::regex_match(file, FILE_STARTS_WITH_STRING_REGEX))
     {
         parsingValid = false;
         parsedObject = false;
@@ -655,7 +655,7 @@ auto DbcParser::parseDouble() -> double
         return 0;
     }
     const std::string possibleDouble = file.substr(0, pos);
-    if (!std::regex_match(possibleDouble, std::regex("(\\+|-)?\\d+(\\.\\d+)?")))
+    if (!std::regex_match(possibleDouble, DOUBLE_REGEX))
     {
         parsingValid = false;
         parsedObject = false;
@@ -678,7 +678,7 @@ auto DbcParser::parseInt() -> int
         return 0;
     }
     const std::string possibleInt = file.substr(0, pos);
-    if (!std::regex_match(possibleInt, std::regex("(\\+|-)?\\d+")))
+    if (!std::regex_match(possibleInt, INT_REGEX))
     {
         parsingValid = false;
         parsedObject = false;
@@ -702,7 +702,7 @@ auto DbcParser::parseUInt() -> uint
         return 0;
     }
     const std::string possibleInt = file.substr(0, pos);
-    if (!std::regex_match(possibleInt, std::regex("\\d+")))
+    if (!std::regex_match(possibleInt, UINT_REGEX))
     {
         parsingValid = false;
         parsedObject = false;
