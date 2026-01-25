@@ -33,6 +33,9 @@ struct SpacingTheme {
     int fontSizeSm = 12;
     int fontSizeMd = 14;
     int fontSizeLg = 18;
+
+    // Icon Sizes
+    int IconSize = 48;
 };
 
 /**
