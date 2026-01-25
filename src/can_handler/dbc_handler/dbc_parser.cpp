@@ -647,7 +647,7 @@ auto DbcParser::parseDouble() -> double
 {
     eraseSpaces();
     const size_t pos = std::min({file.find(' '), file.find(':'), file.find(';'), file.find(','),
-                              file.find('|'), file.find(']'), file.find('@'), file.find(')')});
+                                 file.find('|'), file.find(']'), file.find('@'), file.find(')')});
     if (pos == std::string::npos)
     {
         parsingValid = false;
@@ -670,7 +670,7 @@ auto DbcParser::parseInt() -> int
 {
     eraseSpaces();
     const size_t pos = std::min({file.find(' '), file.find(':'), file.find(';'), file.find(','),
-                              file.find('|'), file.find(']'), file.find('@'), file.find(')')});
+                                 file.find('|'), file.find(']'), file.find('@'), file.find(')')});
     if (pos == std::string::npos)
     {
         parsingValid = false;
