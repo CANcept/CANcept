@@ -102,27 +102,27 @@ static const QString CardIconFallback = "⬆";
 static const QString CardIcon = ":/assets/icon/upload.svg";
 static const QString StatusParsing = "Parsing...";
 
-static const char *FileDialogTitle = "Choose DBC file";
-static const char *FileDialogFilter = "DBC files (*.dbc);;All files (*.*)";
+static const char* FileDialogTitle = "Choose DBC file";
+static const char* FileDialogFilter = "DBC files (*.dbc);;All files (*.*)";
 static const QString FileExt = ".dbc";
 
 namespace ObjectName {
 constexpr const char* LoadCard = "LoadCard";
 constexpr const char* UploadZone = "UploadZone";
-}
+}  // namespace ObjectName
 
 namespace Errors {
-static const char *TooManyFiles = "Please drop only <b>one</b> DBC file at a time.";
-static const char *InvalidFileTitle = "Invalid file";
-static const char *InvalidFileBody = "Not a DBC file";
-}
+static const char* TooManyFiles = "Please drop only <b>one</b> DBC file at a time.";
+static const char* InvalidFileTitle = "Invalid file";
+static const char* InvalidFileBody = "Not a DBC file";
+}  // namespace Errors
 
 namespace Drag {
 constexpr const char* Property = "dragState";
-constexpr const char* Valid    = "valid";
-constexpr const char* Invalid  = "invalid";
-constexpr const char* None     = "";
-} // namespace Errors
+constexpr const char* Valid = "valid";
+constexpr const char* Invalid = "invalid";
+constexpr const char* None = "";
+}  // namespace Drag
 }  // namespace LoadPage
 
 // --- Overview Page Specifics ---

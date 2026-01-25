@@ -41,8 +41,7 @@ void updateDragStyle(QWidget* widget, const QString& state)
     widget->style()->polish(widget);
     widget->update();
 }
-}
-
+}  // namespace
 
 void LoadPage::showStatusMessage(const QString& message, const bool isError) const
 {
@@ -57,11 +56,10 @@ void LoadPage::showStatusMessage(const QString& message, const bool isError) con
         "margin-top: %3px;"
         "color: %4;";
     const QString color = isError ? colors.statusError.name() : colors.statusSuccess.name();
-    m_statusLabel->setStyleSheet(labelStyle
-                        .arg(spacing.fontWeightNormal)
-                        .arg(spacing.fontSizeSm)
-                        .arg(spacing.spacingSm)
-                        .arg(color));
+    m_statusLabel->setStyleSheet(labelStyle.arg(spacing.fontWeightNormal)
+                                     .arg(spacing.fontSizeSm)
+                                     .arg(spacing.spacingSm)
+                                     .arg(color));
     // updateDragStyle(m_uploadBoxFrame, DragStateNone);
 }
 void LoadPage::resetStatus() const
@@ -206,21 +204,22 @@ auto LoadPage::createCardFrame(QVBoxLayout* parentLayout) -> QVBoxLayout*
     loadCard->setMaximumHeight(350);
     loadCard->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     const QString cardStyle = QString(
-                            "#LoadCard { "
-                            "background-color: %1; "
-                            "border: %2px solid %3; "
-                            "border-radius: %4px; "
-                            "}")
-                            .arg(colors.surfaceMain.name())
-                            .arg(spacing.borderThick)
-                            .arg(colors.borderSubtle.name(QColor::HexArgb))
-                            .arg(spacing.radiusSm);
+                                  "#LoadCard { "
+                                  "background-color: %1; "
+                                  "border: %2px solid %3; "
+                                  "border-radius: %4px; "
+                                  "}")
+                                  .arg(colors.surfaceMain.name())
+                                  .arg(spacing.borderThick)
+                                  .arg(colors.borderSubtle.name(QColor::HexArgb))
+                                  .arg(spacing.radiusSm);
     loadCard->setStyleSheet(cardStyle);
     parentLayout->addWidget(loadCard);
 
     // Inner layout of load card
     auto* cardLayout = new QVBoxLayout(loadCard);
-    cardLayout->setContentsMargins(spacing.spacingXl, spacing.spacingXl, spacing.spacingXl, spacing.spacingXl);
+    cardLayout->setContentsMargins(spacing.spacingXl, spacing.spacingXl, spacing.spacingXl,
+                                   spacing.spacingXl);
     cardLayout->setSpacing(spacing.spacingMd);
     return cardLayout;
 }
@@ -251,7 +250,6 @@ void LoadPage::setupHeader(QVBoxLayout* layout)
     layout->addWidget(subTitle);
 }
 
-
 /**
  * @brief Creates a themed upload icon for the upload zone.
  * @param parent Parent widget.
@@ -269,7 +267,6 @@ auto createUploadIcon(QWidget* parent) -> QLabel*
     auto* iconLabel = new QLabel(parent);
     iconLabel->setAlignment(Qt::AlignCenter);
 
-
     QIcon icon(Constants::LoadPage::CardIcon);
     QPixmap pixmap = icon.pixmap(spacing.IconSize, spacing.IconSize);
 
@@ -281,15 +278,13 @@ auto createUploadIcon(QWidget* parent) -> QLabel*
         painter.end();
 
         iconLabel->setPixmap(pixmap);
-    }
-    else
+    } else
     {
         // Fallback text if icon resource is missing
         iconLabel->setText(Constants::LoadPage::CardIconFallback);
-        iconLabel->setStyleSheet(
-            QString("font-size: %1px; color: %2;")
-                .arg(spacing.fontSizeLg)
-                .arg(colors.textSecondary.name()));
+        iconLabel->setStyleSheet(QString("font-size: %1px; color: %2;")
+                                     .arg(spacing.fontSizeLg)
+                                     .arg(colors.textSecondary.name()));
     }
 
     return iconLabel;
@@ -351,17 +346,16 @@ void LoadPage::setupUploadZone(QVBoxLayout* layout)
 
                             // 4. Invalid drag style
                             "#UploadZone[dragState=\"invalid\"] { "
-                            "  border: %2px solid %8;" // %6 = Rot
-                            "}"
-                        )
-                        .arg(colors.surfaceMain.name(QColor::HexArgb))
-                        .arg(spacing.borderThick)
-                        .arg(colors.borderStrong.name(QColor::HexArgb))
-                        .arg(spacing.radiusSm)
-                        .arg(colors.surfaceHover.name(QColor::HexArgb))
-                        .arg(colors.borderStrong.name(QColor::HexArgb))
-                        .arg(colors.statusSuccess.name(QColor::HexArgb))
-                        .arg(colors.statusError.name(QColor::HexArgb));
+                            "  border: %2px solid %8;"  // %6 = Rot
+                            "}")
+                            .arg(colors.surfaceMain.name(QColor::HexArgb))
+                            .arg(spacing.borderThick)
+                            .arg(colors.borderStrong.name(QColor::HexArgb))
+                            .arg(spacing.radiusSm)
+                            .arg(colors.surfaceHover.name(QColor::HexArgb))
+                            .arg(colors.borderStrong.name(QColor::HexArgb))
+                            .arg(colors.statusSuccess.name(QColor::HexArgb))
+                            .arg(colors.statusError.name(QColor::HexArgb));
 
     m_uploadBoxFrame->setStyleSheet(zoneStyle);
     layout->addWidget(m_uploadBoxFrame);
@@ -388,7 +382,7 @@ void LoadPage::setupUi()
     // Create Page Layout
     auto* mainLayout = new QVBoxLayout(this);
     mainLayout->setAlignment(Qt::AlignCenter);
-    mainLayout->setContentsMargins(0,0,0,0);
+    mainLayout->setContentsMargins(0, 0, 0, 0);
 
     auto* cardLayout = createCardFrame(mainLayout);
     setupHeader(cardLayout);

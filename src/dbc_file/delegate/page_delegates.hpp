@@ -8,7 +8,6 @@
 #include <QStyledItemDelegate>
 #include <QTreeView>
 
-
 namespace DbcFile {
 
 // ==============================================================================
@@ -34,7 +33,8 @@ class SidebarDelegate : public QStyledItemDelegate
      * @brief Prepares the style option before painting an item.
      *
      * @details
-     * - Sets the font weight to Bold if the item is selected (QSS cannot reliably change font-weight in QListView).
+     * - Sets the font weight to Bold if the item is selected (QSS cannot reliably change
+     * font-weight in QListView).
      * - Adjusts the icon color based on selection state:
      *      - Selected: Primary text color
      *      - Unselected: Secondary text color
@@ -67,9 +67,7 @@ class SidebarDelegate : public QStyledItemDelegate
      * @param index The model index of the item.
      * @return True if a tooltip was shown, otherwise false.
      */
-    bool helpEvent(QHelpEvent* event,
-                   QAbstractItemView* view,
-                   const QStyleOptionViewItem& option,
+    bool helpEvent(QHelpEvent* event, QAbstractItemView* view, const QStyleOptionViewItem& option,
                    const QModelIndex& index) override;
 };
 // ==============================================================================

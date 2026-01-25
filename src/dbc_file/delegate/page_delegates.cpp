@@ -22,7 +22,10 @@ void SidebarDelegate::initStyleOption(QStyleOptionViewItem* option, const QModel
 
     // Get icon from index
     auto icon = index.data(Qt::DecorationRole).value<QIcon>();
-    if (icon.isNull()){return;}
+    if (icon.isNull())
+    {
+        return;
+    }
     // Choose icon color depending on selected or unselected
     QColor iconColor =
         option->state & QStyle::State_Selected ? colors.textPrimary : colors.textSecondary;
@@ -44,7 +47,8 @@ auto SidebarDelegate::sizeHint(const QStyleOptionViewItem& option,
     return s;
 }
 auto SidebarDelegate::helpEvent(QHelpEvent* event, QAbstractItemView* view,
-                                const QStyleOptionViewItem& option, const QModelIndex& index) -> bool
+                                const QStyleOptionViewItem& option,
+                                const QModelIndex& index) -> bool
 {
     if (!(index.flags() & Qt::ItemIsEnabled))
     {
@@ -63,7 +67,7 @@ void OverviewListsDelegate::paint(QPainter* painter, const QStyleOptionViewItem&
     QStyledItemDelegate::paint(painter, option, index);
 }
 auto OverviewListsDelegate::sizeHint(const QStyleOptionViewItem& option,
-                                      const QModelIndex& index) const -> QSize
+                                     const QModelIndex& index) const -> QSize
 {
     return QStyledItemDelegate::sizeHint(option, index);
 }
@@ -73,7 +77,8 @@ void EcuTreeDelegate::paint(QPainter* painter, const QStyleOptionViewItem& optio
 {
     QStyledItemDelegate::paint(painter, option, index);
 }
-auto EcuTreeDelegate::sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const -> QSize
+auto EcuTreeDelegate::sizeHint(const QStyleOptionViewItem& option,
+                               const QModelIndex& index) const -> QSize
 {
     return QStyledItemDelegate::sizeHint(option, index);
 }
@@ -100,7 +105,7 @@ void MessagesSignalCardDelegate::paint(QPainter* painter, const QStyleOptionView
     QStyledItemDelegate::paint(painter, option, index);
 }
 auto MessagesSignalCardDelegate::sizeHint(const QStyleOptionViewItem& option,
-                                           const QModelIndex& index) const -> QSize
+                                          const QModelIndex& index) const -> QSize
 {
     return QStyledItemDelegate::sizeHint(option, index);
 }
@@ -119,8 +124,8 @@ void SignalTableDelegate::paint(QPainter* painter, const QStyleOptionViewItem& o
     QStyledItemDelegate::paint(painter, option, index);
 }
 auto SignalTableDelegate::sizeHint(const QStyleOptionViewItem& option,
-                                    const QModelIndex& index) const -> QSize
+                                   const QModelIndex& index) const -> QSize
 {
     return QStyledItemDelegate::sizeHint(option, index);
 };
-}// namespace DbcFile
+}  // namespace DbcFile

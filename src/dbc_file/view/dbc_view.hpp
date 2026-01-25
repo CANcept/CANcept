@@ -148,7 +148,6 @@ class DbcView : public QWidget
     void onSignalFilterTypeChanged(int index);
 
    private:
-
     /**
      * @brief Describes a single entry in the sidebar model.
      *
@@ -158,23 +157,22 @@ class DbcView : public QWidget
      * used to populate the sidebar model in a structured and maintainable
      * way.
      */
-    struct SidebarEntry
-    {
+    struct SidebarEntry {
         QString iconPath;
         QString title;
         bool enabled;
     };
 
     /**
-    * @brief Prevents deselection of items in the sidebar list.
-    *
-    * @details
-    * This method ensures that the selection in the sidebar list (`m_sidebarList`) cannot
-    * be completely cleared when the user clicks on an empty area. It connects a lambda
-    * to the `selectionChanged` signal of the `QItemSelectionModel`. If the new selection
-    * is empty (e.g., a click on an empty space), the previously selected items are
-    * reselected so that at least one item remains selected at all times.
-    */
+     * @brief Prevents deselection of items in the sidebar list.
+     *
+     * @details
+     * This method ensures that the selection in the sidebar list (`m_sidebarList`) cannot
+     * be completely cleared when the user clicks on an empty area. It connects a lambda
+     * to the `selectionChanged` signal of the `QItemSelectionModel`. If the new selection
+     * is empty (e.g., a click on an empty space), the previously selected items are
+     * reselected so that at least one item remains selected at all times.
+     */
     void disableSidebarDeselection();
 
     /**
@@ -205,8 +203,8 @@ class DbcView : public QWidget
      *   5. "Signals" – initially disabled.
      *
      * Each item is created with a corresponding icon and title from the `Constants::Sidebar`
-    * namespace. After all items are added, the model is set on `m_sidebarList`, deselection of
-    * sidebar items is disabled to ensure a persistent selection and the
+     * namespace. After all items are added, the model is set on `m_sidebarList`, deselection of
+     * sidebar items is disabled to ensure a persistent selection and the
      * first item ("Load New") is selected by default.
      */
     void setSidebarModel();

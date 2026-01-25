@@ -2,9 +2,8 @@
 // Created by Adrian Rupp on 21.01.26.
 //
 #pragma once
-#include <QVBoxLayout>
-
 #include <QLabel>
+#include <QVBoxLayout>
 #include <QWidget>
 namespace DbcFile {
 /**
@@ -70,18 +69,18 @@ class LoadPage : public QWidget
      * - Resets previous status messages.
      * - Checks if the mime data contains exactly one file ending in `.dbc`.
      * - Updates the border style (Green for valid, Red for invalid).
-    * - Accepts the proposed action so the drag operation may continue and be finalized by
-    * `dropEvent`.
+     * - Accepts the proposed action so the drag operation may continue and be finalized by
+     * `dropEvent`.
      */
     void dragEnterEvent(QDragEnterEvent* event) override;
 
     /**
-    * @details
-    * - Resets the visual border style.
-    * - Performs final validation (count and extension).
-    * - If invalid: Displays an inline error status message.
-    * - If valid: Emits `fileSelected` and shows a parsing status message.
-    */
+     * @details
+     * - Resets the visual border style.
+     * - Performs final validation (count and extension).
+     * - If invalid: Displays an inline error status message.
+     * - If valid: Emits `fileSelected` and shows a parsing status message.
+     */
     void dropEvent(QDropEvent* event) override;
 
     /**
@@ -128,8 +127,8 @@ class LoadPage : public QWidget
 
    private:
     /**
-    * @brief Orchestrates the complete UI initialization at construction.
-    */
+     * @brief Orchestrates the complete UI initialization at construction.
+     */
     void setupUi();
 
     /** @brief The interactive frame for dropping files and opening file browser. */
