@@ -13,7 +13,7 @@ namespace Core {
  * Provides a styled card frame that can be used across modules for consistent UI.
  * Content can be added to the card's layout via contentLayout().
  */
-class CardWidget : public QFrame
+class CardWidget final : public QFrame
 {
     Q_OBJECT
 
@@ -33,7 +33,10 @@ class CardWidget : public QFrame
      * @brief Returns the content layout for adding widgets to the card.
      * @return Pointer to the card's vertical layout.
      */
-    [[nodiscard]] auto contentLayout() const -> QVBoxLayout* { return m_contentLayout; }
+    [[nodiscard]] auto contentLayout() const -> QVBoxLayout*
+    {
+        return m_contentLayout;
+    }
 
    private:
     void setupUi(const QString& title, const QString& subtitle, const QString& iconPath);

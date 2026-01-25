@@ -10,8 +10,7 @@ namespace Sending {
 
 DbcSendingSubView::DbcSendingSubView(QWidget* parent)
     : QWidget(parent),
-      m_configGroup(nullptr),
-      m_interfaceCombo(nullptr),
+      m_configCard(nullptr),
       m_listHeader(nullptr),
       m_scrollArea(nullptr),
       m_scrollContent(nullptr),
@@ -31,23 +30,9 @@ void DbcSendingSubView::setupUi()
                                    spacing.spacingLg);
     mainLayout->setSpacing(spacing.spacingLg);
 
-    // === Configuration Group (Interface selector) ===
-    m_configGroup = new QGroupBox(tr("CAN-Bus Configuration"), this);
-    auto* configLayout = new QHBoxLayout(m_configGroup);
-    configLayout->setContentsMargins(spacing.spacingMd, spacing.spacingMd, spacing.spacingMd,
-                                     spacing.spacingMd);
-    configLayout->setSpacing(spacing.spacingLg);
-
-    auto* interfaceLabel = new QLabel(tr("Interface:"), m_configGroup);
-    m_interfaceCombo = new QComboBox(m_configGroup);
-    m_interfaceCombo->setMinimumWidth(200);
-    m_interfaceCombo->setPlaceholderText(tr("Select interface..."));
-
-    configLayout->addWidget(interfaceLabel);
-    configLayout->addWidget(m_interfaceCombo);
-    configLayout->addStretch();
-
-    mainLayout->addWidget(m_configGroup);
+    // === CAN-Bus Configuration Card (Interface only, no Baud Rate) ===
+    m_configCard = new CanBusConfigCard(true, false, this);
+    mainLayout->addWidget(m_configCard);
 
     // === Messages Header ===
     m_listHeader = new QLabel(tr("Messages"), this);
@@ -75,9 +60,7 @@ void DbcSendingSubView::setupUi()
     auto* footerLayout = new QHBoxLayout();
     footerLayout->setContentsMargins(0, spacing.spacingSm, 0, 0);
 
-    m_sendButton = new QPushButton(tr("Send Message"), this);
-    m_sendButton->setMinimumWidth(140);
-    m_sendButton->setMinimumHeight(36);
+    m_sendButton = new SendMessageButton(this);
 
     footerLayout->addStretch();
     footerLayout->addWidget(m_sendButton);
@@ -120,10 +103,9 @@ void DbcSendingSubView::clearMessages()
 
 void DbcSendingSubView::setAvailableInterfaces(const std::vector<std::string>& interfaces)
 {
-    m_interfaceCombo->clear();
-    for (const auto& iface : interfaces)
+    if (m_configCard)
     {
-        m_interfaceCombo->addItem(QString::fromStdString(iface));
+        m_configCard->setAvailableInterfaces(interfaces);
     }
 }
 

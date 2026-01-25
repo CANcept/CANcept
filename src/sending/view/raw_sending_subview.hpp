@@ -4,6 +4,8 @@
 #include <QPushButton>
 #include <QWidget>
 
+#include "components/can_bus_config_card.hpp"
+#include "components/send_message_button.hpp"
 #include "core/widgets/card_widget.hpp"
 #include "core/widgets/styled_combo_box.hpp"
 
@@ -40,11 +42,11 @@ class RawSendingSubView final : public QWidget
      */
     [[nodiscard]] auto interfaceSelector() const -> QComboBox*
     {
-        return m_interfaceCombo;
+        return m_configCard ? m_configCard->interfaceSelector() : nullptr;
     }
     [[nodiscard]] auto baudRateSelector() const -> QComboBox*
     {
-        return m_baudRateCombo;
+        return m_configCard ? m_configCard->baudRateSelector() : nullptr;
     }
     /** @} */
 
@@ -87,12 +89,8 @@ class RawSendingSubView final : public QWidget
    private:
     void setupUi();
 
-    // CAN-Bus Configuration Card (outer) with nested cards
-    Core::CardWidget* m_configCard;
-    Core::CardWidget* m_interfaceCard;
-    Core::CardWidget* m_baudRateCard;
-    Core::StyledComboBox* m_interfaceCombo;
-    Core::StyledComboBox* m_baudRateCombo;
+    // CAN-Bus Configuration Card
+    CanBusConfigCard* m_configCard;
 
     // CAN Frame Card
     Core::CardWidget* m_frameCard;

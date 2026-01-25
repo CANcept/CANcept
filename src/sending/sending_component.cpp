@@ -82,7 +82,8 @@ void SendingComponent::setupConnections()
     // Send button - Raw mode
     connect(m_view->rawSubView()->sendButton(), &QPushButton::clicked, this, [this]() {
         Core::RawCanMessage message{};
-        message.receiveTime = std::time(nullptr);
+        message.receiveTime = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::system_clock::now().time_since_epoch());
 
         // Parse CAN ID (hex format, may have "0x" prefix and spaces)
         QString canIdText = m_view->rawSubView()->canIdEditor()->text().trimmed();
@@ -241,9 +242,7 @@ void SendingComponent::onSendRawRequested(const Core::RawCanMessage& message)
             static_cast<uint8_t>(message.messageId));
 
     // Publish to broker - CAN handler will process this
-    Core::SendCanMessageRawEvent event;
-    event.canMessage = message;
-    m_eventBroker.publish(event);
+    m_eventBroker.publish(Core::SendCanMessageRawEvent(message));
 }
 
 void SendingComponent::onSendDbcRequested(const Core::DbcCanMessage& message)
@@ -251,9 +250,7 @@ void SendingComponent::onSendDbcRequested(const Core::DbcCanMessage& message)
     LOG_INF("SendingComponent", "Publishing DBC CAN message");
 
     // Publish to broker - CAN handler will process this
-    Core::SendCanMessageDbcEvent event;
-    event.canMessage = message;
-    m_eventBroker.publish(event);
+    m_eventBroker.publish(Core::SendCanMessageDbcEvent(message));
 }
 
 }  // namespace Sending

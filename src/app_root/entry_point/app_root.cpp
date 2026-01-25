@@ -19,7 +19,7 @@
 #include "logging/logging_component.hpp"
 #include "monitoring/monitoring_component.hpp"
 #include "sending/sending_component.hpp"
-#include "stub/MockTab.hpp"
+#include "stub/MockTabComponent.hpp"
 
 namespace AppRoot {
 
@@ -82,8 +82,6 @@ void AppRoot::bootstrap()
     LOG_INF("AppRoot", "Adding and Instatiating Tabs...");
     m_tabs.clear();
 
-    initTab<Core::MockTabComponent>();
-
     // Helper to keep bootstrap readable
     initTab<DbcFile::DbcComponent>();
     /*
@@ -92,6 +90,8 @@ void AppRoot::bootstrap()
     */
 
     initTab<Sending::SendingComponent>();
+    initTab<Mocks::DashboardTab>();
+    initTab<Mocks::CanBusTab>();
 
     LOG_INF("AppRoot", "Bootstrap Complete: launching internal logic.");
     start();

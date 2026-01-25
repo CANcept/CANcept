@@ -1,12 +1,12 @@
 #include "app_root/delegate/app_root_delegate.hpp"
 
-#include <algorithm>
 #include <QIcon>
 #include <QListView>
 #include <QMetaType>
 #include <QPainter>
 #include <QStyleOptionViewItem>
 #include <QVariant>
+#include <algorithm>
 
 #include "app_root/constants.hpp"
 #include "core/macro/theme.hpp"

@@ -18,6 +18,9 @@ inline const QString SENDING_ICON_PATH = ":/assets/icon/sending/sending.svg";
 /** @brief Icon used for the send button */
 inline const QString SEND_BUTTON_ICON_PATH = ":/assets/icon/sending/send.svg";
 
+/** @brief Text displayed on the send button */
+inline const QString SEND_BUTTON_TEXT = "Send Message";
+
 /** @brief Icon used for the raw sub Tab */
 inline const QString RAW_SENDING_ICON_PATH = ":/assets/icon/sending/raw_based_send_icon.svg";
 
@@ -35,6 +38,27 @@ inline const std::string MODULE_IDENTIFIER = "SendingComponent";
 
 /** @brief Title shown in the tab bar */
 inline const QString TAB_TITLE = "Sending";
+
+/** @brief Card title of the configuration Card. */
+inline const QString CAN_CONFIGURATION_TITLE = "CAN-Bus Configuration";
+
+/** @brief Label for the interface selection card */
+inline const QString INTERFACE_LABEL = "Interface";
+
+/** @brief Placeholder text for the interface combo box */
+inline const QString INTERFACE_PLACEHOLDER = "Select interface...";
+
+/** @brief Label for the baud rate selection card */
+inline const QString BAUD_RATE_LABEL = "Baud Rate";
+
+/** @brief Placeholder text for the baud rate combo box */
+inline const QString BAUD_RATE_PLACEHOLDER = "Select baud rate...";
+
+/** @brief Minimum width for the send message button */
+inline constexpr int SEND_BUTTON_MIN_WIDTH = 160;
+
+/** @brief Minimum height for the send message button */
+inline constexpr int SEND_BUTTON_MIN_HEIGHT = 40;
 
 /** @brief Maximum number of data bytes in a standard CAN frame */
 inline constexpr uint8_t MAX_CAN_DLC = 8;

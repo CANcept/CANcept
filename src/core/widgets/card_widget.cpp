@@ -39,7 +39,6 @@ void CardWidget::setupUi(const QString& title, const QString& subtitle, const QS
                                         spacing.spacingLg);
     m_contentLayout->setSpacing(spacing.spacingMd);
 
-    // Header with optional icon and title
     if (!title.isEmpty() || !iconPath.isEmpty())
     {
         auto* headerLayout = new QHBoxLayout();

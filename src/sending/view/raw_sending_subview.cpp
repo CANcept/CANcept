@@ -8,6 +8,7 @@
 #include <QVBoxLayout>
 
 #include "core/macro/theme.hpp"
+#include "core/widgets/styled_line_edit.hpp"
 #include "sending/constants.hpp"
 
 namespace Sending {
@@ -15,10 +16,6 @@ namespace Sending {
 RawSendingSubView::RawSendingSubView(QWidget* parent)
     : QWidget(parent),
       m_configCard(nullptr),
-      m_interfaceCard(nullptr),
-      m_baudRateCard(nullptr),
-      m_interfaceCombo(nullptr),
-      m_baudRateCombo(nullptr),
       m_frameCard(nullptr),
       m_canIdEditor(nullptr),
       m_messageDataEditor(nullptr),
@@ -51,27 +48,7 @@ void RawSendingSubView::setupUi()
     contentLayout->setSpacing(spacing.spacingLg);
 
     // CAN-Bus Configuration Card
-    m_configCard = new Core::CardWidget(tr("CAN-Bus Configuration"), QString(),
-                                        Constants::CONFIGURATION_ICON_PATH, this);
-
-    auto* innerCardsRow = new QHBoxLayout();
-    innerCardsRow->setSpacing(spacing.spacingLg);
-
-    // Interface Card
-    m_interfaceCard = new Core::CardWidget(QString(), tr("Interface"), QString(), m_configCard);
-    m_interfaceCombo = new Core::StyledComboBox(m_interfaceCard);
-    m_interfaceCombo->setPlaceholderText(tr("Select interface..."));
-    m_interfaceCard->contentLayout()->addWidget(m_interfaceCombo);
-    innerCardsRow->addWidget(m_interfaceCard);
-
-    // Baud Rate Card (nested, no icon)
-    m_baudRateCard = new Core::CardWidget(QString(), tr("Baud Rate"), QString(), m_configCard);
-    m_baudRateCombo = new Core::StyledComboBox(m_baudRateCard);
-    m_baudRateCombo->setPlaceholderText(tr("Select baud rate..."));
-    m_baudRateCard->contentLayout()->addWidget(m_baudRateCombo);
-    innerCardsRow->addWidget(m_baudRateCard);
-
-    m_configCard->contentLayout()->addLayout(innerCardsRow);
+    m_configCard = new CanBusConfigCard(true, true, this);
     contentLayout->addWidget(m_configCard);
 
     // CAN Frame Card
@@ -84,7 +61,7 @@ void RawSendingSubView::setupUi()
     auto* canIdLabel = new QLabel(tr("CAN ID (Hexadecimal)"), m_frameCard);
     canIdLabel->setStyleSheet(QString("color: %1;").arg(colors.textSecondary.name()));
 
-    m_canIdEditor = new QLineEdit(m_frameCard);
+    m_canIdEditor = new Core::StyledLineEdit(m_frameCard);
     m_canIdEditor->setPlaceholderText("0x 1A2B");
 
     // Hex validator for CAN ID (allow up to 8 hex chars for extended IDs)
@@ -101,7 +78,7 @@ void RawSendingSubView::setupUi()
     auto* messageDataLabel = new QLabel(tr("Message Data (max 8 bytes)"), m_frameCard);
     messageDataLabel->setStyleSheet(QString("color: %1;").arg(colors.textSecondary.name()));
 
-    m_messageDataEditor = new QLineEdit(m_frameCard);
+    m_messageDataEditor = new Core::StyledLineEdit(m_frameCard);
     m_messageDataEditor->setPlaceholderText("01 02 03 04 05 06 07 08");
 
     // Hex validator for message data (space-separated hex bytes)
@@ -128,44 +105,7 @@ void RawSendingSubView::setupUi()
                                      spacing.spacingLg);
     buttonLayout->addStretch();
 
-    m_sendButton = new QPushButton(tr("Send Message"), buttonContainer);
-    m_sendButton->setMinimumHeight(40);
-    m_sendButton->setMinimumWidth(160);
-
-    // Style send button as primary action with elevation
-    QString buttonStyle = QString(
-                              "QPushButton {"
-                              "  background-color: %1;"
-                              "  color: %2;"
-                              "  border: none;"
-                              "  border-radius: %3px;"
-                              "  padding: %4px %5px;"
-                              "  font-weight: %6;"
-                              "  font-size: %7px;"
-                              "}"
-                              "QPushButton:hover {"
-                              "  background-color: %8;"
-                              "}"
-                              "QPushButton:pressed {"
-                              "  background-color: %8;"
-                              "}"
-                              "QPushButton:disabled {"
-                              "  background-color: %9;"
-                              "  color: %10;"
-                              "}")
-                              .arg(colors.colorPrimary.name())
-                              .arg(colors.surfaceForeground.name())
-                              .arg(spacing.radiusMd)
-                              .arg(spacing.spacingMd)
-                              .arg(spacing.spacingXl)
-                              .arg(spacing.fontWeightMedium)
-                              .arg(spacing.fontSizeMd)
-                              .arg(colors.colorPrimaryHover.name())
-                              .arg(colors.surfaceSecondary.name())
-                              .arg(colors.textDisabled.name());
-    m_sendButton->setStyleSheet(buttonStyle);
-    m_sendButton->setIcon(QIcon(Constants::SEND_BUTTON_ICON_PATH));
-
+    m_sendButton = new SendMessageButton(buttonContainer);
     buttonLayout->addWidget(m_sendButton);
 
     // Position button container at the bottom of the main layout
@@ -174,19 +114,17 @@ void RawSendingSubView::setupUi()
 
 void RawSendingSubView::setAvailableInterfaces(const std::vector<std::string>& interfaces)
 {
-    m_interfaceCombo->clear();
-    for (const auto& interface : interfaces)
+    if (m_configCard)
     {
-        m_interfaceCombo->addItem(QString::fromStdString(interface));
+        m_configCard->setAvailableInterfaces(interfaces);
     }
 }
 
 void RawSendingSubView::setAvailableBaudRates(const std::vector<uint32_t>& baudRates)
 {
-    m_baudRateCombo->clear();
-    for (const auto& rate : baudRates)
+    if (m_configCard)
     {
-        m_baudRateCombo->addItem(QString::number(rate), QVariant(rate));
+        m_configCard->setAvailableBaudRates(baudRates);
     }
 }
 

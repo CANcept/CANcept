@@ -9,6 +9,8 @@
 #include <string>
 #include <vector>
 
+#include "components/can_bus_config_card.hpp"
+#include "components/send_message_button.hpp"
 #include "core/widgets/dbc_message_card.hpp"
 
 namespace Sending {
@@ -40,7 +42,7 @@ class DbcSendingSubView final : public QWidget
      */
     [[nodiscard]] auto interfaceSelector() const -> QComboBox*
     {
-        return m_interfaceCombo;
+        return m_configCard ? m_configCard->interfaceSelector() : nullptr;
     }
     [[nodiscard]] auto sendButton() const -> QPushButton*
     {
@@ -52,8 +54,7 @@ class DbcSendingSubView final : public QWidget
    private:
     void setupUi();
 
-    QGroupBox* m_configGroup;
-    QComboBox* m_interfaceCombo;
+    CanBusConfigCard* m_configCard;
 
     QLabel* m_listHeader;
     QScrollArea* m_scrollArea;

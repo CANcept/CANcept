@@ -286,7 +286,8 @@ void SendingModel::transmitCurrent()
     if (m_currentMode == Mode::Raw)
     {
         Core::RawCanMessage message;
-        message.receiveTime = std::time(nullptr);
+        message.receiveTime = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::system_clock::now().time_since_epoch());
         message.messageId = static_cast<char>(m_rawState.id & 0xFF);
 
         for (size_t i = 0; i < 8 && i < m_rawState.data.size(); ++i)
@@ -311,7 +312,8 @@ void SendingModel::transmitCurrent()
                 if (msgDef.messageId == msgId)
                 {
                     Core::DbcCanMessage message;
-                    message.receiveTime = std::time(nullptr);
+                    message.receiveTime = std::chrono::duration_cast<std::chrono::milliseconds>(
+                        std::chrono::system_clock::now().time_since_epoch());
                     message.messageId = static_cast<char>(msgId & 0xFF);
 
                     // Populate signal values
