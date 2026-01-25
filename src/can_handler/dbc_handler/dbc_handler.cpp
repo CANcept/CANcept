@@ -3,6 +3,8 @@
 //
 #include "dbc_handler.hpp"
 
+#include <algorithm>
+
 namespace CanHandler {
 void DbcHandler::onStart()
 {
@@ -28,14 +30,14 @@ void DbcHandler::parseNewDbc(const Core::ParseDBCRequestEvent& event)
     }
     dbcParser.provideNewFile(*parsedFile);
     delete parsedFile;
-    const Core::DbcConfig* parsedDbc = dbcParser.parseDbc();
-    if (parsedDbc == nullptr)
+    currentDbc = std::move(dbcParser.parseDbc());
+    if (currentDbc.get() == nullptr)
     {
         m_eventBroker.publish(
             Core::DBCParseErrorEvent("File could not be parsed to DbcConfig", event.filePath));
         return;
     }
-    m_eventBroker.publish(Core::DBCParsedEvent(*parsedDbc, event.filePath));
+    m_eventBroker.publish(Core::DBCParsedEvent(*currentDbc.get(), event.filePath));
 }
 
 }  // namespace CanHandler

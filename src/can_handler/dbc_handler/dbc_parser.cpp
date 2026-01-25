@@ -17,21 +17,21 @@ void DbcParser::provideNewFile(const std::string& newFile)
     std::scoped_lock guard(fileMutex);
     file = newFile;
 }
-auto DbcParser::parseDbc() -> Core::DbcConfig*
+auto DbcParser::parseDbc() -> std::unique_ptr<Core::DbcConfig>
 {
     std::scoped_lock guard(fileMutex);
     parsingValid = true;
     parsedObject = true;
     const std::string version = parseVersion();
     parseNewSymbols();
-    IF_PARSING_INVALID_RETURN(nullptr)
+    IF_PARSING_INVALID_RETURN({nullptr})
     parseBitTiming();
-    IF_PARSING_INVALID_RETURN(nullptr)
+    IF_PARSING_INVALID_RETURN({nullptr})
     std::list<std::string> nodes = parseNodes();
-    IF_PARSING_INVALID_RETURN(nullptr)
+    IF_PARSING_INVALID_RETURN({nullptr})
     while (parseValueTable())
     {
-        IF_PARSING_INVALID_RETURN(nullptr)
+        IF_PARSING_INVALID_RETURN({nullptr})
     }
     std::list<Core::DbcMessageDescription> messageDescriptions;
     while (true)
@@ -39,24 +39,24 @@ auto DbcParser::parseDbc() -> Core::DbcConfig*
         const Core::DbcMessageDescription messageDescription = parseMessage();
         if (!parsedObject)
         {
-            IF_PARSING_INVALID_RETURN(nullptr)
+            IF_PARSING_INVALID_RETURN({nullptr})
             break;
         }
         messageDescriptions.push_back(messageDescription);
     }
     while (parseMessageTransmitter())
     {
-        IF_PARSING_INVALID_RETURN(nullptr)
+        IF_PARSING_INVALID_RETURN({nullptr})
     }
     while (parseEnvironmentVariable())
     {
-        IF_PARSING_INVALID_RETURN(nullptr)
+        IF_PARSING_INVALID_RETURN({nullptr})
     }
     parseEnvironmentVariableData();
-    IF_PARSING_INVALID_RETURN(nullptr)
+    IF_PARSING_INVALID_RETURN({nullptr})
     while (parseSignalType())
     {
-        IF_PARSING_INVALID_RETURN(nullptr)
+        IF_PARSING_INVALID_RETURN({nullptr})
     }
     std::list<std::string> comments;
     while (true)
@@ -64,22 +64,22 @@ auto DbcParser::parseDbc() -> Core::DbcConfig*
         const std::string comment = parseComment();
         if (!parsedObject)
         {
-            IF_PARSING_INVALID_RETURN(nullptr)
+            IF_PARSING_INVALID_RETURN({nullptr})
             break;
         }
         comments.push_back(comment);
     }
     while (parseAttributeDefinition())
     {
-        IF_PARSING_INVALID_RETURN(nullptr)
+        IF_PARSING_INVALID_RETURN({nullptr})
     }
     while (parseAttributeDefault())
     {
-        IF_PARSING_INVALID_RETURN(nullptr)
+        IF_PARSING_INVALID_RETURN({nullptr})
     }
     while (parseAttributeValue())
     {
-        IF_PARSING_INVALID_RETURN(nullptr)
+        IF_PARSING_INVALID_RETURN({nullptr})
     }
     std::list<Core::DbcSignalValueDescription> valueDescriptions;
     while (true)
@@ -87,7 +87,7 @@ auto DbcParser::parseDbc() -> Core::DbcConfig*
         const Core::DbcSignalValueDescription valueDescription = parseSignalValue();
         if (!parsedObject)
         {
-            IF_PARSING_INVALID_RETURN(nullptr)
+            IF_PARSING_INVALID_RETURN({nullptr})
             break;
         }
         if (valueDescription.messageId == static_cast<uint>(-1))
@@ -98,25 +98,21 @@ auto DbcParser::parseDbc() -> Core::DbcConfig*
     }
     while (parseSignalTypeReference())
     {
-        IF_PARSING_INVALID_RETURN(nullptr)
+        IF_PARSING_INVALID_RETURN({nullptr})
     }
     parseSignalGroup();
-    IF_PARSING_INVALID_RETURN(nullptr)
+    IF_PARSING_INVALID_RETURN({nullptr})
     parseSignalExtendedValueTypeList();
-    IF_PARSING_INVALID_RETURN(nullptr)
+    IF_PARSING_INVALID_RETURN({nullptr})
     eraseSpaces();
     if (file != "")
     {
-        return nullptr;
+        return {nullptr};
     }
-    return new Core::DbcConfig{.nodeDefinitions = nodes,
-                               .messageDefinitions = messageDescriptions,
-                               .signalValueDescriptions = valueDescriptions,
-                               .comments = comments,
-                               .metaData = {.version = version}
+    return std::unique_ptr<Core::DbcConfig>(new Core::DbcConfig(
+        nodes, messageDescriptions, valueDescriptions, comments, {.version = version}));
+};
 
-    };
-}
 auto DbcParser::parseComment() -> std::string
 {
     eraseSpaces();
@@ -145,7 +141,7 @@ auto DbcParser::parseMessage() -> Core::DbcMessageDescription
     if (!file.starts_with("BO_"))
     {
         parsedObject = false;
-        return Core::DbcMessageDescription();
+        return {};
     }
     file = file.substr(3);
     const uint messageId = parseUInt();
@@ -157,7 +153,7 @@ auto DbcParser::parseMessage() -> Core::DbcMessageDescription
     {
         parsingValid = false;
         parsedObject = false;
-        return Core::DbcMessageDescription();
+        return {};
     }
     file = file.substr(1);
     const uint messageSize = parseUInt();
@@ -188,7 +184,7 @@ auto DbcParser::parseNodes() -> std::list<std::string>
     {
         parsingValid = false;
         parsedObject = false;
-        return std::list<std::string>();
+        return {};
     }
     file = file.substr(4);
     std::list<std::string> nodes{};
@@ -226,7 +222,7 @@ auto DbcParser::parseSignal() -> Core::DbcSignalDescription
     if (!file.starts_with("SG_"))
     {
         parsedObject = false;
-        return Core::DbcSignalDescription();
+        return {};
     }
     file = file.substr(3);
     signalName = parseCIdentifier();
@@ -337,7 +333,7 @@ auto DbcParser::parseSignal() -> Core::DbcSignalDescription
     {
         parsedObject = false;
         parsingValid = false;
-        return Core::DbcSignalDescription();
+        return {};
     }
     parsedObject = true;
     return Core::DbcSignalDescription{.signalName = signalName,
@@ -364,7 +360,7 @@ auto DbcParser::parseSignalValue() -> Core::DbcSignalValueDescription
     if (!file.starts_with("VAL_"))
     {
         parsedObject = false;
-        return Core::DbcSignalValueDescription();
+        return {};
     }
     file = file.substr(4);
     messageId = parseUInt();
@@ -408,7 +404,7 @@ auto DbcParser::parseVersion() -> std::string
     parsedObject = true;
     return parseString();
 }
-bool DbcParser::parseAttributeDefault()
+auto DbcParser::parseAttributeDefault() -> bool
 {
     eraseSpaces();
     if (!file.starts_with("BA_DEF_DEF_"))
@@ -419,7 +415,7 @@ bool DbcParser::parseAttributeDefault()
     parsedObject = true;
     return truncateToNextSemicolon();
 }
-bool DbcParser::parseAttributeDefinition()
+auto DbcParser::parseAttributeDefinition() -> bool
 {
     eraseSpaces();
     if (!file.starts_with("BA_DEF_"))
@@ -430,7 +426,7 @@ bool DbcParser::parseAttributeDefinition()
     parsedObject = true;
     return truncateToNextSemicolon();
 }
-bool DbcParser::parseAttributeValue()
+auto DbcParser::parseAttributeValue() -> bool
 {
     eraseSpaces();
     if (!file.starts_with("BA_"))
@@ -452,7 +448,7 @@ void DbcParser::parseEnvironmentVariableData()
     parsedObject = true;
     truncateToNextSemicolon();
 }
-bool DbcParser::parseEnvironmentVariable()
+auto DbcParser::parseEnvironmentVariable() -> bool
 {
     eraseSpaces();
     if (!file.starts_with("EV_"))
@@ -474,7 +470,7 @@ void DbcParser::parseEnvironmentVariableValueDefinitions()
     parsedObject = true;
     truncateToNextSemicolon();
 }
-bool DbcParser::parseMessageTransmitter()
+auto DbcParser::parseMessageTransmitter() -> bool
 {
     eraseSpaces();
     if (!file.starts_with("BO_TX_BU_"))
@@ -535,7 +531,7 @@ void DbcParser::parseSignalGroup()
     parsedObject = true;
     truncateToNextSemicolon();
 }
-bool DbcParser::parseSignalType()
+auto DbcParser::parseSignalType() -> bool
 {
     eraseSpaces();
     if (!file.starts_with("SGTYPE_"))
@@ -546,7 +542,7 @@ bool DbcParser::parseSignalType()
     parsedObject = true;
     return truncateToNextSemicolon();
 }
-bool DbcParser::parseSignalTypeReference()
+auto DbcParser::parseSignalTypeReference() -> bool
 {
     eraseSpaces();
     if (!file.starts_with("SGTYPE_"))
@@ -650,7 +646,7 @@ auto DbcParser::parseString() -> std::string
 auto DbcParser::parseDouble() -> double
 {
     eraseSpaces();
-    const int pos = std::min({file.find(' '), file.find(':'), file.find(';'), file.find(','),
+    const size_t pos = std::min({file.find(' '), file.find(':'), file.find(';'), file.find(','),
                               file.find('|'), file.find(']'), file.find('@'), file.find(')')});
     if (pos == std::string::npos)
     {
@@ -673,7 +669,7 @@ auto DbcParser::parseDouble() -> double
 auto DbcParser::parseInt() -> int
 {
     eraseSpaces();
-    const int pos = std::min({file.find(' '), file.find(':'), file.find(';'), file.find(','),
+    const size_t pos = std::min({file.find(' '), file.find(':'), file.find(';'), file.find(','),
                               file.find('|'), file.find(']'), file.find('@'), file.find(')')});
     if (pos == std::string::npos)
     {
@@ -696,7 +692,7 @@ auto DbcParser::parseInt() -> int
 auto DbcParser::parseUInt() -> uint
 {
     eraseSpaces();
-    const int pos =
+    const size_t pos =
         std::min({file.find(' '), file.find(':'), file.find(';'), file.find(','), file.find('|'),
                   file.find(']'), file.find('+'), file.find('-'), file.find('@'), file.find(')')});
     if (pos == std::string::npos)
@@ -719,7 +715,7 @@ auto DbcParser::parseUInt() -> uint
 }
 auto DbcParser::truncateToNextSemicolon() -> bool
 {
-    const int semicolonPos = file.find(';');
+    const size_t semicolonPos = file.find(';');
     if (semicolonPos == std::string::npos)
     {
         parsingValid = false;

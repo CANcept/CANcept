@@ -28,6 +28,7 @@ class DbcHandler final : public Core::ILifecycle
     DbcParser dbcParser;
     FileParser fileParser;
     Core::Connection parseNewDbcConnection;
+    std::unique_ptr<Core::DbcConfig> currentDbc;
 };
 }  // namespace CanHandler
 #endif  // CANBUSMANAGER_DBC_HANDLER_HPP

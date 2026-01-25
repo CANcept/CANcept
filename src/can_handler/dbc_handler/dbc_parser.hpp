@@ -4,8 +4,9 @@
 
 #ifndef CANBUSMANAGER_DBC_PARSER_HPP
 #define CANBUSMANAGER_DBC_PARSER_HPP
-#include <cstdint>
+#include <memory>
 #include <mutex>
+#include <regex>
 #include <set>
 #include <string>
 
@@ -23,7 +24,7 @@ class DbcParser
      * @brief Tries to parse the provided file to a DBC object
      * @return The parsed dbc config
      */
-    auto parseDbc() -> Core::DbcConfig *;
+    auto parseDbc() -> std::unique_ptr<Core::DbcConfig>;
 
    private:
     /**
