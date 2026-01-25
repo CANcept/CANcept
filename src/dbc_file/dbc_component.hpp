@@ -25,12 +25,12 @@ namespace DbcFile {
  * @brief The Controller/Composition Root for the DBC module.
  *
  * @details
- * **RESPONSIBILITIES:**
+ * RESPONSIBILITIES:
  * - Implements the `Core::ITabComponent` interface to integrate into the AppRoot.
- * - **Lifecycle Management:** Creates and owns the Model, View, and Delegate.
- * - **Wiring:** Connects the View (Signals) to the System (EventBroker) and vice versa.
+ * - Lifecycle Management: Creates and owns the Model, View, and Delegate.
+ * - Wiring: Connects the View (Signals) to the System (EventBroker) and vice versa.
  *
- * **DATA FLOW:**
+ * DATA FLOW:
  * - User Input (View) -> Component -> EventBroker (Publish `ParseDbcRequestEvent`)
  * - System Event (`DbcParsedEvent`) -> Component -> View (Unlock Navigation)
  * - System Event (`DbcParsedEvent`) -> Model (Update Data)
@@ -41,28 +41,28 @@ class DbcComponent : public Core::ITabComponent
 
    public:
     /**
-     * @brief Constructs the component.
-     *
-     * @caller AppRoot (Module Loader).
+     * @brief Constructs the DBC component.
      *
      * @details
-     * Initializes the MVD stack, connects signals/slots, and subscribes to system events.
+     * Initializes the tab component and creates the associated view.
+     * Signal and event connections are established during the component
+     * lifecycle in `onStart()`.
      *
-     * @param broker Reference to the system-wide EventBroker.
+     * @param broker Reference to the central event broker.
      */
     explicit DbcComponent(Core::IEventBroker& broker);
 
     /**
-     * @brief Destructor.
-     * Cleans up the MVD stack. Broker connections are released automatically via RAII.
+     * @brief Destroys the DBC component.
      */
     ~DbcComponent() override;
 
     // --- Core::ITabComponent Interface Implementation ---
 
     /**
-     * @brief Returns the main widget (DbcView) for display in the application window.
-     * @caller AppRoot.
+     * @brief Returns the widget representing this component's view.
+     *
+     * @return Pointer to the root widget of the DBC view.
      */
     auto getView() -> QWidget* override;
 
@@ -80,40 +80,46 @@ class DbcComponent : public Core::ITabComponent
 
    private slots:
     /**
-     * @brief Handles the file load request from the View.
-     *
-     * @caller DbcView::fileLoadRequested signal.
+     * @brief Handles file load requests initiated by the view.
      *
      * @details
-     * Creates a `ParseDbcRequestEvent` with the file path and publishes it
-     * to the EventBroker. The CAN Handler will process this request.
+     * Publishes a parse request event to the event broker containing
+     * the selected DBC file path.
      *
-     * @param filePath The absolute path to the file.
+     * @param filePath Path to the selected DBC file.
      */
-    void onFileLoadRequested(const QString& filePath) const;
+    void onFileLoadRequested(const QString& filePath);
 
    private:
     /**
-     * @brief Callback: Triggered when a DBC file was successfully parsed.
-     *
-     * @caller EventBroker (lambda callback).
+     * @brief Handles successful DBC parsing.
      *
      * @details
-     * Used to update the UI state (e.g., call `m_view->setNavigationEnabled(true)`).
-     * The Model updates its data automatically via its own subscription.
+     * Updates the view to indicate success and enables navigation
+     * to the remaining pages of the DBC view.
+     *
+     * @param event Event containing the parsed DBC result.
      */
-    void onDbcParsed(const Core::DBCParsedEvent& event) const;
+    void onDbcParsed(const Core::DBCParsedEvent& event);
 
     /**
-     * @brief Callback: Triggered when parsing failed.
-     * @caller EventBroker (lambda callback).
-     * @details Shows an error message to the user (e.g., via QMessageBox).
+     * @brief Handles DBC parsing errors.
+     *
+     * @details
+     * Displays an error message in the view and disables navigation
+     * to prevent access to invalid data.
+     *
+     * @param event Event containing error details.
      */
-    void onDbcParseError(const Core::DBCParseErrorEvent& event) const;
+    void onDbcParseError(const Core::DBCParseErrorEvent& event);
 
     /**
-     * @brief Sets up internal connections between View signals and Component slots.
-     * @caller Constructor.
+     * @brief Sets up signal-slot and event broker connections.
+     *
+     * @details
+     * Subscribes to parse success and error events via the event broker
+     * and connects view signals to their corresponding handlers.
+     * This method is called during component startup.
      */
     void setupConnections();
 
