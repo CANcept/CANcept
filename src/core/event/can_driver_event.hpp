@@ -11,12 +11,13 @@ namespace Core {
 /**
  * @brief Event, that gets published if the name of the current CAN device changes.
  */
-class CanDriverChangeEvent final : Event
-{
+struct CanDriverChangeEvent final : public Event {
     /**
      * @brief The new name of the CAN device.
      */
     std::string deviceName;
+
+    explicit CanDriverChangeEvent(const std::string &deviceName) : deviceName(deviceName){};
 };
 }  // namespace Core
 #endif  // CANBUSMANAGER_CAN_DRIVER_EVENT_HPP

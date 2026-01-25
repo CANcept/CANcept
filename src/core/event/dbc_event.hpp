@@ -16,6 +16,9 @@ namespace Core {
 struct DBCParsedEvent final : Event {
     DbcConfig config;
     std::string filePath;
+
+    DBCParsedEvent(DbcConfig config, std::string filePath)
+        : config(std::move(config)), filePath(std::move(filePath)){};
 };
 
 /**
@@ -24,6 +27,9 @@ struct DBCParsedEvent final : Event {
 struct DBCParseErrorEvent final : Event {
     std::string errorMessage;
     std::string filePath;
+
+    DBCParseErrorEvent(std::string errorMessage, std::string filePath)
+        : errorMessage(std::move(errorMessage)), filePath(std::move(filePath)){};
 };
 
 /**
@@ -31,6 +37,8 @@ struct DBCParseErrorEvent final : Event {
  */
 struct ParseDBCRequestEvent final : Event {
     std::string filePath;
+
+    explicit ParseDBCRequestEvent(std::string filePath) : filePath(std::move(filePath)){};
 };
 }  // namespace Core
 #endif  // CANBUSMANAGER_DBC_EVENT_HPP

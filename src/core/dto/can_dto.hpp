@@ -5,13 +5,13 @@
 #ifndef CANBUSMANAGER_CAN_DTO_HPP
 #define CANBUSMANAGER_CAN_DTO_HPP
 #include <array>
-#include <ctime>
+#include <chrono>
 #include <list>
 #include <string>
 
 namespace Core {
 struct RawCanMessage {
-    std::time_t receiveTime;
+    std::chrono::milliseconds receiveTime;
     std::array<char, 8> data;
     char messageId;
 };
@@ -20,7 +20,7 @@ struct DbcCanSignal {
     double value;
 };
 struct DbcCanMessage {
-    std::time_t receiveTime;
+    std::chrono::milliseconds receiveTime;
     std::list<DbcCanSignal> signalValues;
     char messageId;
 };

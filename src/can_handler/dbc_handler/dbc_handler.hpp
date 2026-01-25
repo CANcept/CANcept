@@ -15,11 +15,7 @@ namespace CanHandler {
 class DbcHandler final : public Core::ILifecycle
 {
    public:
-    explicit DbcHandler(Core::IEventBroker& eventBroker) : Core::ILifecycle(eventBroker)
-    {
-        parseNewDbcConnection = eventBroker.subscribe<Core::ParseDBCRequestEvent>(
-            [this](const Core::ParseDBCRequestEvent& event) -> void { parseNewDbc(event); });
-    };
+    explicit DbcHandler(Core::IEventBroker& eventBroker) : Core::ILifecycle(eventBroker){};
     ~DbcHandler() override;
 
    protected:
@@ -32,6 +28,7 @@ class DbcHandler final : public Core::ILifecycle
     DbcParser dbcParser;
     FileParser fileParser;
     Core::Connection parseNewDbcConnection;
+    std::unique_ptr<Core::DbcConfig> currentDbc;
 };
 }  // namespace CanHandler
 #endif  // CANBUSMANAGER_DBC_HANDLER_HPP
