@@ -23,7 +23,7 @@ void CanCommunicationHandler::onStart()
         while (_execute)
         {
             const auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(
-                                          std::chrono::system_clock::now().time_since_epoch())
+                                          std::chrono::steady_clock::now().time_since_epoch())
                                           .count();
             if (milliseconds > lastExecution + 100)
             {
