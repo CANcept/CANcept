@@ -5,6 +5,7 @@
 #include <QVBoxLayout>
 
 #include "core/macro/theme.hpp"
+#include "sending/constants.hpp"
 
 namespace Sending {
 
@@ -35,7 +36,7 @@ void DbcSendingSubView::setupUi()
     mainLayout->addWidget(m_configCard);
 
     // === Messages Header ===
-    m_listHeader = new QLabel(tr("Messages"), this);
+    m_listHeader = new QLabel(Constants::MESSAGES_LABEL, this);
     m_listHeader->setStyleSheet(QString("font-weight: %1; font-size: %2px;")
                                     .arg(spacing.fontWeightBold)
                                     .arg(spacing.fontSizeMd));

@@ -2,14 +2,14 @@
 
 #include <QHBoxLayout>
 #include <QLabel>
-#include <QRegularExpression>
-#include <QRegularExpressionValidator>
 #include <QScrollArea>
 #include <QVBoxLayout>
 
+#include "components/hex_id_line_edit.hpp"
 #include "core/macro/theme.hpp"
 #include "core/widgets/styled_line_edit.hpp"
 #include "sending/constants.hpp"
+#include "validator/hex_data_formatter.hpp"
 
 namespace Sending {
 
@@ -19,6 +19,7 @@ RawSendingSubView::RawSendingSubView(QWidget* parent)
       m_frameCard(nullptr),
       m_canIdEditor(nullptr),
       m_messageDataEditor(nullptr),
+      m_messageDataFormatter(nullptr),
       m_sendButton(nullptr)
 {
     setupUi();
@@ -52,53 +53,38 @@ void RawSendingSubView::setupUi()
     contentLayout->addWidget(m_configCard);
 
     // CAN Frame Card
-    m_frameCard = new Core::CardWidget(tr("CAN Frame"),
-                                       tr("Enter CAN ID and message data as hexadecimal values"),
-                                       QString(Constants::CAN_FRAME_ICON_PATH), this);
+    m_frameCard = new Core::CardWidget(Constants::CAN_FRAME_TITLE, Constants::CAN_FRAME_DESCRIPTION,
+                                       Constants::CAN_FRAME_ICON_PATH, this);
     auto* frameCardLayout = m_frameCard->contentLayout();
 
     // CAN ID Input
-    auto* canIdLabel = new QLabel(tr("CAN ID (Hexadecimal)"), m_frameCard);
+    auto* canIdLabel = new QLabel(Constants::CAN_ID_LABEL, m_frameCard);
     canIdLabel->setStyleSheet(QString("color: %1;").arg(colors.textSecondary.name()));
 
-    m_canIdEditor = new Core::StyledLineEdit(m_frameCard);
-    m_canIdEditor->setPlaceholderText("0x 1A2B");
-
-    // Hex validator for CAN ID (allow up to 8 hex chars for extended IDs)
-    QRegularExpression idRegex("^(0[xX])?\\s*[0-9A-Fa-f]{1,8}$");
-    auto* idValidator = new QRegularExpressionValidator(idRegex, m_canIdEditor);
-    m_canIdEditor->setValidator(idValidator);
-
+    m_canIdEditor = new HexIdLineEdit(m_frameCard);
     frameCardLayout->addWidget(canIdLabel);
     frameCardLayout->addWidget(m_canIdEditor);
 
     frameCardLayout->addSpacing(spacing.spacingMd);
 
     // Message Data Input
-    auto* messageDataLabel = new QLabel(tr("Message Data (max 8 bytes)"), m_frameCard);
+    auto* messageDataLabel = new QLabel(Constants::MESSAGE_DATA_LABEL, m_frameCard);
     messageDataLabel->setStyleSheet(QString("color: %1;").arg(colors.textSecondary.name()));
 
     m_messageDataEditor = new Core::StyledLineEdit(m_frameCard);
-    m_messageDataEditor->setPlaceholderText("01 02 03 04 05 06 07 08");
-
-    // Hex validator for message data (space-separated hex bytes)
-    // Allows patterns like: "01 02 03" or "01020304" or mixed
-    QRegularExpression dataRegex("^[0-9A-Fa-f\\s]*$");
-    auto* dataValidator = new QRegularExpressionValidator(dataRegex, m_messageDataEditor);
-    m_messageDataEditor->setValidator(dataValidator);
-
+    m_messageDataEditor->setPlaceholderText(Constants::MESSAGE_DATA_PLACEHOLDER);
     frameCardLayout->addWidget(messageDataLabel);
     frameCardLayout->addWidget(m_messageDataEditor);
 
+    // Setup input validation and formatting
+    setupCanIdInput();
+    setupMessageDataInput();
     contentLayout->addWidget(m_frameCard);
-
-    // Add stretch to push cards to top
     contentLayout->addStretch();
 
-    // === Floating Send Button ===
-    // Create a container for the button positioned at bottom right
+    // Send Message button in the bottom right corner
     auto* buttonContainer = new QWidget(this);
-    buttonContainer->setFixedHeight(80);
+    buttonContainer->setFixedHeight(Constants::BUTTON_CONTAINER_HEIGHT);
 
     auto* buttonLayout = new QHBoxLayout(buttonContainer);
     buttonLayout->setContentsMargins(spacing.spacingLg, spacing.spacingLg, spacing.spacingLg,
@@ -107,12 +93,10 @@ void RawSendingSubView::setupUi()
 
     m_sendButton = new SendMessageButton(buttonContainer);
     buttonLayout->addWidget(m_sendButton);
-
-    // Position button container at the bottom of the main layout
     mainLayout->addWidget(buttonContainer);
 }
 
-void RawSendingSubView::setAvailableInterfaces(const std::vector<std::string>& interfaces)
+void RawSendingSubView::setAvailableInterfaces(const std::vector<std::string>& interfaces) const
 {
     if (m_configCard)
     {
@@ -120,12 +104,31 @@ void RawSendingSubView::setAvailableInterfaces(const std::vector<std::string>& i
     }
 }
 
-void RawSendingSubView::setAvailableBaudRates(const std::vector<uint32_t>& baudRates)
+void RawSendingSubView::setAvailableBaudRates(const std::vector<uint32_t>& baudRates) const
 {
     if (m_configCard)
     {
         m_configCard->setAvailableBaudRates(baudRates);
     }
+}
+
+void RawSendingSubView::setupCanIdInput() const
+{
+    if (!m_canIdEditor)
+    {
+        return;
+    }
+    // Configure for standard CAN ID (0x000 - 0x7FF)
+    m_canIdEditor->setMaxHexValue(Constants::MAX_CAN_ID);
+}
+
+void RawSendingSubView::setupMessageDataInput()
+{
+    if (!m_messageDataEditor)
+    {
+        return;
+    }
+    m_messageDataFormatter = new HexDataFormatter(m_messageDataEditor, Constants::MAX_CAN_DLC);
 }
 
 }  // namespace Sending

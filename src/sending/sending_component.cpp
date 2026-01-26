@@ -36,10 +36,10 @@ void SendingComponent::onStart()
     setupBrokerSubscriptions();
 
     // Populate available CAN devices/interfaces from constants
-    m_view->setAvailableDevices(Constants::DEFAULT_CAN_DEVICES);
+    m_view->setAvailableDevices(Constants::DEFAULT_CAN_INTERFACES);
 
     // Set available bitrates from constants
-    m_view->setAvailableSpeeds(Constants::STANDARD_BITRATES);
+    m_view->setAvailableSpeeds(Constants::STANDARD_BIT_RATES);
 
     m_eventBroker.publish<Core::ModuleStartedEvent>(
         Core::ModuleStartedEvent(std::type_index(typeid(*this))));

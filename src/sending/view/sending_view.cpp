@@ -30,7 +30,7 @@ void SendingView::setupUi()
 
     // === Sidebar ===
     auto* sidebar = new QWidget(this);
-    sidebar->setFixedWidth(120);
+    sidebar->setFixedWidth(Constants::SIDEBAR_WIDTH);
     sidebar->setStyleSheet(QString("QWidget { background-color: %1; }"
                                    "QPushButton { "
                                    "  text-align: left; "
@@ -54,7 +54,7 @@ void SendingView::setupUi()
                                .arg(colors.surfaceSecondary.name())
                                .arg(colors.surfaceMain.name())
                                .arg(spacing.fontWeightBold)
-                               .arg(spacing.borderThick + 1)
+                               .arg(Constants::SIDEBAR_ACTIVE_BORDER_WIDTH)
                                .arg(colors.textSecondary.name()));
 
     auto* sidebarLayout = new QVBoxLayout(sidebar);
@@ -62,13 +62,13 @@ void SendingView::setupUi()
     sidebarLayout->setSpacing(spacing.spacingXs);
 
     // Raw mode button
-    m_btnRawMode = new QPushButton(tr("Raw"), sidebar);
+    m_btnRawMode = new QPushButton(Constants::RAW_MODE_BUTTON_TEXT, sidebar);
     m_btnRawMode->setCheckable(true);
     m_btnRawMode->setChecked(true);  // Default to raw mode
     m_btnRawMode->setIcon(QIcon(Constants::RAW_SENDING_ICON_PATH));
 
     // DBC-Based mode button
-    m_btnDbcMode = new QPushButton(tr("DBC-Based"), sidebar);
+    m_btnDbcMode = new QPushButton(Constants::DBC_MODE_BUTTON_TEXT, sidebar);
     m_btnDbcMode->setCheckable(true);
     m_btnDbcMode->setIcon(QIcon(Constants::DBC_SENDING_ICON_PATH));
 

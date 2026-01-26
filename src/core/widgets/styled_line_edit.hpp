@@ -11,7 +11,7 @@ namespace Core {
  * The StyledLineEdit wraps the standard Qt QLineEdit and automatically applies
  * the project's design system.
  */
-class StyledLineEdit final : public QLineEdit
+class StyledLineEdit : public QLineEdit
 {
     Q_OBJECT
 

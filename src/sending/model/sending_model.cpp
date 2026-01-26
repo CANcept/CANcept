@@ -1,5 +1,7 @@
 #include "sending_model.hpp"
 
+#include "sending/constants.hpp"
+
 namespace Sending {
 
 SendingModel::SendingModel(QObject* parent)
@@ -194,15 +196,15 @@ auto SendingModel::setData(const QModelIndex& index, const QVariant& value, int 
 
         case Role_CycleIntervalMs: {
             int interval = value.toInt();
-            // Enforce minimum of 10ms
-            if (interval < 10)
+            // Enforce minimum interval (prevent system overload)
+            if (interval < Constants::MIN_CYCLE_INTERVAL_MS)
             {
-                interval = 10;
+                interval = Constants::MIN_CYCLE_INTERVAL_MS;
             }
-            // Enforce maximum of 10000ms
-            if (interval > 10000)
+            // Enforce maximum interval
+            if (interval > Constants::MAX_CYCLE_INTERVAL_MS)
             {
-                interval = 10000;
+                interval = Constants::MAX_CYCLE_INTERVAL_MS;
             }
             m_cyclicState.intervalMs = interval;
             updateTimerState();

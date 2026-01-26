@@ -3,6 +3,7 @@
 #include <QDoubleSpinBox>
 #include <QPainter>
 
+#include "sending/constants.hpp"
 #include "sending/model/sending_model.hpp"
 
 namespace Sending {
@@ -24,8 +25,8 @@ QWidget* SendingDelegate::createEditor(QWidget* parent, const QStyleOptionViewIt
     if (index.internalPointer() != nullptr)
     {
         auto* editor = new QDoubleSpinBox(parent);
-        editor->setDecimals(2);
-        editor->setRange(-1e9, 1e9);
+        editor->setDecimals(Constants::SIGNAL_VALUE_DECIMALS);
+        editor->setRange(Constants::SIGNAL_VALUE_MIN, Constants::SIGNAL_VALUE_MAX);
         return editor;
     }
 
