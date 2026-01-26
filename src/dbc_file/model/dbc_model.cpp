@@ -90,27 +90,31 @@ auto DbcModel::data(const QModelIndex& index, const int role) const -> QVariant
     const auto* item = static_cast<DbcItem*>(index.internalPointer());
     const auto type = item->type();
 
-    if (role == DbcRoles::Role_ItemType)
+    switch (role)
     {
-        return QVariant::fromValue(type);
-    }
-
-    if (role == DbcRoles::Role_IsHex)
-    {
-        if (type == Core::DbcItemType::Message && index.column() == Constants::Columns::MsgId)
-        {
-            return true;
-        }
-        return false;
-    }
-
-    if (role == DbcRoles::Role_Unit)
-    {
-        if (type == Core::DbcItemType::Signal && index.column() == Constants::Columns::SigUnit)
-        {
-            return item->data(Constants::Columns::SigUnit);
-        }
-        return {};
+        case Role_ItemType:
+            return QVariant::fromValue(type);
+        case Role_IsHex:
+            if (type == Core::DbcItemType::Message && index.column() == Constants::Columns::MsgId)
+            {
+                return true;
+            }
+            return false;
+        case Role_Unit:
+            if (type == Core::DbcItemType::Signal && index.column() == Constants::Columns::SigUnit)
+            {
+                return item->data(Constants::Columns::SigUnit);
+            }
+            return {};
+        case Role_ChildCount:
+            if (type == Core::DbcItemType::Ecu || type == Core::DbcItemType::Message)
+            {
+                return item->childCount();
+            }
+        case Qt::DisplayRole:
+            return item->data(index.column());
+        default:
+            break;
     }
 
     if (type == Core::DbcItemType::Message)
@@ -152,19 +156,6 @@ auto DbcModel::data(const QModelIndex& index, const int role) const -> QVariant
             default:
                 break;
         }
-    }
-
-    if (role == DbcRoles::Role_ChildCount)
-    {
-        if (type == Core::DbcItemType::Ecu || type == Core::DbcItemType::Message)
-        {
-            return item->childCount();
-        }
-    }
-
-    if (role == Qt::DisplayRole)
-    {
-        return item->data(index.column());
     }
     return {};
 }

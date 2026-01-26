@@ -14,10 +14,6 @@
 #include "model/dbc_model.hpp"
 #include "view/dbc_view.hpp"
 
-// Forward declarations for Events
-namespace Core {
-}  // namespace Core
-
 namespace DbcFile {
 
 /**

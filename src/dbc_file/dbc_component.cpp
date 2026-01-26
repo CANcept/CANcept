@@ -28,7 +28,7 @@ void DbcComponent::onStop()
 }
 void DbcComponent::onFileLoadRequested(const QString& filePath)
 {
-    Core::ParseDBCRequestEvent event;
+    Core::ParseDBCRequestEvent event(filePath.toStdString());
     event.filePath = filePath.toStdString();
     m_eventBroker.publish(event);
 }
