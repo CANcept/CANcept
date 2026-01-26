@@ -41,6 +41,68 @@ void updateDragStyle(QWidget* widget, const QString& state)
     widget->style()->polish(widget);
     widget->update();
 }
+
+/**
+ * @brief Creates a themed upload icon for the upload zone.
+ * @param parent Parent widget.
+ * @return QLabel containing the icon.
+ *
+ * @details Uses QPainter to tint the SVG icon according to the theme. Falls back
+ * to text if the icon resource is missing.
+ */
+auto createUploadIcon(QWidget* parent) -> QLabel*
+{
+    const auto& THEME = Core::ThemeManager::getInstance();
+    const auto& colors = THEME.colors();
+    const auto& spacing = THEME.spacing();
+
+    auto* iconLabel = new QLabel(parent);
+    iconLabel->setAlignment(Qt::AlignCenter);
+
+    QIcon icon(Constants::LoadPage::CardIcon);
+    QPixmap pixmap = icon.pixmap(spacing.IconSize, spacing.IconSize);
+
+    if (!pixmap.isNull())
+    {
+        QPainter painter(&pixmap);
+        painter.setCompositionMode(QPainter::CompositionMode_SourceIn);
+        painter.fillRect(pixmap.rect(), colors.textSecondary);
+        painter.end();
+
+        iconLabel->setPixmap(pixmap);
+    } else
+    {
+        // Fallback text if icon resource is missing
+        iconLabel->setText(Constants::LoadPage::CardIconFallback);
+        iconLabel->setStyleSheet(QString("font-size: %1px; color: %2;")
+                                     .arg(spacing.fontSizeLg)
+                                     .arg(colors.textSecondary.name()));
+    }
+
+    return iconLabel;
+}
+
+/**
+ * @brief Creates an instruction label for the upload zone.
+ * @param parent Parent widget.
+ * @return QLabel containing the instruction text.
+ */
+auto createUploadInstruction(QWidget* parent) -> QLabel*
+{
+    const auto& THEME = Core::ThemeManager::getInstance();
+    const auto& colors = THEME.colors();
+    const auto& spacing = THEME.spacing();
+
+    auto* textLabel = new QLabel(parent);
+    textLabel->setAlignment(Qt::AlignCenter);
+    QString fontStyle = QString("font-size: %1px; font-weight: %2; color: %3;")
+                            .arg(spacing.fontSizeSm)
+                            .arg(spacing.fontWeightNormal)
+                            .arg(colors.textSecondary.name());
+    textLabel->setStyleSheet(fontStyle);
+    textLabel->setText(Constants::LoadPage::CardInstruction);
+    return textLabel;
+}
 }  // namespace
 
 void LoadPage::showStatusMessage(const QString& message, const bool isError) const
@@ -75,27 +137,13 @@ void LoadPage::resetStatus() const
 void LoadPage::dragEnterEvent(QDragEnterEvent* event)
 {
     resetStatus();
-    m_isDragValid = false;
+    // extract URLS
+    const QList<QUrl>& urls = event->mimeData()->urls();
+    // Check: only one file dragged? File extension correct?
+    bool isDragValid = urls.size() == 1 && urls.first().toLocalFile().endsWith(
+                                               Constants::LoadPage::FileExt, Qt::CaseInsensitive);
 
-    // Check if dragged data contain URLS
-    if (event->mimeData()->hasUrls())
-    {
-        // extract URLS
-        const QList<QUrl>& urls = event->mimeData()->urls();
-
-        // Check if only one file is being dragged
-        if (urls.size() == 1)
-        {
-            const QString filePath = urls.first().toLocalFile();
-
-            // Check if file has correct ending
-            if (filePath.endsWith(Constants::LoadPage::FileExt, Qt::CaseInsensitive))
-            {
-                m_isDragValid = true;
-            }
-        }
-    }
-    if (m_isDragValid)
+    if (isDragValid)
     {
         // Update drag style to change upload zone border color to indicate dragged data is valid
         updateDragStyle(m_uploadBoxFrame, Constants::LoadPage::Drag::Valid);
@@ -250,67 +298,6 @@ void LoadPage::setupHeader(QVBoxLayout* layout)
     layout->addWidget(subTitle);
 }
 
-/**
- * @brief Creates a themed upload icon for the upload zone.
- * @param parent Parent widget.
- * @return QLabel containing the icon.
- *
- * @details Uses QPainter to tint the SVG icon according to the theme. Falls back
- * to text if the icon resource is missing.
- */
-auto createUploadIcon(QWidget* parent) -> QLabel*
-{
-    const auto& THEME = Core::ThemeManager::getInstance();
-    const auto& colors = THEME.colors();
-    const auto& spacing = THEME.spacing();
-
-    auto* iconLabel = new QLabel(parent);
-    iconLabel->setAlignment(Qt::AlignCenter);
-
-    QIcon icon(Constants::LoadPage::CardIcon);
-    QPixmap pixmap = icon.pixmap(spacing.IconSize, spacing.IconSize);
-
-    if (!pixmap.isNull())
-    {
-        QPainter painter(&pixmap);
-        painter.setCompositionMode(QPainter::CompositionMode_SourceIn);
-        painter.fillRect(pixmap.rect(), colors.textSecondary);
-        painter.end();
-
-        iconLabel->setPixmap(pixmap);
-    } else
-    {
-        // Fallback text if icon resource is missing
-        iconLabel->setText(Constants::LoadPage::CardIconFallback);
-        iconLabel->setStyleSheet(QString("font-size: %1px; color: %2;")
-                                     .arg(spacing.fontSizeLg)
-                                     .arg(colors.textSecondary.name()));
-    }
-
-    return iconLabel;
-}
-
-/**
- * @brief Creates an instruction label for the upload zone.
- * @param parent Parent widget.
- * @return QLabel containing the instruction text.
- */
-auto createUploadInstruction(QWidget* parent) -> QLabel*
-{
-    const auto& THEME = Core::ThemeManager::getInstance();
-    const auto& colors = THEME.colors();
-    const auto& spacing = THEME.spacing();
-
-    auto* textLabel = new QLabel(parent);
-    textLabel->setAlignment(Qt::AlignCenter);
-    QString fontStyle = QString("font-size: %1px; font-weight: %2; color: %3;")
-                            .arg(spacing.fontSizeSm)
-                            .arg(spacing.fontWeightNormal)
-                            .arg(colors.textSecondary.name());
-    textLabel->setStyleSheet(fontStyle);
-    textLabel->setText(Constants::LoadPage::CardInstruction);
-    return textLabel;
-}
 void LoadPage::setupUploadZone(QVBoxLayout* layout)
 {
     const auto& THEME = Core::ThemeManager::getInstance();

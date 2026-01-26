@@ -135,7 +135,5 @@ class LoadPage : public QWidget
     QFrame* m_uploadBoxFrame;
     /** @brief Hidden label used to show parsing status or error messages. */
     QLabel* m_statusLabel;
-
-    bool m_isDragValid = false;
 };
 }  // namespace DbcFile
