@@ -1,37 +1,41 @@
 #pragma once
 
+#include <QComboBox>
+#include <QGroupBox>
+#include <QLabel>
+#include <QPushButton>
 #include <QSortFilterProxyModel>
 #include <QSplitter>
 #include <QTreeView>
 
-#include "graph_list_view.hpp"
+#include "monitoring/delegate/monitoring_delegate.hpp"
 #include "monitoring/model/monitoring_model.hpp"
-
-class MonitoringDelegate;
 
 /**
  * @namespace Monitoring
  * @brief Contains delegate and UI components for CAN signal monitoring.
  */
 namespace Monitoring {
+class GraphListView;
+class MonitoringDelegate;
 class MonitoringView : public QWidget
 {
     Q_OBJECT
    public:
-    explicit MonitoringView();
+    explicit MonitoringView(MonitoringModel* model, MonitoringDelegate* delegate);
     ~MonitoringView() override = default;
 
     /**
      * Sets a model for the view.
      * @param model contains the model to be added
      */
-    void setModel(QAbstractItemModel* model);
+    void setModel(MonitoringModel* model);
 
     /**
      * Sets a model for the view.
      * @param model contains the model to be added
      */
-    void setDelegate(QAbstractItemDelegate* model);
+    void setDelegate(MonitoringDelegate* model);
 
     // Accessors for the Delegate to wire up signals/slots
     QTreeView* getTreeView() const
@@ -71,6 +75,10 @@ class MonitoringView : public QWidget
 
    private:
     void setupUi();
+
+    // Helper to create the styled stat boxes
+    auto createStatBox(const QString& title, QLabel*& valueLabel) -> QFrame*;
+
     /**
      * @brief Proxy model used to filter and sort the signal tree data.
      *
@@ -85,5 +93,18 @@ class MonitoringView : public QWidget
 
     MonitoringModel* m_model;
     MonitoringDelegate* m_delegate;
+
+    // Header box
+    QGroupBox* m_connectionGroup;
+
+    // Row 1
+    QLabel* m_titleIcon;
+    QComboBox* m_interfaceCombo;
+    QPushButton* m_connectButton;
+
+    // Row 2 Content Labels
+    QLabel* m_fpsValueLabel;
+    QLabel* m_statusValueLabel;
+    QLabel* m_msgCountValueLabel;
 };
 }  // namespace Monitoring

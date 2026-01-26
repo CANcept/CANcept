@@ -19,7 +19,13 @@
         <file>assets/icon/sending/raw_based_send_icon.svg</file>
         <file>assets/icon/sending/dbc_based_send_icon.svg</file>
         <file>assets/icon/sending/send.svg</file>
+        <file>assets/icon/sending/configuration.svg</file>
         <file>assets/icon/sending/can_frame.svg</file>
         <file>assets/icon/sending/messages.svg</file>
+        <file>assets/icon/monitoring/monitoring_tab.svg</file>
+        <file>assets/icon/monitoring/signal_graph.svg</file>
+        <file>assets/icon/monitoring/bus_config.svg</file>
+        <file>assets/icon/monitoring/bus_connected.svg</file>
+        <file>assets/icon/monitoring/bus_disconnected.svg</file>
     </qresource>
 </RCC>
