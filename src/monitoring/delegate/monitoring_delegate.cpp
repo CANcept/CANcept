@@ -4,14 +4,13 @@
 #include <QPainter>
 #include <QPainterPath>
 
+#include "monitoring/model/monitoring_model.hpp"
+
 namespace Monitoring {
 
-MonitoringDelegate::MonitoringDelegate() : QStyledItemDelegate(nullptr) {}
-
-void MonitoringDelegate::setModel(QAbstractItemModel* model)
+MonitoringDelegate::MonitoringDelegate(MonitoringModel* model) : QStyledItemDelegate(nullptr)
 {
-    // If you need to track model-specific changes in the delegate logic
-    Q_UNUSED(model);
+    m_model = model;
 }
 
 auto MonitoringDelegate::displayText(const QVariant& value, const QLocale& locale) const -> QString
@@ -24,68 +23,93 @@ void MonitoringDelegate::paint(QPainter* painter, const QStyleOptionViewItem& op
                                const QModelIndex& index) const
 {
     painter->save();
-    painter->setRenderHint(QPainter::Antialiasing, true);
+    painter->setRenderHint(QPainter::Antialiasing);
 
-    // 1. Setup Geometry
-    QRect rect = option.rect.adjusted(5, 2, -5, -2);  // Margin
-    bool isSelected = option.state & QStyle::State_Selected;
-    bool isFrame = !index.parent().isValid();  // Top level are frames
+    bool isMessage = !index.parent().isValid();
+    QRect rect = option.rect.adjusted(5, 5, -5, -5);  // Add some padding between rows
 
-    // 2. Draw Background Card
-    QPainterPath path;
-    path.addRoundedRect(rect, 8, 8);
-
-    QColor bgColor = isSelected ? QColor(45, 125, 250, 40) : QColor(250, 250, 250);
-    QColor borderColor = isSelected ? QColor(45, 125, 250) : QColor(220, 220, 220);
-
-    painter->fillPath(path, bgColor);
-    painter->setPen(QPen(borderColor, 1));
-    painter->drawPath(path);
-
-    // 3. Draw Icon Placeholder (Left side)
-    QRect iconRect(rect.left() + 10, rect.top() + (rect.height() - 24) / 2, 24, 24);
-    painter->setBrush(isFrame ? Qt::darkGray : Qt::gray);
-    painter->setPen(Qt::NoPen);
-    painter->drawEllipse(iconRect);
-
-    // 4. Draw Text (Center)
-    QString text = index.data(Qt::DisplayRole).toString();
-    painter->setPen(Qt::black);
-    QFont font = painter->font();
-    if (isFrame) font.setBold(true);
-    painter->setFont(font);
-
-    QRect textRect = rect.adjusted(45, 0, -50, 0);
-    painter->drawText(textRect, Qt::AlignVCenter | Qt::AlignLeft, text);
-
-    // 5. Draw Checkbox (Handled by the base class usually, but we can custom draw)
-    if (index.model()->flags(index) & Qt::ItemIsUserCheckable)
+    if (isMessage)
     {
-        Qt::CheckState state = static_cast<Qt::CheckState>(index.data(Qt::CheckStateRole).toInt());
-        QRect checkRect(rect.right() - 30, rect.top() + (rect.height() - 20) / 2, 20, 20);
-
-        // Use standard Qt primitive to draw the checkbox
-        QStyleOptionButton checkbox;
-        checkbox.rect = checkRect;
-        checkbox.state = option.state | QStyle::State_Enabled;
-        if (state == Qt::Checked)
-            checkbox.state |= QStyle::State_On;
-        else
-            checkbox.state |= QStyle::State_Off;
-
-        qApp->style()->drawControl(QStyle::CE_CheckBox, &checkbox, painter);
+        drawMessageNode(painter, rect, index);
+    } else
+    {
+        // Shift signal boxes to the right
+        rect.setLeft(rect.left() + 30);
+        drawSignalLeaf(painter, rect, index);
     }
 
     painter->restore();
 }
 
+void MonitoringDelegate::drawMessageNode(QPainter* painter, const QRect& rect,
+                                         const QModelIndex& index) const
+{
+    // 1. Draw the Background Box
+    painter->setBrush(QColor("#F0F0F0"));
+    painter->setPen(QPen(QColor("#C0C0C0"), 1));
+    painter->drawRoundedRect(rect, 8, 8);
+
+    // 2. Icon (PLACEHOLDER)
+    QRect iconRect(rect.left() + 10, rect.top() + (rect.height() - 32) / 2, 32, 32);
+    painter->drawPixmap(iconRect, QPixmap(":/path/to/placeholder.png"));
+
+    // 3. Text (Name & ID)
+    painter->setPen(Qt::black);
+    painter->setFont(QFont("Arial", 10, QFont::Bold));
+    painter->drawText(rect.adjusted(50, 5, -50, -rect.height() / 2), Qt::AlignBottom,
+                      index.data().toString());
+
+    painter->setFont(QFont("Arial", 8));
+    painter->setPen(Qt::gray);
+    QString idText = QString("ID: 0x%1").arg(index.data(Qt::UserRole).toUInt(), 0, 16);
+    painter->drawText(rect.adjusted(50, rect.height() / 2, -50, -5), Qt::AlignTop, idText);
+
+    // 4. Signal Count & Checkbox (Right Side)
+    int signalCount = index.model()->rowCount(index);
+    painter->setPen(Qt::blue);
+    painter->drawText(rect.adjusted(0, 0, -40, 0), Qt::AlignRight | Qt::AlignVCenter,
+                      QString::number(signalCount));
+
+    // Draw Checkbox Placeholder (Manual drawing or using QStyle)
+    QRect checkRect(rect.right() - 30, rect.top() + (rect.height() - 20) / 2, 20, 20);
+    painter->drawRect(checkRect);
+}
+
+void MonitoringDelegate::drawSignalLeaf(QPainter* painter, const QRect& rect,
+                                        const QModelIndex& index) const
+{
+    // 1. Draw Inlay Box
+    painter->setBrush(Qt::white);
+    painter->setPen(QPen(QColor("#D0D0D0"), 1));
+    painter->drawRoundedRect(rect, 6, 6);
+
+    // 2. Signal Name (Left side, after checkbox)
+    painter->setPen(Qt::black);
+    painter->drawText(rect.adjusted(30, 0, 0, 0), Qt::AlignLeft | Qt::AlignVCenter,
+                      index.data().toString());
+
+    // 3. Value & Unit (Right Side)
+    QString value = index.data(Qt::UserRole + 1).toString();  // Assuming you store value here
+    QString unit = "V";                                       // Replace with actual unit logic
+
+    painter->setFont(QFont("Arial", 10, QFont::Bold));
+    painter->drawText(rect.adjusted(0, 5, -10, -rect.height() / 2),
+                      Qt::AlignRight | Qt::AlignBottom, value);
+
+    painter->setFont(QFont("Arial", 8));
+    painter->setPen(Qt::darkGray);
+    painter->drawText(rect.adjusted(0, rect.height() / 2, -10, -5), Qt::AlignRight | Qt::AlignTop,
+                      unit);
+}
+
 auto MonitoringDelegate::sizeHint(const QStyleOptionViewItem& option,
                                   const QModelIndex& index) const -> QSize
 {
-    Q_UNUSED(option);
-    Q_UNUSED(index);
-    // Return a fixed height for our "cards"
-    return {200, 45};
+    if (!index.parent().isValid())
+    {
+        return {200, 60};  // Height for Message boxes
+    }
+    return {200, 45};  // Height for Signal boxes
 }
 
 }  // namespace Monitoring

@@ -1,6 +1,5 @@
 #pragma once
 
-#include <QAbstractItemModel>
 #include <QStyledItemDelegate>
 
 #include "monitoring/view/monitoring_view.hpp"
@@ -10,6 +9,7 @@
  * @brief Contains delegate and UI components for CAN signal monitoring.
  */
 namespace Monitoring {
+class MonitoringModel;
 /**
  * @class MonitoringDelegate
  * @brief The active controller for the Monitoring module.
@@ -23,7 +23,7 @@ class MonitoringDelegate : public QStyledItemDelegate
     /**
      * @brief Constructs the monitoring delegate.
      */
-    explicit MonitoringDelegate();
+    explicit MonitoringDelegate(MonitoringModel* model);
 
     /**
      * @brief Default destructor.
@@ -72,6 +72,13 @@ class MonitoringDelegate : public QStyledItemDelegate
      * @caller Qt View layout system.
      * @return A fixed size (e.g., 200x50px) to ensure proper grid alignment.
      */
-    QSize sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const override;
+    [[nodiscard]] auto sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const
+        -> QSize override;
+
+   private:
+    void drawMessageNode(QPainter* painter, const QRect& rect, const QModelIndex& index) const;
+    void drawSignalLeaf(QPainter* painter, const QRect& rect, const QModelIndex& index) const;
+
+    MonitoringModel* m_model;
 };
 }  // namespace Monitoring
