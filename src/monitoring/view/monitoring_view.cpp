@@ -3,29 +3,102 @@
 #include <QHeaderView>
 #include <QVBoxLayout>
 
-#include "monitoring/delegate/monitoring_delegate.hpp"
+#include "core/constants.hpp"
+#include "core/macro/theme.hpp"
+#include "graph_list_view.hpp"
 #include "monitoring/model/monitoring_model.hpp"
 
 namespace Monitoring {
 
-MonitoringView::MonitoringView()
+MonitoringView::MonitoringView(MonitoringModel* model, MonitoringDelegate* delegate)
     : QWidget(nullptr),
       m_treeProxy(new QSortFilterProxyModel(this)),
       m_signalsTreeView(new QTreeView(this)),
-      m_splitter(new QSplitter(Qt::Horizontal, this)),
-      m_graphListView(new GraphListView(m_model, m_delegate))
+      m_splitter(new QSplitter(Qt::Horizontal, this))
 {
+    m_model = model;
+    m_delegate = delegate;
     setupUi();
 }
 
 void MonitoringView::setupUi()
 {
+    m_graphListView = new GraphListView(m_model, m_delegate);
+    m_signalsTreeView->setItemDelegate(m_delegate);
+    m_signalsTreeView->expandAll();
+    m_treeProxy->setSourceModel(m_model);
+    m_signalsTreeView->setModel(m_treeProxy);
+
     auto* mainLayout = new QVBoxLayout(this);
-    mainLayout->setContentsMargins(0, 0, 0, 0);
+    mainLayout->setContentsMargins(35, 5, 35, 30);
+    mainLayout->setSpacing(15);
+
+    // --- CAN-Bus Connection Group ---
+    m_connectionGroup = new QGroupBox(this);  // No title here, we'll add a custom one
+    m_connectionGroup->setStyleSheet(
+        "QGroupBox { border: 1px solid #C0C0C0; border-radius: 8px; }");
+    auto* groupLayout = new QVBoxLayout(m_connectionGroup);
+
+    // --- Row 1: Config & Connect ---
+    auto* topRow = new QHBoxLayout();
+
+    // Title with Icon
+    m_titleIcon = new QLabel(this);
+    m_titleIcon->setPixmap(
+        QPixmap(Core::Assets::MonitoringBusConfigIconPath).scaled(24, 24, Qt::KeepAspectRatio));
+    auto* titleLabel = new QLabel("CAN-Bus Connection", this);
+    titleLabel->setStyleSheet("font-size: 20px;");
+
+    m_interfaceCombo = new QComboBox(this);
+    m_interfaceCombo->setStyleSheet(
+        QString("background-color: %1; width: 300px; border-radius: 15px; font-size: 15px;")
+            .arg(THEME.colors().surfacePrimary.name()));
+    m_interfaceCombo->addItems({"vcan0", "can0", "can1"});
+
+    m_connectButton = new QPushButton("Connect", this);
+    m_connectButton->setIcon(QIcon(Core::Assets::MonitoringBusDisconPath));  // Initial state
+    m_connectButton->setStyleSheet(
+        QString("background-color: %1; width: 100px; border-radius: 15px; font-size: 15px;")
+            .arg(THEME.colors().surfacePrimary.name()));
+
+    topRow->addWidget(m_titleIcon);
+    topRow->addWidget(titleLabel);
+    topRow->addStretch();
+    topRow->addSpacing(30);
+    topRow->addWidget(m_interfaceCombo);
+    topRow->addSpacing(30);
+    topRow->addWidget(m_connectButton);
+
+    // --- Row 2: Status Boxes ---
+    auto* bottomRow = new QHBoxLayout();
+
+    // Create the three boxes
+    QFrame* statusBox = createStatBox("Status", m_statusValueLabel = new QLabel("Disconnected"));
+    QFrame* fpsBox = createStatBox("Frame rate", m_fpsValueLabel = new QLabel("0 fps"));
+    QFrame* msgBox = createStatBox("Messages", m_msgCountValueLabel = new QLabel("0 messages"));
+
+    // Set initial status color
+    m_statusValueLabel->setStyleSheet("font-size: 15px; color: red;");
+    m_fpsValueLabel->setStyleSheet("font-size: 15px; color: gray;");
+    m_msgCountValueLabel->setStyleSheet("font-size: 15px; color: gray;");
+
+    bottomRow->addWidget(statusBox, 1);  // The '1' makes them share space equally
+    bottomRow->addWidget(fpsBox, 1);
+    bottomRow->addWidget(msgBox, 1);
+
+    // Add rows to group
+    groupLayout->addLayout(topRow);
+    groupLayout->addLayout(bottomRow);
 
     // Configure Tree View
-    m_signalsTreeView->setAlternatingRowColors(true);
-    m_signalsTreeView->header()->setStretchLastSection(true);
+    m_signalsTreeView->setStyleSheet("QTreeView { border: none; background-color: transparent;");
+    m_signalsTreeView->setItemDelegate(m_delegate);
+    //  This ensures the tree doesn't cut off your boxes
+    m_signalsTreeView->setUniformRowHeights(false);
+    // Removes the default tiny arrows to make room for your rounded look
+    m_signalsTreeView->setRootIsDecorated(false);
+    m_signalsTreeView->header()->hide();
+    // m_signalsTreeView->header()->setStretchLastSection(true);
     m_signalsTreeView->setEditTriggers(QAbstractItemView::NoEditTriggers);
     m_signalsTreeView->setSelectionMode(QAbstractItemView::SingleSelection);
 
@@ -35,9 +108,11 @@ void MonitoringView::setupUi()
 
     // Give the Graph view more initial space (e.g., 30/70 split)
     m_splitter->setStretchFactor(0, 1);
-    m_splitter->setStretchFactor(1, 3);
+    m_splitter->setStretchFactor(1, 4);
 
-    mainLayout->addWidget(m_splitter);
+    // --- Add to Main Layout ---
+    mainLayout->addWidget(m_connectionGroup, 1);
+    mainLayout->addWidget(m_splitter, 5);
 
     // Connect the data changed signal of the model to intercept checkbox toggles
     // We do this via the proxy so we get the correct indices
@@ -64,26 +139,59 @@ void MonitoringView::setupUi()
                     }
                 }
             });
+
+    connect(m_connectButton, &QPushButton::clicked, this, [this]() -> void {
+        if (m_connectButton->text() == "Connect")
+        {
+            // Switch to Connected state
+            m_connectButton->setText("Disconnect");
+            m_connectButton->setIcon(QIcon(Core::Assets::MonitoringBusDisconPath));
+            m_connectButton->setStyleSheet(QString("background-color: %1; color: black; width: "
+                                                   "100px; border-radius: 15px; font-size: 15px;")
+                                               .arg(THEME.colors().statusWarning.name()));
+
+            m_statusValueLabel->setText(
+                QString("Connected (%1)").arg(m_interfaceCombo->currentText()));
+            m_statusValueLabel->setStyleSheet("font-size: 15px; color: green;");
+        } else
+        {
+            // Switch to Disconnected state
+            m_connectButton->setText("Connect");
+            m_connectButton->setIcon(QIcon(Core::Assets::MonitoringBusConnPath));
+            m_connectButton->setStyleSheet(QString("background-color: %1; color: black; width: "
+                                                   "100px; border-radius: 15px; font-size: 15px;")
+                                               .arg(THEME.colors().surfacePrimary.name()));
+
+            m_statusValueLabel->setText("Disconnected");
+            m_statusValueLabel->setStyleSheet("font-size:15px; color: red;");
+        }
+    });
 }
 
-void MonitoringView::setModel(QAbstractItemModel* model)
+// Helper function to keep code clean
+QFrame* MonitoringView::createStatBox(const QString& title, QLabel*& valueLabel)
 {
-    if (model)
-    {
-        m_treeProxy->setSourceModel(model);
-        m_signalsTreeView->setModel(m_treeProxy);
+    auto* frame = new QFrame(this);
+    frame->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
+    frame->setFrameStyle(QFrame::StyledPanel);
+    frame->setStyleSheet(
+        "QFrame { border: 1px solid #C0C0C0; border-radius: 8px; }"
+        "QLabel { border: none; background: transparent; }");
 
-        // Expand the tree by default to show signals
-        m_signalsTreeView->expandAll();
-    }
-}
+    auto* layout = new QVBoxLayout(frame);
 
-void MonitoringView::setDelegate(QAbstractItemDelegate* delegate)
-{
-    if (delegate)
-    {
-        m_signalsTreeView->setItemDelegate(delegate);
-    }
+    layout->setContentsMargins(20, 5, 5, 10);
+    layout->setSpacing(5);
+
+    auto* titleLabel = new QLabel(title);
+    titleLabel->setStyleSheet("font-size: 18px;");
+
+    valueLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+    titleLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+
+    layout->addWidget(titleLabel);
+    layout->addWidget(valueLabel);
+    return frame;
 }
 
 void MonitoringView::onDbcConfigurationChanged()
