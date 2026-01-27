@@ -37,7 +37,7 @@ void CanDbcHandler::parseReceivedMessage(const sockcanpp::CanMessage* canMessage
     // Parsed can message initialization
     Core::DbcCanMessage receivedMessage{
         .receiveTime = canMessage->getTimestampOffset(),
-        .messageId = static_cast<char>(canMessage->getRawFrame().can_id)};
+        .messageId = static_cast<uint16_t>(canMessage->getRawFrame().can_id)};
 
     // Parse signals
     for (const Core::DbcSignalDescription signalDescription :

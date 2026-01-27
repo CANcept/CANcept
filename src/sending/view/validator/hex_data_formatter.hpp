@@ -22,8 +22,8 @@ class HexDataFormatter final : public QObject
    public:
     /**
      * @brief Constructs a hex data formatter.
-     * @param lineEdit The QLineEdit widget to format
-     * @param maxBytes Maximum number of bytes allowed
+     * @param lineEdit The widget to format
+     * @param maxBytes Maximum number of byts allowed
      * @param parent Parent QObject
      */
     explicit HexDataFormatter(QLineEdit* lineEdit, int maxBytes = Constants::MAX_CAN_DLC,

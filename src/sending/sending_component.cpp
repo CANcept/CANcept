@@ -4,6 +4,7 @@
 #include <ctime>
 
 #include "constants.hpp"
+#include "core/event/can_driver_event.hpp"
 #include "core/event/can_event.hpp"
 #include "core/event/dbc_event.hpp"
 #include "core/macro/console_logging.hpp"
@@ -25,7 +26,9 @@ SendingComponent::SendingComponent(Core::IEventBroker& broker)
 
 SendingComponent::~SendingComponent()
 {
-    LOG_INF("SendingComponent", "Destroying Sending Component...");
+    m_parseErrorConn.release();
+    m_parseSuccessConn.release();
+    LOG_INF("SendingComponent", "Sending Component destroyed");
 }
 
 void SendingComponent::onStart()
@@ -96,12 +99,12 @@ void SendingComponent::setupConnections()
 
         bool ok = false;
         const uint32_t canId = canIdText.toUInt(&ok, 16);
-        if (!ok)
+        if (!ok || canId > Constants::MAX_CAN_ID)
         {
-            LOG_ERR("SendingComponent", "Failed to parse CAN ID from input");
+            LOG_ERR("SendingComponent", "Failed to parse CAN ID from input or ID out of range");
             return;
         }
-        message.messageId = static_cast<char>(canId & 0xFF);
+        message.messageId = static_cast<uint16_t>(canId);
 
         // Parse message data from single input field (space-separated hex bytes)
         QString messageDataText = m_view->rawSubView()->messageDataEditor()->text().trimmed();
@@ -128,12 +131,14 @@ void SendingComponent::setupConnections()
                 dlc++;
             }
 
-            LOG_INF("SendingComponent", "Raw send button clicked: ID=0x{:02X}, DLC={}",
-                    static_cast<uint8_t>(message.messageId), dlc);
+            message.dlc = static_cast<uint8_t>(dlc);
+            LOG_INF("SendingComponent", "Raw send button clicked: ID=0x{:03X}, DLC={}",
+                    message.messageId, message.dlc);
         } else
         {
-            LOG_INF("SendingComponent", "Raw send button clicked: ID=0x{:02X}, DLC=0 (no data)",
-                    static_cast<uint8_t>(message.messageId));
+            message.dlc = 0;
+            LOG_INF("SendingComponent", "Raw send button clicked: ID=0x{:03X}, DLC=0 (no data)",
+                    message.messageId);
         }
 
         onSendRawRequested(message);
@@ -194,9 +199,6 @@ void SendingComponent::setupBrokerSubscriptions()
                                 double value = text.toDouble(&ok);
                                 if (ok)
                                 {
-                                    // Find the signal index in the model and update
-                                    // For now, store directly in the dynamic values map
-                                    // This is a simplified approach
                                     LOG_INF("SendingComponent", "Signal {} value changed to {}",
                                             signalName, value);
                                 }
@@ -210,7 +212,6 @@ void SendingComponent::setupBrokerSubscriptions()
                         [msgId = msgDef.messageId](bool checked) {
                             LOG_INF("SendingComponent", "Message 0x{:X} selection changed: {}",
                                     msgId, checked);
-                            // Update selected messages in model (will be implemented in US4)
                         });
 
                 m_view->dbcSubView()->addMessageCard(card);
@@ -225,7 +226,6 @@ void SendingComponent::setupBrokerSubscriptions()
     m_parseErrorConn = m_eventBroker.subscribe<Core::DBCParseErrorEvent>(
         [this](const Core::DBCParseErrorEvent& event) {
             LOG_ERR("SendingComponent", "DBC parse failed: {}", event.errorMessage);
-            // Clear any existing cards and show error state
             m_view->dbcSubView()->clearMessages();
         });
 }
@@ -233,23 +233,18 @@ void SendingComponent::setupBrokerSubscriptions()
 void SendingComponent::onDeviceChanged(const std::string& deviceName)
 {
     LOG_INF("SendingComponent", "CAN device changed to: {}", deviceName);
-    // TODO
+    m_eventBroker.publish<Core::CanDriverChangeEvent>(Core::CanDriverChangeEvent(deviceName));
 }
 
 void SendingComponent::onSendRawRequested(const Core::RawCanMessage& message)
 {
-    LOG_INF("SendingComponent", "Publishing raw CAN message: ID=0x{:02X}",
-            static_cast<uint8_t>(message.messageId));
-
-    // Publish to broker - CAN handler will process this
+    LOG_INF("SendingComponent", "Publishing raw CAN message: ID=0x{:03X}", message.messageId);
     m_eventBroker.publish(Core::SendCanMessageRawEvent(message));
 }
 
 void SendingComponent::onSendDbcRequested(const Core::DbcCanMessage& message)
 {
     LOG_INF("SendingComponent", "Publishing DBC CAN message");
-
-    // Publish to broker - CAN handler will process this
     m_eventBroker.publish(Core::SendCanMessageDbcEvent(message));
 }
 

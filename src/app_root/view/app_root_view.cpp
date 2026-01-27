@@ -2,6 +2,7 @@
 
 #include <qevent.h>
 
+#include <QEvent>
 #include <QListView>
 #include <QPainter>
 #include <QStackedWidget>
@@ -171,6 +172,15 @@ void AppRootView::showEvent(QShowEvent* event)
                 firstIndex, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
             handleTabChanged(0);
         }
+    }
+}
+
+void AppRootView::resizeEvent(QResizeEvent* event)
+{
+    QWidget::resizeEvent(event);
+    if (m_model)
+    {
+        emit m_model->layoutChanged();
     }
 }
 

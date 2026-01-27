@@ -13,7 +13,8 @@ namespace Core {
 struct RawCanMessage {
     std::chrono::milliseconds receiveTime;
     std::array<char, 8> data;
-    char messageId;
+    uint16_t messageId;  // CAN ID: 11-bit standard (0x000-0x7FF)
+    uint8_t dlc{8};      // Data Length Code (0-8 bytes)
 };
 struct DbcCanSignal {
     std::string name;
@@ -22,7 +23,7 @@ struct DbcCanSignal {
 struct DbcCanMessage {
     std::chrono::milliseconds receiveTime;
     std::list<DbcCanSignal> signalValues;
-    char messageId;
+    uint16_t messageId;  // CAN ID: 11-bit standard (0x000-0x7FF)
 };
 }  // namespace Core
 #endif  // CANBUSMANAGER_CAN_DTO_HPP

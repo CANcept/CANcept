@@ -1,6 +1,8 @@
 #include "sending_view.hpp"
 
 #include <QHBoxLayout>
+#include <QList>
+#include <QStandardItemModel>
 #include <QVBoxLayout>
 
 #include "core/macro/theme.hpp"
@@ -10,8 +12,7 @@ namespace Sending {
 
 SendingView::SendingView(QWidget* parent)
     : QWidget(parent),
-      m_btnRawMode(nullptr),
-      m_btnDbcMode(nullptr),
+      m_sidebarList(nullptr),
       m_contentStack(nullptr),
       m_rawView(nullptr),
       m_dbcView(nullptr)
@@ -19,66 +20,109 @@ SendingView::SendingView(QWidget* parent)
     setupUi();
 }
 
+void SendingView::disableSidebarDeselection()
+{
+    // Get selection model of m_sidebarList
+    auto* selectionModel = m_sidebarList->selectionModel();
+    connect(selectionModel, &QItemSelectionModel::selectionChanged, this,
+            [selectionModel](const QItemSelection& selected, const QItemSelection& deselected) {
+                // Check: is new selection empty? (~ click in empty space)
+                if (selected.indexes().isEmpty())
+                {
+                    // Reselect previous selection again
+                    if (!deselected.indexes().isEmpty())
+                    {
+                        selectionModel->select(
+                            deselected, QItemSelectionModel::Select | QItemSelectionModel::Rows);
+                        selectionModel->setCurrentIndex(deselected.indexes().first(),
+                                                        QItemSelectionModel::NoUpdate);
+                    }
+                }
+            });
+}
+
+void SendingView::setupSidebarList()
+{
+    const auto& colors = THEME.colors();
+    const auto& spacing = THEME.spacing();
+
+    m_sidebarList = new QListView(this);
+    m_sidebarList->setSelectionMode(QAbstractItemView::SingleSelection);
+    m_sidebarList->setSelectionBehavior(QAbstractItemView::SelectRows);
+    m_sidebarList->setMaximumWidth(200);
+    m_sidebarList->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    m_sidebarList->setFrameShape(QFrame::NoFrame);
+    m_sidebarList->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    m_sidebarList->setSelectionRectVisible(false);
+    m_sidebarList->setStyleSheet(QString(R"(
+                                                QListView {
+                                                    background-color: %1;
+                                                    border-right: %2px solid %3;
+                                                    color: %4;
+                                                    font-size: %5px;
+                                                    outline: 0;
+                                                }
+
+                                                QListView::item {
+                                                    border-radius: %6px;
+                                                    padding: %7px;
+                                                    margin-right: %8px;
+                                                    margin-left: %8px;
+                                                }
+
+                                                QListView::item:selected {
+                                                    background-color: %9;
+                                                    color: %10;
+                                                }
+                                            )")
+                                     .arg(colors.surfaceMain.name(QColor::HexArgb))
+                                     .arg(spacing.borderThick)
+                                     .arg(colors.borderSubtle.name(QColor::HexArgb))
+                                     .arg(colors.textSecondary.name(QColor::HexArgb))
+                                     .arg(spacing.fontSizeMd)
+                                     .arg(spacing.radiusSm)
+                                     .arg(spacing.spacingXl)
+                                     .arg(spacing.spacingMd)
+                                     .arg(colors.surfacePrimary.name(QColor::HexArgb))
+                                     .arg(colors.textPrimary.name(QColor::HexArgb)));
+}
+
+void SendingView::setSidebarModel()
+{
+    auto* sidebarModel = new QStandardItemModel(this);
+    const QList<SidebarEntry> sidebarEntries = {
+        {.iconPath = Constants::RAW_SENDING_ICON_PATH,
+         .title = Constants::RAW_MODE_BUTTON_TEXT,
+         .enabled = true},
+        {.iconPath = Constants::DBC_SENDING_ICON_PATH,
+         .title = Constants::DBC_MODE_BUTTON_TEXT,
+         .enabled = true},
+    };
+
+    for (const auto& entry : sidebarEntries)
+    {
+        auto* item = new QStandardItem(QIcon(entry.iconPath), entry.title);
+        item->setEnabled(entry.enabled);
+        item->setSelectable(entry.enabled);
+        sidebarModel->appendRow(item);
+    }
+
+    m_sidebarList->setModel(sidebarModel);
+    disableSidebarDeselection();
+    const QModelIndex firstIndex = sidebarModel->index(0, 0);
+    m_sidebarList->setCurrentIndex(firstIndex);
+}
+
 void SendingView::setupUi()
 {
-    const auto& spacing = THEME.spacing();
-    const auto& colors = THEME.colors();
-
     auto* mainLayout = new QHBoxLayout(this);
     mainLayout->setContentsMargins(0, 0, 0, 0);
     mainLayout->setSpacing(0);
 
-    // === Sidebar ===
-    auto* sidebar = new QWidget(this);
-    sidebar->setFixedWidth(Constants::SIDEBAR_WIDTH);
-    sidebar->setStyleSheet(QString("QWidget { background-color: %1; }"
-                                   "QPushButton { "
-                                   "  text-align: left; "
-                                   "  padding: %2px %3px; "
-                                   "  border: none; "
-                                   "  background-color: transparent; "
-                                   "  font-size: %4px; "
-                                   "}"
-                                   "QPushButton:hover { "
-                                   "  background-color: %5; "
-                                   "}"
-                                   "QPushButton:checked { "
-                                   "  background-color: %6; "
-                                   "  font-weight: %7; "
-                                   "  border-left: %8px solid %9; "
-                                   "}")
-                               .arg(colors.surfacePrimary.name())
-                               .arg(spacing.spacingMd)
-                               .arg(spacing.spacingLg)
-                               .arg(spacing.fontSizeSm)
-                               .arg(colors.surfaceSecondary.name())
-                               .arg(colors.surfaceMain.name())
-                               .arg(spacing.fontWeightBold)
-                               .arg(Constants::SIDEBAR_ACTIVE_BORDER_WIDTH)
-                               .arg(colors.textSecondary.name()));
+    setupSidebarList();
+    setSidebarModel();
+    mainLayout->addWidget(m_sidebarList);
 
-    auto* sidebarLayout = new QVBoxLayout(sidebar);
-    sidebarLayout->setContentsMargins(0, spacing.spacingLg, 0, spacing.spacingLg);
-    sidebarLayout->setSpacing(spacing.spacingXs);
-
-    // Raw mode button
-    m_btnRawMode = new QPushButton(Constants::RAW_MODE_BUTTON_TEXT, sidebar);
-    m_btnRawMode->setCheckable(true);
-    m_btnRawMode->setChecked(true);  // Default to raw mode
-    m_btnRawMode->setIcon(QIcon(Constants::RAW_SENDING_ICON_PATH));
-
-    // DBC-Based mode button
-    m_btnDbcMode = new QPushButton(Constants::DBC_MODE_BUTTON_TEXT, sidebar);
-    m_btnDbcMode->setCheckable(true);
-    m_btnDbcMode->setIcon(QIcon(Constants::DBC_SENDING_ICON_PATH));
-
-    sidebarLayout->addWidget(m_btnRawMode);
-    sidebarLayout->addWidget(m_btnDbcMode);
-    sidebarLayout->addStretch();
-
-    mainLayout->addWidget(sidebar);
-
-    // === Content Stack ===
     m_contentStack = new QStackedWidget(this);
 
     // Create sub-views
@@ -90,20 +134,26 @@ void SendingView::setupUi()
 
     mainLayout->addWidget(m_contentStack, 1);
 
-    // === Connect sidebar buttons ===
-    connect(m_btnRawMode, &QPushButton::clicked, this, [this]() { displayMode(0); });
+    // === Connect sidebar ===
+    connect(m_sidebarList, &QListView::clicked, this, &SendingView::onSidebarSelectionChanged);
+}
 
-    connect(m_btnDbcMode, &QPushButton::clicked, this, [this]() { displayMode(1); });
+void SendingView::onSidebarSelectionChanged(const QModelIndex& index)
+{
+    if (!index.isValid())
+    {
+        return;
+    }
+    if (!(index.flags() & Qt::ItemIsEnabled))
+    {
+        return;
+    }
+    displayMode(index.row());
 }
 
 void SendingView::displayMode(int index)
 {
     m_contentStack->setCurrentIndex(index);
-
-    // Update button states
-    m_btnRawMode->setChecked(index == 0);
-    m_btnDbcMode->setChecked(index == 1);
-
     emit modeChanged(index == 1);
 }
 
