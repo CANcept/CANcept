@@ -53,3 +53,4 @@ doc/*
 
 # Build
 build/
+.DS_Store

@@ -14,6 +14,7 @@ struct SpacingTheme {
     int spacingXl = 24;
 
     // Border Radius
+    int radiusXs = 4;
     int radiusSm = 8;
     int radiusMd = 16;
     int radiusLg = 24;
@@ -32,6 +33,9 @@ struct SpacingTheme {
     int fontSizeSm = 12;
     int fontSizeMd = 14;
     int fontSizeLg = 18;
+
+    // Icon Sizes
+    int IconSize = 48;
 };
 
 /**

@@ -12,5 +12,4 @@ namespace Core {
 namespace Assets {
 inline const QString CanBusIconPath = ":/assets/icon/can_bus.svg";
 }  // namespace Assets
-
 }  // namespace Core
