@@ -746,7 +746,7 @@ auto DbcParser::truncateToNextSemicolon() -> bool
         parsedObject = false;
         return false;
     }
-    file = file.substr(semicolonPos);
+    file = file.substr(semicolonPos + 1);
     parsedObject = true;
     return true;
 }
