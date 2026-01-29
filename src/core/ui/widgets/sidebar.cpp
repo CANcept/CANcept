@@ -1,14 +1,14 @@
 //
 // Created by Adrian Rupp on 28.01.26.
 //
-#include "sidebar.hpp"
+#include "core/ui/widgets/sidebar.hpp"
 
 #include <qstandarditemmodel.h>
 
 #include <QListView>
 
 #include "core/theme/theme_manager.hpp"
-#include "sidebar_delegate.hpp"
+#include "core/ui/delegates/sidebar_delegate.hpp"
 namespace Core {
 Sidebar::Sidebar(QWidget* parent) : QListView(parent) {
     setupUi();

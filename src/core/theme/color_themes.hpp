@@ -29,6 +29,9 @@ struct ColorTheme {
     QColor borderSubtle = QColor(0, 0, 0, 0x19);
     QColor borderStrong = QColor(0, 0, 0, 0x32);
 
+    // Badges
+    QColor badge = QColor(226, 226, 226, 0xFF);
+
     // Status
     QColor statusSuccess = QColor(0x4C, 0xAF, 0x50, 0xFF);
     QColor statusError = QColor(0xF4, 0x43, 0x36, 0xFF);
