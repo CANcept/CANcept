@@ -139,7 +139,7 @@ auto DbcParser::parseComment() -> std::string
         file = file.substr(3);
         preComment = "Signal: ";
         preComment += std::to_string(parseUInt()) + " ";
-        preComment += std::to_string(parseUInt()) + " ";
+        preComment += parseCIdentifier() + " ";
     } else if (file.starts_with("EV_"))
     {
         file = file.substr(3);
@@ -711,7 +711,14 @@ auto DbcParser::parseInt() -> int
     file = file.substr(pos);
     parsingValid = true;
     parsedObject = true;
-    return std::stoi(possibleInt);
+    try
+    {
+        return std::stoi(possibleInt);
+    } catch (...)
+    {
+        parsingValid = false;
+        return 0;
+    }
 }
 auto DbcParser::parseUInt() -> uint
 {
@@ -735,7 +742,15 @@ auto DbcParser::parseUInt() -> uint
     file = file.substr(pos);
     parsingValid = true;
     parsedObject = true;
-    return std::stoi(possibleInt);
+    try
+    {
+        return std::stoi(possibleInt);
+    } catch (...)
+    {
+        parsingValid = false;
+        return 0;
+    }
+
 }
 auto DbcParser::truncateToNextSemicolon() -> bool
 {
