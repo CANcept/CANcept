@@ -2,47 +2,95 @@
 
 #include <QCheckBox>
 #include <QLabel>
-#include <QLineEdit>
 #include <QWidget>
 
+#include "card_widget.hpp"
+
 namespace Core {
+
+class StyledLineEdit;
+class StyledCheckBox;  // Forward declaration
+
 /**
  * @class DbcSignalRowWidget
- * @brief Represents a single signal line item within a message card.
- * @details Matches the mock: "Engine RPM | [Input] rpm | [Toggle] Use function".
+ * @brief Generic signal row widget for DBC signals.
+ *
+ * Supports multiple display modes:
+ * - **Full mode** (Sending): Signal name, value editor, unit, range, optional function toggle
+ * - **Selection mode** (Logging/Monitoring): Signal name and optional selection checkbox
+ *
+ * The widget automatically adapts its layout based on configuration.
  */
 class DbcSignalRowWidget final : public QWidget
 {
     Q_OBJECT
    public:
     /**
-     * @brief Constructs the row UI.
-     * @param name The signal name (e.g., "Engine RPM").
-     * @param unit The physical unit (e.g., "rpm").
-     * @param min The minimum physical value.
-     * @param max The maximum physical value.
+     * @brief Display mode for the signal row.
+     */
+    enum class Mode { Full, Selection };
+
+    /**
+     * @brief Configuration for signal row appearance and behavior.
+     */
+    struct Config {
+        Mode mode = Mode::Full;
+        bool showRange = true;
+        bool showSelectionCheckbox = false;
+    };
+
+    /**
+     * @brief Constructs a signal row widget with custom configuration.
+     * @param name Signal name (e.g., "EngineRPM")
+     * @param unit Physical unit (e.g., "rpm")
+     * @param min Minimum value
+     * @param max Maximum value
+     * @param config Configuration for signal row behavior
+     * @param parent Parent widget
+     */
+    explicit DbcSignalRowWidget(const QString& name, const QString& unit, double min, double max,
+                                const Config& config, QWidget* parent = nullptr);
+
+    /**
+     * @brief Constructs a signal row widget with default configuration.
+     * @param name Signal name (e.g., "EngineRPM")
+     * @param unit Physical unit (e.g., "rpm")
+     * @param min Minimum value
+     * @param max Maximum value
+     * @param parent Parent widget
      */
     explicit DbcSignalRowWidget(const QString& name, const QString& unit, double min, double max,
                                 QWidget* parent = nullptr);
 
-    // Accessors for data binding
-    [[nodiscard]] QLineEdit* valueEditor() const
+    [[nodiscard]] auto valueEditor() const -> StyledLineEdit*
     {
         return m_valueEditor;
     }
-    [[nodiscard]] QCheckBox* functionToggle() const
+
+    [[nodiscard]] auto functionToggle() const -> QCheckBox*
     {
         return m_funcToggle;
     }
 
-   private:
-    void setupUi(const QString& name, const QString& unit, double min, double max);
+    [[nodiscard]] auto selectionCheckbox() const -> StyledCheckBox*
+    {
+        return m_selectionCheckbox;
+    }
 
-    QLabel* m_nameLabel;       ///< e.g., "Engine RPM"
-    QLabel* m_rangeLabel;      ///< e.g., "0-8000 rpm"
-    QLineEdit* m_valueEditor;  ///< The main input field
-    QLabel* m_unitLabel;       ///< e.g., "rpm"
-    QCheckBox* m_funcToggle;   ///< The "Use value function" switch
+   private:
+    void setupUi(const QString& name, const QString& unit, double min, double max,
+                 const Config& config);
+    void setupFullMode(const QString& name, const QString& unit, double min, double max,
+                       const Config& config);
+    void setupSelectionMode(const QString& name, const QString& unit, const Config& config);
+
+    CardWidget* m_cardContainer;
+    StyledCheckBox* m_selectionCheckbox;
+    QLabel* m_nameLabel;
+    QLabel* m_rangeLabel;
+    StyledLineEdit* m_valueEditor;
+    QLabel* m_unitLabel;
+    QCheckBox* m_funcToggle;
 };
 
 }  // namespace Core

@@ -1,4 +1,4 @@
-#include "core/widgets/styled_line_edit.hpp"
+#include "styled_line_edit.hpp"
 
 #include <QPaintEvent>
 #include <QPainter>
@@ -41,7 +41,7 @@ void StyledLineEdit::paintEvent(QPaintEvent* event)
     }
 
     // Draw the border
-    const float penWidth = static_cast<float>(spacing.borderThick);
+    const auto penWidth = static_cast<float>(spacing.borderThick);
     const float offset = penWidth / 2.0f;
     const QRectF borderRect = QRectF(rect()).adjusted(offset, offset, -offset, -offset);
 
@@ -75,8 +75,7 @@ void StyledLineEdit::applyStyle()
                               "QLineEdit:disabled {"
                               "  background-color: %7;"
                               "}")
-                              .arg(colors.surfaceMain.name())
-                              .arg(colors.textSecondary.name())
+                              .arg(colors.surfaceMain.name(), colors.textSecondary.name())
                               .arg(spacing.radiusSm)
                               .arg(spacing.spacingLg)
                               .arg(spacing.spacingXl)

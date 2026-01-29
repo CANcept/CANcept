@@ -6,7 +6,7 @@
 #include <vector>
 
 #include "core/widgets/card_widget.hpp"
-#include "core/widgets/styled_combo_box.hpp"
+#include "core/widgets/common/styled_combo_box.hpp"
 
 namespace Sending {
 

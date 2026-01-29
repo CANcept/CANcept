@@ -102,6 +102,11 @@ class SendingComponent final : public Core::ITabComponent
      */
     void setupBrokerSubscriptions();
 
+    /**
+     * @brief Loads temporary test DBC data for development/testing.
+     */
+    void loadTestDbcData();
+
     /** @brief Model holding CAN sending configuration and data */
     std::unique_ptr<SendingModel> m_model;
 

@@ -65,6 +65,24 @@ class SendingModel final : public QAbstractItemModel
 
     void updateDbcConfig(const Core::DbcConfig& config);
     void setTransmissionStatus(bool isActive);
+
+    /**
+     * @brief Toggles message selection for transmission.
+     */
+    void setMessageSelected(uint32_t messageId, bool selected);
+
+    /**
+     * @brief Checks if a message is selected.
+     */
+    [[nodiscard]] auto isMessageSelected(uint32_t messageId) const -> bool;
+
+    /**
+     * @brief Gets the current DBC config pointer.
+     */
+    [[nodiscard]] auto currentDbcConfig() const -> const Core::DbcConfig*
+    {
+        return m_currentDbc;
+    }
    signals:
     /** * @brief Emitted when the Model determines a Raw message should be sent.
      * Triggered by manual user action or the internal cyclic timer.
@@ -119,7 +137,8 @@ class SendingModel final : public QAbstractItemModel
     /** @brief Stores which messages are selected for transmission (checkbox state) */
     std::vector<uint32_t> m_selectedMessageIds;
 
-    Core::DbcConfig* m_currentDbc;
+    /** @brief Pointer to the current DBC config (not owned - reference only) */
+    const Core::DbcConfig* m_currentDbc;
 
     // Moved from SendingDelegate: The Model now owns the timing source of truth
     QTimer* m_cyclicTimer;

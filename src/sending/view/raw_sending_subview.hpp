@@ -4,11 +4,11 @@
 #include <QPushButton>
 #include <QWidget>
 
+#include "../../core/widgets/common/styled_combo_box.hpp"
 #include "components/can_bus_config_card.hpp"
 #include "components/hex_id_line_edit.hpp"
 #include "components/send_message_button.hpp"
 #include "core/widgets/card_widget.hpp"
-#include "core/widgets/styled_combo_box.hpp"
 #include "validator/hex_data_formatter.hpp"
 
 namespace Sending {

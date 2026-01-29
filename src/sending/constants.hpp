@@ -38,6 +38,9 @@ inline const QString CONFIGURATION_ICON_PATH = ":/assets/icon/sending/configurat
 /** @brief Icon used for CAN frame input cards */
 inline const QString CAN_FRAME_ICON_PATH = ":/assets/icon/sending/can_frame.svg";
 
+/** @brief Icon used for CAN frame input cards */
+inline const QString MESSAGES_ICON_PATH = ":/assets/icon/sending/messages.svg";
+
 // MODULE IDENTIFICATION
 
 /** @brief Unique identifier used by the module for event broker communication */

@@ -2,9 +2,24 @@
 
 #include <QHBoxLayout>
 
+#include "card_widget.hpp"
+#include "common/styled_checkbox.hpp"
 #include "core/macro/theme.hpp"
 
 namespace Core {
+
+DbcMessageCard::DbcMessageCard(const QString& name, uint32_t id, int signalCount,
+                               const Config& config, QWidget* parent)
+    : QWidget(parent),
+      m_nameLabel(nullptr),
+      m_idLabel(nullptr),
+      m_headerCheckbox(nullptr),
+      m_expandBtn(nullptr),
+      m_bodyContainer(nullptr),
+      m_signalsLayout(nullptr)
+{
+    setupUi(name, id, signalCount, config);
+}
 
 DbcMessageCard::DbcMessageCard(const QString& name, uint32_t id, int signalCount, QWidget* parent)
     : QWidget(parent),
@@ -15,10 +30,15 @@ DbcMessageCard::DbcMessageCard(const QString& name, uint32_t id, int signalCount
       m_bodyContainer(nullptr),
       m_signalsLayout(nullptr)
 {
-    setupUi(name, id, signalCount);
+    Config defaultConfig;
+    defaultConfig.showCheckbox = true;
+    defaultConfig.startExpanded = false;
+    defaultConfig.checkboxTooltip = tr("Select for transmission");
+    setupUi(name, id, signalCount, defaultConfig);
 }
 
-void DbcMessageCard::setupUi(const QString& name, uint32_t id, int signalCount)
+void DbcMessageCard::setupUi(const QString& name, const uint32_t id, const int signalCount,
+                             const Config& config)
 {
     const auto& spacing = THEME.spacing();
     const auto& colors = THEME.colors();
@@ -27,84 +47,103 @@ void DbcMessageCard::setupUi(const QString& name, uint32_t id, int signalCount)
     mainLayout->setContentsMargins(0, 0, 0, 0);
     mainLayout->setSpacing(0);
 
-    // Set card styling
-    setStyleSheet(QString("DbcMessageCard { "
-                          "  background-color: %1; "
-                          "  border: %2px solid %3; "
-                          "  border-radius: %4px; "
-                          "}")
-                      .arg(colors.surfaceMain.name())
-                      .arg(spacing.borderThin)
-                      .arg(colors.borderSubtle.name())
-                      .arg(spacing.spacingXs));
+    // Message Card
+    auto* card = new CardWidget(QString(), QString(), QString(), this);
+    auto* cardLayout = card->contentLayout();
 
-    // === Header ===
-    auto* header = new QWidget(this);
-    header->setStyleSheet(QString("background-color: %1; border-bottom: %2px solid %3;")
-                              .arg(colors.surfacePrimary.name())
-                              .arg(spacing.borderThin)
-                              .arg(colors.borderSubtle.name()));
-    auto* headerLayout = new QHBoxLayout(header);
-    headerLayout->setContentsMargins(spacing.spacingMd, spacing.spacingSm, spacing.spacingMd,
-                                     spacing.spacingSm);
-    headerLayout->setSpacing(spacing.spacingMd);
+    if (!cardLayout)
+    {
+        return;
+    }
 
-    // Expand/collapse button
-    m_expandBtn = new QPushButton(this);
-    m_expandBtn->setFixedSize(spacing.spacingXl, spacing.spacingXl);
+    cardLayout->setContentsMargins(spacing.spacingMd, spacing.spacingMd, spacing.spacingMd,
+                                   spacing.spacingMd);
+    cardLayout->setSpacing(spacing.spacingSm);
+    auto* headerRow = new QHBoxLayout();
+    headerRow->setSpacing(spacing.spacingMd);
+
+    // Expand/collapse arrow
+    m_expandBtn = new QPushButton(card);
+    m_expandBtn->setFixedSize(spacing.spacingLg, spacing.spacingLg);
     m_expandBtn->setFlat(true);
-    m_expandBtn->setText(QString::fromUtf8("\u25BC"));  // Down arrow
-    m_expandBtn->setStyleSheet(
-        QString("QPushButton { border: none; font-size: %1px; }").arg(spacing.fontSizeXs));
+    m_expandBtn->setText(config.startExpanded ? QString::fromUtf8("\u25BC")
+                                              : QString::fromUtf8("\u25B6"));
+    m_expandBtn->setStyleSheet(QString("QPushButton { "
+                                       "  border: none; "
+                                       "  font-size: %1px; "
+                                       "  color: %2; "
+                                       "  background: transparent; "
+                                       "}")
+                                   .arg(spacing.fontSizeSm)
+                                   .arg(colors.textSecondary.name()));
+    headerRow->addWidget(m_expandBtn);
 
-    // Message name
-    m_nameLabel = new QLabel(name, header);
-    m_nameLabel->setStyleSheet(QString("font-weight: %1; font-size: %2px;")
+    // Message Name
+    m_nameLabel = new QLabel(name, card);
+    m_nameLabel->setStyleSheet(QString("QLabel { "
+                                       "  font-weight: %1; "
+                                       "  font-size: %2px; "
+                                       "  color: %3; "
+                                       "  text-decoration: none; "
+                                       "}")
                                    .arg(spacing.fontWeightBold)
-                                   .arg(spacing.fontSizeSm + 1));
+                                   .arg(spacing.fontSizeSm)
+                                   .arg(colors.textPrimary.name()));
+    headerRow->addWidget(m_nameLabel);
 
-    // Signal count label
-    auto* signalCountLabel = new QLabel(QString("%1 signals").arg(signalCount), header);
-    signalCountLabel->setStyleSheet(QString("color: %1; font-size: %2px;")
+    // CAN ID with 0x prefix
+    m_idLabel = new QLabel(QString("0x%1").arg(id, 3, 16, QChar('0')).toUpper(), card);
+    m_idLabel->setStyleSheet(QString("QLabel { "
+                                     "  color: %1; "
+                                     "  font-size: %2px; "
+                                     "  text-decoration: none; "
+                                     "}")
+                                 .arg(colors.textSecondary.name())
+                                 .arg(spacing.fontSizeXs));
+    headerRow->addWidget(m_idLabel);
+
+    headerRow->addStretch();
+
+    // Signal count (textSecondary)
+    auto* signalCountLabel =
+        new QLabel(QString("%1 signal%2").arg(signalCount).arg(signalCount != 1 ? "s" : ""), card);
+    signalCountLabel->setStyleSheet(QString("QLabel { "
+                                            "  color: %1; "
+                                            "  font-size: %2px; "
+                                            "}")
                                         .arg(colors.textSecondary.name())
-                                        .arg(spacing.fontSizeXs + 1));
+                                        .arg(spacing.fontSizeXs));
+    headerRow->addWidget(signalCountLabel);
 
-    // CAN ID label
-    m_idLabel = new QLabel(QString("0x%1").arg(id, 3, 16, QChar('0')).toUpper(), header);
-    m_idLabel->setStyleSheet(QString("color: %1; font-size: %2px;")
-                                 .arg(colors.textDisabled.name())
-                                 .arg(spacing.fontSizeXs + 1));
+    // Selection checkbox (optional)
+    if (config.showCheckbox)
+    {
+        m_headerCheckbox = new StyledCheckBox(card);
+        if (!config.checkboxTooltip.isEmpty())
+        {
+            m_headerCheckbox->setToolTip(config.checkboxTooltip);
+        }
+        headerRow->addWidget(m_headerCheckbox);
+    }
 
-    // Selection checkbox
-    m_headerCheckbox = new QCheckBox(header);
-    m_headerCheckbox->setToolTip(tr("Select for transmission"));
+    cardLayout->addLayout(headerRow);
 
-    headerLayout->addWidget(m_expandBtn);
-    headerLayout->addWidget(m_nameLabel);
-    headerLayout->addWidget(signalCountLabel);
-    headerLayout->addStretch();
-    headerLayout->addWidget(m_idLabel);
-    headerLayout->addWidget(m_headerCheckbox);
-
-    mainLayout->addWidget(header);
-
-    // === Body (signals container) ===
-    m_bodyContainer = new QWidget(this);
-    m_bodyContainer->setStyleSheet(QString("background-color: %1;").arg(colors.surfaceMain.name()));
+    // === Row 2: Signal rows container ===
+    m_bodyContainer = new QWidget(card);
     m_signalsLayout = new QVBoxLayout(m_bodyContainer);
-    m_signalsLayout->setContentsMargins(spacing.spacingXl + spacing.spacingMd, spacing.spacingSm,
-                                        spacing.spacingMd,
-                                        spacing.spacingSm);  // Indent signals
-    m_signalsLayout->setSpacing(spacing.spacingXs);
+    m_signalsLayout->setContentsMargins(0, 0, 0, 0);
+    m_signalsLayout->setSpacing(spacing.spacingSm);
 
-    mainLayout->addWidget(m_bodyContainer);
+    cardLayout->addWidget(m_bodyContainer);
+
+    mainLayout->addWidget(card);
 
     // Connect expand button
     connect(m_expandBtn, &QPushButton::clicked, this,
             [this]() { setExpanded(!m_bodyContainer->isVisible()); });
 
-    // Start collapsed
-    m_bodyContainer->setVisible(false);
+    // Set initial expand state
+    setExpanded(config.startExpanded);
 }
 
 void DbcMessageCard::addSignalRow(QWidget* rowWidget)

@@ -1,4 +1,4 @@
-#include "core/widgets/styled_combo_box.hpp"
+#include "styled_combo_box.hpp"
 
 #include <QAbstractItemView>
 #include <QFrame>

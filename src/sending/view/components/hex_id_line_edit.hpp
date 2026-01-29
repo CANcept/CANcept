@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/widgets/styled_line_edit.hpp"
+#include "core/widgets/common/styled_line_edit.hpp"
 
 namespace Sending {
 

@@ -5,9 +5,9 @@
 #include <QScrollArea>
 #include <QVBoxLayout>
 
+#include "../../core/widgets/common/styled_line_edit.hpp"
 #include "components/hex_id_line_edit.hpp"
 #include "core/macro/theme.hpp"
-#include "core/widgets/styled_line_edit.hpp"
 #include "sending/constants.hpp"
 #include "validator/hex_data_formatter.hpp"
 
@@ -118,7 +118,6 @@ void RawSendingSubView::setupCanIdInput() const
     {
         return;
     }
-    // Configure for standard CAN ID (0x000 - 0x7FF)
     m_canIdEditor->setMaxHexValue(Constants::MAX_CAN_ID);
 }
 

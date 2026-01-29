@@ -1,5 +1,7 @@
 #include "sending_model.hpp"
 
+#include <algorithm>
+
 #include "sending/constants.hpp"
 
 namespace Sending {
@@ -216,7 +218,7 @@ auto SendingModel::setData(const QModelIndex& index, const QVariant& value, int 
             if (index.isValid() && index.internalPointer() != nullptr)
             {
                 // This is a signal index
-                int messageRow =
+                const int messageRow =
                     static_cast<int>(reinterpret_cast<quintptr>(index.internalPointer())) - 1;
                 auto msgIt = m_currentDbc->messageDefinitions.begin();
                 std::advance(msgIt, messageRow);
@@ -252,10 +254,8 @@ auto SendingModel::setData(const QModelIndex& index, const QVariant& value, int 
 void SendingModel::updateDbcConfig(const Core::DbcConfig& config)
 {
     beginResetModel();
-    // Store a copy of the config
-    static Core::DbcConfig storedConfig;
-    storedConfig = config;
-    m_currentDbc = &storedConfig;
+    // Store pointer to the config (not owned - caller must ensure lifetime)
+    m_currentDbc = &config;
 
     // Initialize signal values to their minimums
     m_dynamicSignalValues.clear();
@@ -361,6 +361,25 @@ void SendingModel::updateTimerState()
     {
         m_cyclicTimer->stop();
     }
+}
+
+void SendingModel::setMessageSelected(uint32_t messageId, bool selected)
+{
+    auto it = std::find(m_selectedMessageIds.begin(), m_selectedMessageIds.end(), messageId);
+
+    if (selected && it == m_selectedMessageIds.end())
+    {
+        m_selectedMessageIds.push_back(messageId);
+    } else if (!selected && it != m_selectedMessageIds.end())
+    {
+        m_selectedMessageIds.erase(it);
+    }
+}
+
+auto SendingModel::isMessageSelected(uint32_t messageId) const -> bool
+{
+    return std::find(m_selectedMessageIds.begin(), m_selectedMessageIds.end(), messageId) !=
+           m_selectedMessageIds.end();
 }
 
 }  // namespace Sending

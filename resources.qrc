@@ -15,5 +15,6 @@
         <file>assets/icon/sending/send.svg</file>
         <file>assets/icon/sending/configuration.svg</file>
         <file>assets/icon/sending/can_frame.svg</file>
+        <file>assets/icon/sending/messages.svg</file>
     </qresource>
 </RCC>
