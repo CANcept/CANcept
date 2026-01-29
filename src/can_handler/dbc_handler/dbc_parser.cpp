@@ -5,6 +5,8 @@
 
 #include <iostream>
 #include <regex>
+
+#include "core/macro/console_logging.hpp"
 namespace CanHandler {
 #define IF_PARSING_INVALID_RETURN(returnValue) \
     if (!parsingValid)                         \
@@ -122,6 +124,30 @@ auto DbcParser::parseComment() -> std::string
         return "";
     }
     file = file.substr(3);
+    eraseSpaces();
+    std::string preComment = "";
+    if (file.starts_with("BU_"))
+    {
+        file = file.substr(3);
+        preComment = "Node: ";
+        preComment += parseCIdentifier() + " ";
+    } else if (file.starts_with("BO_"))
+    {
+        file = file.substr(3);
+        preComment = "Message: ";
+        preComment += std::to_string(parseUInt()) + " ";
+    } else if (file.starts_with("SG_"))
+    {
+        file = file.substr(3);
+        preComment = "Signal: ";
+        preComment += std::to_string(parseUInt()) + " ";
+        preComment += parseCIdentifier() + " ";
+    } else if (file.starts_with("EV_"))
+    {
+        file = file.substr(3);
+        preComment = "Environment variable: ";
+        preComment += parseCIdentifier() + " ";
+    }
     std::string comment = parseString();
     IF_PARSING_INVALID_RETURN("")
     eraseSpaces();
@@ -133,7 +159,7 @@ auto DbcParser::parseComment() -> std::string
     }
     file = file.substr(1);
     parsedObject = true;
-    return comment;
+    return preComment + comment;
 }
 auto DbcParser::parseMessage() -> Core::DbcMessageDescription
 {
@@ -605,22 +631,22 @@ void DbcParser::parseBitTiming()
 }
 void DbcParser::eraseSpaces()
 {
-    while (file.front() == ' ')
+    while (isspace(file.front()))
     {
-        file.erase(file.begin());
+        file = file.substr(1);
     }
 }
 auto DbcParser::parseCIdentifier() -> std::string
 {
     eraseSpaces();
-    if (!regex_match(file, FILE_STARTS_WITH_C_IDENTIFIER_REGEX))
+    const size_t pos = file.find_first_of(" :;,");
+    std::string identifier = file.substr(0, pos);
+    if (!regex_match(identifier, C_IDENTIFIER_REGEX))
     {
         parsingValid = false;
         parsedObject = false;
         return "";
     }
-    const int pos = std::min(file.find(' '), file.find(':'));
-    std::string identifier = file.substr(0, pos);
     file = file.substr(pos);
     parsingValid = true;
     parsedObject = true;
@@ -629,7 +655,7 @@ auto DbcParser::parseCIdentifier() -> std::string
 auto DbcParser::parseString() -> std::string
 {
     eraseSpaces();
-    if (!std::regex_match(file, FILE_STARTS_WITH_STRING_REGEX))
+    if (!file.starts_with("\""))
     {
         parsingValid = false;
         parsedObject = false;
@@ -637,6 +663,12 @@ auto DbcParser::parseString() -> std::string
     }
     file = file.substr(1);
     const int hyphenPos = file.find('\"');
+    if (hyphenPos == std::string::npos)
+    {
+        parsingValid = false;
+        parsedObject = false;
+        return "";
+    }
     std::string string = file.substr(0, hyphenPos);
     file = file.substr(hyphenPos + 1);
     parsingValid = true;
@@ -646,8 +678,7 @@ auto DbcParser::parseString() -> std::string
 auto DbcParser::parseDouble() -> double
 {
     eraseSpaces();
-    const size_t pos = std::min({file.find(' '), file.find(':'), file.find(';'), file.find(','),
-                                 file.find('|'), file.find(']'), file.find('@'), file.find(')')});
+    const size_t pos = file.find_first_of(" :;,|]@)");
     if (pos == std::string::npos)
     {
         parsingValid = false;
@@ -669,8 +700,7 @@ auto DbcParser::parseDouble() -> double
 auto DbcParser::parseInt() -> int
 {
     eraseSpaces();
-    const size_t pos = std::min({file.find(' '), file.find(':'), file.find(';'), file.find(','),
-                                 file.find('|'), file.find(']'), file.find('@'), file.find(')')});
+    const size_t pos = file.find_first_of(" :;,|]@)");
     if (pos == std::string::npos)
     {
         parsingValid = false;
@@ -687,14 +717,20 @@ auto DbcParser::parseInt() -> int
     file = file.substr(pos);
     parsingValid = true;
     parsedObject = true;
-    return std::stoi(possibleInt);
+    try
+    {
+        return std::stoi(possibleInt);
+    } catch (...)
+    {
+        LOG_ERR(1, "Error while parsing integer in DBC: %s", possibleInt.c_str());
+        parsingValid = false;
+        return 0;
+    }
 }
 auto DbcParser::parseUInt() -> uint
 {
     eraseSpaces();
-    const size_t pos =
-        std::min({file.find(' '), file.find(':'), file.find(';'), file.find(','), file.find('|'),
-                  file.find(']'), file.find('+'), file.find('-'), file.find('@'), file.find(')')});
+    const size_t pos = file.find_first_of(" :;,|]+-@)");
     if (pos == std::string::npos)
     {
         parsingValid = false;
@@ -711,7 +747,15 @@ auto DbcParser::parseUInt() -> uint
     file = file.substr(pos);
     parsingValid = true;
     parsedObject = true;
-    return std::stoi(possibleInt);
+    try
+    {
+        return std::stoi(possibleInt);
+    } catch (...)
+    {
+        LOG_ERR(1, "Error while parsing unsigned integer in DBC: %s", possibleInt.c_str());
+        parsingValid = false;
+        return 0;
+    }
 }
 auto DbcParser::truncateToNextSemicolon() -> bool
 {
@@ -722,7 +766,7 @@ auto DbcParser::truncateToNextSemicolon() -> bool
         parsedObject = false;
         return false;
     }
-    file = file.substr(semicolonPos);
+    file = file.substr(semicolonPos + 1);
     parsedObject = true;
     return true;
 }

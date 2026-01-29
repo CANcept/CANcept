@@ -56,13 +56,11 @@ void AppRoot::bootstrap()
     LOG_INF("AppRoot", "Instantiating Event Broker...");
     m_broker = std::make_unique<EventBroker::EventBroker>();
 
-    /*
     LOG_INF("AppRoot", "Instantiating Can Communication Handler...");
     m_can_communication_handler = std::make_unique<CanHandler::CanCommunicationHandler>(*m_broker);
 
     LOG_INF("AppRoot", "Instanciating Dbc Handler");
     m_dbc_handler = std::make_unique<CanHandler::DbcHandler>(*m_broker);
-    */
 
     LOG_INF("AppRoot", "Instantiating App Root MVD...");
     m_model = std::make_unique<AppRootModel>();
