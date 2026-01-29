@@ -629,22 +629,22 @@ void DbcParser::parseBitTiming()
 }
 void DbcParser::eraseSpaces()
 {
-    while (std::regex_match(file, FILE_STARTS_WITH_WHITESPACE_REGEX))
+    while (isspace(file.front()))
     {
-        file.erase(file.begin());
+        file = file.substr(1);
     }
 }
 auto DbcParser::parseCIdentifier() -> std::string
 {
     eraseSpaces();
-    if (!regex_match(file, FILE_STARTS_WITH_C_IDENTIFIER_REGEX))
+    const int pos = std::min({file.find(' '), file.find(':'), file.find(';'), file.find(',')});
+    std::string identifier = file.substr(0, pos);
+    if (!regex_match(identifier, C_IDENTIFIER_REGEX))
     {
         parsingValid = false;
         parsedObject = false;
         return "";
     }
-    const int pos = std::min({file.find(' '), file.find(':'), file.find(';'), file.find(',')});
-    std::string identifier = file.substr(0, pos);
     file = file.substr(pos);
     parsingValid = true;
     parsedObject = true;
@@ -653,7 +653,7 @@ auto DbcParser::parseCIdentifier() -> std::string
 auto DbcParser::parseString() -> std::string
 {
     eraseSpaces();
-    if (!std::regex_match(file, FILE_STARTS_WITH_STRING_REGEX))
+    if (!file.starts_with("\""))
     {
         parsingValid = false;
         parsedObject = false;
@@ -661,6 +661,12 @@ auto DbcParser::parseString() -> std::string
     }
     file = file.substr(1);
     const int hyphenPos = file.find('\"');
+    if (hyphenPos == std::string::npos)
+    {
+        parsingValid = false;
+        parsedObject = false;
+        return "";
+    }
     std::string string = file.substr(0, hyphenPos);
     file = file.substr(hyphenPos + 1);
     parsingValid = true;
@@ -750,7 +756,6 @@ auto DbcParser::parseUInt() -> uint
         parsingValid = false;
         return 0;
     }
-
 }
 auto DbcParser::truncateToNextSemicolon() -> bool
 {
