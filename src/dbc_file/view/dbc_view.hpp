@@ -7,7 +7,7 @@
 #include <QWidget>
 #include <memory>
 
-#include "core/ui/widgets/sidebar.hpp"
+#include "core/widgets/sidebar.hpp"
 #include "pages/ecus_page.hpp"
 #include "pages/load_page.hpp"
 #include "pages/messages_page.hpp"
@@ -36,12 +36,12 @@ class DbcView : public QWidget
 
    public:
     /**
-     * @brief Constructs the DbcView widget.
-     *
-     * Initializes the user interface and sets up all child widgets.
-     *
-     * @param parent Optional parent widget.
-     */
+ * @brief Constructs the DbcView widget.
+ *
+ * Initializes the user interface and sets up all child widgets.
+ *
+ * @param parent Optional parent widget.
+ */
     explicit DbcView(QWidget* parent = nullptr);
 
     /**
@@ -74,6 +74,7 @@ class DbcView : public QWidget
      * to ensure Hex values and Units are displayed correctly.
      */
     void setDataItemDelegate(QAbstractItemDelegate* delegate);
+
 
     /**
      * @brief Enables or disables sidebar navigation.
@@ -170,6 +171,7 @@ class DbcView : public QWidget
      * all subviews.
      */
     void setupUi();
+
 
     /**
      * @brief Creates and registers all subviews.
