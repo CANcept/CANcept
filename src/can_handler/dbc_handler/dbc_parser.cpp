@@ -5,6 +5,8 @@
 
 #include <iostream>
 #include <regex>
+
+#include "core/macro/console_logging.hpp"
 namespace CanHandler {
 #define IF_PARSING_INVALID_RETURN(returnValue) \
     if (!parsingValid)                         \
@@ -637,7 +639,7 @@ void DbcParser::eraseSpaces()
 auto DbcParser::parseCIdentifier() -> std::string
 {
     eraseSpaces();
-    const int pos = std::min({file.find(' '), file.find(':'), file.find(';'), file.find(',')});
+    const size_t pos = file.find_first_of(" :;,");
     std::string identifier = file.substr(0, pos);
     if (!regex_match(identifier, C_IDENTIFIER_REGEX))
     {
@@ -676,8 +678,7 @@ auto DbcParser::parseString() -> std::string
 auto DbcParser::parseDouble() -> double
 {
     eraseSpaces();
-    const size_t pos = std::min({file.find(' '), file.find(':'), file.find(';'), file.find(','),
-                                 file.find('|'), file.find(']'), file.find('@'), file.find(')')});
+    const size_t pos = file.find_first_of(" :;,|]@)");
     if (pos == std::string::npos)
     {
         parsingValid = false;
@@ -699,8 +700,7 @@ auto DbcParser::parseDouble() -> double
 auto DbcParser::parseInt() -> int
 {
     eraseSpaces();
-    const size_t pos = std::min({file.find(' '), file.find(':'), file.find(';'), file.find(','),
-                                 file.find('|'), file.find(']'), file.find('@'), file.find(')')});
+    const size_t pos = file.find_first_of(" :;,|]@)");
     if (pos == std::string::npos)
     {
         parsingValid = false;
@@ -722,6 +722,7 @@ auto DbcParser::parseInt() -> int
         return std::stoi(possibleInt);
     } catch (...)
     {
+        LOG_ERR(1, "Error while parsing integer in DBC: %s", possibleInt.c_str());
         parsingValid = false;
         return 0;
     }
@@ -729,9 +730,7 @@ auto DbcParser::parseInt() -> int
 auto DbcParser::parseUInt() -> uint
 {
     eraseSpaces();
-    const size_t pos =
-        std::min({file.find(' '), file.find(':'), file.find(';'), file.find(','), file.find('|'),
-                  file.find(']'), file.find('+'), file.find('-'), file.find('@'), file.find(')')});
+    const size_t pos = file.find_first_of(" :;,|]+-@)");
     if (pos == std::string::npos)
     {
         parsingValid = false;
@@ -753,6 +752,7 @@ auto DbcParser::parseUInt() -> uint
         return std::stoi(possibleInt);
     } catch (...)
     {
+        LOG_ERR(1, "Error while parsing unsigned integer in DBC: %s", possibleInt.c_str());
         parsingValid = false;
         return 0;
     }
