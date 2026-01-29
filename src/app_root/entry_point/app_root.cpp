@@ -56,7 +56,6 @@ void AppRoot::bootstrap()
     LOG_INF("AppRoot", "Instantiating Event Broker...");
     m_broker = std::make_unique<EventBroker::EventBroker>();
 
-
     LOG_INF("AppRoot", "Instantiating Can Communication Handler...");
     m_can_communication_handler = std::make_unique<CanHandler::CanCommunicationHandler>(*m_broker);
 
