@@ -619,7 +619,7 @@ auto DbcParser::parseCIdentifier() -> std::string
         parsedObject = false;
         return "";
     }
-    const int pos = std::min(file.find(' '), file.find(':'));
+    const int pos = std::min({file.find(' '), file.find(':'), file.find(';'), file.find(',')});
     std::string identifier = file.substr(0, pos);
     file = file.substr(pos);
     parsingValid = true;
