@@ -3,18 +3,18 @@
 //
 #include "sidebar_delegate.hpp"
 
+#include <QAbstractItemView>
 #include <QHelpEvent>
 #include <QPainter>
 #include <QToolTip>
-#include <QAbstractItemView>
 
 #include "core/theme/theme_manager.hpp"
 #include "dbc_file/constants.hpp"
 namespace Core {
 void SidebarDelegate::setToolTipText(const QString& toolTipText)
-    {
+{
     m_toolTipText = toolTipText;
-    }
+}
 void SidebarDelegate::initStyleOption(QStyleOptionViewItem* option, const QModelIndex& index) const
 {
     QStyledItemDelegate::initStyleOption(option, index);
@@ -71,4 +71,4 @@ auto SidebarDelegate::helpEvent(QHelpEvent* event, QAbstractItemView* view,
     }
     return false;
 }
-}  // namespace core
+}  // namespace Core

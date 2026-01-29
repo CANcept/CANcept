@@ -60,7 +60,7 @@ auto createUploadIcon(QWidget* parent) -> QLabel*
     iconLabel->setAlignment(Qt::AlignCenter);
 
     QIcon icon(Constants::LoadPage::CardIcon);
-    QPixmap pixmap = icon.pixmap(spacing.IconSize, spacing.IconSize);
+    QPixmap pixmap = icon.pixmap(spacing.IconLg, spacing.IconLg);
 
     if (!pixmap.isNull())
     {

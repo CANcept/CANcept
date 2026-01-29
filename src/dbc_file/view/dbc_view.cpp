@@ -8,7 +8,7 @@
 
 #include "core/constants.hpp"
 #include "core/theme/theme_manager.hpp"
-#include "core/widgets/sidebar.hpp"
+#include "core/ui/widgets/sidebar.hpp"
 #include "dbc_file/constants.hpp"
 #include "dbc_file/delegate/page_delegates.hpp"
 
@@ -34,12 +34,14 @@ void DbcFile::DbcView::onSidebarSelectionChanged(int index)
     if (index < 0 || index >= m_contentStack->count()) return;
 
     // Avoid redundant page switches
-    if (m_contentStack->currentIndex() == index) {
+    if (m_contentStack->currentIndex() == index)
+    {
         return;
     }
 
     // Load page cleanup if leaving load page
-    if (m_contentStack->currentIndex() == 0 && index != 0) {
+    if (m_contentStack->currentIndex() == 0 && index != 0)
+    {
         m_loadPage->resetStatus();
     }
 
@@ -54,7 +56,6 @@ void DbcFile::DbcView::onMessageSelected(const QModelIndex& proxyIndex) {}
 void DbcFile::DbcView::onSignalFilterTextChanged(const QString& text) {}
 void DbcFile::DbcView::onSignalFilterTypeChanged(int index) {}
 
-
 void DbcFile::DbcView::setupUi()
 {
     // Create main layout
@@ -62,16 +63,19 @@ void DbcFile::DbcView::setupUi()
     mainLayout->setContentsMargins(0, 0, 0, 0);
     mainLayout->setSpacing(0);
 
-
     // --- Sidebar setup ---
     m_sidebar = new Core::Sidebar(this);
 
     // Add sidebar tabs
-    m_sidebar->addTab(QIcon(Constants::Sidebar::IconLoadNew), Constants::Sidebar::TitleLoadNew, true);
-    m_sidebar->addTab(QIcon(Constants::Sidebar::IconOverview), Constants::Sidebar::TitleOverview, false);
-    m_sidebar->addTab(QIcon(Constants::Sidebar::IconEcus), Constants::Sidebar::TitleEcus,     false);
-    m_sidebar->addTab(QIcon(Constants::Sidebar::IconMessages), Constants::Sidebar::TitleMessages, false);
-    m_sidebar->addTab(QIcon(Constants::Sidebar::IconSignals), Constants::Sidebar::TitleSignals,  false);
+    m_sidebar->addTab(QIcon(Constants::Sidebar::IconLoadNew), Constants::Sidebar::TitleLoadNew,
+                      true);
+    m_sidebar->addTab(QIcon(Constants::Sidebar::IconOverview), Constants::Sidebar::TitleOverview,
+                      false);
+    m_sidebar->addTab(QIcon(Constants::Sidebar::IconEcus), Constants::Sidebar::TitleEcus, false);
+    m_sidebar->addTab(QIcon(Constants::Sidebar::IconMessages), Constants::Sidebar::TitleMessages,
+                      false);
+    m_sidebar->addTab(QIcon(Constants::Sidebar::IconSignals), Constants::Sidebar::TitleSignals,
+                      false);
 
     // Tooltip shown for disabled navigation entries
     m_sidebar->setToolTipText(Constants::Sidebar::HoverText);
@@ -104,7 +108,8 @@ void DbcFile::DbcView::createSubViews()
 }
 void DbcFile::DbcView::setupConnections()
 {
-    connect(m_sidebar, &Core::Sidebar::tabSelected, this, &DbcFile::DbcView::onSidebarSelectionChanged);
+    connect(m_sidebar, &Core::Sidebar::tabSelected, this,
+            &DbcFile::DbcView::onSidebarSelectionChanged);
     connect(m_loadPage, &LoadPage::fileSelected, this,
             [this](const QString& path) { emit fileLoadRequested(path); });
 }

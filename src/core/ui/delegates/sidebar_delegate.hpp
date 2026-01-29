@@ -34,8 +34,7 @@ class SidebarDelegate : public QStyledItemDelegate
      *
      * @param toolTipText Tooltip text to display.
      */
-   void setToolTipText(const QString& toolTipText);
-
+    void setToolTipText(const QString& toolTipText);
 
     /**
      * @brief Initializes and customizes the style options for an item.
@@ -49,7 +48,6 @@ class SidebarDelegate : public QStyledItemDelegate
      * @param index Model index of the item.
      */
     void initStyleOption(QStyleOptionViewItem* option, const QModelIndex& index) const override;
-
 
     /**
      * @brief Returns the size hint for a sidebar item.
@@ -81,4 +79,4 @@ class SidebarDelegate : public QStyledItemDelegate
     /**Text to be displayed in possible tooltip when hovering disabled items.*/
     QString m_toolTipText;
 };
-}
+}  // namespace Core
