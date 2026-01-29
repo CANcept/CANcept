@@ -605,7 +605,7 @@ void DbcParser::parseBitTiming()
 }
 void DbcParser::eraseSpaces()
 {
-    while (file.front() == ' ')
+    while (std::regex_match(file, FILE_STARTS_WITH_WHITESPACE_REGEX))
     {
         file.erase(file.begin());
     }

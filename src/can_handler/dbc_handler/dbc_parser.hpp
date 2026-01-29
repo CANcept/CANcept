@@ -205,6 +205,7 @@ class DbcParser
 
     const std::regex FILE_STARTS_WITH_C_IDENTIFIER_REGEX{"([A-Z]|[a-z]|_)(\\w)+( |:).*"};
     const std::regex FILE_STARTS_WITH_STRING_REGEX{"\".*\".*"};
+    const std::regex FILE_STARTS_WITH_WHITESPACE_REGEX{"\\s.*"};
     const std::regex DOUBLE_REGEX{R"((\+|-)?\d+(\.\d+)?)"};
     const std::regex INT_REGEX{"(\\+|-)?\\d+"};
     const std::regex UINT_REGEX{"\\d+"};
