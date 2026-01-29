@@ -122,6 +122,30 @@ auto DbcParser::parseComment() -> std::string
         return "";
     }
     file = file.substr(3);
+    eraseSpaces();
+    std::string preComment = "";
+    if (file.starts_with("BU_"))
+    {
+        file = file.substr(3);
+        preComment = "Node: ";
+        preComment += parseCIdentifier() + " ";
+    } else if (file.starts_with("BO_"))
+    {
+        file = file.substr(3);
+        preComment = "Message: ";
+        preComment += std::to_string(parseUInt()) + " ";
+    } else if (file.starts_with("SG_"))
+    {
+        file = file.substr(3);
+        preComment = "Signal: ";
+        preComment += std::to_string(parseUInt()) + " ";
+        preComment += std::to_string(parseUInt()) + " ";
+    } else if (file.starts_with("EV_"))
+    {
+        file = file.substr(3);
+        preComment = "Environment variable: ";
+        preComment += parseCIdentifier() + " ";
+    }
     std::string comment = parseString();
     IF_PARSING_INVALID_RETURN("")
     eraseSpaces();
@@ -133,7 +157,7 @@ auto DbcParser::parseComment() -> std::string
     }
     file = file.substr(1);
     parsedObject = true;
-    return comment;
+    return preComment + comment;
 }
 auto DbcParser::parseMessage() -> Core::DbcMessageDescription
 {
