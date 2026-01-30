@@ -22,45 +22,65 @@ class ItemPainter
    public:
     ItemPainter() = delete;
 
+
+
     /**
-     * @brief Draws the standard card background (rounded rect with border).
+     * @brief Paints the background of a Card item.
      *
-     * @param painter The active painter.
-     * @param rect The bounding rectangle of the item.
-     * @param selected True if the item is currently selected/highlighted.
+     * Draws a rounded rectangle with color depending on selection state.
+     * @param painter QPainter used for drawing.
+     * @param rect The rectangle area of the card.
+     * @param selected True if the card is selected, false otherwise.
      */
     static void paintCardBackground(QPainter* painter, const QRect& rect, bool selected);
 
     /**
-     * @brief Draws a tinted icon on the left side of the card.
+     * @brief Paints an icon inside the Card item.
+     * @param painter QPainter used for drawing.
+     * @param rect Rectangle representing the card area.
+     * @param icon Icon to draw.
+     * @param selected Whether the icon should be drawn in selected state.
      *
-     * @param painter The active painter.
-     * @param rect The item's bounding rect (used for relative positioning).
-     * @param icon The icon to draw.
-     * @param selected Determines the tint color (e.g., Primary vs Secondary).
+     * The icon is vertically centered and tinted depending on selection state.
      */
     static void paintIcon(QPainter* painter, const QRect& rect, const QIcon& icon, bool selected);
 
     /**
-     * @brief Draws the main title text of the card.
+     * @brief Paints the title text of a Card item.
+     * @param painter QPainter used for drawing.
+     * @param rect Rectangle representing the card area.
+     * @param text The title text to display.
+     * @param bold Whether the title should be drawn in bold.
      *
-     * @param painter The active painter.
-     * @param rect The item's bounding rect.
-     * @param text The text to display.
-     * @param bold If true, uses a bold font weight (e.g. for ECUs).
+     * Text is truncated with "..." if it does not fit.
      */
     static void paintTitle(QPainter* painter, const QRect& rect, const QString& text,
                            bool bold = false);
 
+
     /**
-     * @brief Draws a status badge (pill) on the right side of the card.
+     * @brief Paints a badge with optional icon and text inside the Card item.
+     * @param painter QPainter used for drawing.
+     * @param rect Rectangle representing the card area.
+     * @param text Badge text.
+     * @param icon Optional badge icon.
+     * @return Width of the painted badge in pixels.
      *
-     * @param painter The active painter.
-     * @param rect The item's bounding rect.
-     * @param text The text inside the badge (e.g. "4", "0x123").
-     * @param icon Optional icon inside the badge.
+     * Badge is drawn with a background, optional icon, and text.
+     * Returns the badge width for layout adjustments (e.g., detail text positioning).
      */
-    static void paintBadge(QPainter* painter, const QRect& rect, const QString& text,
-                           const QIcon& icon);
+    static auto paintBadge(QPainter* painter, const QRect& rect, const QString& text,
+                           const QIcon& icon) -> int;
+
+    /**
+ * @brief Paints detail text to the right of the Card item.
+ * @param p QPainter used for drawing.
+ * @param rect Rectangle representing the card area.
+ * @param text The detail text.
+ * @param badgeWidth Width of the badge to avoid overlapping it.
+ *
+ * Ensures that the detail text does not overlap with the badge.
+ */
+    static void paintDetailText(QPainter* p, const QRect& rect, const QString& text, int badgeWidth);
 };
 }  // namespace Core
