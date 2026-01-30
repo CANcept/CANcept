@@ -31,25 +31,40 @@ class CardListDelegate : public QStyledItemDelegate
      * @param badgeIcon Icon to put into the badge.
      * @param parent Parent object.
      */
-    explicit CardListDelegate(int badgeRole, int detailRole = -1, const QIcon& badgeIcon = QIcon(),
+    explicit CardListDelegate(int badgeRole,const QIcon& badgeIcon = QIcon(), int detailRole = -1,
                               QObject* parent = nullptr);
     ~CardListDelegate() override = default;
 
     /**
-     * @brief Renders the card using ItemPainter helper.
+     * @brief Paints a card item.
+     * @param painter QPainter used to draw the item.
+     * @param option Style options describing the item state.
+     * @param index The model index to retrieve data from.
+     *
+     * Draws the card background, icon, title, optional badge, and optional detail text.
+     * Selection state is automatically handled for background and icon tinting.
      */
     void paint(QPainter* painter, const QStyleOptionViewItem& option,
                const QModelIndex& index) const override;
 
     /**
-     * @brief Calculates the size.
-     * @return A fixed height (e.g., 50px) and width based on the View's available space.
+     * @brief Returns the preferred size of a card item.
+     * @param option The style options for the item.
+     * @param index The model index.
+     * @return QSize representing the width and height of a card item.
+     *
+     * The size is determined by ThemeManager::spacing().itemCardWidth/Height.
      */
     QSize sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const override;
 
    private:
+    /** Model role to retrieve badge text */
     int m_badgeRole;
+
+    /** Model role to retrieve detail text */
     QIcon m_badgeIcon;
+
+    /** Icon displayed inside the badge */
     int m_detailRole;
 };
 }  // namespace Core
