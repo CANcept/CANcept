@@ -6,9 +6,9 @@
 #include "core/theme/theme_manager.hpp"
 #include "core/ui/painters/item_painter.hpp"
 namespace Core {
-CardListDelegate::CardListDelegate(const int badgeRole, const int detailRole,
-                                   const QIcon& badgeIcon, QObject* parent)
-    : QStyledItemDelegate(parent), m_badgeRole(badgeRole), m_detailRole(detailRole)
+CardListDelegate::CardListDelegate(const int badgeRole, const QIcon& badgeIcon, const int detailRole,
+                                   QObject* parent)
+    : QStyledItemDelegate(parent), m_badgeRole(badgeRole), m_detailRole(detailRole), m_badgeIcon(badgeIcon)
 {
 }
 
@@ -16,7 +16,7 @@ QSize CardListDelegate::sizeHint(const QStyleOptionViewItem& option, const QMode
 {
     auto& spacing = ThemeManager::getInstance().spacing();
 
-    return QSize(option.rect.width(), spacing.itemCardHeight);
+    return {spacing.itemCardWidth, spacing.itemCardHeight};
 }
 
 void CardListDelegate::paint(QPainter* painter, const QStyleOptionViewItem& option,
@@ -31,29 +31,26 @@ void CardListDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
 
     // 2. Icon on the left
     // using standard Qt::DecorationRole
-    const QIcon icon = index.data(Qt::DecorationRole).value<QIcon>();
+    const auto icon = index.data(Qt::DecorationRole).value<QIcon>();
     Painter::paintIcon(painter, option.rect, icon, selected);
 
     // 3. Title on the left (right to icon)
     const QString title = index.data(Qt::DisplayRole).toString();
     Painter::paintTitle(painter, option.rect, title);
 
-    // 4. Badge (Rechts)
+    // 4. Badge (right)
+    int badgeWidth = 0;
     if (m_badgeRole >= 0) {
-        // Zahl holen (z.B. "4")
-        QString badgeText = index.data(m_badgeRole).toString();
-
-        // m_badgeIcon ist z.B. das "Message"-Icon für ECUs
-        // oder NULL für Signale
-        Painter::paintBadge(painter, option.rect, badgeText, m_badgeIcon);
+        // Get badge date
+        const QString badgeText = index.data(m_badgeRole).toString();
+        // Paint badge
+        badgeWidth = Painter::paintBadge(painter, option.rect, badgeText, m_badgeIcon);
     }
 
     // 5. Detail text (only for signal cards)
-    if (m_detailRole >= 0)
-    {
-        QString detail = index.data(m_detailRole).toString();
-        //
-        // Painter::paintDetailText(painter, option.rect, detail);
+    if (m_detailRole >= 0) {
+        const QString detail = index.data(m_detailRole).toString();
+        Painter::paintDetailText(painter, option.rect, detail, badgeWidth);
     }
 }
 }  // namespace Core
