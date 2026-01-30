@@ -1,6 +1,6 @@
 #include "monitoring_component.hpp"
 
-#include "core/constants.hpp"
+#include "constants.hpp"
 #include "core/event/can_event.hpp"
 #include "core/event/dbc_event.hpp"
 #include "core/macro/console_logging.hpp"
@@ -14,8 +14,8 @@ namespace Monitoring {
 
 // Constructor / destructor
 MonitoringComponent::MonitoringComponent(Core::IEventBroker& broker)
-    : Core::ITabComponent(broker, "monitoring_tab", "Frame Monitoring",
-                          QIcon(Core::Assets::MonitoringTabIconPath)),
+    : Core::ITabComponent(broker, Constants::MODULE_IDENTIFIER, Constants::TAB_TITLE,
+                          QIcon(Constants::TAB_ICON_PATH)),
       m_model(std::make_unique<MonitoringModel>()),
       m_delegate(std::make_unique<MonitoringDelegate>(m_model.get())),
       m_view(std::make_unique<MonitoringView>(m_model.get(), m_delegate.get()))

@@ -8,6 +8,7 @@
 #include <QSplitter>
 #include <QTreeView>
 
+#include "can_bus_config_card.hpp"
 #include "monitoring/delegate/monitoring_delegate.hpp"
 #include "monitoring/model/monitoring_model.hpp"
 
@@ -76,9 +77,6 @@ class MonitoringView : public QWidget
    private:
     void setupUi();
 
-    // Helper to create the styled stat boxes
-    auto createStatBox(const QString& title, QLabel*& valueLabel) -> QFrame*;
-
     /**
      * @brief Proxy model used to filter and sort the signal tree data.
      *
@@ -94,17 +92,6 @@ class MonitoringView : public QWidget
     MonitoringModel* m_model;
     MonitoringDelegate* m_delegate;
 
-    // Header box
-    QGroupBox* m_connectionGroup;
-
-    // Row 1
-    QLabel* m_titleIcon;
-    QComboBox* m_interfaceCombo;
-    QPushButton* m_connectButton;
-
-    // Row 2 Content Labels
-    QLabel* m_fpsValueLabel;
-    QLabel* m_statusValueLabel;
-    QLabel* m_msgCountValueLabel;
+    CanBusConfigCard* m_configCard;
 };
 }  // namespace Monitoring

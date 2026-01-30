@@ -7,6 +7,8 @@
 #include <QVBoxLayout>
 #include <utility>
 
+#include "monitoring/constants.hpp"
+
 namespace Monitoring {
 
 SignalGraph::SignalGraph(char messageId, std::string signalName, QWidget* parent)
@@ -32,8 +34,8 @@ void SignalGraph::setupPlot()
     grid->attach(m_plot);
 
     // Configure the Curve
-    m_curve->setTitle("Signal Value");
-    m_curve->setPen(Qt::blue, 2);
+    m_curve->setTitle(Constants::SIGNAL_GRAPH_TITLE);
+    m_curve->setPen(Constants::SIGNAL_GRAPH_LINE_COLOR, Constants::SIGNAL_GRAPH_LINE_WIDTH);
     m_curve->setRenderHint(QwtPlotItem::RenderAntialiased, true);
 
     // Attach curve to plot
