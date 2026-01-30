@@ -5,10 +5,11 @@
 #include "card_widget.hpp"
 #include "common/styled_checkbox.hpp"
 #include "core/macro/theme.hpp"
+#include "dbc_signal_row.hpp"
 
 namespace Core {
 
-DbcMessageCard::DbcMessageCard(const QString& name, uint32_t id, int signalCount,
+DbcMessageCard::DbcMessageCard(const QString& name, const uint32_t id, int signalCount,
                                const Config& config, QWidget* parent)
     : QWidget(parent),
       m_nameLabel(nullptr),
@@ -119,16 +120,18 @@ void DbcMessageCard::setupUi(const QString& name, const uint32_t id, const int s
     if (config.showCheckbox)
     {
         m_headerCheckbox = new StyledCheckBox(card);
+        m_headerCheckbox->setTristate(true);
         if (!config.checkboxTooltip.isEmpty())
         {
             m_headerCheckbox->setToolTip(config.checkboxTooltip);
         }
         headerRow->addWidget(m_headerCheckbox);
+        connectHeaderToSignals();
     }
 
     cardLayout->addLayout(headerRow);
 
-    // === Row 2: Signal rows container ===
+    //  Signal rows container
     m_bodyContainer = new QWidget(card);
     m_signalsLayout = new QVBoxLayout(m_bodyContainer);
     m_signalsLayout->setContentsMargins(0, 0, 0, 0);
@@ -146,16 +149,33 @@ void DbcMessageCard::setupUi(const QString& name, const uint32_t id, const int s
     setExpanded(config.startExpanded);
 }
 
-void DbcMessageCard::addSignalRow(QWidget* rowWidget)
+void DbcMessageCard::addSignalRow(DbcSignalRowWidget* rowWidget)
 {
     if (rowWidget && m_signalsLayout)
     {
         m_signalsLayout->addWidget(rowWidget);
+        m_signalRows.push_back(rowWidget);
+
+        // Connect signal checkbox to update header state
+        if (const auto* signalCheckbox = rowWidget->selectionCheckbox())
+        {
+            connect(signalCheckbox, &QCheckBox::toggled, this,
+                    &DbcMessageCard::updateHeaderFromSignals);
+        }
     }
 }
 
 void DbcMessageCard::clearSignalRows()
 {
+    //disconnect signals
+    for (const auto* signalRow : m_signalRows)
+    {
+        if (const auto* cb = signalRow->selectionCheckbox())
+            disconnect(cb, nullptr, this, nullptr);
+    }
+
+    m_signalRows.clear();
+
     if (!m_signalsLayout)
     {
         return;
@@ -163,16 +183,18 @@ void DbcMessageCard::clearSignalRows()
 
     while (m_signalsLayout->count() > 0)
     {
-        QLayoutItem* item = m_signalsLayout->takeAt(0);
-        if (item->widget())
+        const QLayoutItem* item = m_signalsLayout->takeAt(0);
+        if (QWidget* widget = item->widget())
         {
-            delete item->widget();
+            widget->blockSignals(true);
+            widget->setParent(nullptr);
+            widget->deleteLater();
         }
         delete item;
     }
 }
 
-void DbcMessageCard::setHeaderChecked(bool checked)
+void DbcMessageCard::setHeaderChecked(const bool checked) const
 {
     if (m_headerCheckbox)
     {
@@ -180,7 +202,7 @@ void DbcMessageCard::setHeaderChecked(bool checked)
     }
 }
 
-void DbcMessageCard::setExpanded(bool expanded)
+void DbcMessageCard::setExpanded(const bool expanded) const
 {
     if (m_bodyContainer)
     {
@@ -191,6 +213,71 @@ void DbcMessageCard::setExpanded(bool expanded)
         // Update arrow direction
         m_expandBtn->setText(expanded ? QString::fromUtf8("\u25BC") : QString::fromUtf8("\u25B6"));
     }
+}
+
+void DbcMessageCard::setAllSignalsChecked(const bool checked) const
+{
+    for (const auto* signalRow : m_signalRows)
+    {
+        if (auto* checkbox = signalRow->selectionCheckbox())
+        {
+            checkbox->blockSignals(true);
+            checkbox->setChecked(checked);
+            checkbox->blockSignals(false);
+        }
+    }
+}
+
+void DbcMessageCard::updateHeaderFromSignals() const
+{
+    if (!m_headerCheckbox || m_signalRows.empty())
+    {
+        return;
+    }
+
+    int checkedCount = 0;
+    for (const auto* signalRow : m_signalRows)
+    {
+        if (const auto* checkbox = signalRow->selectionCheckbox())
+        {
+            if (checkbox->isChecked())
+            {
+                ++checkedCount;
+            }
+        }
+    }
+
+    m_headerCheckbox->blockSignals(true);
+    if (checkedCount == 0)
+    {
+        m_headerCheckbox->setCheckState(Qt::Unchecked);
+    } else if (checkedCount == static_cast<int>(m_signalRows.size()))
+    {
+        m_headerCheckbox->setCheckState(Qt::Checked);
+    } else
+    {
+        m_headerCheckbox->setCheckState(Qt::PartiallyChecked);
+    }
+    m_headerCheckbox->blockSignals(false);
+}
+
+void DbcMessageCard::connectHeaderToSignals()
+{
+    if (!m_headerCheckbox)
+    {
+        return;
+    }
+
+    connect(m_headerCheckbox, &QCheckBox::clicked, this, [this]() {
+        // When clicked in partial state, select all; otherwise toggle
+        const bool selectAll = (m_headerCheckbox->checkState() != Qt::Unchecked);
+        setAllSignalsChecked(selectAll);
+
+        // Update header to reflect actual state (all checked or all unchecked)
+        m_headerCheckbox->blockSignals(true);
+        m_headerCheckbox->setCheckState(selectAll ? Qt::Checked : Qt::Unchecked);
+        m_headerCheckbox->blockSignals(false);
+    });
 }
 
 }  // namespace Core

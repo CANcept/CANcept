@@ -41,7 +41,7 @@ class SendingView final : public QWidget
     void setModel(SendingModel* model);
 
     // UI Interaction API
-    void setAvailableDevices(const std::vector<std::string>& devices);
+    void setAvailableDevices(const std::vector<std::string>& devices) const;
     void setAvailableSpeeds(const std::vector<uint32_t>& speeds);
 
    signals:

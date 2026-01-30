@@ -21,7 +21,9 @@ DbcSignalRowWidget::DbcSignalRowWidget(const QString& name, const QString& unit,
       m_rangeLabel(nullptr),
       m_valueEditor(nullptr),
       m_unitLabel(nullptr),
-      m_funcToggle(nullptr)
+      m_funcToggle(nullptr),
+      m_minValue(min),
+      m_maxValue(max)
 {
     setupUi(name, unit, min, max, config);
 }
@@ -35,7 +37,9 @@ DbcSignalRowWidget::DbcSignalRowWidget(const QString& name, const QString& unit,
       m_rangeLabel(nullptr),
       m_valueEditor(nullptr),
       m_unitLabel(nullptr),
-      m_funcToggle(nullptr)
+      m_funcToggle(nullptr),
+      m_minValue(min),
+      m_maxValue(max)
 {
     Config defaultConfig;
     defaultConfig.mode = Mode::Full;
@@ -66,7 +70,7 @@ void DbcSignalRowWidget::setupFullMode(const QString& name, const QString& unit,
     mainLayout->setContentsMargins(0, 0, 0, 0);
 
     m_cardContainer = new CardWidget(QString(), QString(), QString(), this);
-    auto* cardLayout = qobject_cast<QVBoxLayout*>(m_cardContainer->layout());
+    auto* cardLayout = m_cardContainer->contentLayout();
 
     if (!cardLayout)
     {
@@ -130,9 +134,14 @@ void DbcSignalRowWidget::setupFullMode(const QString& name, const QString& unit,
     m_valueEditor->setStyleSheet(
         m_valueEditor->styleSheet() +
         QString("QLineEdit { padding: %1px %2px; }").arg(spacing.spacingXs).arg(spacing.spacingMd));
-    auto* validator = new QDoubleValidator(-1e15, 1e15, 6, m_valueEditor);
+    auto* validator = new QDoubleValidator(min, max, 6, m_valueEditor);
     validator->setNotation(QDoubleValidator::StandardNotation);
+    validator->setLocale(QLocale::C);
     m_valueEditor->setValidator(validator);
+
+    // Connect real-time clamping - prevent values outside range
+    connect(m_valueEditor, &QLineEdit::textChanged, this,
+            &DbcSignalRowWidget::clampInput);
 
     secondRow->addWidget(m_valueEditor, 1);
 
@@ -188,6 +197,41 @@ void DbcSignalRowWidget::setupSelectionMode(const QString& name, const QString& 
                                        .arg(colors.textSecondary.name())
                                        .arg(spacing.fontSizeXs));
         layout->addWidget(m_unitLabel);
+    }
+}
+
+void DbcSignalRowWidget::clampInput() const
+{
+    if (!m_valueEditor)
+    {
+        return;
+    }
+
+    const QString text = m_valueEditor->text().trimmed();
+    if (text.isEmpty())
+    {
+        return;
+    }
+
+    bool ok = false;
+    const double value = text.toDouble(&ok);
+
+    if (!ok)
+    {
+        return;
+    }
+
+    // If value exceeds max, clamp it
+    if (value > m_maxValue)
+    {
+        m_valueEditor->blockSignals(true);
+        m_valueEditor->setText(QString::number(m_maxValue, 'f', 2));
+        m_valueEditor->blockSignals(false);
+    } else if (value < m_minValue)
+    {
+        m_valueEditor->blockSignals(true);
+        m_valueEditor->setText(QString::number(m_minValue, 'f', 2));
+        m_valueEditor->blockSignals(false);
     }
 }
 

@@ -83,6 +83,7 @@ class DbcSignalRowWidget final : public QWidget
     void setupFullMode(const QString& name, const QString& unit, double min, double max,
                        const Config& config);
     void setupSelectionMode(const QString& name, const QString& unit, const Config& config);
+    void clampInput() const;
 
     CardWidget* m_cardContainer;
     StyledCheckBox* m_selectionCheckbox;
@@ -91,6 +92,9 @@ class DbcSignalRowWidget final : public QWidget
     StyledLineEdit* m_valueEditor;
     QLabel* m_unitLabel;
     QCheckBox* m_funcToggle;
+
+    double m_minValue;
+    double m_maxValue;
 };
 
 }  // namespace Core

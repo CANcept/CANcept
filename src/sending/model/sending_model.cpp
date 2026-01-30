@@ -7,7 +7,7 @@
 namespace Sending {
 
 SendingModel::SendingModel(QObject* parent)
-    : QAbstractItemModel(parent), m_currentDbc(nullptr), m_cyclicTimer(new QTimer(this))
+    : QAbstractItemModel(parent), m_currentDbc(std::nullopt), m_cyclicTimer(new QTimer(this))
 {
     connect(m_cyclicTimer, &QTimer::timeout, this, &SendingModel::onCyclicTimerTimeout);
 }
@@ -22,14 +22,15 @@ auto SendingModel::index(int row, int column, const QModelIndex& parent) const -
     if (!parent.isValid())
     {
         // Root level: messages
-        if (m_currentDbc && row < static_cast<int>(m_currentDbc->messageDefinitions.size()))
+        if (m_currentDbc.has_value() &&
+            row < static_cast<int>(m_currentDbc->messageDefinitions.size()))
         {
             return createIndex(row, column, nullptr);
         }
     } else
     {
         // Child level: signals under a message
-        if (m_currentDbc)
+        if (m_currentDbc.has_value())
         {
             auto it = m_currentDbc->messageDefinitions.begin();
             std::advance(it, parent.row());
@@ -65,7 +66,7 @@ auto SendingModel::parent(const QModelIndex& child) const -> QModelIndex
 
 auto SendingModel::rowCount(const QModelIndex& parent) const -> int
 {
-    if (!m_currentDbc)
+    if (!m_currentDbc.has_value())
     {
         return 0;
     }
@@ -118,7 +119,7 @@ auto SendingModel::data(const QModelIndex& index, int role) const -> QVariant
             break;
     }
 
-    if (!m_currentDbc)
+    if (!m_currentDbc.has_value())
     {
         return {};
     }
@@ -215,7 +216,7 @@ auto SendingModel::setData(const QModelIndex& index, const QVariant& value, int 
         }
 
         case Role_SignalValue:
-            if (index.isValid() && index.internalPointer() != nullptr)
+            if (index.isValid() && index.internalPointer() != nullptr && m_currentDbc.has_value())
             {
                 // This is a signal index
                 const int messageRow =
@@ -254,8 +255,8 @@ auto SendingModel::setData(const QModelIndex& index, const QVariant& value, int 
 void SendingModel::updateDbcConfig(const Core::DbcConfig& config)
 {
     beginResetModel();
-    // Store pointer to the config (not owned - caller must ensure lifetime)
-    m_currentDbc = &config;
+    // Make a copy of the config (owned by this model)
+    m_currentDbc = config;
 
     // Initialize signal values to their minimums
     m_dynamicSignalValues.clear();
@@ -301,7 +302,7 @@ void SendingModel::transmitCurrent()
     } else
     {
         // DBC mode - send all selected messages
-        if (!m_currentDbc)
+        if (!m_currentDbc.has_value())
         {
             return;
         }
@@ -316,11 +317,17 @@ void SendingModel::transmitCurrent()
                     Core::DbcCanMessage message;
                     message.receiveTime = std::chrono::duration_cast<std::chrono::milliseconds>(
                         std::chrono::system_clock::now().time_since_epoch());
-                    message.messageId = static_cast<char>(msgId & 0xFF);
+                    message.messageId = static_cast<uint16_t>(msgId & 0x7FF);
 
-                    // Populate signal values
+                    // Populate only selected signal values
                     for (const auto& sigDef : msgDef.signalDescriptions)
                     {
+                        // Only include signals that are selected
+                        if (!isSignalSelected(sigDef.signalName))
+                        {
+                            continue;
+                        }
+
                         Core::DbcCanSignal signal;
                         signal.name = sigDef.signalName;
 
@@ -380,6 +387,22 @@ auto SendingModel::isMessageSelected(uint32_t messageId) const -> bool
 {
     return std::find(m_selectedMessageIds.begin(), m_selectedMessageIds.end(), messageId) !=
            m_selectedMessageIds.end();
+}
+
+void SendingModel::setSignalSelected(const std::string& signalName, bool selected)
+{
+    if (selected)
+    {
+        m_selectedSignalNames.insert(signalName);
+    } else
+    {
+        m_selectedSignalNames.erase(signalName);
+    }
+}
+
+auto SendingModel::isSignalSelected(const std::string& signalName) const -> bool
+{
+    return m_selectedSignalNames.find(signalName) != m_selectedSignalNames.end();
 }
 
 }  // namespace Sending

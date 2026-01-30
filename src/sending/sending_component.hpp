@@ -75,21 +75,21 @@ class SendingComponent final : public Core::ITabComponent
      * It also publishes the CanDriverChangeEvent.
      * @param deviceName The identifier of the newly selected hardware.
      */
-    void onDeviceChanged(const std::string& deviceName);
+    void onDeviceChanged(const std::string& deviceName) const;
 
     /**
      * @brief Triggered when the user clicks 'Send Message' in Raw mode.
      * Publishes a SendCanMessageRawEvent to the broker.
      * @param message the raw message to be send on the selected device/channel
      */
-    void onSendRawRequested(const Core::RawCanMessage& message);
+    void onSendRawRequested(const Core::RawCanMessage& message) const;
 
     /**
      * @brief Triggered when the user clicks 'Send Message' in DBC mode.
      * Publishes a SendCanMessageDbcEvent to the broker.
      * @param message the dbc based message to be send on the selected device/channel
      */
-    void onSendDbcRequested(const Core::DbcCanMessage& message);
+    void onSendDbcRequested(const Core::DbcCanMessage& message) const;
 
    private:
     /**
@@ -103,9 +103,9 @@ class SendingComponent final : public Core::ITabComponent
     void setupBrokerSubscriptions();
 
     /**
-     * @brief Loads temporary test DBC data for development/testing.
+     * @brief Updates the enabled state of send buttons based on current selections.
      */
-    void loadTestDbcData();
+    void updateSendButtonStates() const;
 
     /** @brief Model holding CAN sending configuration and data */
     std::unique_ptr<SendingModel> m_model;
@@ -123,6 +123,12 @@ class SendingComponent final : public Core::ITabComponent
 
     /** @brief RAII Handle for error event subscription. */
     Core::Connection m_parseErrorConn;
+
+    /** @brief Tracks whether a CAN interface is currently selected (Raw mode) */
+    bool m_rawInterfaceSelected = false;
+
+    /** @brief Tracks whether a CAN interface is currently selected (DBC mode) */
+    bool m_dbcInterfaceSelected = false;
 };
 
 }  // namespace Sending

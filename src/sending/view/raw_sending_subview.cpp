@@ -70,7 +70,6 @@ void RawSendingSubView::setupUi()
     // Message Data Input
     auto* messageDataLabel = new QLabel(Constants::MESSAGE_DATA_LABEL, m_frameCard);
     messageDataLabel->setStyleSheet(QString("color: %1;").arg(colors.textSecondary.name()));
-
     m_messageDataEditor = new Core::StyledLineEdit(m_frameCard);
     m_messageDataEditor->setPlaceholderText(Constants::MESSAGE_DATA_PLACEHOLDER);
     frameCardLayout->addWidget(messageDataLabel);

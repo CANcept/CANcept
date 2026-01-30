@@ -37,7 +37,7 @@ class DbcSendingSubView final : public QWidget
      * Creates message cards and signal rows based on model data.
      * This maintains MVD separation - View reads Model, doesn't modify it.
      */
-    void populateFromModel(SendingModel* model);
+    void populateFromModel(const SendingModel* model);
 
     /**
      * @brief Clears all message cards.
@@ -63,6 +63,11 @@ class DbcSendingSubView final : public QWidget
      * @brief Emitted when user toggles message selection checkbox.
      */
     void messageSelectionChanged(uint32_t messageId, bool selected);
+
+    /**
+     * @brief Emitted when user toggles signal selection checkbox.
+     */
+    void signalSelectionChanged(const QString& signalName, bool selected);
 
     /**
      * @brief Emitted when user changes a signal value.

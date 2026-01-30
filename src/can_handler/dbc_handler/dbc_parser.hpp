@@ -19,7 +19,7 @@ class DbcParser
      * @brief Provides a new file for parsing to a DBC config
      * @param newFile The file to parse.
      */
-    void provideNewFile(const std::string &newFile);
+    void provideNewFile(const std::string& newFile);
     /**
      * @brief Tries to parse the provided file to a DBC object
      * @return The parsed dbc config
@@ -159,6 +159,12 @@ class DbcParser
      * @return A bool indicating there was a semicolon to truncate to
      */
     auto truncateToNextSemicolon() -> bool;
+
+    /**
+     * Recaculates a signals value when the dbc file defines it as 0|0.
+     * @param signal the signal that should have its range recaclulated
+     */
+    void calculatePhysicalRange(Core::DbcSignalDescription& signal);
     /**
      * @brief The current file to parse, truncated to the point of the current parse
      */
@@ -203,7 +209,7 @@ class DbcParser
                                              "BU_BO_REL_",
                                              "BO_"};
 
-    const std::regex C_IDENTIFIER_REGEX{"([A-Z]|[a-z]|_)(\\w)+"};
+    const std::regex C_IDENTIFIER_REGEX{"\\w+"};
     const std::regex DOUBLE_REGEX{R"((\+|-)?\d+(\.\d+)?)"};
     const std::regex INT_REGEX{"(\\+|-)?\\d+"};
     const std::regex UINT_REGEX{"\\d+"};

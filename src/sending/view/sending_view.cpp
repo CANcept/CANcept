@@ -22,11 +22,10 @@ SendingView::SendingView(QWidget* parent)
 
 void SendingView::disableSidebarDeselection()
 {
-    // Get selection model of m_sidebarList
+    // Get selection model
     auto* selectionModel = m_sidebarList->selectionModel();
     connect(selectionModel, &QItemSelectionModel::selectionChanged, this,
             [selectionModel](const QItemSelection& selected, const QItemSelection& deselected) {
-                // Check: is new selection empty? (~ click in empty space)
                 if (selected.indexes().isEmpty())
                 {
                     // Reselect previous selection again
@@ -99,11 +98,11 @@ void SendingView::setSidebarModel()
          .enabled = true},
     };
 
-    for (const auto& entry : sidebarEntries)
+    for (const auto& [iconPath, title, enabled] : sidebarEntries)
     {
-        auto* item = new QStandardItem(QIcon(entry.iconPath), entry.title);
-        item->setEnabled(entry.enabled);
-        item->setSelectable(entry.enabled);
+        auto* item = new QStandardItem(QIcon(iconPath), title);
+        item->setEnabled(enabled);
+        item->setSelectable(enabled);
         sidebarModel->appendRow(item);
     }
 
@@ -134,7 +133,6 @@ void SendingView::setupUi()
 
     mainLayout->addWidget(m_contentStack, 1);
 
-    // === Connect sidebar ===
     connect(m_sidebarList, &QListView::clicked, this, &SendingView::onSidebarSelectionChanged);
 }
 
@@ -163,7 +161,7 @@ void SendingView::setModel(SendingModel* /*model*/)
     // For now, the component handles the connections directly
 }
 
-void SendingView::setAvailableDevices(const std::vector<std::string>& devices)
+void SendingView::setAvailableDevices(const std::vector<std::string>& devices) const
 {
     if (m_rawView)
     {
@@ -182,7 +180,6 @@ void SendingView::setAvailableSpeeds(const std::vector<uint32_t>& speeds)
     {
         m_rawView->setAvailableBaudRates(speeds);
     }
-    // DBC view doesn't have baud rate selection (uses global configuration)
 }
 
 }  // namespace Sending

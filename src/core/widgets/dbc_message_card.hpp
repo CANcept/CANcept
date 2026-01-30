@@ -59,12 +59,11 @@ class DbcMessageCard : public QWidget
     ~DbcMessageCard() override = default;
 
     /** @brief Adds a signal row widget to the card body. */
-    void addSignalRow(QWidget* rowWidget);
+    void addSignalRow(DbcSignalRowWidget* rowWidget);
 
     /** @brief Clears all signal rows from the card body. */
     void clearSignalRows();
 
-    // --- Accessors ---
     [[nodiscard]] StyledCheckBox* headerCheckbox() const
     {
         return m_headerCheckbox;
@@ -75,11 +74,23 @@ class DbcMessageCard : public QWidget
         return m_bodyContainer && m_bodyContainer->isVisible();
     }
 
-    void setHeaderChecked(bool checked);
-    void setExpanded(bool expanded);
+    void setHeaderChecked(bool checked) const;
+    void setExpanded(bool expanded) const;
+
+    /**
+     * @brief Sets all signal checkboxes to the given state.
+     */
+    void setAllSignalsChecked(bool checked) const;
+
+    /**
+     * @brief Updates the header checkbox based on signal selection state.
+     * Shows checked if all selected, unchecked if none, partial if some.
+     */
+    void updateHeaderFromSignals() const;
 
    private:
     void setupUi(const QString& name, uint32_t id, int signalCount, const Config& config);
+    void connectHeaderToSignals();
 
     QLabel* m_nameLabel;
     QLabel* m_idLabel;
@@ -88,6 +99,7 @@ class DbcMessageCard : public QWidget
 
     QWidget* m_bodyContainer;
     QVBoxLayout* m_signalsLayout;
+    std::vector<DbcSignalRowWidget*> m_signalRows;
 };
 
 }  // namespace Core

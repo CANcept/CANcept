@@ -2,6 +2,8 @@
 
 #include <QAbstractItemModel>
 #include <QTimer>
+#include <optional>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -77,11 +79,21 @@ class SendingModel final : public QAbstractItemModel
     [[nodiscard]] auto isMessageSelected(uint32_t messageId) const -> bool;
 
     /**
+     * @brief Toggles signal selection for transmission.
+     */
+    void setSignalSelected(const std::string& signalName, bool selected);
+
+    /**
+     * @brief Checks if a signal is selected.
+     */
+    [[nodiscard]] auto isSignalSelected(const std::string& signalName) const -> bool;
+
+    /**
      * @brief Gets the current DBC config pointer.
      */
     [[nodiscard]] auto currentDbcConfig() const -> const Core::DbcConfig*
     {
-        return m_currentDbc;
+        return m_currentDbc.has_value() ? &m_currentDbc.value() : nullptr;
     }
    signals:
     /** * @brief Emitted when the Model determines a Raw message should be sent.
@@ -137,8 +149,11 @@ class SendingModel final : public QAbstractItemModel
     /** @brief Stores which messages are selected for transmission (checkbox state) */
     std::vector<uint32_t> m_selectedMessageIds;
 
-    /** @brief Pointer to the current DBC config (not owned - reference only) */
-    const Core::DbcConfig* m_currentDbc;
+    /** @brief Stores which signals are selected for transmission (checkbox state) */
+    std::set<std::string> m_selectedSignalNames;
+
+    /** @brief Current DBC config (owned by this model) */
+    std::optional<Core::DbcConfig> m_currentDbc;
 
     // Moved from SendingDelegate: The Model now owns the timing source of truth
     QTimer* m_cyclicTimer;

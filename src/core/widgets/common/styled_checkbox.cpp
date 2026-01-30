@@ -42,6 +42,10 @@ void StyledCheckBox::applyStyle()
             background-color: %6;
             border-color: %6;
         }
+        QCheckBox::indicator:indeterminate {
+            background-color: %6;
+            border-color: %6;
+        }
         QCheckBox::indicator:focus {
             border-color: %6;
         }

@@ -55,15 +55,14 @@ void DbcSendingSubView::setupUi()
         m_cardsLayout = new QVBoxLayout(m_scrollContent);
         m_cardsLayout->setContentsMargins(0, 0, 0, 0);
         m_cardsLayout->setSpacing(spacing.spacingSm);
-        m_cardsLayout->addStretch();  // Push cards to top
+        m_cardsLayout->addStretch();
 
         m_scrollArea->setWidget(m_scrollContent);
         messagesCardLayout->addWidget(m_scrollArea);
     }
 
-    mainLayout->addWidget(m_messagesCard, 1);  // Give messages card stretch priority
+    mainLayout->addWidget(m_messagesCard, 1);
 
-    // === Footer with Send Button ===
     auto* footerLayout = new QHBoxLayout();
     footerLayout->setContentsMargins(0, spacing.spacingSm, 0, 0);
 
@@ -75,7 +74,7 @@ void DbcSendingSubView::setupUi()
     mainLayout->addLayout(footerLayout);
 }
 
-void DbcSendingSubView::populateFromModel(SendingModel* model)
+void DbcSendingSubView::populateFromModel(const SendingModel* model)
 {
     if (!model)
     {
@@ -102,7 +101,7 @@ void DbcSendingSubView::populateFromModel(SendingModel* model)
         card->setHeaderChecked(model->isMessageSelected(msgDef.messageId));
 
         connect(card->headerCheckbox(), &Core::StyledCheckBox::toggled, this,
-                [this, msgId = msgDef.messageId](bool checked) {
+                [this, msgId = msgDef.messageId](const bool checked) {
                     emit messageSelectionChanged(msgId, checked);
                 });
 
@@ -113,13 +112,29 @@ void DbcSendingSubView::populateFromModel(SendingModel* model)
                 QString::fromStdString(sigDef.signalName), QString::fromStdString(sigDef.unit),
                 sigDef.minimum, sigDef.maximum, card);
 
-            connect(signalRow->valueEditor(), &Core::StyledLineEdit::textChanged, this,
-                    [this, sigName = sigDef.signalName](const QString& text) {
+            QString signalName = QString::fromStdString(sigDef.signalName);
+
+            // Connect signal selection checkbox
+            if (auto* signalCheckbox = signalRow->selectionCheckbox())
+            {
+                signalCheckbox->setChecked(model->isSignalSelected(sigDef.signalName));
+                connect(signalCheckbox, &QCheckBox::toggled, this,
+                        [this, signalName](const bool checked) {
+                            emit signalSelectionChanged(signalName, checked);
+                        });
+            }
+
+            connect(signalRow->valueEditor(), &QLineEdit::textChanged, this,
+                    [this, signalName](const QString& text) {
+                        if (text.isEmpty())
+                        {
+                            return;
+                        }
                         bool ok = false;
-                        double value = text.toDouble(&ok);
+                        const double value = text.toDouble(&ok);
                         if (ok)
                         {
-                            emit signalValueChanged(QString::fromStdString(sigName), value);
+                            emit signalValueChanged(signalName, value);
                         }
                     });
 
@@ -145,9 +160,11 @@ void DbcSendingSubView::clearMessages() const
     while (m_cardsLayout->count() > 1)
     {
         const QLayoutItem* item = m_cardsLayout->takeAt(0);
-        if (item->widget())
+        if (QWidget* widget = item->widget())
         {
-            delete item->widget();
+            widget->blockSignals(true);
+            widget->setParent(nullptr);
+            widget->deleteLater();
         }
         delete item;
     }
