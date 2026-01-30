@@ -12,15 +12,16 @@ DbcComponent::DbcComponent(Core::IEventBroker& broker)
                           QIcon(Constants::Component::TabIcon))
 {
     m_view = std::make_unique<DbcView>();
-
-    setupConnections();
 }
 DbcComponent::~DbcComponent() = default;
 auto DbcComponent::getView() -> QWidget*
 {
     return m_view.get();
 }
-void DbcComponent::onStart() {}
+void DbcComponent::onStart()
+{
+    setupConnections();
+}
 void DbcComponent::onStop()
 {
     m_parseSuccessConn.release();

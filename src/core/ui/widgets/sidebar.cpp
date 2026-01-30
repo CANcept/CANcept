@@ -10,12 +10,14 @@
 #include "core/theme/theme_manager.hpp"
 #include "core/ui/delegates/sidebar_delegate.hpp"
 namespace Core {
-Sidebar::Sidebar(QWidget* parent) : QListView(parent) {
+Sidebar::Sidebar(QWidget* parent) : QListView(parent)
+{
     setupUi();
     setupConnections();
 }
 
-void Sidebar::setupUi() {
+void Sidebar::setupUi()
+{
     const auto& THEME = Core::ThemeManager::getInstance();
     const auto& colors = THEME.colors();
     const auto& spacing = THEME.spacing();
@@ -48,16 +50,16 @@ void Sidebar::setupUi() {
                                     color: %10;
                                 }
                                 )")
-                                  .arg(colors.surfaceMain.name(QColor::HexArgb))
-                                  .arg(spacing.borderThick)
-                                  .arg(colors.borderSubtle.name(QColor::HexArgb))
-                                  .arg(colors.textSecondary.name(QColor::HexArgb))
-                                  .arg(spacing.fontSizeMd)
-                                  .arg(spacing.radiusSm)
-                                  .arg(spacing.spacingXl)
-                                  .arg(spacing.spacingMd)
-                                  .arg(colors.surfacePrimary.name(QColor::HexArgb))
-                                  .arg(colors.textPrimary.name(QColor::HexArgb)));
+                      .arg(colors.surfaceMain.name(QColor::HexArgb))
+                      .arg(spacing.borderThick)
+                      .arg(colors.borderSubtle.name(QColor::HexArgb))
+                      .arg(colors.textSecondary.name(QColor::HexArgb))
+                      .arg(spacing.fontSizeMd)
+                      .arg(spacing.radiusSm)
+                      .arg(spacing.spacingXl)
+                      .arg(spacing.spacingMd)
+                      .arg(colors.surfacePrimary.name(QColor::HexArgb))
+                      .arg(colors.textPrimary.name(QColor::HexArgb)));
 
     m_model = new QStandardItemModel(this);
     setModel(m_model);
@@ -66,7 +68,8 @@ void Sidebar::setupUi() {
     setItemDelegate(m_delegate);
 }
 
-void Sidebar::setupConnections() {
+void Sidebar::setupConnections()
+{
     // 1. Click a handling: only send signal if clicked index is valid, respective item is enabled
     connect(this, &QListView::clicked, [this](const QModelIndex& index) {
         if (!index.isValid()) return;
@@ -77,39 +80,45 @@ void Sidebar::setupConnections() {
     });
 
     // Avoid empty selection (deselecting when clicking empty space)
-    connect(selectionModel(), &QItemSelectionModel::selectionChanged,
-            this, [this](const QItemSelection& sel, const QItemSelection& desel) {
-        if (sel.isEmpty() && !desel.isEmpty()) {
-            // Reselect previous selection
-            selectionModel()->select(desel, QItemSelectionModel::Select | QItemSelectionModel::Rows);
-            setCurrentIndex(desel.indexes().first());
-        }
-    });
+    connect(selectionModel(), &QItemSelectionModel::selectionChanged, this,
+            [this](const QItemSelection& sel, const QItemSelection& desel) {
+                if (sel.isEmpty() && !desel.isEmpty())
+                {
+                    // Reselect previous selection
+                    selectionModel()->select(
+                        desel, QItemSelectionModel::Select | QItemSelectionModel::Rows);
+                    setCurrentIndex(desel.indexes().first());
+                }
+            });
 }
 
 void Sidebar::setToolTipText(const QString& toolTipText)
 {
     m_delegate->setToolTipText(toolTipText);
 }
-void Sidebar::addTab(const QIcon& icon, const QString& title, bool enabled) {
+void Sidebar::addTab(const QIcon& icon, const QString& title, bool enabled)
+{
     auto* item = new QStandardItem(icon, title);
     item->setEnabled(enabled);
     item->setSelectable(enabled);
     m_model->appendRow(item);
 
     // Select first item initially
-    if (m_model->rowCount() == 1) {
+    if (m_model->rowCount() == 1)
+    {
         setCurrentIndex(m_model->index(0, 0));
     }
 }
 
 void Sidebar::setNavigationEnabled(const bool enabled) const
 {
-    for (int i = 1; i < m_model->rowCount(); ++i) {
-        if (auto* item = m_model->item(i)) {
+    for (int i = 1; i < m_model->rowCount(); ++i)
+    {
+        if (auto* item = m_model->item(i))
+        {
             item->setEnabled(enabled);
             item->setSelectable(enabled);
         }
     }
 }
-}
+}  // namespace Core

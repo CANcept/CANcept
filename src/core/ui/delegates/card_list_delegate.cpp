@@ -6,9 +6,12 @@
 #include "core/theme/theme_manager.hpp"
 #include "core/ui/painters/item_painter.hpp"
 namespace Core {
-CardListDelegate::CardListDelegate(const int badgeRole, const QIcon& badgeIcon, const int detailRole,
-                                   QObject* parent)
-    : QStyledItemDelegate(parent), m_badgeRole(badgeRole), m_detailRole(detailRole), m_badgeIcon(badgeIcon)
+CardListDelegate::CardListDelegate(const int badgeRole, const QIcon& badgeIcon,
+                                   const int detailRole, QObject* parent)
+    : QStyledItemDelegate(parent),
+      m_badgeRole(badgeRole),
+      m_detailRole(detailRole),
+      m_badgeIcon(badgeIcon)
 {
 }
 
@@ -40,7 +43,8 @@ void CardListDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
 
     // 4. Badge (right)
     int badgeWidth = 0;
-    if (m_badgeRole >= 0) {
+    if (m_badgeRole >= 0)
+    {
         // Get badge date
         const QString badgeText = index.data(m_badgeRole).toString();
         // Paint badge
@@ -48,7 +52,8 @@ void CardListDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
     }
 
     // 5. Detail text (only for signal cards)
-    if (m_detailRole >= 0) {
+    if (m_detailRole >= 0)
+    {
         const QString detail = index.data(m_detailRole).toString();
         Painter::paintDetailText(painter, option.rect, detail, badgeWidth);
     }

@@ -31,7 +31,7 @@ class CardListDelegate : public QStyledItemDelegate
      * @param badgeIcon Icon to put into the badge.
      * @param parent Parent object.
      */
-    explicit CardListDelegate(int badgeRole,const QIcon& badgeIcon = QIcon(), int detailRole = -1,
+    explicit CardListDelegate(int badgeRole, const QIcon& badgeIcon = QIcon(), int detailRole = -1,
                               QObject* parent = nullptr);
     ~CardListDelegate() override = default;
 

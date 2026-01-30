@@ -20,10 +20,11 @@ namespace Core {
  * required for a vertical navigation bar. It is designed to be populated via `addTab()`
  * and integrates with the application's ThemeManager.
  */
-class Sidebar : public QListView {
+class Sidebar : public QListView
+{
     Q_OBJECT
 
-public:
+   public:
     /**
      * @brief Constructs the Sidebar widget.
      * @param parent The parent widget.
@@ -31,7 +32,7 @@ public:
     explicit Sidebar(QWidget* parent = nullptr);
     ~Sidebar() override = default;
 
-void setToolTipText(const QString& toolTipText);
+    void setToolTipText(const QString& toolTipText);
     /**
      * @brief Adds a new navigation tab to the sidebar.
      *
@@ -42,7 +43,6 @@ void setToolTipText(const QString& toolTipText);
      * @param enabled Whether the tab is enabled and selectable.
      */
     void addTab(const QIcon& icon, const QString& title, bool enabled = true);
-
 
     /**
      * @brief Enables or disables all tabs except the first one.
@@ -55,7 +55,7 @@ void setToolTipText(const QString& toolTipText);
      */
     void setNavigationEnabled(bool enabled) const;
 
-    signals:
+   signals:
     /**
      * @brief Emitted when a tab is selected by the user.
      *
@@ -65,7 +65,7 @@ void setToolTipText(const QString& toolTipText);
      */
     void tabSelected(int index);
 
-private:
+   private:
     /**
      * @brief Initializes visual appearance and view configuration.
      *
@@ -73,7 +73,6 @@ private:
      * and sets up the item model and delegate.
      */
     void setupUi();
-
 
     /**
      * @brief Sets up internal signal-slot connections.
@@ -87,4 +86,4 @@ private:
     Core::SidebarDelegate* m_delegate;
 };
 
-}
+}  // namespace Core

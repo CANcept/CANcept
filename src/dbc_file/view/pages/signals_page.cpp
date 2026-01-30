@@ -24,10 +24,9 @@ auto SignalsPage::getFilterCombo() const -> QComboBox*
 }
 void SignalsPage::setupUi()
 {
-
-    enum Roles
-    {
-        // Diese rollen müssen erstellt werden und die werte aus der dbcConfig geholt werden und das muss dann zusammen ins model gegeben werden
+    enum Roles {
+        // Diese rollen müssen erstellt werden und die werte aus der dbcConfig geholt werden und das
+        // muss dann zusammen ins model gegeben werden
         SignalsCount_Role = Qt::UserRole + 1,
         Unit_Role = Qt::UserRole + 2,
         Range_Role = Qt::UserRole + 3,
@@ -42,16 +41,17 @@ void SignalsPage::setupUi()
     layout->addWidget(label1);
 
     auto* msgList = new QListView(this);
-    msgList->setViewMode(QListView::IconMode); // Nebeneinander
+    msgList->setViewMode(QListView::IconMode);  // Nebeneinander
     msgList->setResizeMode(QListView::Adjust);
-    msgList->setFixedHeight(150); // Platz für Test
+    msgList->setFixedHeight(150);  // Platz für Test
 
     auto* msgModel = new QStandardItemModel(this);
 
     // Message 1
     auto* m1 = new QStandardItem("EngineData");
-    m1->setData(QIcon(Constants::Sidebar::IconMessages), Qt::DecorationRole); // Haupt Icon als Qt::DecorationRole im model speichern
-    m1->setData("4", SignalsCount_Role); // Badge: Anzahl Signale
+    m1->setData(QIcon(Constants::Sidebar::IconMessages),
+                Qt::DecorationRole);      // Haupt Icon als Qt::DecorationRole im model speichern
+    m1->setData("4", SignalsCount_Role);  // Badge: Anzahl Signale
     msgModel->appendRow(m1);
 
     // Message 2
@@ -64,14 +64,12 @@ void SignalsPage::setupUi()
 
     // Delegate Config: Badge Text aus UserRole+1, Badge Icon fix "Wave"
     auto* msgDelegate = new Core::CardListDelegate(
-        SignalsCount_Role,           // Badge Rolle übergeben
+        SignalsCount_Role,                       // Badge Rolle übergeben
         QIcon(Constants::Sidebar::IconSignals),  // Badge Icon (Signale) übergeben
-        -1,                         // Kein Detail Text: -1 übergeben
-        this
-    );
+        -1,                                      // Kein Detail Text: -1 übergeben
+        this);
     msgList->setItemDelegate(msgDelegate);
     layout->addWidget(msgList);
-
 
     // =========================================================
     // BEISPIEL 2: SIGNALS (Liste mit Range & Unit)
@@ -85,7 +83,7 @@ void SignalsPage::setupUi()
     sigList->setViewMode(QListView::IconMode);
     sigList->setResizeMode(QListView::Adjust);
     sigList->setWrapping(true);
-    sigList->setUniformItemSizes(true); // Performance & gleiches Layout
+    sigList->setUniformItemSizes(true);  // Performance & gleiches Layout
     sigList->setFixedHeight(150);
 
     auto* sigModel = new QStandardItemModel(this);
@@ -93,8 +91,8 @@ void SignalsPage::setupUi()
     // Signal 1
     auto* s1 = new QStandardItem("EngineSpeed");
     s1->setData(QIcon(Constants::Sidebar::IconSignals), Qt::DecorationRole);
-    s1->setData("rpm", Unit_Role);       // Badge: Unit
-    s1->setData("[0, 8000]", Range_Role); // Detail: Range
+    s1->setData("rpm", Unit_Role);         // Badge: Unit
+    s1->setData("[0, 8000]", Range_Role);  // Detail: Range
     sigModel->appendRow(s1);
 
     // Signal 2
@@ -109,12 +107,9 @@ void SignalsPage::setupUi()
     // Delegate Config (Badge=Role+1, Detail=Role+2, Kein BadgeIcon)
     auto* sigDelegate = new Core::CardListDelegate(
         Unit_Role,
-        QIcon(),        //leeres icon übergeben wenn kein icon im badge gewünscht
-        Range_Role,
-        this
-    );
+        QIcon(),  // leeres icon übergeben wenn kein icon im badge gewünscht
+        Range_Role, this);
     sigList->setItemDelegate(sigDelegate);
     layout->addWidget(sigList);
-
 };
 }  // namespace DbcFile
