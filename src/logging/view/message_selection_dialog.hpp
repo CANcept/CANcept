@@ -7,7 +7,7 @@
 #include <QStringList>
 #include <QVBoxLayout>
 
-#include "core/ui/widgets/dbc_message_card.hpp"
+#include "core/widgets/dbc_message_card.hpp"
 
 namespace Logging {
 

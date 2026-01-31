@@ -9,7 +9,7 @@
 #include <QListView>
 #include <QVBoxLayout>
 
-#include "core/ui/delegates/card_list_delegate.hpp"
+#include "../../../core/delegates/card_list_delegate.hpp"
 #include "dbc_file/constants.hpp"
 namespace DbcFile {
 // --- SignalsPage Dummy ---

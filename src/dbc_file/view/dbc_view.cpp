@@ -8,7 +8,7 @@
 
 #include "core/constants.hpp"
 #include "core/theme/theme_manager.hpp"
-#include "core/ui/widgets/sidebar.hpp"
+#include "core/widgets/sidebar.hpp"
 #include "dbc_file/constants.hpp"
 #include "dbc_file/delegate/page_delegates.hpp"
 
