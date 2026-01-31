@@ -18,7 +18,7 @@ namespace Core {
 struct ReceivedCanRawEvent final : public Event {
     RawCanMessage canMessage;
 
-    explicit ReceivedCanRawEvent(const RawCanMessage& canMessage) : canMessage(canMessage){};
+    explicit ReceivedCanRawEvent(const RawCanMessage& canMessage) : canMessage(canMessage) {};
 };
 /**
  * @brief Structure of the received can event when a can message is received and used in dbc decoded
@@ -27,7 +27,7 @@ struct ReceivedCanRawEvent final : public Event {
 struct ReceivedCanDbcEvent final : public Event {
     DbcCanMessage canMessage;
 
-    explicit ReceivedCanDbcEvent(const DbcCanMessage& canMessage) : canMessage(canMessage){};
+    explicit ReceivedCanDbcEvent(const DbcCanMessage& canMessage) : canMessage(canMessage) {};
 };
 /**
  * @brief Structure of the send can event, when an already encoded message should be sent
@@ -35,7 +35,7 @@ struct ReceivedCanDbcEvent final : public Event {
 struct SendCanMessageRawEvent final : public Event {
     RawCanMessage canMessage;
 
-    explicit SendCanMessageRawEvent(const RawCanMessage& canMessage) : canMessage(canMessage){};
+    explicit SendCanMessageRawEvent(const RawCanMessage& canMessage) : canMessage(canMessage) {};
 };
 /**
  * @brief Structure of the send can event, when a message should be sent based on the current DBC
@@ -44,7 +44,7 @@ struct SendCanMessageRawEvent final : public Event {
 struct SendCanMessageDbcEvent final : public Event {
     DbcCanMessage canMessage;
 
-    explicit SendCanMessageDbcEvent(const DbcCanMessage& canMessage) : canMessage(canMessage){};
+    explicit SendCanMessageDbcEvent(const DbcCanMessage& canMessage) : canMessage(canMessage) {};
 };
 };  // namespace Core
 #endif  // CANBUSMANAGER_CAN_EVENT_HPP

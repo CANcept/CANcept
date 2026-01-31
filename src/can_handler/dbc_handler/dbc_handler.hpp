@@ -15,7 +15,7 @@ namespace CanHandler {
 class DbcHandler final : public Core::ILifecycle
 {
    public:
-    explicit DbcHandler(Core::IEventBroker& eventBroker) : Core::ILifecycle(eventBroker){};
+    explicit DbcHandler(Core::IEventBroker& eventBroker) : Core::ILifecycle(eventBroker) {};
     ~DbcHandler() override;
 
    protected:

@@ -7,8 +7,8 @@
 
 #include <QListView>
 
-#include "core/theme/theme_manager.hpp"
 #include "core/delegates/sidebar_delegate.hpp"
+#include "core/theme/theme_manager.hpp"
 namespace Core {
 Sidebar::Sidebar(QWidget* parent) : QListView(parent)
 {
