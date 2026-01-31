@@ -1,7 +1,7 @@
 #include "event_broker.hpp"
 namespace EventBroker {
 
-auto EventBroker::_subscribe(std::type_index type,
+auto EventBroker::_subscribe(const std::type_index type,
                              std::function<void(const void*)> callback) -> Core::Connection
 {
     auto& channel = getChannel(type);
@@ -10,7 +10,7 @@ auto EventBroker::_subscribe(std::type_index type,
     struct Wrapper {
         std::function<void(const void*)> callback;
 
-        void operator()(const void*& data)
+        void operator()(const void*& data) const
         {
             callback(data);
         }
