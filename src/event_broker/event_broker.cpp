@@ -1,4 +1,4 @@
-#include "event_broker.hpp";
+#include "event_broker.hpp"
 namespace EventBroker {
 
 auto EventBroker::_subscribe(std::type_index type,
@@ -9,21 +9,21 @@ auto EventBroker::_subscribe(std::type_index type,
 
     // Wrap std::function into a callable object
     struct Wrapper {
-        std::function<void(const void*)> cb;
+        std::function<void(const void*)> callback;
 
         void operator()(const void *& data) {
-            cb(data);
+            callback(data);
         }
     };
 
     auto wrapper = std::make_shared<Wrapper>(Wrapper{std::move(callback)});
 
-    entt::connection conn =
+    entt::connection connection =
         channel.sink().connect<&Wrapper::operator()>(*wrapper);
 
     return Core::Connection(
-        [c = std::move(conn), w = std::move(wrapper)]() mutable {
-            c.release();
+        [connection = std::move(connection), wrapper = std::move(wrapper)]() mutable {
+            connection.release();
         }
     );
 }
