@@ -14,6 +14,7 @@
 #include <QWidget>
 
 #include "core/theme/theme_manager.hpp"
+#include "core/widgets/card_widget.hpp"
 #include "dbc_file/constants.hpp"
 
 namespace DbcFile {
@@ -246,56 +247,18 @@ auto LoadPage::createCardFrame(QVBoxLayout* parentLayout) -> QVBoxLayout*
     const auto& colors = THEME.colors();
     const auto& spacing = THEME.spacing();
 
-    auto* loadCard = new QFrame(this);
-    loadCard->setObjectName(Constants::LoadPage::ObjectName::LoadCard);
+    auto* loadCard = new Core::CardWidget(Constants::LoadPage::CardTitle, Constants::LoadPage::CardSubtitle);
     loadCard->setMaximumWidth(650);
     loadCard->setMaximumHeight(350);
     loadCard->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-    const QString cardStyle = QString(
-                                  "#LoadCard { "
-                                  "background-color: %1; "
-                                  "border: %2px solid %3; "
-                                  "border-radius: %4px; "
-                                  "}")
-                                  .arg(colors.surfaceMain.name())
-                                  .arg(spacing.borderThick)
-                                  .arg(colors.borderSubtle.name(QColor::HexArgb))
-                                  .arg(spacing.radiusSm);
-    loadCard->setStyleSheet(cardStyle);
     parentLayout->addWidget(loadCard);
 
     // Inner layout of load card
-    auto* cardLayout = new QVBoxLayout(loadCard);
+    auto* cardLayout = loadCard->contentLayout();
     cardLayout->setContentsMargins(spacing.spacingXl, spacing.spacingXl, spacing.spacingXl,
                                    spacing.spacingXl);
     cardLayout->setSpacing(spacing.spacingMd);
     return cardLayout;
-}
-
-void LoadPage::setupHeader(QVBoxLayout* layout)
-{
-    const auto& THEME = Core::ThemeManager::getInstance();
-    const auto& colors = THEME.colors();
-    const auto& spacing = THEME.spacing();
-
-    auto* title = new QLabel(Constants::LoadPage::CardTitle);
-    title->setStyleSheet(QString("font-size: %1px;"
-                                 "font-weight: %2;"
-                                 "color: %3;")
-                             .arg(spacing.fontSizeLg)
-                             .arg(spacing.fontWeightNormal)
-                             .arg(colors.textPrimary.name()));
-    layout->addWidget(title);
-
-    // Subtitle "Load a DBC file to analyze its content" below the title in the upper left
-    auto* subTitle = new QLabel(Constants::LoadPage::CardSubtitle);
-    subTitle->setStyleSheet(QString("font-size: %1px;"
-                                    "font-weight: %2;"
-                                    "color: %3;")
-                                .arg(spacing.fontSizeMd)
-                                .arg(spacing.fontWeightNormal)
-                                .arg(colors.textSecondary.name()));
-    layout->addWidget(subTitle);
 }
 
 void LoadPage::setupUploadZone(QVBoxLayout* layout)
@@ -372,7 +335,6 @@ void LoadPage::setupUi()
     mainLayout->setContentsMargins(0, 0, 0, 0);
 
     auto* cardLayout = createCardFrame(mainLayout);
-    setupHeader(cardLayout);
     setupUploadZone(cardLayout);
 }
 }  // namespace DbcFile
