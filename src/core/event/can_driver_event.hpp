@@ -17,7 +17,7 @@ struct CanDriverChangeEvent final : public Event {
      */
     std::string deviceName;
 
-    explicit CanDriverChangeEvent(const std::string &deviceName) : deviceName(deviceName){};
+    explicit CanDriverChangeEvent(const std::string &deviceName) : deviceName(deviceName) {};
 };
 }  // namespace Core
 #endif  // CANBUSMANAGER_CAN_DRIVER_EVENT_HPP
