@@ -7,7 +7,7 @@
 #include <QWidget>
 #include <memory>
 
-#include "core/ui/widgets/sidebar.hpp"
+#include "core/widgets/sidebar.hpp"
 #include "pages/ecus_page.hpp"
 #include "pages/load_page.hpp"
 #include "pages/messages_page.hpp"

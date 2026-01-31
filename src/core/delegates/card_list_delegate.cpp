@@ -4,7 +4,7 @@
 #include "card_list_delegate.hpp"
 
 #include "core/theme/theme_manager.hpp"
-#include "core/ui/painters/item_painter.hpp"
+#include "core/painters/item_painter.hpp"
 namespace Core {
 CardListDelegate::CardListDelegate(const int badgeRole, const QIcon& badgeIcon,
                                    const int detailRole, QObject* parent)

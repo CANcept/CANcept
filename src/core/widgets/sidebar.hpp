@@ -4,7 +4,7 @@
 #pragma once
 #include <QListView>
 
-#include "core/ui/delegates/sidebar_delegate.hpp"
+#include "core/delegates/sidebar_delegate.hpp"
 
 class QStandardItem;
 class QStandardItemModel;

@@ -1,7 +1,7 @@
 //
 // Created by Adrian Rupp on 28.01.26.
 //
-#include "sidebar_delegate.hpp"
+#include "../delegates/sidebar_delegate.hpp"
 
 #include <QAbstractItemView>
 #include <QHelpEvent>
