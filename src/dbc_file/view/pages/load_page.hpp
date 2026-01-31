@@ -111,12 +111,6 @@ class LoadPage : public QWidget
     auto createCardFrame(QVBoxLayout* parentLayout) -> QVBoxLayout*;
 
     /**
-     * @brief Adds the Title and Subtitle labels to the card layout.
-     * @param layout The layout of the card frame.
-     */
-    static void setupHeader(QVBoxLayout* layout);
-
-    /**
      * @brief Creates the interactive Upload Zone frame.
      * @details Instantiates m_uploadBoxFrame, applies the drag-state stylesheet,
      * installs the event filter, and populates it with the icon and instruction text.

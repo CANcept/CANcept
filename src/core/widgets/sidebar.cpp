@@ -51,7 +51,7 @@ void Sidebar::setupUi()
                                 }
                                 )")
                       .arg(colors.surfaceMain.name(QColor::HexArgb))
-                      .arg(spacing.borderThick)
+                      .arg(spacing.borderThin)
                       .arg(colors.borderSubtle.name(QColor::HexArgb))
                       .arg(colors.textSecondary.name(QColor::HexArgb))
                       .arg(spacing.fontSizeMd)

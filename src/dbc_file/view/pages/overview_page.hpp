@@ -2,6 +2,8 @@
 // Created by Adrian Rupp on 22.01.26.
 //
 #pragma once
+#include <qboxlayout.h>
+
 #include <QDataWidgetMapper>
 #include <QLabel>
 #include <QListView>
@@ -26,6 +28,10 @@ class OverviewPage : public QWidget
 
    public:
     explicit OverviewPage(QWidget* parent = nullptr);
+    void setupFileInfoSection(QVBoxLayout* parentLayout);
+    void setupStatsSection(QVBoxLayout* parentLayout);
+    void setupListsSection(QVBoxLayout* parentLayout);
+    void setupMapper();
     ~OverviewPage() override = default;
 
     /**
@@ -76,12 +82,15 @@ class OverviewPage : public QWidget
     QDataWidgetMapper* m_mapper;
 
     // Targets for m_mapper
+    // --- 1. Labels for File Info Card ---
+    QLabel* m_lblFileName;
     QLabel* m_lblVersion;
-    QLabel* m_lblLoadedDate;
+
+    // --- 2. Labels for KPI Cards
     QLabel* m_lblEcuCount;
     QLabel* m_lblMessageCount;
     QLabel* m_lblSignalCount;
-    QLabel* m_lblLargestMessageName;
+    QLabel* m_lblOrphanCount;
 
     // List Views
     QListView* m_ecuList;

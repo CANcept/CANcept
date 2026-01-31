@@ -22,7 +22,9 @@ auto DbcView::getLoadPage() const -> LoadPage&
 {
     return *m_loadPage;
 }
-void DbcFile::DbcView::setSourceModel(QAbstractItemModel* model) {}
+void DbcFile::DbcView::setSourceModel(QAbstractItemModel* model)
+{
+}
 void DbcFile::DbcView::setDataItemDelegate(QAbstractItemDelegate* delegate) {}
 void DbcFile::DbcView::setNavigationEnabled(const bool enabled) const
 {
@@ -70,7 +72,7 @@ void DbcFile::DbcView::setupUi()
     m_sidebar->addTab(QIcon(Constants::Sidebar::IconLoadNew), Constants::Sidebar::TitleLoadNew,
                       true);
     m_sidebar->addTab(QIcon(Constants::Sidebar::IconOverview), Constants::Sidebar::TitleOverview,
-                      false);
+                      true);
     m_sidebar->addTab(QIcon(Constants::Sidebar::IconEcus), Constants::Sidebar::TitleEcus, false);
     m_sidebar->addTab(QIcon(Constants::Sidebar::IconMessages), Constants::Sidebar::TitleMessages,
                       false);

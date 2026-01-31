@@ -47,6 +47,9 @@ struct SpacingTheme {
     int itemCardPadding = 12;
     int badgePadding = 5;
 
+    // Stat Card Spacing
+    int statCardHeight = 120;
+
     // Badge sizes
     int badgeHeight = 18;
 };
