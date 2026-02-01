@@ -4,12 +4,12 @@
 #include <QPushButton>
 #include <QWidget>
 
-#include "../../core/widgets/common/styled_combo_box.hpp"
 #include "components/can_bus_config_card.hpp"
 #include "components/hex_id_line_edit.hpp"
 #include "components/send_message_button.hpp"
 #include "core/widgets/card_widget.hpp"
-#include "validator/hex_data_formatter.hpp"
+#include "core/widgets/common/styled_combo_box.hpp"
+#include "sending/view/formatter/hex_data_formatter.hpp"
 
 namespace Sending {
 
@@ -23,12 +23,6 @@ namespace Sending {
  * 2. CAN Frame Card: Single-line hex inputs for ID and Message Data
  * 3. Repeat Settings Card: (Optional - not yet implemented)
  * 4. Floating Send Message button at bottom right
- *
- * @note The Message Data field is a single input where users enter space-separated
- * hex bytes (e.g., "01 02 03 04"). DLC is calculated dynamically from the input.
- *
- * @note This class is a "Passive View." It exposes widgets via accessors
- * so the @ref SendingDelegate can map them to the @ref SendingModel.
  */
 class RawSendingSubView final : public QWidget
 {
@@ -77,16 +71,10 @@ class RawSendingSubView final : public QWidget
     /** @} */
 
     /**
-     * @brief Populates the interface dropdown (Called by Delegate).
+     * @brief Populates the interface dropdown.
      * @param interfaces List of available CAN interface names (e.g., "can0", "vcan0").
      */
     void setAvailableInterfaces(const std::vector<std::string>& interfaces) const;
-
-    /**
-     * @brief Populates the baud rate dropdown (Called by Delegate).
-     * @param baudRates List of available baud rates (e.g., 125000, 250000, 500000).
-     */
-    void setAvailableBaudRates(const std::vector<uint32_t>& baudRates) const;
 
    private:
     void setupUi();

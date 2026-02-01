@@ -140,8 +140,7 @@ void DbcSignalRowWidget::setupFullMode(const QString& name, const QString& unit,
     m_valueEditor->setValidator(validator);
 
     // Connect real-time clamping - prevent values outside range
-    connect(m_valueEditor, &QLineEdit::textChanged, this,
-            &DbcSignalRowWidget::clampInput);
+    connect(m_valueEditor, &QLineEdit::textChanged, this, &DbcSignalRowWidget::clampInput);
 
     secondRow->addWidget(m_valueEditor, 1);
 

@@ -1,7 +1,9 @@
 #pragma once
 
+#include <QPointer>
 #include <QWidget>
 #include <memory>
+#include <mutex>
 
 #include "core/dto/can_dto.hpp"
 #include "core/dto/dbc_dto.hpp"
@@ -69,27 +71,15 @@ class SendingComponent final : public Core::ITabComponent
     void dbcConfigurationChanged(const Core::DbcConfig& config);
 
    private slots:
+    /**
+     * @brief Handles DBC config update on UI thread (queued from event broker thread).
+     */
+    void onDbcConfigReceived(const Core::DbcConfig& config);
 
     /**
-     * @brief Triggered when the user selects a different CAN device/interface.
-     * It also publishes the CanDriverChangeEvent.
-     * @param deviceName The identifier of the newly selected hardware.
+     * @brief Handles DBC parse error on UI thread (queued from event broker thread).
      */
-    void onDeviceChanged(const std::string& deviceName) const;
-
-    /**
-     * @brief Triggered when the user clicks 'Send Message' in Raw mode.
-     * Publishes a SendCanMessageRawEvent to the broker.
-     * @param message the raw message to be send on the selected device/channel
-     */
-    void onSendRawRequested(const Core::RawCanMessage& message) const;
-
-    /**
-     * @brief Triggered when the user clicks 'Send Message' in DBC mode.
-     * Publishes a SendCanMessageDbcEvent to the broker.
-     * @param message the dbc based message to be send on the selected device/channel
-     */
-    void onSendDbcRequested(const Core::DbcCanMessage& message) const;
+    void onDbcParseError() const;
 
    private:
     /**
@@ -103,9 +93,16 @@ class SendingComponent final : public Core::ITabComponent
     void setupBrokerSubscriptions();
 
     /**
-     * @brief Updates the enabled state of send buttons based on current selections.
+     * @brief Publishes a raw CAN message in a worker thread.
+     * Thread-safe: copies message before spawning thread.
      */
-    void updateSendButtonStates() const;
+    void publishRawMessageAsync(const Core::RawCanMessage& message);
+
+    /**
+     * @brief Publishes a DBC CAN message in a worker thread.
+     * Thread-safe: copies message before spawning thread.
+     */
+    void publishDbcMessageAsync(const Core::DbcCanMessage& message);
 
     /** @brief Model holding CAN sending configuration and data */
     std::unique_ptr<SendingModel> m_model;
@@ -124,11 +121,8 @@ class SendingComponent final : public Core::ITabComponent
     /** @brief RAII Handle for error event subscription. */
     Core::Connection m_parseErrorConn;
 
-    /** @brief Tracks whether a CAN interface is currently selected (Raw mode) */
-    bool m_rawInterfaceSelected = false;
-
-    /** @brief Tracks whether a CAN interface is currently selected (DBC mode) */
-    bool m_dbcInterfaceSelected = false;
+    /** @brief Mutex protecting event broker access from multiple threads. */
+    mutable std::mutex m_brokerMutex;
 };
 
 }  // namespace Sending

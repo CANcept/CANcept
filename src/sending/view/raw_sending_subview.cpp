@@ -5,11 +5,11 @@
 #include <QScrollArea>
 #include <QVBoxLayout>
 
-#include "../../core/widgets/common/styled_line_edit.hpp"
 #include "components/hex_id_line_edit.hpp"
 #include "core/macro/theme.hpp"
+#include "core/widgets/common/styled_line_edit.hpp"
 #include "sending/constants.hpp"
-#include "validator/hex_data_formatter.hpp"
+#include "sending/view/formatter/hex_data_formatter.hpp"
 
 namespace Sending {
 
@@ -36,7 +36,7 @@ void RawSendingSubView::setupUi()
     scrollArea->setFrameShape(QFrame::NoFrame);
     scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
-    auto* scrollContent = new QWidget();
+    auto* scrollContent = new QWidget(this);
     scrollArea->setWidget(scrollContent);
 
     auto* mainLayout = new QVBoxLayout(this);
@@ -49,7 +49,7 @@ void RawSendingSubView::setupUi()
     contentLayout->setSpacing(spacing.spacingLg);
 
     // CAN-Bus Configuration Card
-    m_configCard = new CanBusConfigCard(true, true, this);
+    m_configCard = new CanBusConfigCard(true, this);
     contentLayout->addWidget(m_configCard);
 
     // CAN Frame Card
@@ -100,14 +100,6 @@ void RawSendingSubView::setAvailableInterfaces(const std::vector<std::string>& i
     if (m_configCard)
     {
         m_configCard->setAvailableInterfaces(interfaces);
-    }
-}
-
-void RawSendingSubView::setAvailableBaudRates(const std::vector<uint32_t>& baudRates) const
-{
-    if (m_configCard)
-    {
-        m_configCard->setAvailableBaudRates(baudRates);
     }
 }
 

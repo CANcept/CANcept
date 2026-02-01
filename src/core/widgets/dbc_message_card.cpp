@@ -87,7 +87,7 @@ void DbcMessageCard::setupUi(const QString& name, const uint32_t id, const int s
                                        "  color: %3; "
                                        "  text-decoration: none; "
                                        "}")
-                                   .arg(spacing.fontWeightBold)
+                                   .arg(spacing.fontWeightMedium)
                                    .arg(spacing.fontSizeSm)
                                    .arg(colors.textPrimary.name()));
     headerRow->addWidget(m_nameLabel);
@@ -167,11 +167,10 @@ void DbcMessageCard::addSignalRow(DbcSignalRowWidget* rowWidget)
 
 void DbcMessageCard::clearSignalRows()
 {
-    //disconnect signals
+    // disconnect signals
     for (const auto* signalRow : m_signalRows)
     {
-        if (const auto* cb = signalRow->selectionCheckbox())
-            disconnect(cb, nullptr, this, nullptr);
+        if (const auto* cb = signalRow->selectionCheckbox()) disconnect(cb, nullptr, this, nullptr);
     }
 
     m_signalRows.clear();

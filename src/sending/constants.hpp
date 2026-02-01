@@ -104,10 +104,10 @@ inline const QString MESSAGE_DATA_PLACEHOLDER = "01 02 03 04 05 06 07 08";
 inline constexpr uint8_t MAX_CAN_DLC = 8;
 
 /** @brief Minimum CAN ID value */
-inline constexpr uint32_t MIN_CAN_ID = 0x000;
+inline constexpr uint16_t MIN_CAN_ID = 0x000;
 
 /** @brief Maximum CAN ID (11-bit standard identifier) */
-inline constexpr uint32_t MAX_CAN_ID = 0x7FF;
+inline constexpr uint16_t MAX_CAN_ID = 0x7FF;
 
 /** @brief Maximum length for CAN ID hex input (e.g., "7FF" = 3 chars) */
 inline constexpr int MAX_CAN_ID_HEX_LENGTH = 3;

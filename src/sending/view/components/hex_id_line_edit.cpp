@@ -45,7 +45,7 @@ void HexIdLineEdit::paintEvent(QPaintEvent* event)
     painter.setFont(prefixFont);
     painter.setPen(prefixColor);
 
-    // Draw decoration
+    // Draw decoration, 0x in this case
     const QRect prefixRect(spacing.spacingXl, 0, Constants::HEX_PREFIX_DISPLAY_WIDTH, height());
     painter.drawText(prefixRect, Qt::AlignLeft | Qt::AlignVCenter, Constants::HEX_PREFIX);
 }

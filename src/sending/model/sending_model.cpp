@@ -1,6 +1,7 @@
 #include "sending_model.hpp"
 
 #include <algorithm>
+#include <sstream>
 
 #include "sending/constants.hpp"
 
@@ -12,7 +13,14 @@ SendingModel::SendingModel(QObject* parent)
     connect(m_cyclicTimer, &QTimer::timeout, this, &SendingModel::onCyclicTimerTimeout);
 }
 
-auto SendingModel::index(int row, int column, const QModelIndex& parent) const -> QModelIndex
+auto SendingModel::makeSignalKey(const uint16_t messageId,
+                                 const std::string& signalName) -> std::string
+{
+    return std::to_string(messageId) + ':' + signalName;
+}
+
+auto SendingModel::index(const int row, const int column,
+                         const QModelIndex& parent) const -> QModelIndex
 {
     if (!hasIndex(row, column, parent))
     {
@@ -125,9 +133,8 @@ auto SendingModel::data(const QModelIndex& index, int role) const -> QVariant
     }
 
     // Check if this is a message or signal
-    bool isMessage = (index.internalPointer() == nullptr);
 
-    if (isMessage)
+    if (index.internalPointer() == nullptr)
     {
         // Message level
         auto it = m_currentDbc->messageDefinitions.begin();
@@ -169,7 +176,8 @@ auto SendingModel::data(const QModelIndex& index, int role) const -> QVariant
             case Qt::DisplayRole:
                 return QString::fromStdString(sigIt->signalName);
             case Role_SignalValue: {
-                auto valIt = m_dynamicSignalValues.find(sigIt->signalName);
+                const std::string key = makeSignalKey(msgIt->messageId, sigIt->signalName);
+                auto valIt = m_dynamicSignalValues.find(key);
                 if (valIt != m_dynamicSignalValues.end())
                 {
                     return valIt->second;
@@ -239,7 +247,8 @@ auto SendingModel::setData(const QModelIndex& index, const QVariant& value, int 
                         {
                             val = sigIt->maximum;
                         }
-                        m_dynamicSignalValues[sigIt->signalName] = val;
+                        const std::string key = makeSignalKey(msgIt->messageId, sigIt->signalName);
+                        m_dynamicSignalValues[key] = val;
                         emit dataChanged(index, index, {role});
                         return true;
                     }
@@ -258,20 +267,24 @@ void SendingModel::updateDbcConfig(const Core::DbcConfig& config)
     // Make a copy of the config (owned by this model)
     m_currentDbc = config;
 
-    // Initialize signal values to their minimums
+    // Clear selection and values
     m_dynamicSignalValues.clear();
+    m_selectedSignalNames.clear();
+
+    // Initialize signal values to their minimums
     for (const auto& msg : m_currentDbc->messageDefinitions)
     {
         for (const auto& sig : msg.signalDescriptions)
         {
-            m_dynamicSignalValues[sig.signalName] = sig.minimum;
+            const std::string key = makeSignalKey(msg.messageId, sig.signalName);
+            m_dynamicSignalValues[key] = sig.minimum;
         }
     }
 
     endResetModel();
 }
 
-void SendingModel::setTransmissionStatus(bool isActive)
+void SendingModel::setTransmissionStatus(const bool isActive)
 {
     if (m_cyclicState.isSending != isActive)
     {
@@ -288,12 +301,11 @@ void SendingModel::transmitCurrent()
 {
     if (m_currentMode == Mode::Raw)
     {
-        Core::RawCanMessage message;
-        message.receiveTime = std::chrono::duration_cast<std::chrono::milliseconds>(
-            std::chrono::system_clock::now().time_since_epoch());
-        message.messageId = static_cast<char>(m_rawState.id & 0xFF);
+        Core::RawCanMessage message{};
+        message.messageId = static_cast<uint16_t>(m_rawState.id & Constants::MAX_CAN_ID);
+        message.dlc = m_rawState.dlc;
 
-        for (size_t i = 0; i < 8 && i < m_rawState.data.size(); ++i)
+        for (size_t i = 0; i < Constants::MAX_CAN_DLC && i < m_rawState.data.size(); ++i)
         {
             message.data[i] = static_cast<char>(m_rawState.data[i]);
         }
@@ -301,51 +313,46 @@ void SendingModel::transmitCurrent()
         emit requestSendRaw("", message);
     } else
     {
-        // DBC mode - send all selected messages
+        // DBC mode - send messages that have any selected signals
         if (!m_currentDbc.has_value())
         {
             return;
         }
 
-        for (uint32_t msgId : m_selectedMessageIds)
+        for (const auto& msgDef : m_currentDbc->messageDefinitions)
         {
-            // Find the message definition
-            for (const auto& msgDef : m_currentDbc->messageDefinitions)
+            Core::DbcCanMessage message{};
+            message.messageId = static_cast<uint16_t>(msgDef.messageId & Constants::MAX_CAN_ID);
+
+            // Populate only selected signal values
+            for (const auto& sigDef : msgDef.signalDescriptions)
             {
-                if (msgDef.messageId == msgId)
+                // Only include signals that are selected
+                if (!isSignalSelected(msgDef.messageId, sigDef.signalName))
                 {
-                    Core::DbcCanMessage message;
-                    message.receiveTime = std::chrono::duration_cast<std::chrono::milliseconds>(
-                        std::chrono::system_clock::now().time_since_epoch());
-                    message.messageId = static_cast<uint16_t>(msgId & 0x7FF);
-
-                    // Populate only selected signal values
-                    for (const auto& sigDef : msgDef.signalDescriptions)
-                    {
-                        // Only include signals that are selected
-                        if (!isSignalSelected(sigDef.signalName))
-                        {
-                            continue;
-                        }
-
-                        Core::DbcCanSignal signal;
-                        signal.name = sigDef.signalName;
-
-                        auto valIt = m_dynamicSignalValues.find(sigDef.signalName);
-                        if (valIt != m_dynamicSignalValues.end())
-                        {
-                            signal.value = valIt->second;
-                        } else
-                        {
-                            signal.value = sigDef.minimum;
-                        }
-
-                        message.signalValues.push_back(signal);
-                    }
-
-                    emit requestSendDbc("", message);
-                    break;
+                    continue;
                 }
+
+                Core::DbcCanSignal signal;
+                signal.name = sigDef.signalName;
+
+                const std::string key = makeSignalKey(msgDef.messageId, sigDef.signalName);
+                if (auto valIt = m_dynamicSignalValues.find(key);
+                    valIt != m_dynamicSignalValues.end())
+                {
+                    signal.value = valIt->second;
+                } else
+                {
+                    signal.value = sigDef.minimum;
+                }
+
+                message.signalValues.push_back(signal);
+            }
+
+            // Only send if this message has at least one selected signal
+            if (!message.signalValues.empty())
+            {
+                emit requestSendDbc("", message);
             }
         }
     }
@@ -359,7 +366,7 @@ void SendingModel::onCyclicTimerTimeout()
     }
 }
 
-void SendingModel::updateTimerState()
+void SendingModel::updateTimerState() const
 {
     if (m_cyclicState.isEnabled && m_cyclicState.isSending)
     {
@@ -370,39 +377,102 @@ void SendingModel::updateTimerState()
     }
 }
 
-void SendingModel::setMessageSelected(uint32_t messageId, bool selected)
+void SendingModel::setMessageSelected(const uint16_t messageId, const bool selected)
 {
-    auto it = std::find(m_selectedMessageIds.begin(), m_selectedMessageIds.end(), messageId);
+    // Select/deselect ALL signals of this message (convenience for "select all" checkbox)
+    if (!m_currentDbc.has_value())
+    {
+        return;
+    }
 
-    if (selected && it == m_selectedMessageIds.end())
+    for (const auto& msgDef : m_currentDbc->messageDefinitions)
     {
-        m_selectedMessageIds.push_back(messageId);
-    } else if (!selected && it != m_selectedMessageIds.end())
-    {
-        m_selectedMessageIds.erase(it);
+        if (msgDef.messageId == messageId)
+        {
+            for (const auto& sigDef : msgDef.signalDescriptions)
+            {
+                setSignalSelected(messageId, sigDef.signalName, selected);
+            }
+            break;
+        }
     }
 }
 
-auto SendingModel::isMessageSelected(uint32_t messageId) const -> bool
+auto SendingModel::isMessageSelected(const uint16_t messageId) const -> bool
 {
-    return std::find(m_selectedMessageIds.begin(), m_selectedMessageIds.end(), messageId) !=
-           m_selectedMessageIds.end();
+    // Returns true only if ALL signals of this message are selected
+    if (!m_currentDbc.has_value())
+    {
+        return false;
+    }
+
+    for (const auto& msgDef : m_currentDbc->messageDefinitions)
+    {
+        if (msgDef.messageId == messageId)
+        {
+            if (msgDef.signalDescriptions.empty())
+            {
+                return false;
+            }
+            for (const auto& sigDef : msgDef.signalDescriptions)
+            {
+                if (!isSignalSelected(messageId, sigDef.signalName))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+    }
+    return false;
 }
 
-void SendingModel::setSignalSelected(const std::string& signalName, bool selected)
+void SendingModel::setSignalSelected(const uint16_t messageId, const std::string& signalName,
+                                     const bool selected)
 {
+    const std::string key = makeSignalKey(messageId, signalName);
     if (selected)
     {
-        m_selectedSignalNames.insert(signalName);
+        m_selectedSignalNames.insert(key);
     } else
     {
-        m_selectedSignalNames.erase(signalName);
+        m_selectedSignalNames.erase(key);
     }
 }
 
-auto SendingModel::isSignalSelected(const std::string& signalName) const -> bool
+auto SendingModel::isSignalSelected(const uint16_t messageId,
+                                    const std::string& signalName) const -> bool
 {
-    return m_selectedSignalNames.find(signalName) != m_selectedSignalNames.end();
+    const std::string key = makeSignalKey(messageId, signalName);
+    return m_selectedSignalNames.contains(key);
+}
+
+void SendingModel::setSignalValue(const uint16_t messageId, const std::string& signalName,
+                                  const double value)
+{
+    const std::string key = makeSignalKey(messageId, signalName);
+    m_dynamicSignalValues[key] = value;
+}
+
+void SendingModel::setRawCanId(const uint16_t canId)
+{
+    m_rawState.id = canId & Constants::MAX_CAN_ID;
+}
+
+void SendingModel::setRawData(const std::vector<uint8_t>& data)
+{
+    m_rawState.data.clear();
+    m_rawState.dlc = 0;
+    for (size_t i = 0; i < Constants::MAX_CAN_DLC && i < data.size(); ++i)
+    {
+        m_rawState.data.push_back(data[i]);
+        m_rawState.dlc++;
+    }
+    // Pad with zeros
+    while (m_rawState.data.size() < Constants::MAX_CAN_DLC)
+    {
+        m_rawState.data.push_back(0);
+    }
 }
 
 }  // namespace Sending

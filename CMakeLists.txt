@@ -61,7 +61,7 @@ if(ENABLE_CLANG_TIDY)
 endif()
 
 # 4. Dependencies (Runtime Libraries)
-find_package(Qt6 COMPONENTS Widgets PrintSupport OpenGL Svg REQUIRED)
+find_package(Qt6 COMPONENTS Widgets PrintSupport OpenGL Svg Concurrent REQUIRED)
 find_package(Threads REQUIRED)
 
 add_subdirectory(external/spdlog)
@@ -92,6 +92,7 @@ target_include_directories(${PROJECT_NAME}Lib PUBLIC
 target_link_libraries(${PROJECT_NAME}Lib PUBLIC
         Qt6::Widgets
         Qt6::Svg
+        Qt6::Concurrent
         EnTT::EnTT
         sockcanpp
         qwt

@@ -8,8 +8,7 @@
 
 namespace Sending {
 
-CanBusConfigCard::CanBusConfigCard(const bool showInterface, const bool showBaudRate,
-                                   QWidget* parent)
+CanBusConfigCard::CanBusConfigCard(const bool showInterface, QWidget* parent)
     : QWidget(parent),
       m_configCard(nullptr),
       m_interfaceCard(nullptr),
@@ -17,10 +16,10 @@ CanBusConfigCard::CanBusConfigCard(const bool showInterface, const bool showBaud
       m_interfaceCombo(nullptr),
       m_baudRateCombo(nullptr)
 {
-    setupUi(showInterface, showBaudRate);
+    setupUi(showInterface);
 }
 
-void CanBusConfigCard::setupUi(const bool showInterface, const bool showBaudRate)
+void CanBusConfigCard::setupUi(const bool showInterface)
 {
     const auto& spacing = THEME.spacing();
 
@@ -29,7 +28,7 @@ void CanBusConfigCard::setupUi(const bool showInterface, const bool showBaudRate
     mainLayout->setSpacing(0);
     m_configCard = new Core::CardWidget(Constants::CAN_CONFIGURATION_TITLE, QString(),
                                         Constants::CONFIGURATION_ICON_PATH, this);
-    auto* innerCardsRow = new QHBoxLayout();
+    auto* innerCardsRow = new QHBoxLayout(this);
     innerCardsRow->setSpacing(spacing.spacingLg);
 
     // Interface Card
@@ -41,17 +40,6 @@ void CanBusConfigCard::setupUi(const bool showInterface, const bool showBaudRate
         m_interfaceCombo->setPlaceholderText(Constants::INTERFACE_PLACEHOLDER);
         m_interfaceCard->contentLayout()->addWidget(m_interfaceCombo);
         innerCardsRow->addWidget(m_interfaceCard);
-    }
-
-    // Baud Rate Card
-    if (showBaudRate)
-    {
-        m_baudRateCard =
-            new Core::CardWidget(QString(), Constants::BAUD_RATE_LABEL, QString(), m_configCard);
-        m_baudRateCombo = new Core::StyledComboBox(m_baudRateCard);
-        m_baudRateCombo->setPlaceholderText(Constants::BAUD_RATE_PLACEHOLDER);
-        m_baudRateCard->contentLayout()->addWidget(m_baudRateCombo);
-        innerCardsRow->addWidget(m_baudRateCard);
     }
 
     m_configCard->contentLayout()->addLayout(innerCardsRow);
@@ -69,20 +57,6 @@ void CanBusConfigCard::setAvailableInterfaces(const std::vector<std::string>& in
     for (const auto& interface : interfaces)
     {
         m_interfaceCombo->addItem(QString::fromStdString(interface));
-    }
-}
-
-void CanBusConfigCard::setAvailableBaudRates(const std::vector<uint32_t>& baudRates) const
-{
-    if (!m_baudRateCombo)
-    {
-        return;
-    }
-
-    m_baudRateCombo->clear();
-    for (const auto& rate : baudRates)
-    {
-        m_baudRateCombo->addItem(QString::number(rate), QVariant(rate));
     }
 }
 

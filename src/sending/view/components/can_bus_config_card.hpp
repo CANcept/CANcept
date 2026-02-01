@@ -25,11 +25,9 @@ class CanBusConfigCard final : public QWidget
     /**
      * @brief Constructs the CAN-Bus Configuration card.
      * @param showInterface Whether to show the interface selection card
-     * @param showBaudRate Whether to show the baud rate selection card
      * @param parent Parent widget
      */
-    explicit CanBusConfigCard(bool showInterface = true, bool showBaudRate = true,
-                              QWidget* parent = nullptr);
+    explicit CanBusConfigCard(bool showInterface = true, QWidget* parent = nullptr);
     ~CanBusConfigCard() override = default;
 
     /**
@@ -56,14 +54,8 @@ class CanBusConfigCard final : public QWidget
      */
     void setAvailableInterfaces(const std::vector<std::string>& interfaces) const;
 
-    /**
-     * @brief Populates the baud rate dropdown with available rates.
-     * @param baudRates List of available baud rates
-     */
-    void setAvailableBaudRates(const std::vector<uint32_t>& baudRates) const;
-
    private:
-    void setupUi(bool showInterface, bool showBaudRate);
+    void setupUi(bool showInterface);
 
     Core::CardWidget* m_configCard;
     Core::CardWidget* m_interfaceCard;

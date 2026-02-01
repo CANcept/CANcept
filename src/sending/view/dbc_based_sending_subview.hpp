@@ -62,17 +62,23 @@ class DbcSendingSubView final : public QWidget
     /**
      * @brief Emitted when user toggles message selection checkbox.
      */
-    void messageSelectionChanged(uint32_t messageId, bool selected);
+    void messageSelectionChanged(uint16_t messageId, bool selected);
 
     /**
      * @brief Emitted when user toggles signal selection checkbox.
+     * @param messageId The message ID containing the signal
+     * @param signalName The signal name (unique within the message)
+     * @param selected Whether the signal is selected
      */
-    void signalSelectionChanged(const QString& signalName, bool selected);
+    void signalSelectionChanged(uint16_t messageId, const QString& signalName, bool selected);
 
     /**
      * @brief Emitted when user changes a signal value.
+     * @param messageId The message ID containing the signal
+     * @param signalName The signal name (unique within the message)
+     * @param newValue The new signal value
      */
-    void signalValueChanged(const QString& signalName, double newValue);
+    void signalValueChanged(uint16_t messageId, const QString& signalName, double newValue);
 
    private:
     void setupUi();

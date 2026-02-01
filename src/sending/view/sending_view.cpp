@@ -2,6 +2,7 @@
 
 #include <QHBoxLayout>
 #include <QList>
+#include <QRegularExpression>
 #include <QStandardItemModel>
 #include <QVBoxLayout>
 
@@ -149,16 +150,165 @@ void SendingView::onSidebarSelectionChanged(const QModelIndex& index)
     displayMode(index.row());
 }
 
-void SendingView::displayMode(int index)
+void SendingView::displayMode(const int index)
 {
     m_contentStack->setCurrentIndex(index);
     emit modeChanged(index == 1);
 }
 
-void SendingView::setModel(SendingModel* /*model*/)
+void SendingView::setModel(SendingModel* model)
 {
-    // Model binding can be implemented here if needed
-    // For now, the component handles the connections directly
+    if (!model)
+    {
+        return;
+    }
+
+    m_model = model;
+
+    // Mode Changes
+    connect(this, &SendingView::modeChanged, model, [model](const bool isDbcMode) {
+        const auto mode = isDbcMode ? SendingModel::Mode::Dbc : SendingModel::Mode::Raw;
+        model->setData(QModelIndex(), static_cast<int>(mode), SendingModel::Role_ActiveMode);
+    });
+
+    // DBC View: Message/Signal Selection
+    connect(m_dbcView, &DbcSendingSubView::messageSelectionChanged, this,
+            [this, model](uint16_t messageId, const bool selected) {
+                model->setMessageSelected(messageId, selected);
+                updateSendButtonStates();
+            });
+
+    connect(m_dbcView, &DbcSendingSubView::signalSelectionChanged, this,
+            [this, model](uint16_t messageId, const QString& signalName, const bool selected) {
+                model->setSignalSelected(messageId, signalName.toStdString(), selected);
+                updateSendButtonStates();
+            });
+
+    // DBC View: Signal Value Changes to Model
+    connect(m_dbcView, &DbcSendingSubView::signalValueChanged, model,
+            [model](uint16_t messageId, const QString& signalName, const double newValue) {
+                model->setSignalValue(messageId, signalName.toStdString(), newValue);
+            });
+
+    // Interface Selection to Emit Signal
+    connect(m_rawView->interfaceSelector(), QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, [this](const int index) {
+                m_rawInterfaceSelected = (index >= 0);
+                if (index >= 0)
+                {
+                    emit deviceSelectionChanged(
+                        m_rawView->interfaceSelector()->currentText().toStdString());
+                }
+                updateSendButtonStates();
+            });
+
+    connect(m_dbcView->interfaceSelector(), QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, [this](const int index) {
+                m_dbcInterfaceSelected = (index >= 0);
+                if (index >= 0)
+                {
+                    emit deviceSelectionChanged(
+                        m_dbcView->interfaceSelector()->currentText().toStdString());
+                }
+                updateSendButtonStates();
+            });
+
+    // Raw CAN ID input changes to Model
+    connect(m_rawView->canIdEditor(), &QLineEdit::textChanged, this, [model](const QString& text) {
+        QString canIdText = text.trimmed();
+        if (canIdText.startsWith("0x", Qt::CaseInsensitive))
+        {
+            canIdText = canIdText.mid(2);
+        }
+        canIdText = canIdText.remove(' ');
+
+        bool ok = false;
+        const uint16_t canId = canIdText.toUInt(&ok, 16);
+        if (ok)
+        {
+            model->setRawCanId(canId);
+        }
+    });
+
+    // Raw message data input changes to Model
+    connect(m_rawView->messageDataEditor(), &QLineEdit::textChanged, this,
+            [model](const QString& text) {
+                std::vector<uint8_t> data;
+
+                if (const QString messageDataText = text.trimmed(); !messageDataText.isEmpty())
+                {
+                    const QStringList byteStrings =
+                        messageDataText.split(QRegularExpression("\\s+"), Qt::SkipEmptyParts);
+
+                    for (int i = 0;
+                         i < byteStrings.size() && i < static_cast<int>(Constants::MAX_CAN_DLC);
+                         ++i)
+                    {
+                        bool ok = false;
+                        const uint8_t byte = byteStrings[i].toUInt(&ok, 16);
+                        if (ok)
+                        {
+                            data.push_back(byte);
+                        }
+                    }
+                }
+                model->setRawData(data);
+            });
+
+    // Raw Send Button to Model Transmit
+    connect(m_rawView->sendButton(), &QPushButton::clicked, this,
+            [model]() { model->transmitCurrent(); });
+
+    // DBC Send Button to Model Transmit
+    connect(m_dbcView->sendButton(), &QPushButton::clicked, this,
+            [model]() { model->transmitCurrent(); });
+
+    // Forward model's send requests to view signals
+    connect(model, &SendingModel::requestSendRaw, this,
+            [this](const std::string&, const Core::RawCanMessage& message) {
+                emit sendRawRequested(message);
+            });
+
+    connect(model, &SendingModel::requestSendDbc, this,
+            [this](const std::string&, const Core::DbcCanMessage& message) {
+                emit sendDbcRequested(message);
+            });
+
+    // Initial button state
+    updateSendButtonStates();
+}
+
+void SendingView::updateSendButtonStates() const
+{
+    if (auto* rawSendBtn = m_rawView->sendButton())
+    {
+        rawSendBtn->setEnabled(m_rawInterfaceSelected);
+    }
+
+    if (auto* dbcSendBtn = m_dbcView->sendButton())
+    {
+        bool anySignalSelected = false;
+        if (m_model && m_model->currentDbcConfig())
+        {
+            for (const auto& msg : m_model->currentDbcConfig()->messageDefinitions)
+            {
+                for (const auto& sig : msg.signalDescriptions)
+                {
+                    if (m_model->isSignalSelected(msg.messageId, sig.signalName))
+                    {
+                        anySignalSelected = true;
+                        break;
+                    }
+                }
+                if (anySignalSelected)
+                {
+                    break;
+                }
+            }
+        }
+
+        dbcSendBtn->setEnabled(m_dbcInterfaceSelected && anySignalSelected);
+    }
 }
 
 void SendingView::setAvailableDevices(const std::vector<std::string>& devices) const
@@ -170,15 +320,6 @@ void SendingView::setAvailableDevices(const std::vector<std::string>& devices) c
     if (m_dbcView)
     {
         m_dbcView->setAvailableInterfaces(devices);
-    }
-}
-
-void SendingView::setAvailableSpeeds(const std::vector<uint32_t>& speeds)
-{
-    // Set baud rates for raw view
-    if (m_rawView)
-    {
-        m_rawView->setAvailableBaudRates(speeds);
     }
 }
 

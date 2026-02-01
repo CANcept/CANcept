@@ -36,7 +36,7 @@ void DbcSendingSubView::setupUi()
                                    spacing.spacingLg);
     mainLayout->setSpacing(spacing.spacingLg);
 
-    m_configCard = new CanBusConfigCard(true, false, this);
+    m_configCard = new CanBusConfigCard(true, this);
     mainLayout->addWidget(m_configCard);
 
     m_messagesCard = new Core::CardWidget(Constants::MESSAGES_LABEL, QString(),
@@ -98,14 +98,13 @@ void DbcSendingSubView::populateFromModel(const SendingModel* model)
             new Core::DbcMessageCard(QString::fromStdString(msgDef.messageName), msgDef.messageId,
                                      static_cast<int>(msgDef.signalDescriptions.size()), this);
 
-        card->setHeaderChecked(model->isMessageSelected(msgDef.messageId));
-
         connect(card->headerCheckbox(), &Core::StyledCheckBox::toggled, this,
                 [this, msgId = msgDef.messageId](const bool checked) {
                     emit messageSelectionChanged(msgId, checked);
                 });
 
         // Add signal rows
+        const uint16_t msgId = msgDef.messageId;
         for (const auto& sigDef : msgDef.signalDescriptions)
         {
             auto* signalRow = new Core::DbcSignalRowWidget(
@@ -117,15 +116,15 @@ void DbcSendingSubView::populateFromModel(const SendingModel* model)
             // Connect signal selection checkbox
             if (auto* signalCheckbox = signalRow->selectionCheckbox())
             {
-                signalCheckbox->setChecked(model->isSignalSelected(sigDef.signalName));
+                signalCheckbox->setChecked(model->isSignalSelected(msgId, sigDef.signalName));
                 connect(signalCheckbox, &QCheckBox::toggled, this,
-                        [this, signalName](const bool checked) {
-                            emit signalSelectionChanged(signalName, checked);
+                        [this, msgId, signalName](const bool checked) {
+                            emit signalSelectionChanged(msgId, signalName, checked);
                         });
             }
 
             connect(signalRow->valueEditor(), &QLineEdit::textChanged, this,
-                    [this, signalName](const QString& text) {
+                    [this, msgId, signalName](const QString& text) {
                         if (text.isEmpty())
                         {
                             return;
@@ -134,12 +133,14 @@ void DbcSendingSubView::populateFromModel(const SendingModel* model)
                         const double value = text.toDouble(&ok);
                         if (ok)
                         {
-                            emit signalValueChanged(signalName, value);
+                            emit signalValueChanged(msgId, signalName, value);
                         }
                     });
 
             card->addSignalRow(signalRow);
         }
+
+        card->updateHeaderFromSignals();
 
         // Add card to layout
         int insertIndex = m_cardsLayout->count() - 1;
