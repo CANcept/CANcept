@@ -111,6 +111,8 @@ class MonitoringModel final : public QAbstractItemModel
         Qt::CheckState checked;
     };
 
+    void addTestData();
+
     /**
      * @brief Collection of all tracked CAN frames.
      *

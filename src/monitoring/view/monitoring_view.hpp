@@ -6,10 +6,11 @@
 #include <QPushButton>
 #include <QSortFilterProxyModel>
 #include <QSplitter>
-#include <QTreeView>
 
+#include "can_bus_config_card.hpp"
 #include "monitoring/delegate/monitoring_delegate.hpp"
 #include "monitoring/model/monitoring_model.hpp"
+#include "signal_list.hpp"
 
 /**
  * @namespace Monitoring
@@ -26,6 +27,20 @@ class MonitoringView : public QWidget
     ~MonitoringView() override = default;
 
     /**
+     * @name Configuration Accessors
+     * @{
+     */
+    [[nodiscard]] auto interfaceSelector() const -> QComboBox*
+    {
+        return m_configCard ? m_configCard->interfaceSelector() : nullptr;
+    }
+
+    [[nodiscard]] auto modeToggle() const -> QPushButton*
+    {
+        return m_configCard ? m_configCard->modeToggle() : nullptr;
+    }
+
+    /**
      * Sets a model for the view.
      * @param model contains the model to be added
      */
@@ -38,14 +53,15 @@ class MonitoringView : public QWidget
     void setDelegate(MonitoringDelegate* model);
 
     // Accessors for the Delegate to wire up signals/slots
-    QTreeView* getTreeView() const
+    SignalList* getSignalListView() const
     {
-        return m_signalsTreeView;
+        return m_signalListView;
     }
     GraphListView* getGraphListView() const
     {
         return m_graphListView;
     }
+
    signals:
 
     /**
@@ -76,8 +92,10 @@ class MonitoringView : public QWidget
    private:
     void setupUi();
 
-    // Helper to create the styled stat boxes
-    auto createStatBox(const QString& title, QLabel*& valueLabel) -> QFrame*;
+    QTimer* m_dbcMessageTimer;
+    QTimer* m_rawMessageTimer;
+    void listenDbcMessages();
+    void listenRawMessages();
 
     /**
      * @brief Proxy model used to filter and sort the signal tree data.
@@ -87,24 +105,13 @@ class MonitoringView : public QWidget
      */
     QSortFilterProxyModel* m_treeProxy;  // For data filtering
 
-    QTreeView* m_signalsTreeView;
+    SignalList* m_signalListView;
     QSplitter* m_splitter;  // For Signals and Graphs scalable split view
     GraphListView* m_graphListView;
 
     MonitoringModel* m_model;
     MonitoringDelegate* m_delegate;
 
-    // Header box
-    QGroupBox* m_connectionGroup;
-
-    // Row 1
-    QLabel* m_titleIcon;
-    QComboBox* m_interfaceCombo;
-    QPushButton* m_connectButton;
-
-    // Row 2 Content Labels
-    QLabel* m_fpsValueLabel;
-    QLabel* m_statusValueLabel;
-    QLabel* m_msgCountValueLabel;
+    CanBusConfigCard* m_configCard;
 };
 }  // namespace Monitoring

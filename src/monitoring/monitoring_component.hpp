@@ -65,6 +65,11 @@ class MonitoringComponent final : public Core::ITabComponent
      */
     void onStop() override;
 
+    auto isDbcModeEnabled() -> bool
+    {
+        return m_dbcModeEnabled;
+    };
+
    signals:
     /**
      * @brief Signal emitted when a new dbcConfiguration is used.
@@ -111,6 +116,13 @@ class MonitoringComponent final : public Core::ITabComponent
      */
     void onSignalUnchecked(char messageId, const std::string& signalName);
 
+    /**
+     * @brief Triggered when the user selects a different CAN device/interface.
+     * It also publishes the CanDriverChangeEvent.
+     * @param deviceName The identifier of the newly selected hardware.
+     */
+    void onDeviceChanged(const std::string& deviceName) const;
+
    private:
     /** @brief Model holding CAN sending configuration and data */
     std::unique_ptr<MonitoringModel> m_model;
@@ -135,5 +147,11 @@ class MonitoringComponent final : public Core::ITabComponent
 
     /** @brief RAII Handle for incoming CAN frames subscription. */
     Core::Connection m_decodedFrameReceivedConn;
+
+    /** @brief Tracks whether a CAN interface is currently selected */
+    bool m_interfaceSelected = false;
+
+    /** @brief Tracks whether the DBC mode is enabled or instead the raw mode */
+    bool m_dbcModeEnabled = false;
 };
 }  // namespace Monitoring

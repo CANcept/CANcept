@@ -1,6 +1,7 @@
 #include "monitoring_view.hpp"
 
 #include <QHeaderView>
+#include <QTimer>
 #include <QVBoxLayout>
 
 #include "core/constants.hpp"
@@ -13,8 +14,10 @@ namespace Monitoring {
 MonitoringView::MonitoringView(MonitoringModel* model, MonitoringDelegate* delegate)
     : QWidget(nullptr),
       m_treeProxy(new QSortFilterProxyModel(this)),
-      m_signalsTreeView(new QTreeView(this)),
-      m_splitter(new QSplitter(Qt::Horizontal, this))
+      m_signalListView(new SignalList(this)),
+      m_splitter(new QSplitter(Qt::Horizontal, this)),
+      m_dbcMessageTimer(new QTimer(this)),
+      m_rawMessageTimer(new QTimer(this))
 {
     m_model = model;
     m_delegate = delegate;
@@ -24,14 +27,12 @@ MonitoringView::MonitoringView(MonitoringModel* model, MonitoringDelegate* deleg
 void MonitoringView::setupUi()
 {
     m_graphListView = new GraphListView(m_model, m_delegate);
-    m_signalsTreeView->setItemDelegate(m_delegate);
-    m_signalsTreeView->expandAll();
-    m_treeProxy->setSourceModel(m_model);
-    m_signalsTreeView->setModel(m_treeProxy);
+    m_signalListView->setModel(m_model);
 
     auto* mainLayout = new QVBoxLayout(this);
-    mainLayout->setContentsMargins(35, 5, 35, 30);
-    mainLayout->setSpacing(15);
+    mainLayout->setContentsMargins(spacing.spacingLg, spacing.spacingLg, spacing.spacingLg,
+                                   spacing.spacingLg);
+    mainLayout->setSpacing(spacing.spacingLg);
 
     // --- CAN-Bus Connection Group ---
     m_connectionGroup = new QGroupBox(this);  // No title here, we'll add a custom one
@@ -90,25 +91,16 @@ void MonitoringView::setupUi()
     groupLayout->addLayout(topRow);
     groupLayout->addLayout(bottomRow);
 
-    // Configure Tree View
-    m_signalsTreeView->setStyleSheet("QTreeView { border: none; background-color: transparent;");
-    m_signalsTreeView->setItemDelegate(m_delegate);
-    //  This ensures the tree doesn't cut off your boxes
-    m_signalsTreeView->setUniformRowHeights(false);
-    // Removes the default tiny arrows to make room for your rounded look
-    m_signalsTreeView->setRootIsDecorated(false);
-    m_signalsTreeView->header()->hide();
-    // m_signalsTreeView->header()->setStretchLastSection(true);
-    m_signalsTreeView->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    m_signalsTreeView->setSelectionMode(QAbstractItemView::SingleSelection);
+    // Configure SignalList
+    m_signalListView->setStyleSheet("QTreeView { border: none; background-color: transparent;");
 
     // Configure Splitter
-    m_splitter->addWidget(m_signalsTreeView);
+    m_splitter->addWidget(m_signalListView);
     m_splitter->addWidget(m_graphListView);
 
     // Give the Graph view more initial space (e.g., 30/70 split)
     m_splitter->setStretchFactor(0, 1);
-    m_splitter->setStretchFactor(1, 4);
+    m_splitter->setStretchFactor(1, 2);
 
     // --- Add to Main Layout ---
     mainLayout->addWidget(m_connectionGroup, 1);
@@ -204,7 +196,6 @@ void MonitoringView::onDbcConfigurationChanged()
     }
 
     // Refresh the tree view
-    m_signalsTreeView->expandAll();
+    m_signalListView->clearMessages();
 }
-
 }  // namespace Monitoring

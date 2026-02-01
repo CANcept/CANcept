@@ -68,13 +68,16 @@ inline const QString CAN_CONFIG_DISCONNECTED_LABEL = "DISCONNECTED";
 inline const QString SIGNAL_GRAPH_TITLE = "Signal Value";
 
 /** @brief Default list of CAN interfaces to populate in device selectors */
-inline const std::vector<std::string> DEFAULT_CAN_DEVICES = {"vcan0", "can0", "can1"};
+inline const QStringList DEFAULT_CAN_DEVICES = {"vcan0", "can0", "can1"};
 
 /** @brief Default painting color for signal graphs */
 inline const Qt::GlobalColor SIGNAL_GRAPH_LINE_COLOR = Qt::blue;
 
 /** @brief Default width for line of signal graphs */
 inline const int SIGNAL_GRAPH_LINE_WIDTH = 2;
+
+/** @brief Label for messages list in view */
+inline const QString MESSAGES_LABEL = "Messages";
 
 }  // namespace Monitoring::Constants
 
