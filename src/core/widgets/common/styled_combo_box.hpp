@@ -47,6 +47,14 @@ class StyledComboBox final : public QComboBox
      */
     void showPopup() override;
 
+   signals:
+    /**
+     * @brief Emitted just before the popup menu is shown.
+     *
+     * Connect to this signal to refresh dropdown contents on-the-fly.
+     */
+    void aboutToShowPopup();
+
    private:
     void applyStyle();
 };

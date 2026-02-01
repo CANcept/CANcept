@@ -37,9 +37,6 @@ void SendingComponent::onStart()
     setupConnections();
     setupBrokerSubscriptions();
 
-    // Populate available CAN devices/interfaces from constants
-    m_view->setAvailableDevices(Constants::DEFAULT_CAN_INTERFACES);
-
     m_eventBroker.publish<Core::ModuleStartedEvent>(
         Core::ModuleStartedEvent(std::type_index(typeid(*this))));
     LOG_INF(Constants::MODULE_IDENTIFIER, "Sending Component started");
@@ -108,6 +105,15 @@ void SendingComponent::publishDbcMessageAsync(const Core::DbcCanMessage& message
 
 void SendingComponent::setupConnections()
 {
+    // Fetch available interfaces when dropdown is about to open
+    connect(m_view.get(), &SendingView::interfaceDropdownOpening, this, [this]() {
+        std::list<std::string> drivers;
+        m_eventBroker.publish(Core::GetAvailableCanDriversEvent(&drivers));
+        m_view->setAvailableDevices({drivers.begin(), drivers.end()});
+        LOG_INF(Constants::MODULE_IDENTIFIER, "Refreshed available interfaces: {} found",
+                drivers.size());
+    });
+
     // Device selection changes
     connect(m_view.get(), &SendingView::deviceSelectionChanged, this,
             [this](const std::string& deviceName) {
@@ -116,34 +122,18 @@ void SendingComponent::setupConnections()
                     Core::CanDriverChangeEvent(deviceName));
             });
 
-    // Raw send requested from view - defer to worker thread
-    connect(m_view.get(), &SendingView::sendRawRequested, this,
-            [this](const Core::RawCanMessage& message) {
+    // Model requests to send raw messages - single path from Model to event broker
+    connect(m_model.get(), &SendingModel::requestSendRaw, this,
+            [this](const std::string&, const Core::RawCanMessage& message) {
                 LOG_INF(Constants::MODULE_IDENTIFIER, "Raw send requested: ID=0x{:03X}, DLC={}",
                         message.messageId, message.dlc);
                 publishRawMessageAsync(message);
             });
 
-    // DBC send requested from view - defer to worker thread
-    connect(m_view.get(), &SendingView::sendDbcRequested, this,
-            [this](const Core::DbcCanMessage& message) {
-                LOG_INF(Constants::MODULE_IDENTIFIER, "DBC send requested: ID=0x{:03X}",
-                        message.messageId);
-                publishDbcMessageAsync(message);
-            });
-
-    // Model requests to send raw messages defer to worker thread
-    connect(m_model.get(), &SendingModel::requestSendRaw, this,
-            [this](const std::string&, const Core::RawCanMessage& message) {
-                LOG_INF(Constants::MODULE_IDENTIFIER, "Model cyclic raw transmission: ID=0x{:03X}",
-                        message.messageId);
-                publishRawMessageAsync(message);
-            });
-
-    // Model requests to send DBC messages defer to worker thread
+    // Model requests to send DBC messages - single path from Model to event broker
     connect(m_model.get(), &SendingModel::requestSendDbc, this,
             [this](const std::string&, const Core::DbcCanMessage& message) {
-                LOG_INF(Constants::MODULE_IDENTIFIER, "Model cyclic DBC transmission: ID=0x{:03X}",
+                LOG_INF(Constants::MODULE_IDENTIFIER, "DBC send requested: ID=0x{:03X}",
                         message.messageId);
                 publishDbcMessageAsync(message);
             });

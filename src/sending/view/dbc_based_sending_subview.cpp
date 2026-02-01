@@ -2,6 +2,7 @@
 
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QScrollArea>
 #include <QVBoxLayout>
 
 #include "core/macro/theme.hpp"
@@ -31,16 +32,29 @@ void DbcSendingSubView::setupUi()
     const auto& spacing = THEME.spacing();
     const auto& colors = THEME.colors();
 
-    auto* mainLayout = new QVBoxLayout(this);
+    auto* outerLayout = new QVBoxLayout(this);
+    outerLayout->setContentsMargins(0, 0, 0, 0);
+    outerLayout->setSpacing(0);
+
+    auto* outerScrollArea = new QScrollArea(this);
+    outerScrollArea->setStyleSheet(QString("background-color: %1;").arg(colors.surfaceMain.name()));
+    outerScrollArea->setWidgetResizable(true);
+    outerScrollArea->setFrameShape(QFrame::NoFrame);
+    outerScrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+
+    auto* scrollContent = new QWidget(outerScrollArea);
+    outerScrollArea->setWidget(scrollContent);
+
+    auto* mainLayout = new QVBoxLayout(scrollContent);
     mainLayout->setContentsMargins(spacing.spacingLg, spacing.spacingLg, spacing.spacingLg,
                                    spacing.spacingLg);
     mainLayout->setSpacing(spacing.spacingLg);
 
-    m_configCard = new CanBusConfigCard(true, this);
+    m_configCard = new CanBusConfigCard(true, scrollContent);
     mainLayout->addWidget(m_configCard);
 
     m_messagesCard = new Core::CardWidget(Constants::MESSAGES_LABEL, QString(),
-                                          QString(Constants::MESSAGES_ICON_PATH), this);
+                                          QString(Constants::MESSAGES_ICON_PATH), scrollContent);
     if (auto* messagesCardLayout = m_messagesCard->contentLayout())
     {
         m_scrollArea = new QScrollArea(m_messagesCard);
@@ -63,15 +77,20 @@ void DbcSendingSubView::setupUi()
 
     mainLayout->addWidget(m_messagesCard, 1);
 
-    auto* footerLayout = new QHBoxLayout();
-    footerLayout->setContentsMargins(0, spacing.spacingSm, 0, 0);
+    outerLayout->addWidget(outerScrollArea, 1);
 
-    m_sendButton = new SendMessageButton(this);
+    // Footer outside the scroll area
+    auto* footerContainer = new QWidget(this);
+    auto* footerLayout = new QHBoxLayout(footerContainer);
+    footerLayout->setContentsMargins(spacing.spacingLg, spacing.spacingSm, spacing.spacingLg,
+                                     spacing.spacingLg);
+
+    m_sendButton = new SendMessageButton(footerContainer);
 
     footerLayout->addStretch();
     footerLayout->addWidget(m_sendButton);
 
-    mainLayout->addLayout(footerLayout);
+    outerLayout->addWidget(footerContainer);
 }
 
 void DbcSendingSubView::populateFromModel(const SendingModel* model)
