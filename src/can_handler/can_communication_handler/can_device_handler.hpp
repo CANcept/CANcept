@@ -4,9 +4,10 @@
 
 #ifndef CANBUSMANAGER_CAN_DEVICE_HANDLER_H
 #define CANBUSMANAGER_CAN_DEVICE_HANDLER_H
+#include <ifaddrs.h>
+
 #include <CanDriver.hpp>
 #include <list>
-#include <ifaddrs.h>
 using sockcanpp::CanDriver;
 using sockcanpp::CanMessage;
 #include "core/event/can_driver_event.hpp"
@@ -19,11 +20,11 @@ class CanDeviceHandler
     {
         canDriverChangeEventConnection = event_broker.subscribe<Core::CanDriverChangeEvent>(
             [this](const Core::CanDriverChangeEvent& event) -> void { updateCanDevice(event); });
-        getAvailableCanDevicesEventConnection = event_broker.subscribe<Core::GetAvailableDriversEvent>(
-            [this](const Core::GetAvailableDriversEvent& event) -> void {
-                getAvailableCanDevices(event);
-            }
-            );
+        getAvailableCanDevicesEventConnection =
+            event_broker.subscribe<Core::GetAvailableDriversEvent>(
+                [this](const Core::GetAvailableDriversEvent& event) -> void {
+                    getAvailableCanDevices(event);
+                });
     };
 
     /**

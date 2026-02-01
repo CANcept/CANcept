@@ -22,14 +22,15 @@ struct CanDriverChangeEvent final : public Event {
 /**
  * @brief Event, that gets called to get all currently available can drivers
  */
-struct GetAvailableDriversEvent final : public Event
-{
+struct GetAvailableDriversEvent final : public Event {
     /**
      * @brief After the event returns this list contains all available can drivers
      */
     std::unique_ptr<std::list<std::string>> driversNames;
 
-    explicit GetAvailableDriversEvent() : driversNames(std::make_unique<std::list<std::string>>()) {}
+    explicit GetAvailableDriversEvent() : driversNames(std::make_unique<std::list<std::string>>())
+    {
+    }
 };
 }  // namespace Core
 #endif  // CANBUSMANAGER_CAN_DRIVER_EVENT_HPP

@@ -1,8 +1,7 @@
 #include "can_device_handler.hpp"
 
-#include <net/if.h>
-#include <sys/ioctl.h>
 #include <linux/if_arp.h>
+#include <sys/ioctl.h>
 
 #include "core/macro/console_logging.hpp"
 #include "spdlog/fmt/bundled/base.h"
@@ -65,25 +64,29 @@ void CanDeviceHandler::updateCanDevice(const Core::CanDriverChangeEvent& event)
 void CanDeviceHandler::getAvailableCanDevices(const Core::GetAvailableDriversEvent& event)
 {
     ifaddrs* firstInterface;
-    if (getifaddrs(&firstInterface) == -1) {
+    if (getifaddrs(&firstInterface) == -1)
+    {
         LOG_ERR("CanHandler", "Could find can drivers")
         return;
     }
     int sock = socket(PF_CAN, SOCK_RAW, CAN_RAW);
-    if (sock < 0) {
+    if (sock < 0)
+    {
         freeifaddrs(firstInterface);
     }
 
-    for (const ifaddrs* interface = firstInterface; interface != nullptr; interface = interface->ifa_next)
+    for (const ifaddrs* interface = firstInterface; interface != nullptr;
+         interface = interface->ifa_next)
     {
-        if (!interface->ifa_name)
-            continue;
+        if (!interface->ifa_name) continue;
 
-        ifreq ifr {};
-        std::strncpy(ifr.ifr_name, interface->ifa_name, IFNAMSIZ - 1);
+        ifreq requestedInterface{};
+        std::strncpy(requestedInterface.ifr_name, interface->ifa_name, IFNAMSIZ - 1);
 
-        if (ioctl(sock, SIOCGIFHWADDR, &ifr) == 0) {
-            if (ifr.ifr_ifru.ifru_hwaddr.sa_family == ARPHRD_CAN) {
+        if (ioctl(sock, SIOCGIFHWADDR, &requestedInterface) == 0)
+        {
+            if (requestedInterface.ifr_ifru.ifru_hwaddr.sa_family == ARPHRD_CAN)
+            {
                 event.driversNames->push_back(std::string(interface->ifa_name));
             }
         }
