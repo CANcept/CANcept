@@ -1,6 +1,9 @@
 #include "can_device_handler.hpp"
 
+#include <net/if.h>
+
 #include "core/macro/console_logging.hpp"
+#include "spdlog/fmt/bundled/base.h"
 namespace CanHandler {
 auto CanDeviceHandler::checkForCanMessage() const -> std::list<CanMessage>
 {
@@ -42,6 +45,8 @@ auto CanDeviceHandler::sendCanMessage(const CanMessage& canMessage) const -> boo
 }
 void CanDeviceHandler::updateCanDevice(const Core::CanDriverChangeEvent& event)
 {
+    canDriver.reset(new CanDriver{event.driverName, CAN_RAW});
+    // canDriver->setReceiveOwnMessages(true);
     LOG_INF("CanDeviceHandler", "Initializing CAN driver with device: {}", event.deviceName);
     try
     {
@@ -55,4 +60,24 @@ void CanDeviceHandler::updateCanDevice(const Core::CanDriverChangeEvent& event)
     }
 }
 
+void CanDeviceHandler::getAvailableCanDevices(const Core::GetAvailableDriversEvent& event)
+{
+    ifaddrs* firstInterface;
+    if (getifaddrs(&firstInterface) == -1) {
+        LOG_ERR("CanHandler", "Could find can drivers")
+        return;
+    }
+    for (const ifaddrs* interface = firstInterface; interface != nullptr; interface = interface->ifa_next)
+    {
+        if (!interface->ifa_addr)
+        {
+            continue;
+        }
+        if (interface->ifa_addr->sa_family == AF_CAN)
+        {
+            event.driversNames->push_back(std::string(interface->ifa_name));
+        }
+    }
+    freeifaddrs(firstInterface);
+}
 };  // namespace CanHandler

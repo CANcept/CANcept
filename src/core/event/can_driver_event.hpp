@@ -27,7 +27,9 @@ struct GetAvailableDriversEvent final : public Event
     /**
      * @brief After the event returns this list contains all available can drivers
      */
-    std::list<std::string> driversNames;
+    std::unique_ptr<std::list<std::string>> driversNames;
+
+    explicit GetAvailableDriversEvent() : driversNames(std::make_unique<std::list<std::string>>()) {}
 };
 }  // namespace Core
 #endif  // CANBUSMANAGER_CAN_DRIVER_EVENT_HPP
