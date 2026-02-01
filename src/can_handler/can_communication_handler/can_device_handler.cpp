@@ -46,6 +46,7 @@ auto CanDeviceHandler::sendCanMessage(const CanMessage& canMessage) const -> boo
 }
 void CanDeviceHandler::updateCanDevice(const Core::CanDriverChangeEvent& event)
 {
+    LOG_INF("CanDeviceHandler", "Initializing CAN driver with device: {}", event.driverName);
     try
     {
         canDriver.reset(new CanDriver{event.driverName, CAN_RAW});
