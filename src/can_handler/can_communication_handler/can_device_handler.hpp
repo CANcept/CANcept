@@ -21,8 +21,8 @@ class CanDeviceHandler
         canDriverChangeEventConnection = event_broker.subscribe<Core::CanDriverChangeEvent>(
             [this](const Core::CanDriverChangeEvent& event) -> void { updateCanDevice(event); });
         getAvailableCanDevicesEventConnection =
-            event_broker.subscribe<Core::GetAvailableDriversEvent>(
-                [this](const Core::GetAvailableDriversEvent& event) -> void {
+            event_broker.subscribe<Core::GetAvailableCanDriversEvent>(
+                [this](const Core::GetAvailableCanDriversEvent& event) -> void {
                     getAvailableCanDevices(event);
                 });
     };
@@ -54,7 +54,7 @@ class CanDeviceHandler
      * the list in the event
      * @param event The event, that will contain the driver names
      */
-    void getAvailableCanDevices(const Core::GetAvailableDriversEvent& event);
+    void getAvailableCanDevices(const Core::GetAvailableCanDriversEvent& event);
 
     /**
      * @brief The current configuration of the can driver, containing the device info for libsockcan

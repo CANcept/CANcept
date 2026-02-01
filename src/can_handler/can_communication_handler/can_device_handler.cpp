@@ -64,7 +64,8 @@ void CanDeviceHandler::getAvailableCanDevices(const Core::GetAvailableCanDrivers
     ifaddrs* firstInterface;
     if (getifaddrs(&firstInterface) == -1)
     {
-        LOG_ERR("CanHandler", "Could not access network devices for filtering available CAN devices")
+        LOG_ERR("CanHandler",
+                "Could not access network devices for filtering available CAN devices")
         return;
     }
     int sock = socket(PF_CAN, SOCK_RAW, CAN_RAW);

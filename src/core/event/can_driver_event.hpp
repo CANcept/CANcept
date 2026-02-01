@@ -17,7 +17,7 @@ struct CanDriverChangeEvent final : public Event {
      */
     std::string driverName;
 
-    explicit CanDriverChangeEvent(const std::string &driverName) : driverName(driverName){};
+    explicit CanDriverChangeEvent(const std::string& driverName) : driverName(driverName){};
 };
 /**
  * @brief Event, that gets called to get all currently available can drivers
