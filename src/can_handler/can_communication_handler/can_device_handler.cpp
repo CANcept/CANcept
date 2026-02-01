@@ -1,6 +1,10 @@
 #include "can_device_handler.hpp"
 
+#include <linux/if_arp.h>
+#include <sys/ioctl.h>
+
 #include "core/macro/console_logging.hpp"
+
 namespace CanHandler {
 auto CanDeviceHandler::checkForCanMessage() const -> std::list<CanMessage>
 {
@@ -42,11 +46,11 @@ auto CanDeviceHandler::sendCanMessage(const CanMessage& canMessage) const -> boo
 }
 void CanDeviceHandler::updateCanDevice(const Core::CanDriverChangeEvent& event)
 {
-    LOG_INF("CanDeviceHandler", "Initializing CAN driver with device: {}", event.deviceName);
+    LOG_INF("CanDeviceHandler", "Initializing CAN driver with device: {}", event.driverName);
     try
     {
-        canDriver.reset(new CanDriver{event.deviceName, CAN_RAW});
-        LOG_INF("CanDeviceHandler", "CAN driver initialized successfully on {}", event.deviceName);
+        canDriver.reset(new CanDriver{event.driverName, CAN_RAW});
+        LOG_INF("CanDeviceHandler", "CAN driver initialized successfully on {}", event.driverName);
         // canDriver->setReceiveOwnMessages(true);
     } catch (const std::exception& e)
     {
@@ -55,4 +59,37 @@ void CanDeviceHandler::updateCanDevice(const Core::CanDriverChangeEvent& event)
     }
 }
 
+void CanDeviceHandler::getAvailableCanDevices(const Core::GetAvailableCanDriversEvent& event)
+{
+    ifaddrs* firstInterface;
+    if (getifaddrs(&firstInterface) == -1)
+    {
+        LOG_ERR("CanHandler",
+                "Could not access network devices for filtering available CAN devices")
+        return;
+    }
+    int sock = socket(PF_CAN, SOCK_RAW, CAN_RAW);
+    if (sock < 0)
+    {
+        freeifaddrs(firstInterface);
+    }
+
+    for (const ifaddrs* interface = firstInterface; interface != nullptr;
+         interface = interface->ifa_next)
+    {
+        if (!interface->ifa_name) continue;
+
+        ifreq requestedInterface{};
+        std::strncpy(requestedInterface.ifr_name, interface->ifa_name, IFNAMSIZ - 1);
+
+        if (ioctl(sock, SIOCGIFHWADDR, &requestedInterface) == 0)
+        {
+            if (requestedInterface.ifr_ifru.ifru_hwaddr.sa_family == ARPHRD_CAN)
+            {
+                event.driversNames->push_back(std::string(interface->ifa_name));
+            }
+        }
+    }
+    freeifaddrs(firstInterface);
+}
 };  // namespace CanHandler

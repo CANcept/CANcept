@@ -4,6 +4,8 @@
 
 #ifndef CANBUSMANAGER_CAN_DEVICE_HANDLER_H
 #define CANBUSMANAGER_CAN_DEVICE_HANDLER_H
+#include <ifaddrs.h>
+
 #include <CanDriver.hpp>
 #include <list>
 using sockcanpp::CanDriver;
@@ -18,6 +20,11 @@ class CanDeviceHandler
     {
         canDriverChangeEventConnection = event_broker.subscribe<Core::CanDriverChangeEvent>(
             [this](const Core::CanDriverChangeEvent& event) -> void { updateCanDevice(event); });
+        getAvailableCanDevicesEventConnection =
+            event_broker.subscribe<Core::GetAvailableCanDriversEvent>(
+                [this](const Core::GetAvailableCanDriversEvent& event) -> void {
+                    getAvailableCanDevices(event);
+                });
     };
 
     /**
@@ -43,6 +50,13 @@ class CanDeviceHandler
     void updateCanDevice(const Core::CanDriverChangeEvent& event);
 
     /**
+     * @brief Called, when a Core::GetAvailableDriversEven is registered. Adds all can drivers to
+     * the list in the event
+     * @param event The event, that will contain the driver names
+     */
+    void getAvailableCanDevices(const Core::GetAvailableCanDriversEvent& event);
+
+    /**
      * @brief The current configuration of the can driver, containing the device info for libsockcan
      */
     std::unique_ptr<CanDriver> canDriver;
@@ -50,6 +64,10 @@ class CanDeviceHandler
      * @brief A connection containing the subscription to the can driver change event
      */
     Core::Connection canDriverChangeEventConnection;
+    /**
+     * @brief A connection conatining the subscription to the get available van devices event
+     */
+    Core::Connection getAvailableCanDevicesEventConnection;
 };
 }  // namespace CanHandler
 #endif  // CANBUSMANAGER_CAN_DEVICE_HANDLER_H
