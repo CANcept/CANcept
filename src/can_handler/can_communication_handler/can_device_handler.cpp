@@ -4,7 +4,7 @@
 #include <sys/ioctl.h>
 
 #include "core/macro/console_logging.hpp"
-#include "spdlog/fmt/bundled/base.h"
+
 namespace CanHandler {
 auto CanDeviceHandler::checkForCanMessage() const -> std::list<CanMessage>
 {
@@ -46,13 +46,10 @@ auto CanDeviceHandler::sendCanMessage(const CanMessage& canMessage) const -> boo
 }
 void CanDeviceHandler::updateCanDevice(const Core::CanDriverChangeEvent& event)
 {
-    canDriver.reset(new CanDriver{event.driverName, CAN_RAW});
-    // canDriver->setReceiveOwnMessages(true);
-    LOG_INF("CanDeviceHandler", "Initializing CAN driver with device: {}", event.deviceName);
     try
     {
-        canDriver.reset(new CanDriver{event.deviceName, CAN_RAW});
-        LOG_INF("CanDeviceHandler", "CAN driver initialized successfully on {}", event.deviceName);
+        canDriver.reset(new CanDriver{event.driverName, CAN_RAW});
+        LOG_INF("CanDeviceHandler", "CAN driver initialized successfully on {}", event.driverName);
         // canDriver->setReceiveOwnMessages(true);
     } catch (const std::exception& e)
     {
