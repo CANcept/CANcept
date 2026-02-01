@@ -59,12 +59,12 @@ void CanDeviceHandler::updateCanDevice(const Core::CanDriverChangeEvent& event)
     }
 }
 
-void CanDeviceHandler::getAvailableCanDevices(const Core::GetAvailableDriversEvent& event)
+void CanDeviceHandler::getAvailableCanDevices(const Core::GetAvailableCanDriversEvent& event)
 {
     ifaddrs* firstInterface;
     if (getifaddrs(&firstInterface) == -1)
     {
-        LOG_ERR("CanHandler", "Could find can drivers")
+        LOG_ERR("CanHandler", "Could not access network devices for filtering available CAN devices")
         return;
     }
     int sock = socket(PF_CAN, SOCK_RAW, CAN_RAW);
