@@ -1,6 +1,7 @@
 #include "monitoring_component.hpp"
 
-#include "core/constants.hpp"
+#include "constants.hpp"
+#include "core/event/can_driver_event.hpp"
 #include "core/event/can_event.hpp"
 #include "core/event/dbc_event.hpp"
 #include "core/macro/console_logging.hpp"
@@ -14,8 +15,8 @@ namespace Monitoring {
 
 // Constructor / destructor
 MonitoringComponent::MonitoringComponent(Core::IEventBroker& broker)
-    : Core::ITabComponent(broker, "monitoring_tab", "Frame Monitoring",
-                          QIcon(Core::Assets::MonitoringTabIconPath)),
+    : Core::ITabComponent(broker, Constants::MODULE_IDENTIFIER, Constants::TAB_TITLE,
+                          QIcon(Constants::TAB_ICON_PATH)),
       m_model(std::make_unique<MonitoringModel>()),
       m_delegate(std::make_unique<MonitoringDelegate>(m_model.get())),
       m_view(std::make_unique<MonitoringView>(m_model.get(), m_delegate.get()))
@@ -40,6 +41,22 @@ MonitoringComponent::MonitoringComponent(Core::IEventBroker& broker)
     // Forward raw frame received signal to the model
     connect(this, &MonitoringComponent::rawFrameReceived, m_model.get(),
             &MonitoringModel::onIncomingRawFrame);
+
+    // Device selection changes
+    connect(m_view->interfaceSelector(), QOverload<int>::of(&QComboBox::currentIndexChanged), this,
+            [this](int index) -> void {
+                m_interfaceSelected = (index >= 0);
+                if (index >= 0)
+                {
+                    const auto deviceName =
+                        m_view->interfaceSelector()->currentText().toStdString();
+                    onDeviceChanged(deviceName);
+                }
+            });
+
+    // Mode selection changes
+    connect(m_view->modeToggle(), &QPushButton::clicked, this,
+            [this]() -> void { m_dbcModeEnabled = !m_dbcModeEnabled; });
 }
 
 MonitoringComponent::~MonitoringComponent() = default;
@@ -80,6 +97,12 @@ void MonitoringComponent::onStop()
     // Disconnect event broker handles to prevent callbacks to a stopped component
     m_parseSuccessConn = {};
     m_parseErrorConn = {};
+}
+
+void MonitoringComponent::onDeviceChanged(const std::string& deviceName) const
+{
+    LOG_INF("MonitoringComponent", "CAN device changed to: {}", deviceName);
+    m_eventBroker.publish<Core::CanDriverChangeEvent>(Core::CanDriverChangeEvent(deviceName));
 }
 
 // Slots

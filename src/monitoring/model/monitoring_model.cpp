@@ -2,7 +2,48 @@
 
 namespace Monitoring {
 
-MonitoringModel::MonitoringModel() : QAbstractItemModel(nullptr) {}
+MonitoringModel::MonitoringModel() : QAbstractItemModel(nullptr)
+{
+    addTestData();
+}
+
+void MonitoringModel::addTestData()
+{
+    Core::DbcCanSignal signalA;
+    signalA.name = "A";
+    signalA.value = 13;
+
+    Core::DbcCanSignal signalB;
+    signalB.name = "B";
+    signalB.value = 12;
+
+    Core::DbcCanSignal signalC;
+    signalC.name = "C";
+    signalC.value = 12;
+
+    Core::DbcCanMessage testMessage1;
+    testMessage1.messageId = 0x123;
+    testMessage1.signalValues = {signalA, signalB, signalC};
+
+    Core::DbcCanSignal signalD;
+    signalD.name = "D";
+    signalD.value = 13;
+
+    Core::DbcCanSignal signalE;
+    signalE.name = "E";
+    signalE.value = 12;
+
+    Core::DbcCanSignal signalF;
+    signalF.name = "F";
+    signalF.value = 12;
+
+    Core::DbcCanMessage testMessage2;
+    testMessage2.messageId = 0x321;
+    testMessage2.signalValues = {signalD, signalE, signalF};
+
+    onIncomingDbcFrame(testMessage1);
+    onIncomingDbcFrame(testMessage2);
+}
 
 // --- Tree Navigation ---
 
@@ -86,17 +127,18 @@ auto MonitoringModel::data(const QModelIndex& index, int role) const -> QVariant
         if (ptr == &frame)
         {
             if (role == Qt::DisplayRole)
-                return QString("ID: 0x%1 - %2")
-                    .arg(frame.message.messageId, 1)
-                    // TODO
-                    .arg(QString::fromStdString(""));
+            {
+                // Format frame display as "ID: 0x... Name: ..."
+                return QString("ID: 0x%1").arg(QString(frame.message.messageId));
+            }
             if (role == Qt::CheckStateRole) return frame.checked;
-            if (role == Qt::UserRole + 1) return frame.message.messageId;  // Helpful for your View!
+            if (role == Qt::UserRole + 1) return frame.message.messageId;
+            if (role == Qt::ItemDataRole) return frame.message.signalValues;
             return {};
         }
     }
 
-    // Handle Signal Node
+    // Handle Signal Node (unchanged)
     for (const auto& frame : m_frames)
     {
         for (const auto& sig : frame.allSignals)
@@ -105,8 +147,7 @@ auto MonitoringModel::data(const QModelIndex& index, int role) const -> QVariant
             {
                 if (role == Qt::DisplayRole) return QString::fromStdString(sig.signal.name);
                 if (role == Qt::CheckStateRole) return sig.checked;
-                if (role == Qt::UserRole + 1)
-                    return frame.message.messageId;  // Signal needs to know parent ID
+                if (role == Qt::UserRole + 1) return frame.message.messageId;
                 return {};
             }
         }

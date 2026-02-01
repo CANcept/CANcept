@@ -9,7 +9,7 @@
 #include <vector>
 
 #include "core/widgets/card_widget.hpp"
-#include "core/widgets/styled_combo_box.hpp"
+#include "core/widgets/common/styled_combo_box.hpp"
 
 namespace Monitoring {
 /**
@@ -40,6 +40,11 @@ class CanBusConfigCard final : public QWidget
         return m_interfaceCombo;
     }
 
+    [[nodiscard]] auto modeToggle() const -> QPushButton*
+    {
+        return m_dbcToggleButton;
+    }
+
     /**
      * @brief Populates the interface dropdown with available interfaces.
      * @param interfaces List of available CAN interface names
@@ -49,27 +54,19 @@ class CanBusConfigCard final : public QWidget
    private:
     void setupUi();
 
-    // Helper to create the styled stat boxes
-    auto createStatBox(const QString& title, QLabel*& valueLabel) -> QFrame*;
-
     Core::CardWidget* m_configCard;
-    Core::CardWidget* m_interfaceCard;
-    Core::CardWidget* m_statusCard;
-    Core::CardWidget* m_frameRateCard;
-    Core::CardWidget* m_messageCountCard;
-
-    Core::StyledComboBox* m_interfaceCombo;
-    QPushButton* m_connectionButton;
-
-    // Row 1
     QLabel* m_titleIcon;
-    QCheckBox* m_dbcCheck;
-    QComboBox* m_combobox;
-    QPushButton* m_connectButton;
+    Core::CardWidget* m_interfaceCard;
+    Core::StyledComboBox* m_interfaceCombo;
 
-    // Row 2 Content Labels
-    QLabel* m_fpsValueLabel;
+    Core::CardWidget* m_statusCard;
+    QPushButton* m_dbcToggleButton;
     QLabel* m_statusValueLabel;
+
+    Core::CardWidget* m_frameRateCard;
+    QLabel* m_fpsValueLabel;
+
+    Core::CardWidget* m_messageCountCard;
     QLabel* m_msgCountValueLabel;
 };
 
