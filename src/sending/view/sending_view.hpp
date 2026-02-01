@@ -1,10 +1,11 @@
 #pragma once
 
 #include <QComboBox>
-#include <QPushButton>
+#include <QListView>
 #include <QStackedWidget>
 #include <QWidget>
 
+#include "core/dto/can_dto.hpp"
 #include "dbc_based_sending_subview.hpp"
 #include "raw_sending_subview.hpp"
 #include "sending/model/sending_model.hpp"
@@ -41,17 +42,17 @@ class SendingView final : public QWidget
     void setModel(SendingModel* model);
 
     // UI Interaction API
-    void setAvailableDevices(const std::vector<std::string>& devices);
-    void setAvailableSpeeds(const std::vector<uint32_t>& speeds);
+    void setAvailableDevices(const std::vector<std::string>& devices) const;
 
    signals:
-    /** @brief Emitted when the sidebar "Raw" or "DBC" buttons are clicked */
+    /** @brief Emitted when the sidebar selection changes (0=Raw, 1=DBC) */
     void modeChanged(bool isDbcMode);
 
-    /**
-     * @brief Emitted when the "Send Message" footer button is clicked.
-     */
-    void sendClicked();
+    /** @brief Emitted when raw send button is clicked with parsed message */
+    void sendRawRequested(const Core::RawCanMessage& message);
+
+    /** @brief Emitted when DBC send completes via model */
+    void sendDbcRequested(const Core::DbcCanMessage& message);
 
     /** @brief Emitted when the device dropdown changes */
     void deviceSelectionChanged(const std::string& deviceName);
@@ -60,16 +61,49 @@ class SendingView final : public QWidget
     /** @brief Switches the visible sub-view (0 for Raw, 1 for DBC) */
     void displayMode(int index);
 
+   private slots:
+    /**
+     * @brief Handles sidebar navigation to switch between Raw and DBC views.
+     */
+    void onSidebarSelectionChanged(const QModelIndex& index);
+
    private:
+    /**
+     * @brief Describes a single entry in the sidebar model.
+     */
+    struct SidebarEntry {
+        QString iconPath;
+        QString title;
+        bool enabled;
+    };
+
+    /** @brief Prevents deselection of items in the sidebar list. */
+    void disableSidebarDeselection();
+
+    /** @brief Initializes and configures the sidebar list view. */
+    void setupSidebarList();
+
+    /** @brief Sets up the model for the sidebar list. */
+    void setSidebarModel();
+
     void setupUi();
 
-    // Sidebar buttons
-    QPushButton* m_btnRawMode;
-    QPushButton* m_btnDbcMode;
+    /** @brief Updates send button enabled states based on current selections */
+    void updateSendButtonStates() const;
+
+    // Sidebar
+    QListView* m_sidebarList;
 
     QStackedWidget* m_contentStack;
     RawSendingSubView* m_rawView;
     DbcSendingSubView* m_dbcView;
+
+    // Model reference for button state checks
+    SendingModel* m_model = nullptr;
+
+    // Interface selection tracking
+    bool m_rawInterfaceSelected = false;
+    bool m_dbcInterfaceSelected = false;
 };
 
 }  // namespace Sending

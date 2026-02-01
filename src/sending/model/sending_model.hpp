@@ -1,6 +1,9 @@
 #pragma once
 
 #include <QAbstractItemModel>
+#include <QTimer>
+#include <optional>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -64,6 +67,59 @@ class SendingModel final : public QAbstractItemModel
 
     void updateDbcConfig(const Core::DbcConfig& config);
     void setTransmissionStatus(bool isActive);
+
+    /**
+     * @brief Toggles message selection for transmission.
+     */
+    void setMessageSelected(uint16_t messageId, bool selected);
+
+    /**
+     * @brief Checks if a message is selected.
+     */
+    [[nodiscard]] auto isMessageSelected(uint16_t messageId) const -> bool;
+
+    /**
+     * @brief Toggles signal selection for transmission.
+     * @param messageId The message ID that contains the signal
+     * @param signalName The signal name (unique within the message)
+     * @param selected Whether the signal is selected
+     */
+    void setSignalSelected(uint16_t messageId, const std::string& signalName, bool selected);
+
+    /**
+     * @brief Checks if a signal is selected.
+     * @param messageId The message ID that contains the signal
+     * @param signalName The signal name (unique within the message)
+     */
+    [[nodiscard]] auto isSignalSelected(uint16_t messageId,
+                                        const std::string& signalName) const -> bool;
+
+    /**
+     * @brief Sets a signal's value.
+     * @param messageId The message ID that contains the signal
+     * @param signalName The signal name (unique within the message)
+     * @param value The physical value
+     */
+    void setSignalValue(uint16_t messageId, const std::string& signalName, double value);
+
+    /**
+     * @brief Gets the current DBC config pointer.
+     */
+    [[nodiscard]] auto currentDbcConfig() const -> const Core::DbcConfig*
+    {
+        return m_currentDbc.has_value() ? &m_currentDbc.value() : nullptr;
+    }
+
+    /**
+     * @brief Sets the raw CAN ID for transmission.
+     */
+    void setRawCanId(uint16_t canId);
+
+    /**
+     * @brief Sets the raw data bytes for transmission.
+     */
+    void setRawData(const std::vector<uint8_t>& data);
+
    signals:
     /** * @brief Emitted when the Model determines a Raw message should be sent.
      * Triggered by manual user action or the internal cyclic timer.
@@ -90,9 +146,15 @@ class SendingModel final : public QAbstractItemModel
 
    private:
     /**
+     * @brief Creates a unique key for a signal (messageId:signalName).
+     */
+    [[nodiscard]] static auto makeSignalKey(uint16_t messageId,
+                                            const std::string& signalName) -> std::string;
+
+    /**
      * @brief internal helper to start/stop QTimer based on m_cyclicState.
      */
-    void updateTimerState();
+    void updateTimerState() const;
 
     // Navigation & Mode
     Mode m_currentMode = Mode::Raw;
@@ -105,20 +167,24 @@ class SendingModel final : public QAbstractItemModel
 
     // Payload States
     struct {
-        uint32_t id = 0;
+        uint16_t id = 0;
         std::vector<uint8_t> data = std::vector<uint8_t>(8, 0);
+        uint8_t dlc = 0;
     } m_rawState;
 
     /** * @brief Stores current user-input values for signals.
-     * Key: Signal name or unique ID
+     * Key: "messageId:signalName" (unique identifier)
      * Value: The physical value (double)
      */
     std::map<std::string, double> m_dynamicSignalValues;
 
-    /** @brief Stores which messages are selected for transmission (checkbox state) */
-    std::vector<uint32_t> m_selectedMessageIds;
+    /** @brief Stores which signals are selected for transmission.
+     * Key: "messageId:signalName" (unique identifier)
+     */
+    std::set<std::string> m_selectedSignalNames;
 
-    Core::DbcConfig* m_currentDbc;
+    /** @brief Current DBC config (owned by this model) */
+    std::optional<Core::DbcConfig> m_currentDbc;
 
     // Moved from SendingDelegate: The Model now owns the timing source of truth
     QTimer* m_cyclicTimer;

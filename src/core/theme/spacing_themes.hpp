@@ -14,7 +14,7 @@ struct SpacingTheme {
     int spacingXl = 24;
 
     // Border Radius
-    int radiusXs = 4;
+    int radiusXs = 6;
     int radiusSm = 8;
     int radiusMd = 16;
     int radiusLg = 24;

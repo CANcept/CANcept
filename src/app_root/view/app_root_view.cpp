@@ -2,13 +2,14 @@
 
 #include <qevent.h>
 
+#include <QEvent>
 #include <QListView>
 #include <QPainter>
 #include <QStackedWidget>
-#include <QSvgRenderer>
 #include <QVBoxLayout>
 
-#include "core/constants.hpp"
+#include "app_root/constants.hpp"
+#include "core/macro/console_logging.hpp"
 #include "core/macro/theme.hpp"
 
 namespace AppRoot {
@@ -72,17 +73,15 @@ AppRootView::AppRootView(QWidget* parent)
     m_topBarLayout->addStretch();
 
     // Render CanBusManager Icon on the left
-    QSvgRenderer renderer(Core::Assets::CanBusIconPath);
     constexpr QSize iconSize(22, 26);
-    QPixmap pixmap(iconSize);
-    pixmap.fill(Qt::transparent);
+    const QIcon icon(Constants::CAN_BUS_ICON_PATH);
+    QPixmap pixmap = icon.pixmap(iconSize, devicePixelRatioF());
+
     QPainter painter(&pixmap);
-    renderer.render(&painter);
     painter.setCompositionMode(QPainter::CompositionMode_SourceIn);
-    painter.fillRect(pixmap.rect(), THEME.colors().textPrimary);
+    painter.fillRect(pixmap.rect(), THEME.colors().surfaceForeground);
     painter.end();
 
-    // 5. Set it to your label
     m_logoLabel->setPixmap(pixmap);
     m_logoLabel->setFixedSize(iconSize);
 
@@ -139,6 +138,7 @@ void AppRootView::setDelegate(AppRootDelegate* delegate) const
 
 void AppRootView::handleTabChanged(const int index) const
 {
+    LOG_INF("AppRoot", "Switching tab...")
     if (index >= 0 && index < m_contentStack->count())
     {
         m_contentStack->setCurrentIndex(index);
@@ -172,6 +172,15 @@ void AppRootView::showEvent(QShowEvent* event)
                 firstIndex, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
             handleTabChanged(0);
         }
+    }
+}
+
+void AppRootView::resizeEvent(QResizeEvent* event)
+{
+    QWidget::resizeEvent(event);
+    if (m_model)
+    {
+        emit m_model->layoutChanged();
     }
 }
 
