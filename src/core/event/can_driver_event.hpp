@@ -19,5 +19,15 @@ struct CanDriverChangeEvent final : public Event {
 
     explicit CanDriverChangeEvent(const std::string &deviceName) : deviceName(deviceName){};
 };
+/**
+ * @brief Event, that gets called to get all currently available can devices
+ */
+struct GetAvailableDevicesEvent final : public Event
+{
+    /**
+     * @brief After the event returns this list contains all available can devices
+     */
+    std::list<std::string> deviceNames;
+};
 }  // namespace Core
 #endif  // CANBUSMANAGER_CAN_DRIVER_EVENT_HPP
