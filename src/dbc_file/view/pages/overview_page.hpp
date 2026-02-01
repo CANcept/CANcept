@@ -14,12 +14,12 @@ namespace DbcFile {
  * @brief The Overview page displaying file statistics and summaries (SRS 6.2).
  *
  * @details
- * **VISUALS:**
+ * VISUALS:
  * - Section 1: File Metadata (Version, Date).
  * - Section 2: KPI Cards (Counts for ECUs, Messages, Signals).
  * - Section 3: Horizontal flow lists for ECUs and Messages.
  *
- * **LOGIC:**
+ * LOGIC:
  * Uses QDataWidgetMapper for Sections 1 & 2, and QListViews for Section 3.
  */
 class OverviewPage : public QWidget
@@ -28,21 +28,21 @@ class OverviewPage : public QWidget
 
    public:
     explicit OverviewPage(QWidget* parent = nullptr);
+    ~OverviewPage() override = default;
+
+    // --- File Info ---
+    void setFileName(const QString& text) const;
+    void setVersion(const QString& text) const;
+
+    // --- Stats ---
+    void setEcuCount(const QString& text) const;
+    void setMessageCount(const QString& text) const;
+    void setSignalCount(const QString& text) const;
+    void setOrphanCount(const QString& text) const;
     void setupFileInfoSection(QVBoxLayout* parentLayout);
     void setupStatsSection(QVBoxLayout* parentLayout);
     void setupListsSection(QVBoxLayout* parentLayout);
-    void setupMapper();
-    ~OverviewPage() override = default;
 
-    /**
-     * @brief Returns the mapper used to populate the static labels (Top/Middle sections).
-     * @caller DbcView::setSourceModel() to inject data.
-     * @return Pointer to the internal mapper.
-     */
-    [[nodiscard]] auto getMapper() const -> QDataWidgetMapper*
-    {
-        return m_mapper;
-    }
 
     /**
      * @brief Returns the list view for the ECUs section.
@@ -79,9 +79,6 @@ class OverviewPage : public QWidget
     auto createStatCard(const QString& title, QLabel*& valueLabelPtr,
                         const QString& iconName) -> QWidget*;
 
-    QDataWidgetMapper* m_mapper;
-
-    // Targets for m_mapper
     // --- 1. Labels for File Info Card ---
     QLabel* m_lblFileName;
     QLabel* m_lblVersion;

@@ -13,24 +13,47 @@
 #include "dbc_file/delegate/page_delegates.hpp"
 
 namespace DbcFile {
-DbcFile::DbcView::DbcView(QWidget* parent) : QWidget(parent)
+DbcView::DbcView(QWidget* parent) : QWidget(parent)
 {
+
     setupUi();
 }
-DbcFile::DbcView::~DbcView() = default;
+DbcView::~DbcView() = default;
 auto DbcView::getLoadPage() const -> LoadPage&
 {
     return *m_loadPage;
 }
-void DbcFile::DbcView::setSourceModel(QAbstractItemModel* model)
+void DbcView::setSourceModel(QAbstractItemModel* model)
 {
+    if (!model) return;
+
+    m_model = model;
+
+    // Create proxies + connect to source model
+    m_ecuOverviewProxy = std::make_unique<FlatListProxy>(Core::DbcItemType::Ecu, this);
+    m_ecuOverviewProxy->setSourceModel(model);
+    m_ecuOverviewProxy->rebuildMapping();
+
+    m_messagesProxy = std::make_unique<FlatListProxy>(Core::DbcItemType::Message, this);
+    m_messagesProxy->setSourceModel(model);
+    m_messagesProxy->rebuildMapping();
+
+    // Pass proxies to overview page lists
+    m_overviewPage->getEcuList()->setModel(m_ecuOverviewProxy.get());
+    m_overviewPage->getMessageList()->setModel(m_messagesProxy.get());
+
+    // Update overview labels ind overviewpage and connect it to modelreset
+    updateOverviewLabels();
+    connect(model, &QAbstractItemModel::modelReset, this, [this]() {
+        updateOverviewLabels();
+    });
 }
-void DbcFile::DbcView::setDataItemDelegate(QAbstractItemDelegate* delegate) {}
-void DbcFile::DbcView::setNavigationEnabled(const bool enabled) const
+void DbcView::setDataItemDelegate(QAbstractItemDelegate* delegate) {}
+void DbcView::setNavigationEnabled(const bool enabled) const
 {
     m_sidebar->setNavigationEnabled(enabled);
 }
-void DbcFile::DbcView::onSidebarSelectionChanged(int index)
+void DbcView::onSidebarSelectionChanged(int index) const
 {
     // Guard against invalid indices
     if (index < 0 || index >= m_contentStack->count()) return;
@@ -50,15 +73,45 @@ void DbcFile::DbcView::onSidebarSelectionChanged(int index)
     // Switch page in content stack
     m_contentStack->setCurrentIndex(index);
 }
-void DbcFile::DbcView::onEcuFilterTextChanged(const QString& text) {}
-void DbcFile::DbcView::onEcuFilterTypeChanged(int index) {}
-void DbcFile::DbcView::onMessageFilterTextChanged(const QString& text) {}
-void DbcFile::DbcView::onMessageFilterTypeChanged(int index) {}
-void DbcFile::DbcView::onMessageSelected(const QModelIndex& proxyIndex) {}
-void DbcFile::DbcView::onSignalFilterTextChanged(const QString& text) {}
-void DbcFile::DbcView::onSignalFilterTypeChanged(int index) {}
+void DbcView::updateOverviewLabels() const
+{
+    if (!m_overviewPage || !m_model) return;
 
-void DbcFile::DbcView::setupUi()
+    // Overview item always first child to root
+    if (m_model->rowCount() == 0) return;
+
+    QModelIndex overviewIndex = m_model->index(0, 0, QModelIndex());
+    if (!overviewIndex.isValid()) return;
+
+    m_overviewPage->setFileName(
+        m_model->data(m_model->index(0, Constants::Columns::OvFilename)).toString()
+    );
+    m_overviewPage->setVersion(
+        m_model->data(m_model->index(0, Constants::Columns::OvVersion)).toString()
+    );
+    m_overviewPage->setEcuCount(
+        m_model->data(m_model->index(0, Constants::Columns::OvEcuCount)).toString()
+    );
+    m_overviewPage->setMessageCount(
+        m_model->data(m_model->index(0, Constants::Columns::OvMsgCount)).toString()
+    );
+    m_overviewPage->setSignalCount(
+        m_model->data(m_model->index(0, Constants::Columns::OvSigCount)).toString()
+    );
+    m_overviewPage->setOrphanCount(
+        m_model->data(m_model->index(0, Constants::Columns::OvOrphans)).toString()
+    );
+}
+
+void DbcView::onEcuFilterTextChanged(const QString& text) {}
+void DbcView::onEcuFilterTypeChanged(int index) {}
+void DbcView::onMessageFilterTextChanged(const QString& text) {}
+void DbcView::onMessageFilterTypeChanged(int index) {}
+void DbcView::onMessageSelected(const QModelIndex& proxyIndex) {}
+void DbcView::onSignalFilterTextChanged(const QString& text) {}
+void DbcView::onSignalFilterTypeChanged(int index) {}
+
+void DbcView::setupUi()
 {
     // Create main layout
     auto* mainLayout = new QHBoxLayout(this);

@@ -16,15 +16,21 @@ void ItemPainter::paintCardBackground(QPainter* p, const QRect& rect, bool selec
     p->save();
     p->setRenderHint(QPainter::Antialiasing);
 
-    // Small margin, so the items don't stick together
-    const QRect cardRect = rect.adjusted(spacing.itemCardGap, spacing.itemCardGap,
-                                         -spacing.itemCardGap, -spacing.itemCardGap);
+    int gap = spacing.itemCardGap;
+
+    qreal penWidth = spacing.borderThin;
+    qreal offset = penWidth / 2.0;
+
+    QRectF cardRect(rect);
+    cardRect.adjust(gap + offset, gap + offset, -(gap + offset), -(gap + offset));
 
     const QColor bgColor = selected ? colors.surfaceSelected : colors.surfaceMain;
-    const QColor borderColor = selected ? colors.borderStrong : colors.borderSubtle;
+    const QColor borderColor = selected ? colors.borderStrong.name(QColor::HexArgb) : colors.borderSubtle.name(QColor::HexArgb);
 
     p->setBrush(bgColor);
-    p->setPen(QPen(borderColor, spacing.borderThin));
+    QPen pen(borderColor, penWidth);
+
+    p->setPen(pen);
     p->drawRoundedRect(cardRect, spacing.radiusSm, spacing.radiusSm);
 
     p->restore();
@@ -39,13 +45,13 @@ void ItemPainter::paintIcon(QPainter* p, const QRect& rect, const QIcon& icon, b
 
     // Position: left (12px margin) + vertically centered
     const int size = s.iconSm;
-    const QRect target(rect.left() + s.itemCardPadding, rect.center().y() - (size / 2), size, size);
+    const QRect target(rect.left() + s.itemCardPadding, rect.center().y() - (size / 2) + 1, size, size);
 
     // Tinting
     QPixmap pix = icon.pixmap(size, size);
     QPainter ip(&pix);
     ip.setCompositionMode(QPainter::CompositionMode_SourceIn);
-    ip.fillRect(pix.rect(), selected ? c.textPrimary : c.textSecondary);
+    ip.fillRect(pix.rect(), selected ? c.textSecondary : c.textPrimary);
     ip.end();
 
     p->drawPixmap(target, pix);
@@ -86,22 +92,21 @@ auto ItemPainter::paintBadge(QPainter* p, const QRect& rect, const QString& text
     p->setRenderHint(QPainter::Antialiasing);
 
     // Calculate badge size
-    int iconWidth = icon.isNull() ? 0 : s.iconXs;
-    int padding = 10;
+    const int iconWidth = icon.isNull() ? 0 : s.iconXs;
 
     QFont f = p->font();
     f.setPointSize(s.fontSizeBadge);
     p->setFont(f);
 
-    int maxTextWidth = rect.width() / 2;
-    auto elidedText = p->fontMetrics().elidedText(text, Qt::ElideRight, maxTextWidth);
+    const int maxTextWidth = rect.width() / 2;
+    const auto elidedText = p->fontMetrics().elidedText(text, Qt::ElideRight, maxTextWidth);
 
     const int textWidth = p->fontMetrics().horizontalAdvance(elidedText);
     const int badgeWidth = s.badgePadding + iconWidth + (icon.isNull() ? 0 : s.badgePadding) +
                            textWidth + s.badgePadding;
     const int badgeHeight = s.badgeHeight;
     const QRect badgeRect(rect.right() - badgeWidth - s.itemCardPadding,
-                          rect.center().y() - (badgeHeight / 2), badgeWidth, badgeHeight);
+                          rect.center().y() - (badgeHeight / 2) + 1, badgeWidth, badgeHeight);
 
     // Badge background
     p->setBrush(c.badge);
@@ -112,13 +117,18 @@ auto ItemPainter::paintBadge(QPainter* p, const QRect& rect, const QString& text
     // 1. Icon
     if (!icon.isNull())
     {
-        const int y = badgeRect.top() + (badgeRect.height() - s.iconXs) / 2;
+        const int yPos = badgeRect.top() + (badgeRect.height() - s.iconXs) / 2;
 
-        const QRect iconTarget(badgeRect.left() + s.badgePadding, y, s.iconXs, s.iconXs);
+        const QRect iconTarget(badgeRect.left() + s.badgePadding, yPos, s.iconXs, s.iconXs);
 
-        QPixmap ipix = icon.pixmap(s.iconXs, s.iconXs, QIcon::Normal, QIcon::On);
+        QPixmap pix = icon.pixmap(s.iconXs, s.iconXs, QIcon::Normal, QIcon::On);
 
-        p->drawPixmap(iconTarget, ipix);
+        QPainter iconPainter(&pix);
+        iconPainter.setCompositionMode(QPainter::CompositionMode_SourceIn);
+        iconPainter.fillRect(pix.rect(), c.textPrimary);
+        iconPainter.end();
+
+        p->drawPixmap(iconTarget, pix);
     }
 
     // 2. Text

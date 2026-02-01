@@ -3,6 +3,7 @@
 //
 #include "overview_page.hpp"
 
+#include <QLineEdit>
 #include <QScrollArea>
 #include <QVBoxLayout>
 
@@ -13,6 +14,30 @@
 #include "dbc_file/model/dbc_roles.hpp"
 #include "spdlog/fmt/bundled/os.h"
 namespace DbcFile {
+void OverviewPage::setFileName(const QString& text) const
+{
+    m_lblFileName->setText(text);
+}
+auto OverviewPage::setVersion(const QString& text) const -> void
+{
+    m_lblVersion->setText(text);
+}
+void OverviewPage::setEcuCount(const QString& text) const
+{
+    m_lblEcuCount->setText(text);
+}
+void OverviewPage::setMessageCount(const QString& text) const
+{
+    m_lblMessageCount->setText(text);
+}
+void OverviewPage::setSignalCount(const QString& text) const
+{
+    m_lblSignalCount->setText(text);
+}
+void OverviewPage::setOrphanCount(const QString& text) const
+{
+    m_lblOrphanCount->setText(text);
+}
 // --- OverviewPage Dummy ---
 OverviewPage::OverviewPage(QWidget* parent) : QWidget(parent)
 {
@@ -74,12 +99,21 @@ void OverviewPage::setupListsSection(QVBoxLayout* parentLayout)
 
         //
         listViewMember = new QListView(this);
-        listViewMember->setViewMode(QListView::IconMode);
+        listViewMember->setViewMode(QListView::ListMode);
+        listViewMember->setFlow(QListView::LeftToRight);
         listViewMember->setResizeMode(QListView::Adjust);
         listViewMember->setWrapping(true);
         listViewMember->setUniformItemSizes(true);
         listViewMember->setFrameShape(QFrame::NoFrame);
-        listViewMember->setStyleSheet("background: transparent;");
+        listViewMember->setSelectionMode(QAbstractItemView::NoSelection);
+        listViewMember->setStyleSheet(
+                                    "QListView { "
+                                        "  background: transparent; "
+                                        "  border: none; "
+                                        "  padding: 0px; "
+                                        "  margin: 0px; "
+                                        "}"
+                                    );
         listViewMember->setFixedHeight(150);
 
         // Set delegate
@@ -98,18 +132,6 @@ void OverviewPage::setupListsSection(QVBoxLayout* parentLayout)
 
 }
 
-void OverviewPage::setupMapper()
-{
-    m_mapper = new QDataWidgetMapper(this);
-
-    m_mapper->addMapping(m_lblFileName,Constants::Columns::OvFilename, "text");
-    m_mapper->addMapping(m_lblVersion,  Constants::Columns::OvVersion,  "text");
-    m_mapper->addMapping(m_lblEcuCount, Constants::Columns::OvEcuCount, "text");
-    m_mapper->addMapping(m_lblMessageCount, Constants::Columns::OvMsgCount, "text");
-    m_mapper->addMapping(m_lblSignalCount,  Constants::Columns::OvSigCount, "text");
-    m_mapper->addMapping(m_lblOrphanCount,  Constants::Columns::OvOrphans,  "text");
-}
-
 void OverviewPage::setupUi()
 {
     const auto& colors = Core::ThemeManager::getInstance().colors();
@@ -122,7 +144,7 @@ void OverviewPage::setupUi()
     auto* scrollArea = new QScrollArea(this);
     scrollArea->setWidgetResizable(true);
     scrollArea->setFrameShape(QFrame::NoFrame);
-    scrollArea->setStyleSheet(QString("background-color: %1;").arg(colors.surfaceMain.name()));
+    scrollArea->setStyleSheet(QString("background-color: %1; width: 0px;").arg(colors.surfaceMain.name()));
 
     auto* contentWidget = new QWidget();
     auto* contentLayout = new QVBoxLayout(contentWidget);
@@ -134,8 +156,6 @@ void OverviewPage::setupUi()
     contentLayout->addStretch();
     scrollArea->setWidget(contentWidget);
     mainLayout->addWidget(scrollArea);
-
-    setupMapper();
 }
 auto OverviewPage::createStatCard(const QString& title, QLabel*& valueLabelPtr,
                                   const QString& iconName) -> QWidget*
@@ -162,7 +182,7 @@ auto OverviewPage::createStatCard(const QString& title, QLabel*& valueLabelPtr,
     cardLayout->addLayout(topRow);
 
     // Value
-    valueLabelPtr = new QLabel("0");
+    valueLabelPtr = new QLabel(Constants::OverviewPage::LabelDefault);
     valueLabelPtr->setStyleSheet(QString("color: %1; font-weight: %2; font-size: %3px;")
         .arg(colors.textPrimary.name())
         .arg(spacing.fontWeightNormal)

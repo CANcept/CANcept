@@ -16,19 +16,16 @@
 #include "proxies.hpp"
 
 namespace DbcFile {
+class DbcModel;
 
 /**
- * @class DbcView
- * @brief The main container for the DBC Tab (Composite View).
+ * @brief Main view container for the DBC editor.
  *
- * @details
- * RESPONSIBILITIES:
- * 1. Layout: Manages the Sidebar navigation and the central Page Stack
- *    (Load, Overview, ECUs, Messages, Signals).
- * 2. Data Wiring: Owns the Proxy Models, connects them to the Source Model,
- *    and injects them into the specific Pages.
- * 3. Interaction Logic: Connects Search Bars, Filter Combos, and Selection Signals
- *    from the Pages to the corresponding Proxies.
+ * DbcView is responsible for:
+ * - Managing the sidebar navigation
+ * - Hosting all main content pages (load, overview, ECUs, messages, signals)
+ * - Wiring models, proxy models and data mappers
+ * - Switching between pages based on user interaction
  */
 class DbcView : public QWidget
 {
@@ -54,6 +51,7 @@ class DbcView : public QWidget
      * @return Pointer to m_loadPage
      */
     [[nodiscard]] auto getLoadPage() const -> LoadPage&;
+    auto getOverviewPage() const -> LoadPage&;
 
     /**
      * @brief Initializes the view with the source data.
@@ -105,7 +103,8 @@ class DbcView : public QWidget
      *
      * @param index Index of the selected sidebar tab.
      */
-    void onSidebarSelectionChanged(int index);
+    void onSidebarSelectionChanged(int index) const;
+    void updateOverviewLabels() const;
 
     // --- ECU PAGE INTERACTION ---
 
@@ -187,6 +186,7 @@ class DbcView : public QWidget
      */
     void setupConnections();
 
+    QAbstractItemModel* m_model;
     // --- UI Structure ---
     Core::Sidebar* m_sidebar;
     QStackedWidget* m_contentStack;
@@ -206,20 +206,19 @@ class DbcView : public QWidget
     //  * Maintains tree structure (Root->ECU->Message->Signal).
     //  */
     // std::unique_ptr<TreeFilterProxy> m_ecuTreeProxy;
-    //
-    // /**
-    //  * @brief Flat list of ECUs for the Overview Page (Tiles).
-    //  * Flattens the tree to just show ECU nodes.
-    //  */
-    // std::unique_ptr<FlatListProxy> m_ecuOverviewProxy;
-    //
-    // /**
-    //  * @brief Flat list of Messages.
-    //  * SHARED by:
-    //  * 1. Overview Page (Messages Tile List)
-    //  * 2. Messages Page (Master Table)
-    //  */
-    // std::unique_ptr<FlatListProxy> m_messagesProxy;
+    /**
+     * @brief Flat list of ECUs for the Overview Page (Tiles).
+     * Flattens the tree to just show ECU nodes.
+     */
+    std::unique_ptr<FlatListProxy> m_ecuOverviewProxy;
+
+    /**
+     * @brief Flat list of Messages.
+     * SHARED by:
+     * 1. Overview Page (Messages Tile List)
+     * 2. Messages Page (Master Table)
+     */
+    std::unique_ptr<FlatListProxy> m_messagesProxy;
     //
     // /**
     //  * @brief Detail filter for Messages Page.

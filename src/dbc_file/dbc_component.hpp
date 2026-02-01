@@ -36,6 +36,7 @@ class DbcComponent : public Core::ITabComponent
     Q_OBJECT
 
    public:
+    void runUiTest();
     /**
      * @brief Constructs the DBC component.
      *
@@ -84,7 +85,7 @@ class DbcComponent : public Core::ITabComponent
      *
      * @param filePath Path to the selected DBC file.
      */
-    void onFileLoadRequested(const QString& filePath);
+    void onFileLoadRequested(const QString& filePath) const;
 
    private:
     /**
@@ -96,7 +97,7 @@ class DbcComponent : public Core::ITabComponent
      *
      * @param event Event containing the parsed DBC result.
      */
-    void onDbcParsed(const Core::DBCParsedEvent& event);
+    void onDbcParsed(const Core::DBCParsedEvent& event) const;
 
     /**
      * @brief Handles DBC parsing errors.
@@ -107,7 +108,7 @@ class DbcComponent : public Core::ITabComponent
      *
      * @param event Event containing error details.
      */
-    void onDbcParseError(const Core::DBCParseErrorEvent& event);
+    void onDbcParseError(const Core::DBCParseErrorEvent& event) const;
 
     /**
      * @brief Sets up signal-slot and event broker connections.
