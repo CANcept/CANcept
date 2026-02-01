@@ -25,6 +25,13 @@ class MonitoringModel final : public QAbstractItemModel
 {
     Q_OBJECT
    public:
+    enum MonitoringRoles
+    {
+        Role_Name = Qt::UserRole + 1,
+        Role_ID,
+        Role_ValueList,
+        Role_LatestValue,
+    };
     /**
      * @brief Constructs the signal tree model.
      *
