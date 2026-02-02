@@ -1,8 +1,5 @@
 #pragma once
 
-#include <string>
-#include <vector>
-
 /**
  * @namespace Constants
  * @brief Module-level constants for CAN message sending configuration.
@@ -24,6 +21,12 @@ inline const QString BUS_CONNECT_BUTTON_ICON_PATH = ":/assets/icon/monitoring/bu
 /** @brief Icon used for the disconnected button in the can config card */
 inline const QString BUS_DISCONNECT_BUTTON_ICON_PATH =
     ":/assets/icon/monitoring/bus_disconnected.svg";
+
+/** @brief Icon used for the message card in not expanded state */
+inline const QString ARROW_RIGHT_BUTTON_ICON_PATH = ":/assets/icon/monitoring/arrow_right.svg";
+
+/** @brief Icon used for the message card in expanded state */
+inline const QString ARROW_DOWN_BUTTON_ICON_PATH = ":/assets/icon/monitoring/arrow_down.svg";
 
 /** @brief Identifier used by the module to communicate with the system */
 inline const QString MODULE_IDENTIFIER = "MonitoringComponent";
@@ -77,7 +80,9 @@ inline const Qt::GlobalColor SIGNAL_GRAPH_LINE_COLOR = Qt::blue;
 inline const int SIGNAL_GRAPH_LINE_WIDTH = 2;
 
 /** @brief Label for messages list in view */
-inline const QString MESSAGES_LABEL = "Messages";
+inline const QString MESSAGES_LABEL = "Message";
+
+const int REFRESH_INTERVAL_MS = 1000;
 
 const int HOLDING_SECONDS_IN_MODEL = 60;
 

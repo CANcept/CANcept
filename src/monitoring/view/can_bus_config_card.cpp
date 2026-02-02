@@ -7,16 +7,18 @@
 #include "core/macro/console_logging.hpp"
 #include "core/macro/theme.hpp"
 #include "monitoring/constants.hpp"
+#include "monitoring/model/monitoring_model.hpp"
 
 namespace Monitoring {
 
-CanBusConfigCard::CanBusConfigCard(QWidget* parent)
+CanBusConfigCard::CanBusConfigCard(QWidget* parent, MonitoringModel* model)
     : QWidget(parent),
       m_configCard(nullptr),
       m_interfaceCard(nullptr),
       m_frameRateCard(nullptr),
       m_messageCountCard(nullptr),
-      m_interfaceCombo(nullptr)
+      m_interfaceCombo(nullptr),
+      m_model(model)
 {
     setupUi();
 }
@@ -31,7 +33,7 @@ void CanBusConfigCard::setupUi()
     m_configCard = new Core::CardWidget(Constants::CAN_CONFIGURATION_TITLE, QString(),
                                         Constants::CAN_CONFIGURATION_ICON_PATH, this);
 
-    auto* groupLayout = new QHBoxLayout(m_configCard);
+    auto* groupLayout = new QHBoxLayout();
     groupLayout->setSpacing(spacing.spacingLg);
 
     m_interfaceCard =
@@ -44,43 +46,17 @@ void CanBusConfigCard::setupUi()
 
     m_statusCard =
         new Core::CardWidget(QString(), Constants::CAN_STATUS_LABEL, QString(), m_configCard);
-    auto* statusLayout = new QHBoxLayout(m_statusCard);
+    auto* statusLayout = new QHBoxLayout();
     statusLayout->setSpacing(spacing.spacingSm);
     m_fpsValueLabel = new QLabel(m_statusCard);
-    m_fpsValueLabel->setText(QString("Frames/s: ") + Constants::FRAME_RATE_PLACEHOLDER);
+    m_fpsValueLabel->setText(QString("Frames/s: "));
     statusLayout->addWidget(m_fpsValueLabel);
     m_msgCountValueLabel = new QLabel(m_statusCard);
-    m_msgCountValueLabel->setText(QString("Message types: ") +
-                                  Constants::MESSAGE_COUNT_PLACEHOLDER);
+    m_msgCountValueLabel->setText(QString("Message types: "));
     statusLayout->addWidget(m_msgCountValueLabel);
     m_statusCard->contentLayout()->addLayout(statusLayout);
     groupLayout->addWidget(m_statusCard);
 
-    m_dbcToggleButton = new QPushButton(m_configCard);
-    m_dbcToggleButton->setCheckable(true);
-    m_dbcToggleButton->setText("Raw Mode");
-    m_dbcToggleButton->setFixedSize(100, 32);
-    m_dbcToggleButton->setCursor(Qt::PointingHandCursor);
-    m_dbcToggleButton->setStyleSheet(
-        "QPushButton {"
-        "background-color: #f5f5f5;"
-        "border: none;"
-        "border-radius: 16px;"
-        "color: #404040;"
-        "font-weight: bold;"
-        "padding: 0px;"
-        "}"
-        "QPushButton:checked {"
-        "background-color: #e8e8e8;"
-        "color: #404040;"
-        "}");
-
-    connect(m_dbcToggleButton, &QPushButton::toggled, this, [this](bool checked) {
-        m_dbcToggleButton->setText(checked ? "DBC Mode" : "Raw Mode");
-        LOG_INF("MonitoringComponent", "Monitoring mode changed");
-    });
-
-    m_configCard->contentLayout()->addWidget(m_dbcToggleButton);
     m_configCard->contentLayout()->addLayout(groupLayout);
     mainLayout->addWidget(m_configCard);
 }

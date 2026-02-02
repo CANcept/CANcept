@@ -3,7 +3,7 @@
 
 #include <QWidget>
 
-#include "monitoring/model/signal_graph_model.hpp"
+#include "core/dto/can_dto.hpp"
 #include "qwt_plot.h"
 
 /**
@@ -87,13 +87,5 @@ class SignalGraph : public QWidget
 
     char m_messageId;
     std::string m_signalName;
-
-    /**
-     * @brief Model holding the time-series data and graph state.
-     *
-     * Responsible for managing signal samples, scaling, and any
-     * preprocessing required for visualization.
-     */
-    SignalGraphModel m_model;
 };
 }  // namespace Monitoring

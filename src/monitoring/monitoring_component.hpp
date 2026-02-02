@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QTimer>
+
 #include "core/event/can_event.hpp"
 #include "core/interface/i_event_broker.hpp"
 #include "core/interface/i_tab_component.hpp"
@@ -75,7 +77,7 @@ class MonitoringComponent final : public Core::ITabComponent
      * @brief Signal emitted when a new dbcConfiguration is used.
      * The available ECUs and signals refresh, no signal is selected for plotting.
      */
-    void dbcConfigurationChanged();
+    void dbcConfigurationChanged(const Core::DbcConfig& config);
 
     /**
      * @brief Updates the message data when a dbc decoded CAN frame is received.
@@ -96,6 +98,8 @@ class MonitoringComponent final : public Core::ITabComponent
      * @param message Reference to the received raw CAN message.
      */
     void rawFrameReceived(const Core::RawCanMessage& message);
+
+    void tick();
 
    private slots:
 
@@ -153,5 +157,9 @@ class MonitoringComponent final : public Core::ITabComponent
 
     /** @brief Tracks whether the DBC mode is enabled or instead the raw mode */
     bool m_dbcModeEnabled = false;
+
+    QTimer m_updateTimer;
+
+    void updateMessages();
 };
 }  // namespace Monitoring

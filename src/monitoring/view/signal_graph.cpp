@@ -48,6 +48,7 @@ void SignalGraph::setupPlot()
 
 void SignalGraph::appendDataToGraph(Core::DbcCanSignal& signal)
 {
+    /*
     // 1. Update the internal model with the new raw sample
     // Your SignalGraphModel should handle the timestamping (X-axis)
     m_model.addValue(signal.value);
@@ -58,6 +59,7 @@ void SignalGraph::appendDataToGraph(Core::DbcCanSignal& signal)
 
     // 3. Refresh the plot
     m_plot->replot();
+    */
 }
 
 SignalGraph::~SignalGraph()

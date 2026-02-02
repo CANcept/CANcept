@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QLabel>
 #include <QScrollArea>
 #include <QVBoxLayout>
 #include <QWidget>
@@ -18,15 +19,13 @@ class SignalList final : public QWidget
 
     void clearMessages();
 
-    void setModel(MonitoringModel* model);
+    void updateViewData();
 
-    void populateFromModel();
-
-   private slots:
-    void onModelRowsInserted(const QModelIndex& parent, int first, int last);
-    void onModelDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight);
+   signals:
+    void signalMonitoringToggled(bool checked, const QString& messageId, const QString& signalName);
 
    private:
+    void populateDecodedFromModel();
     /**
      * @brief Scroll area providing vertical scrolling for the graph list.
      */
@@ -34,6 +33,8 @@ class SignalList final : public QWidget
     QVBoxLayout* m_cardsLayout;
     QWidget* m_scrollContent;
     MonitoringModel* m_model;
+    QList<QLabel*>* m_signalValues;
+    QList<QWidget*>* m_signalLists;
 };
 
 }  // namespace Monitoring

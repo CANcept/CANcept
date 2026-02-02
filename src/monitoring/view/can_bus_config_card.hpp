@@ -10,6 +10,7 @@
 
 #include "core/widgets/card_widget.hpp"
 #include "core/widgets/common/styled_combo_box.hpp"
+#include "monitoring/model/monitoring_model.hpp"
 
 namespace Monitoring {
 /**
@@ -28,7 +29,7 @@ class CanBusConfigCard final : public QWidget
      * @brief Constructs the CAN-Bus Configuration card.
      * @param parent Parent widget
      */
-    explicit CanBusConfigCard(QWidget* parent = nullptr);
+    explicit CanBusConfigCard(QWidget* parent = nullptr, MonitoringModel* model = nullptr);
     ~CanBusConfigCard() override = default;
 
     /**
@@ -68,6 +69,7 @@ class CanBusConfigCard final : public QWidget
 
     Core::CardWidget* m_messageCountCard;
     QLabel* m_msgCountValueLabel;
+    MonitoringModel* m_model;
 };
 
 }  // namespace Monitoring

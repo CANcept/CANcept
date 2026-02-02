@@ -1,9 +1,6 @@
 #include "monitoring_model.hpp"
 
-#include <qdatetime.h>
-
 #include "monitoring/constants.hpp"
-#include "sending/model/sending_model.hpp"
 
 namespace Monitoring {
 
@@ -31,8 +28,8 @@ MonitoringModel::MonitoringModel() : QAbstractItemModel(nullptr)
                     .count();
             if (millisecondsAfterErase < lastExecution + 50)
             {
-                std::this_thread::sleep_for(std::chrono::milliseconds(
-                    lastExecution + 50 - millisecondsAfterErase));
+                std::this_thread::sleep_for(
+                    std::chrono::milliseconds(lastExecution + 50 - millisecondsAfterErase));
             }
         }
     });
@@ -183,7 +180,6 @@ auto MonitoringModel::data(const QModelIndex& index, int role) const -> QVariant
     }
 }
 
-
 void MonitoringModel::onIncomingDbcFrame(const Core::DbcCanMessage& message)
 {
     if (!m_currentDbc.has_value() || !deleteOldData)
@@ -191,15 +187,18 @@ void MonitoringModel::onIncomingDbcFrame(const Core::DbcCanMessage& message)
         return;
     }
     int i = 0;
-    for (auto it = m_currentDbc->messageDefinitions.begin(); it != m_currentDbc->messageDefinitions.end(); ++it)
+    for (auto it = m_currentDbc->messageDefinitions.begin();
+         it != m_currentDbc->messageDefinitions.end(); ++it)
     {
         if (it->messageId == message.messageId)
         {
             int j = 0;
-            for (auto it2 = it->signalDescriptions.begin(); it2 != it->signalDescriptions.end(); ++it2)
+            for (auto it2 = it->signalDescriptions.begin(); it2 != it->signalDescriptions.end();
+                 ++it2)
             {
                 bool valueExists = false;
-                for (auto it3 = message.signalValues.begin(); it3 != message.signalValues.end(); ++it3)
+                for (auto it3 = message.signalValues.begin(); it3 != message.signalValues.end();
+                     ++it3)
                 {
                     if (it3->name == it2->signalName)
                     {
@@ -242,7 +241,8 @@ void MonitoringModel::eraseOldData()
     QTime currentTime = QTime::currentTime();
     for (int i = 0; i < messageValues.size(); i++)
     {
-        while (messageValues.at(i).timestamps.begin()->msecsTo(QTime::currentTime().addSecs(-Constants::HOLDING_SECONDS_IN_MODEL)) < 0)
+        while (messageValues.at(i).timestamps.begin()->msecsTo(
+                   QTime::currentTime().addSecs(Constants::HOLDING_SECONDS_IN_MODEL)) < 0)
         {
             for (int j = 0; j < messageValues.at(i).signalValues.size(); j++)
             {

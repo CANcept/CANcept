@@ -76,4 +76,19 @@ void GraphListView::newGraph(Core::DbcCanSignal& signal)
     m_layout->addWidget(graph);
 }
 
+void GraphListView::signalChecked(bool checked, const QString& messageId, const QString& signalName)
+{
+    // Convert QString inputs to the types your graph API expects
+    const char msgId = static_cast<char>(messageId.toInt());
+    const std::string sigName = signalName.toStdString();
+
+    if (checked)
+    {
+        addGraph(msgId, sigName);
+    } else
+    {
+        deleteGraph(msgId, sigName);
+    }
+}
+
 }  // namespace Monitoring

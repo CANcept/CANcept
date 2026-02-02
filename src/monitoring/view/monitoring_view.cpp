@@ -4,9 +4,12 @@
 #include <QTimer>
 #include <QVBoxLayout>
 
-#include "core/constants.hpp"
+#include "can_bus_config_card.hpp"
+#include "core/dto/dbc_dto.hpp"
+#include "core/macro/console_logging.hpp"
 #include "core/macro/theme.hpp"
 #include "graph_list_view.hpp"
+#include "monitoring/constants.hpp"
 #include "monitoring/model/monitoring_model.hpp"
 
 namespace Monitoring {
@@ -15,9 +18,7 @@ MonitoringView::MonitoringView(MonitoringModel* model, MonitoringDelegate* deleg
     : QWidget(nullptr),
       m_treeProxy(new QSortFilterProxyModel(this)),
       m_signalListView(new SignalList(this)),
-      m_splitter(new QSplitter(Qt::Horizontal, this)),
-      m_dbcMessageTimer(new QTimer(this)),
-      m_rawMessageTimer(new QTimer(this))
+      m_splitter(new QSplitter(Qt::Horizontal, this))
 {
     m_model = model;
     m_delegate = delegate;
@@ -26,73 +27,27 @@ MonitoringView::MonitoringView(MonitoringModel* model, MonitoringDelegate* deleg
 
 void MonitoringView::setupUi()
 {
+    const auto& spacing = THEME.spacing();
+    const auto& colors = THEME.colors();
+
     m_graphListView = new GraphListView(m_model, m_delegate);
-    m_signalListView->setModel(m_model);
 
     auto* mainLayout = new QVBoxLayout(this);
     mainLayout->setContentsMargins(spacing.spacingLg, spacing.spacingLg, spacing.spacingLg,
                                    spacing.spacingLg);
     mainLayout->setSpacing(spacing.spacingLg);
 
-    // --- CAN-Bus Connection Group ---
-    m_connectionGroup = new QGroupBox(this);  // No title here, we'll add a custom one
-    m_connectionGroup->setStyleSheet(
-        "QGroupBox { border: 1px solid #C0C0C0; border-radius: 8px; }");
-    auto* groupLayout = new QVBoxLayout(m_connectionGroup);
+    m_configCard = new CanBusConfigCard(this);
 
-    // --- Row 1: Config & Connect ---
-    auto* topRow = new QHBoxLayout();
-
-    // Title with Icon
-    m_titleIcon = new QLabel(this);
-    m_titleIcon->setPixmap(
-        QPixmap(Core::Assets::MonitoringBusConfigIconPath).scaled(24, 24, Qt::KeepAspectRatio));
-    auto* titleLabel = new QLabel("CAN-Bus Connection", this);
-    titleLabel->setStyleSheet("font-size: 20px;");
-
-    m_interfaceCombo = new QComboBox(this);
-    m_interfaceCombo->setStyleSheet(
-        QString("background-color: %1; width: 300px; border-radius: 15px; font-size: 15px;")
-            .arg(THEME.colors().surfacePrimary.name()));
-    m_interfaceCombo->addItems({"vcan0", "can0", "can1"});
-
-    m_connectButton = new QPushButton("Connect", this);
-    m_connectButton->setIcon(QIcon(Core::Assets::MonitoringBusDisconPath));  // Initial state
-    m_connectButton->setStyleSheet(
-        QString("background-color: %1; width: 100px; border-radius: 15px; font-size: 15px;")
-            .arg(THEME.colors().surfacePrimary.name()));
-
-    topRow->addWidget(m_titleIcon);
-    topRow->addWidget(titleLabel);
-    topRow->addStretch();
-    topRow->addSpacing(30);
-    topRow->addWidget(m_interfaceCombo);
-    topRow->addSpacing(30);
-    topRow->addWidget(m_connectButton);
-
-    // --- Row 2: Status Boxes ---
-    auto* bottomRow = new QHBoxLayout();
-
-    // Create the three boxes
-    QFrame* statusBox = createStatBox("Status", m_statusValueLabel = new QLabel("Disconnected"));
-    QFrame* fpsBox = createStatBox("Frame rate", m_fpsValueLabel = new QLabel("0 fps"));
-    QFrame* msgBox = createStatBox("Messages", m_msgCountValueLabel = new QLabel("0 messages"));
-
-    // Set initial status color
-    m_statusValueLabel->setStyleSheet("font-size: 15px; color: red;");
-    m_fpsValueLabel->setStyleSheet("font-size: 15px; color: gray;");
-    m_msgCountValueLabel->setStyleSheet("font-size: 15px; color: gray;");
-
-    bottomRow->addWidget(statusBox, 1);  // The '1' makes them share space equally
-    bottomRow->addWidget(fpsBox, 1);
-    bottomRow->addWidget(msgBox, 1);
-
-    // Add rows to group
-    groupLayout->addLayout(topRow);
-    groupLayout->addLayout(bottomRow);
-
-    // Configure SignalList
-    m_signalListView->setStyleSheet("QTreeView { border: none; background-color: transparent;");
+    // If Core::CardWidget already has a layout, reuse it instead of adding a new one.
+    if (m_configCard->layout() == nullptr)
+    {
+        auto* cardLayout = new QVBoxLayout(m_configCard);
+        cardLayout->setContentsMargins(0, 0, 0, 0);
+        cardLayout->setSpacing(spacing.spacingMd);
+        m_configCard->setLayout(cardLayout);
+    }
+    // else: CanBusConfigCard/Core::CardWidget already created/set its own layout.
 
     // Configure Splitter
     m_splitter->addWidget(m_signalListView);
@@ -103,7 +58,7 @@ void MonitoringView::setupUi()
     m_splitter->setStretchFactor(1, 2);
 
     // --- Add to Main Layout ---
-    mainLayout->addWidget(m_connectionGroup, 1);
+    mainLayout->addWidget(m_configCard, 1);
     mainLayout->addWidget(m_splitter, 5);
 
     // Connect the data changed signal of the model to intercept checkbox toggles
@@ -131,71 +86,14 @@ void MonitoringView::setupUi()
                     }
                 }
             });
-
-    connect(m_connectButton, &QPushButton::clicked, this, [this]() -> void {
-        if (m_connectButton->text() == "Connect")
-        {
-            // Switch to Connected state
-            m_connectButton->setText("Disconnect");
-            m_connectButton->setIcon(QIcon(Core::Assets::MonitoringBusDisconPath));
-            m_connectButton->setStyleSheet(QString("background-color: %1; color: black; width: "
-                                                   "100px; border-radius: 15px; font-size: 15px;")
-                                               .arg(THEME.colors().statusWarning.name()));
-
-            m_statusValueLabel->setText(
-                QString("Connected (%1)").arg(m_interfaceCombo->currentText()));
-            m_statusValueLabel->setStyleSheet("font-size: 15px; color: green;");
-        } else
-        {
-            // Switch to Disconnected state
-            m_connectButton->setText("Connect");
-            m_connectButton->setIcon(QIcon(Core::Assets::MonitoringBusConnPath));
-            m_connectButton->setStyleSheet(QString("background-color: %1; color: black; width: "
-                                                   "100px; border-radius: 15px; font-size: 15px;")
-                                               .arg(THEME.colors().surfacePrimary.name()));
-
-            m_statusValueLabel->setText("Disconnected");
-            m_statusValueLabel->setStyleSheet("font-size:15px; color: red;");
-        }
-    });
+    // Connect checkboxes in signalListview to graphlistview
+    connect(m_signalListView, &SignalList::signalMonitoringToggled, m_graphListView,
+            &GraphListView::signalChecked);
 }
 
-// Helper function to keep code clean
-QFrame* MonitoringView::createStatBox(const QString& title, QLabel*& valueLabel)
+void MonitoringView::onUpdateMessages()
 {
-    auto* frame = new QFrame(this);
-    frame->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
-    frame->setFrameStyle(QFrame::StyledPanel);
-    frame->setStyleSheet(
-        "QFrame { border: 1px solid #C0C0C0; border-radius: 8px; }"
-        "QLabel { border: none; background: transparent; }");
-
-    auto* layout = new QVBoxLayout(frame);
-
-    layout->setContentsMargins(20, 5, 5, 10);
-    layout->setSpacing(5);
-
-    auto* titleLabel = new QLabel(title);
-    titleLabel->setStyleSheet("font-size: 18px;");
-
-    valueLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-    titleLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-
-    layout->addWidget(titleLabel);
-    layout->addWidget(valueLabel);
-    return frame;
+    m_signalListView->updateViewData();
 }
 
-void MonitoringView::onDbcConfigurationChanged()
-{
-    // If the DBC changes, the old graphs are likely invalid
-    if (m_graphListView)
-    {
-        // Assuming GraphListView has a clear or reset method
-        // If not, we trigger the logic here
-    }
-
-    // Refresh the tree view
-    m_signalListView->clearMessages();
-}
 }  // namespace Monitoring
