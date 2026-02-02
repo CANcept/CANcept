@@ -15,11 +15,12 @@ CardListDelegate::CardListDelegate(const int badgeRole, const QIcon& badgeIcon,
 {
 }
 
-QSize CardListDelegate::sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const
+auto CardListDelegate::sizeHint(const QStyleOptionViewItem& option,
+                                const QModelIndex& index) const -> QSize
 {
-    auto& spacing = ThemeManager::getInstance().spacing();
-
-    return {spacing.itemCardWidth, spacing.itemCardHeight};
+    constexpr int itemCardWidth = 300;
+    constexpr int itemCardHeight = 40;
+    return {itemCardWidth, itemCardHeight};
 }
 
 void CardListDelegate::paint(QPainter* painter, const QStyleOptionViewItem& option,

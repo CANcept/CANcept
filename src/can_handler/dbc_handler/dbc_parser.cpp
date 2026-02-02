@@ -1,6 +1,3 @@
-//
-// Created by flori on 21.01.2026.
-//
 #include "dbc_parser.hpp"
 
 #include <iostream>
@@ -82,6 +79,16 @@ auto DbcParser::parseDbc() -> std::unique_ptr<Core::DbcConfig>
     while (parseAttributeValue())
     {
         IF_PARSING_INVALID_RETURN({nullptr})
+    }
+    while (true)
+    {
+        const std::string comment = parseComment();
+        if (!parsedObject)
+        {
+            IF_PARSING_INVALID_RETURN({nullptr})
+            break;
+        }
+        comments.push_back(comment);
     }
     std::list<Core::DbcSignalValueDescription> valueDescriptions;
     while (true)
@@ -362,19 +369,23 @@ auto DbcParser::parseSignal() -> Core::DbcSignalDescription
         return {};
     }
     parsedObject = true;
-    return Core::DbcSignalDescription{.signalName = signalName,
-                                      .multiplexer = multiplexor,
-                                      .multiplexedBy = multiplexerSwitchValue,
-                                      .startBit = startBit,
-                                      .signalSize = signalSize,
-                                      .byteOrder = (byteOrderInt == 1),
-                                      .valueType = valueType,
-                                      .factor = factor,
-                                      .offset = offset,
-                                      .minimum = minimum,
-                                      .maximum = maximum,
-                                      .unit = unit,
-                                      .receivers = receivers};
+    Core::DbcSignalDescription signalDescription{.signalName = signalName,
+                                                 .multiplexer = multiplexor,
+                                                 .multiplexedBy = multiplexerSwitchValue,
+                                                 .startBit = startBit,
+                                                 .signalSize = signalSize,
+                                                 .byteOrder = (byteOrderInt == 1),
+                                                 .valueType = valueType,
+                                                 .factor = factor,
+                                                 .offset = offset,
+                                                 .minimum = minimum,
+                                                 .maximum = maximum,
+                                                 .unit = unit,
+                                                 .receivers = receivers};
+
+    calculatePhysicalRange(signalDescription);
+
+    return signalDescription;
 }
 auto DbcParser::parseSignalValue() -> Core::DbcSignalValueDescription
 {
@@ -601,6 +612,12 @@ void DbcParser::parseBitTiming()
     }
     file = file.substr(4);
     eraseSpaces();
+    if (file.starts_with("BU_"))
+    {
+        parsingValid = true;
+        parsedObject = true;
+        return;
+    }
     parseUInt();
     if (!parsingValid)
     {
@@ -631,7 +648,7 @@ void DbcParser::parseBitTiming()
 }
 void DbcParser::eraseSpaces()
 {
-    while (isspace(file.front()))
+    while (!file.empty() && isspace(static_cast<unsigned char>(file.front())))
     {
         file = file.substr(1);
     }
@@ -640,6 +657,12 @@ auto DbcParser::parseCIdentifier() -> std::string
 {
     eraseSpaces();
     const size_t pos = file.find_first_of(" :;,");
+    if (pos == std::string::npos)
+    {
+        parsingValid = false;
+        parsedObject = false;
+        return "";
+    }
     std::string identifier = file.substr(0, pos);
     if (!regex_match(identifier, C_IDENTIFIER_REGEX))
     {
@@ -769,6 +792,30 @@ auto DbcParser::truncateToNextSemicolon() -> bool
     file = file.substr(semicolonPos + 1);
     parsedObject = true;
     return true;
+}
+
+void DbcParser::calculatePhysicalRange(Core::DbcSignalDescription& signal)
+{
+    if (signal.minimum == 0.0 && signal.maximum == 0.0)
+    {
+        unsigned long long rawMax;
+        long long rawMin;
+        if (signal.valueType)
+        {
+            rawMax = (1ULL << (signal.signalSize - 1)) - 1;
+            rawMin = -(1LL << (signal.signalSize - 1));
+        } else
+        {
+            rawMin = 0;
+            rawMax = (1ULL << signal.signalSize) - 1;
+        }
+        signal.minimum = static_cast<double>(rawMin) * signal.factor + signal.offset;
+        signal.maximum = static_cast<double>(rawMax) * signal.factor + signal.offset;
+    } else if (signal.minimum >= signal.maximum)
+    {
+        LOG_WRN("CanHandler", "Signal '{}' has invalid range [{:.2f}|{:.2f}]",
+                signal.signalName.c_str(), signal.minimum, signal.maximum);
+    }
 }
 
 }  // namespace CanHandler

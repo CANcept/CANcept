@@ -8,6 +8,7 @@
 #include <QPainter>
 #include <QToolTip>
 
+#include "core/macro/theme.hpp"
 #include "core/theme/theme_manager.hpp"
 #include "dbc_file/constants.hpp"
 namespace Core {
@@ -23,7 +24,7 @@ void SidebarDelegate::initStyleOption(QStyleOptionViewItem* option, const QModel
         option->font.setBold(true);
     }
     // Get color theme
-    const auto& colors = Core::ThemeManager::getInstance().colors();
+    const auto& colors = THEME.colors();
 
     // Get icon from index
     auto icon = index.data(Qt::DecorationRole).value<QIcon>();

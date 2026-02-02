@@ -9,17 +9,21 @@
 #include <string>
 #include <vector>
 
+#include "components/can_bus_config_card.hpp"
+#include "components/send_message_button.hpp"
 #include "core/widgets/dbc_message_card.hpp"
 
+namespace Core {
+class CardWidget;
+}
+
 namespace Sending {
+
+class SendingModel;
 
 /**
  * @class DbcSendingSubView
  * @brief The primary container for the DBC-based workflow.
- * Hierarchy
- * 1. Configuration: Top card for interface selection.
- * 2. Message List: A scrollable area where the Delegate injects DbcMessageCardWidget.
- * 3. Footer: A floating or fixed area for the "Send Message" action.
  */
 class DbcSendingSubView final : public QWidget
 {
@@ -29,33 +33,59 @@ class DbcSendingSubView final : public QWidget
     ~DbcSendingSubView() override = default;
 
     /**
-     * @name Dynamic Content API
-     * The Delegate uses these to populate the scroll area based on the loaded DBC.
+     * @brief Populates the view by reading from the model.
+     * Creates message cards and signal rows based on model data.
+     * This maintains MVD separation - View reads Model, doesn't modify it.
      */
-    void addMessageCard(Core::DbcMessageCard* card);
-    void clearMessages();
+    void populateFromModel(const SendingModel* model);
+
+    /**
+     * @brief Clears all message cards.
+     */
+    void clearMessages() const;
 
     /**
      * @name Control Accessors
      */
     [[nodiscard]] auto interfaceSelector() const -> QComboBox*
     {
-        return m_interfaceCombo;
+        return m_configCard ? m_configCard->interfaceSelector() : nullptr;
     }
     [[nodiscard]] auto sendButton() const -> QPushButton*
     {
         return m_sendButton;
     }
 
-    void setAvailableInterfaces(const std::vector<std::string>& interfaces);
+    void setAvailableInterfaces(const std::vector<std::string>& interfaces) const;
+
+   signals:
+    /**
+     * @brief Emitted when user toggles message selection checkbox.
+     */
+    void messageSelectionChanged(uint16_t messageId, bool selected);
+
+    /**
+     * @brief Emitted when user toggles signal selection checkbox.
+     * @param messageId The message ID containing the signal
+     * @param signalName The signal name (unique within the message)
+     * @param selected Whether the signal is selected
+     */
+    void signalSelectionChanged(uint16_t messageId, const QString& signalName, bool selected);
+
+    /**
+     * @brief Emitted when user changes a signal value.
+     * @param messageId The message ID containing the signal
+     * @param signalName The signal name (unique within the message)
+     * @param newValue The new signal value
+     */
+    void signalValueChanged(uint16_t messageId, const QString& signalName, double newValue);
 
    private:
     void setupUi();
 
-    QGroupBox* m_configGroup;
-    QComboBox* m_interfaceCombo;
+    CanBusConfigCard* m_configCard;
 
-    QLabel* m_listHeader;
+    Core::CardWidget* m_messagesCard;
     QScrollArea* m_scrollArea;
     QWidget* m_scrollContent;
     QVBoxLayout* m_cardsLayout;

@@ -8,6 +8,7 @@
 #include <QListView>
 
 #include "core/delegates/sidebar_delegate.hpp"
+#include "core/macro/theme.hpp"
 #include "core/theme/theme_manager.hpp"
 namespace Core {
 Sidebar::Sidebar(QWidget* parent) : QListView(parent)
@@ -18,7 +19,6 @@ Sidebar::Sidebar(QWidget* parent) : QListView(parent)
 
 void Sidebar::setupUi()
 {
-    const auto& THEME = Core::ThemeManager::getInstance();
     const auto& colors = THEME.colors();
     const auto& spacing = THEME.spacing();
 

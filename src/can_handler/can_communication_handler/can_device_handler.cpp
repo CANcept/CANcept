@@ -1,7 +1,10 @@
-//
-// Created by Florian on 14.01.2026.
-//
 #include "can_device_handler.hpp"
+
+#include <linux/if_arp.h>
+#include <sys/ioctl.h>
+
+#include "core/macro/console_logging.hpp"
+
 namespace CanHandler {
 auto CanDeviceHandler::checkForCanMessage() const -> std::list<CanMessage>
 {
@@ -23,13 +26,70 @@ auto CanDeviceHandler::checkForCanMessage() const -> std::list<CanMessage>
 }
 auto CanDeviceHandler::sendCanMessage(const CanMessage& canMessage) const -> bool
 {
+    if (canDriver.get() == nullptr)
+    {
+        LOG_ERR("CanDeviceHandler", "Cannot send message: CAN driver not initialized");
+        return false;
+    }
     const ssize_t bytes_sent = canDriver->sendMessage(canMessage);
-    return bytes_sent == canMessage.getFrameData().size();
+
+    // can id + dlc + data
+    const bool success = bytes_sent == 16;
+
+    if (!success)
+    {
+        LOG_ERR("CanDeviceHandler", "Send failed: expected {} bytes (CAN_MTU), sent {} bytes", 16,
+                bytes_sent);
+    }
+
+    return success;
 }
 void CanDeviceHandler::updateCanDevice(const Core::CanDriverChangeEvent& event)
 {
-    canDriver.reset(new CanDriver{event.deviceName, CAN_RAW});
-    // canDriver->setReceiveOwnMessages(true);
+    LOG_INF("CanDeviceHandler", "Initializing CAN driver with device: {}", event.driverName);
+    try
+    {
+        canDriver.reset(new CanDriver{event.driverName, CAN_RAW});
+        LOG_INF("CanDeviceHandler", "CAN driver initialized successfully on {}", event.driverName);
+        // canDriver->setReceiveOwnMessages(true);
+    } catch (const std::exception& e)
+    {
+        LOG_ERR("CanDeviceHandler", "Failed to initialize CAN driver: {}", e.what());
+        canDriver.reset();
+    }
 }
 
+void CanDeviceHandler::getAvailableCanDevices(const Core::GetAvailableCanDriversEvent& event)
+{
+    ifaddrs* firstInterface;
+    if (getifaddrs(&firstInterface) == -1)
+    {
+        LOG_ERR("CanHandler",
+                "Could not access network devices for filtering available CAN devices")
+        return;
+    }
+    int sock = socket(PF_CAN, SOCK_RAW, CAN_RAW);
+    if (sock < 0)
+    {
+        freeifaddrs(firstInterface);
+    }
+
+    for (const ifaddrs* interface = firstInterface; interface != nullptr;
+         interface = interface->ifa_next)
+    {
+        if (!interface->ifa_name) continue;
+
+        ifreq requestedInterface{};
+        std::strncpy(requestedInterface.ifr_name, interface->ifa_name, IFNAMSIZ - 1);
+
+        if (ioctl(sock, SIOCGIFHWADDR, &requestedInterface) == 0)
+        {
+            if (requestedInterface.ifr_ifru.ifru_hwaddr.sa_family == ARPHRD_CAN)
+            {
+                event.driversNames->push_back(std::string(interface->ifa_name));
+            }
+        }
+    }
+    freeifaddrs(firstInterface);
+}
 };  // namespace CanHandler

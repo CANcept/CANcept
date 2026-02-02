@@ -16,7 +16,7 @@ struct ColorTheme {
     // Surfaces
     QColor surfaceMain = QColor(0xffffff);
     QColor surfacePrimary = QColor(0xf3f3f5);
-    QColor surfaceSecondary = QColor(0xE2E2E2);
+    QColor surfaceSecondary = QColor(226, 226, 226, 0xFF);
     QColor surfaceForeground = QColor(0, 0, 0);
     QColor surfaceHover = QColor(0xf3f4f6);
     QColor surfaceSelected = QColor(0xf3f4f6);
@@ -29,16 +29,10 @@ struct ColorTheme {
     QColor borderSubtle = QColor(0, 0, 0, 0x19);
     QColor borderStrong = QColor(0, 0, 0, 0x32);
 
-    // Badges
-    QColor badge = QColor(226, 226, 226, 0xFF);
-
     // Status
-    // QColor statusSuccess = QColor(0xA1, 0x45, 0xc3, 0x5D);
-    // QColor statusError = QColor(0x02, 0, 0xc3, 0xDC);
-    // QColor statusWarning = QColor(0x8a, 0x04, 0xc3, 0xca);
-    QColor statusSuccess = QColor(0x4C, 0xAF, 0x50, 0xFF);  // Grün, volle Deckkraft
-    QColor statusError = QColor(0xF4, 0x43, 0x36, 0xFF);    // Rot, volle Deckkraft
-    QColor statusWarning = QColor(0xFF, 0x98, 0x00, 0xFF);  // Orange, volle Deckkraft
+    QColor statusSuccess = QColor(0x4C, 0xAF, 0x50, 0xFF);
+    QColor statusError = QColor(0xF4, 0x43, 0x36, 0xFF);
+    QColor statusWarning = QColor(0xFF, 0x98, 0x00, 0xFF);
     QColor statusRunning = QColor(0xFF, 0xC1, 0x07, 0xFF);
 };
 

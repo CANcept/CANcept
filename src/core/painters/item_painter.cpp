@@ -1,24 +1,29 @@
 //
 // Created by Adrian Rupp on 29.01.26.
 //
-#include "../painters/item_painter.hpp"
+#include "item_painter.hpp"
 
 #include <QIcon>
 #include <QPainter>
 
+#include "core/macro/theme.hpp"
 #include "core/theme/theme_manager.hpp"
 namespace Core {
+constexpr int itemCardGap = 2;
+constexpr int itemCardPadding = 12;
+constexpr int badgePadding = 5;
+constexpr int badgeHeight = 18;
+
 void ItemPainter::paintCardBackground(QPainter* p, const QRect& rect, bool selected)
 {
-    const auto& colors = ThemeManager::getInstance().colors();
-    const auto& spacing = ThemeManager::getInstance().spacing();
+    const auto& colors = THEME.colors();
+    const auto& spacing = THEME.spacing();
 
     p->save();
     p->setRenderHint(QPainter::Antialiasing);
 
     // Small margin, so the items don't stick together
-    const QRect cardRect = rect.adjusted(spacing.itemCardGap, spacing.itemCardGap,
-                                         -spacing.itemCardGap, -spacing.itemCardGap);
+    const QRect cardRect = rect.adjusted(itemCardGap, itemCardGap, -itemCardGap, -itemCardGap);
 
     const QColor bgColor = selected ? colors.surfaceSelected : colors.surfaceMain;
     const QColor borderColor = selected ? colors.borderStrong : colors.borderSubtle;
@@ -34,12 +39,12 @@ void ItemPainter::paintIcon(QPainter* p, const QRect& rect, const QIcon& icon, b
 {
     if (icon.isNull()) return;
 
-    const auto& c = ThemeManager::getInstance().colors();
-    const auto& s = ThemeManager::getInstance().spacing();
+    const auto& c = THEME.colors();
+    const auto& s = THEME.spacing();
 
     // Position: left (12px margin) + vertically centered
-    const int size = s.iconSm;
-    const QRect target(rect.left() + s.itemCardPadding, rect.center().y() - (size / 2), size, size);
+    const int size = s.IconSm;
+    const QRect target(rect.left() + itemCardPadding, rect.center().y() - (size / 2), size, size);
 
     // Tinting
     QPixmap pix = icon.pixmap(size, size);
@@ -53,11 +58,11 @@ void ItemPainter::paintIcon(QPainter* p, const QRect& rect, const QIcon& icon, b
 
 void ItemPainter::paintTitle(QPainter* painter, const QRect& rect, const QString& text, bool bold)
 {
-    const auto& c = ThemeManager::getInstance().colors();
-    const auto& s = ThemeManager::getInstance().spacing();
+    const auto& c = THEME.colors();
+    const auto& s = THEME.spacing();
 
     // Text starts 45px right of icon and 50px left of the badge
-    const int textPadding = 2 * s.itemCardPadding + s.iconSm;
+    const int textPadding = 2 * itemCardPadding + s.IconSm;
     const QRect textRect = rect.adjusted(textPadding, 0, -textPadding, 0);
 
     painter->save();
@@ -80,31 +85,30 @@ auto ItemPainter::paintBadge(QPainter* p, const QRect& rect, const QString& text
 {
     if (text.isEmpty() && icon.isNull()) return 0;
 
-    const auto& c = ThemeManager::getInstance().colors();
-    const auto& s = ThemeManager::getInstance().spacing();
+    const auto& c = THEME.colors();
+    const auto& s = THEME.spacing();
     p->save();
     p->setRenderHint(QPainter::Antialiasing);
 
     // Calculate badge size
-    int iconWidth = icon.isNull() ? 0 : s.iconXs;
+    int iconWidth = icon.isNull() ? 0 : s.IconXs;
     int padding = 10;
 
     QFont f = p->font();
-    f.setPointSize(s.fontSizeBadge);
+    f.setPointSize(s.fontSizeXs);
     p->setFont(f);
 
     int maxTextWidth = rect.width() / 2;
     auto elidedText = p->fontMetrics().elidedText(text, Qt::ElideRight, maxTextWidth);
 
     const int textWidth = p->fontMetrics().horizontalAdvance(elidedText);
-    const int badgeWidth = s.badgePadding + iconWidth + (icon.isNull() ? 0 : s.badgePadding) +
-                           textWidth + s.badgePadding;
-    const int badgeHeight = s.badgeHeight;
-    const QRect badgeRect(rect.right() - badgeWidth - s.itemCardPadding,
+    const int badgeWidth =
+        badgePadding + iconWidth + (icon.isNull() ? 0 : badgePadding) + textWidth + badgePadding;
+    const QRect badgeRect(rect.right() - badgeWidth - itemCardPadding,
                           rect.center().y() - (badgeHeight / 2), badgeWidth, badgeHeight);
 
     // Badge background
-    p->setBrush(c.badge);
+    p->setBrush(c.surfaceSecondary);
     p->setPen(Qt::NoPen);
     p->drawRoundedRect(badgeRect, s.radiusXs, s.radiusXs);
 
@@ -112,11 +116,11 @@ auto ItemPainter::paintBadge(QPainter* p, const QRect& rect, const QString& text
     // 1. Icon
     if (!icon.isNull())
     {
-        const int y = badgeRect.top() + (badgeRect.height() - s.iconXs) / 2;
+        const int y = badgeRect.top() + (badgeRect.height() - s.IconXs) / 2;
 
-        const QRect iconTarget(badgeRect.left() + s.badgePadding, y, s.iconXs, s.iconXs);
+        const QRect iconTarget(badgeRect.left() + badgePadding, y, s.IconXs, s.IconXs);
 
-        QPixmap ipix = icon.pixmap(s.iconXs, s.iconXs, QIcon::Normal, QIcon::On);
+        QPixmap ipix = icon.pixmap(s.IconXs, s.IconXs, QIcon::Normal, QIcon::On);
 
         p->drawPixmap(iconTarget, ipix);
     }
@@ -124,7 +128,7 @@ auto ItemPainter::paintBadge(QPainter* p, const QRect& rect, const QString& text
     // 2. Text
     p->setPen(c.textPrimary);
     const QRect textTarget =
-        badgeRect.adjusted(icon.isNull() ? 0 : s.iconXs + s.badgePadding, 0, 0, 0);
+        badgeRect.adjusted(icon.isNull() ? 0 : s.IconXs + badgePadding, 0, 0, 0);
     p->drawText(textTarget, Qt::AlignCenter, text);
 
     p->restore();
@@ -136,12 +140,12 @@ void ItemPainter::paintDetailText(QPainter* p, const QRect& rect, const QString&
 {
     if (text.isEmpty()) return;
 
-    const auto& c = ThemeManager::getInstance().colors();
-    const auto& s = ThemeManager::getInstance().spacing();
+    const auto& c = THEME.colors();
+    const auto& s = THEME.spacing();
 
     p->save();
 
-    const int badgeSpace = 2 * s.itemCardPadding + badgeWidth;
+    const int badgeSpace = 2 * itemCardPadding + badgeWidth;
     const QRect textRect = rect.adjusted(0, 0, -badgeSpace, 0);
 
     QFont f = p->font();

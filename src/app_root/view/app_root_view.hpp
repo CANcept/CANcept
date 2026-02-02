@@ -80,6 +80,12 @@ class AppRootView : public QWidget
      */
     void showEvent(QShowEvent* event) override;
 
+    /**
+     * @brief Handles window resize events to update tab bar sizing.
+     * @param event The resize event containing old and new sizes.
+     */
+    void resizeEvent(QResizeEvent* event) override;
+
    private:
     /**
      * @brief The tab bar populated by the options provided in the m_tabs.

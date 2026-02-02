@@ -7,9 +7,13 @@ namespace Sending {
 
 /**
  * @class SendingDelegate
- * @brief The active controller for the Sending module.
- * * Owns the transmission logic, including the cyclic timer. It bridges
- * the passive Model/View to the Component's broker slots.
+ * @brief Delegate for custom rendering/editing in the Sending module.
+ *
+ * In strict MVD pattern, the Delegate only handles:
+ * - Custom painting (paint)
+ * - Custom editors (createEditor, setEditorData, setModelData)
+ *
+ * It does NOT create widgets or wire connections - that's the View's job.
  */
 class SendingDelegate final : public QStyledItemDelegate
 {
@@ -19,11 +23,11 @@ class SendingDelegate final : public QStyledItemDelegate
     explicit SendingDelegate(QObject* parent = nullptr);
     ~SendingDelegate() override = default;
 
-    /** @brief Painting the CAN message card manually for high performance */
+    /** @brief Custom painting for CAN message cards (if needed) */
     void paint(QPainter* painter, const QStyleOptionViewItem& option,
                const QModelIndex& index) const override;
 
-    /** @brief Creating the editor (e.g., the SpinBoxes for signal values) */
+    /** @brief Creates custom editors for signal values (if needed) */
     QWidget* createEditor(QWidget* parent, const QStyleOptionViewItem& option,
                           const QModelIndex& index) const override;
 

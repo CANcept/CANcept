@@ -53,4 +53,6 @@ doc/*
 
 # Build
 build/
-.DS_Store
+
+.devcontainer/***/.DS_Store
+**/.DS_Store
