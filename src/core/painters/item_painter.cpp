@@ -17,7 +17,7 @@ void ItemPainter::paintCardBackground(QPainter* painter, const QRect& rect, bool
     painter->save();
     painter->setRenderHint(QPainter::Antialiasing);
 
-    int itemGap = spacing.spacingXs/2;
+    const int itemGap = spacing.spacingSm/2;
 
     qreal penWidth = spacing.borderThin;
     qreal offset = penWidth / 2.0;

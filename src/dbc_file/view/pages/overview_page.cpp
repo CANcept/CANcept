@@ -4,6 +4,7 @@
 #include "overview_page.hpp"
 
 #include <QLineEdit>
+#include <QPainter>
 #include <QScrollArea>
 #include <QVBoxLayout>
 
@@ -96,44 +97,59 @@ void OverviewPage::setupStatsSection(QVBoxLayout* parentLayout)
 
 void OverviewPage::setupListsSection(QVBoxLayout* parentLayout)
 {
+    const auto& spacing = THEME.spacing();
+
+
+    auto* listsRowLayout = new QHBoxLayout();
+    listsRowLayout->setSpacing(spacing.spacingSm);
+
     auto addList = [&](const QString& title, QListView*& listViewMember,
                        const QString& badgeIconPath) {
+
+        // Card Frame for the list
         auto* listCard =
             new Core::CardWidget(title + Constants::OverviewPage::OverviewSuffix,
                                  Constants::OverviewPage::OverviewDescription.arg(title));
+        listCard->setSizePolicy(
+                            QSizePolicy::Expanding,
+                            QSizePolicy::Expanding
+                                );
         auto* layout = listCard->contentLayout();
-        //
-        listViewMember = new QListView(this);
+
+        // Initalize listView
+        listViewMember = new QListView(listCard);
+
         listViewMember->setViewMode(QListView::ListMode);
-        listViewMember->setFlow(QListView::LeftToRight);
-        listViewMember->setResizeMode(QListView::Adjust);
-        listViewMember->setWrapping(true);
-        listViewMember->setUniformItemSizes(true);
+        listViewMember->setFlow(QListView::TopToBottom);
+        listViewMember->setWrapping(false);
         listViewMember->setFrameShape(QFrame::NoFrame);
         listViewMember->setSelectionMode(QAbstractItemView::NoSelection);
-        listViewMember->setStyleSheet(
-            "QListView { "
-            "  background: transparent; "
-            "  border: none; "
-            "  padding: 0px; "
-            "  margin: 0px; "
-            "}");
-        const auto& spacing = THEME.spacing();
-        listViewMember->setFixedHeight(spacing.HeightLg);
+        listViewMember->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+
+        listViewMember->setSizePolicy(
+            QSizePolicy::Expanding,
+            QSizePolicy::Expanding
+        );
+
+        // Style
+        listViewMember->setStyleSheet("background: transparent; border: none; padding: 0px; margin: 0px;");
+
 
         // Set delegate
-        int badgeRole = DbcRoles::Role_ChildCount;
-        QIcon badgeIcon = QIcon(badgeIconPath);
+        const int badgeRole = DbcRoles::Role_ChildCount;
+        const auto badgeIcon = QIcon(badgeIconPath);
         auto* delegate = new Core::CardListDelegate(badgeRole, badgeIcon, -1, listViewMember);
         listViewMember->setItemDelegate(delegate);
 
+        // Add List to layout
         layout->addWidget(listViewMember);
-        parentLayout->addWidget(listCard);
+        listsRowLayout->addWidget(listCard);
     };
+    // Add to lists two parent layout
     addList(Constants::OverviewPage::EcuStatTitle, m_ecuList, Constants::Sidebar::IconMessages);
-
     addList(Constants::OverviewPage::MessagesStatTitle, m_messageList,
             Constants::Sidebar::IconSignals);
+    parentLayout->addLayout(listsRowLayout);
 }
 
 void OverviewPage::setupUi()
@@ -153,12 +169,12 @@ void OverviewPage::setupUi()
 
     auto* contentWidget = new QWidget();
     auto* contentLayout = new QVBoxLayout(contentWidget);
+    contentLayout->setSpacing(spacing.spacingSm);
 
     setupFileInfoSection(contentLayout);
     setupStatsSection(contentLayout);
     setupListsSection(contentLayout);
 
-    contentLayout->addStretch();
     scrollArea->setWidget(contentWidget);
     mainLayout->addWidget(scrollArea);
 }
@@ -176,11 +192,20 @@ auto OverviewPage::createStatCard(const QString& title, QLabel*& valueLabelPtr,
     // Top Row: Title + Icon
     auto* topRow = new QHBoxLayout();
     auto* lblTitle = new QLabel(title);
-    lblTitle->setStyleSheet(QString("color: %1;").arg(colors.textPrimary.name()));
+    lblTitle->setStyleSheet(QString("color: %1; font-size: %2px;").arg(colors.textPrimary.name()).arg(spacing.fontSizeMd));
+
 
     auto* iconLabel = new QLabel();
-    QIcon icon(iconName);
-    if (!icon.isNull()) iconLabel->setPixmap(icon.pixmap(spacing.IconSm, spacing.IconSm));
+    if (const QIcon icon(iconName); !icon.isNull()) {
+        QPixmap pix = icon.pixmap(24, 24);
+
+        QPainter p(&pix);
+        p.setCompositionMode(QPainter::CompositionMode_SourceIn);
+        p.fillRect(pix.rect(), THEME.colors().textPrimary);
+        p.end();
+
+        iconLabel->setPixmap(pix);
+    }
     topRow->addWidget(lblTitle);
     topRow->addStretch();
     topRow->addWidget(iconLabel);

@@ -116,7 +116,7 @@ void DbcView::setupUi()
     m_sidebar->addTab(QIcon(Constants::Sidebar::IconLoadNew), Constants::Sidebar::TitleLoadNew,
                       true);
     m_sidebar->addTab(QIcon(Constants::Sidebar::IconOverview), Constants::Sidebar::TitleOverview,
-                      true);
+                      false);
     m_sidebar->addTab(QIcon(Constants::Sidebar::IconEcus), Constants::Sidebar::TitleEcus, false);
     m_sidebar->addTab(QIcon(Constants::Sidebar::IconMessages), Constants::Sidebar::TitleMessages,
                       false);
