@@ -43,7 +43,6 @@ class OverviewPage : public QWidget
     void setupStatsSection(QVBoxLayout* parentLayout);
     void setupListsSection(QVBoxLayout* parentLayout);
 
-
     /**
      * @brief Returns the list view for the ECUs section.
      * @caller DbcView::setSourceModel() to set the ECU Proxy.

@@ -116,13 +116,16 @@ auto DbcModel::data(const QModelIndex& index, const int role) const -> QVariant
         case Qt::DisplayRole:
             return item->data(index.column());
         case Qt::DecorationRole:
-            if (type == Core::DbcItemType::Ecu) {
+            if (type == Core::DbcItemType::Ecu)
+            {
                 return QIcon(Constants::Sidebar::IconEcus);
             }
-            if (type == Core::DbcItemType::Message) {
+            if (type == Core::DbcItemType::Message)
+            {
                 return QIcon(Constants::Sidebar::IconMessages);
             }
-            if (type == Core::DbcItemType::Signal) {
+            if (type == Core::DbcItemType::Signal)
+            {
                 return QIcon(Constants::Sidebar::IconSignals);
             }
         default:

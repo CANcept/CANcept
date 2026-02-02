@@ -90,11 +90,11 @@ class FlatListProxy : public QAbstractProxyModel
 
    public slots:
     /**
-      * @brief Rebuilds the internal mapping list.
-      *
-      * Recursively traverses the source model and collects all matching items
-      * according to the target type and filter settings.
-      */
+     * @brief Rebuilds the internal mapping list.
+     *
+     * Recursively traverses the source model and collects all matching items
+     * according to the target type and filter settings.
+     */
     void rebuildMapping();
 
    private:

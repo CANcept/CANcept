@@ -7,7 +7,8 @@
 
 namespace DbcFile {
 
-void DbcComponent::runUiTest() {
+void DbcComponent::runUiTest()
+{
     // 1. Fake DTO bauen
     Core::DbcConfig config;
 
@@ -27,7 +28,7 @@ void DbcComponent::runUiTest() {
     msg1.messageName = "EngineData";
     msg1.messageId = 100;
     msg1.messageSize = 8;
-    msg1.transmitterName = "EngineECU"; // Matcht mit Node oben
+    msg1.transmitterName = "EngineECU";  // Matcht mit Node oben
 
     // Signal: RPM
     Core::DbcSignalDescription sig1;
@@ -39,8 +40,8 @@ void DbcComponent::runUiTest() {
     sig1.minimum = 0;
     sig1.maximum = 8000;
     sig1.unit = "rpm";
-    sig1.byteOrder = false; // Little Endian
-    sig1.valueType = false; // Unsigned
+    sig1.byteOrder = false;  // Little Endian
+    sig1.valueType = false;  // Unsigned
     sig1.receivers.push_back("DashboardECU");
 
     msg1.signalDescriptions.push_back(sig1);
@@ -68,7 +69,7 @@ void DbcComponent::runUiTest() {
     msg3.messageName = "DebugMessage";
     msg3.messageId = 999;
     msg3.messageSize = 4;
-    msg3.transmitterName = "UnknownSender"; // Existiert nicht in nodeDefinitions!
+    msg3.transmitterName = "UnknownSender";  // Existiert nicht in nodeDefinitions!
     // -> Sollte als Orphan gezählt werden
 
     config.messageDefinitions.push_back(msg3);

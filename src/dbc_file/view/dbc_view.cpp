@@ -15,7 +15,6 @@
 namespace DbcFile {
 DbcView::DbcView(QWidget* parent) : QWidget(parent)
 {
-
     setupUi();
 }
 DbcView::~DbcView() = default;
@@ -44,9 +43,7 @@ void DbcView::setSourceModel(QAbstractItemModel* model)
 
     // Update overview labels ind overviewpage and connect it to modelreset
     updateOverviewLabels();
-    connect(model, &QAbstractItemModel::modelReset, this, [this]() {
-        updateOverviewLabels();
-    });
+    connect(model, &QAbstractItemModel::modelReset, this, [this]() { updateOverviewLabels(); });
 }
 void DbcView::setDataItemDelegate(QAbstractItemDelegate* delegate) {}
 void DbcView::setNavigationEnabled(const bool enabled) const
@@ -84,23 +81,17 @@ void DbcView::updateOverviewLabels() const
     if (!overviewIndex.isValid()) return;
 
     m_overviewPage->setFileName(
-        m_model->data(m_model->index(0, Constants::Columns::OvFilename)).toString()
-    );
+        m_model->data(m_model->index(0, Constants::Columns::OvFilename)).toString());
     m_overviewPage->setVersion(
-        m_model->data(m_model->index(0, Constants::Columns::OvVersion)).toString()
-    );
+        m_model->data(m_model->index(0, Constants::Columns::OvVersion)).toString());
     m_overviewPage->setEcuCount(
-        m_model->data(m_model->index(0, Constants::Columns::OvEcuCount)).toString()
-    );
+        m_model->data(m_model->index(0, Constants::Columns::OvEcuCount)).toString());
     m_overviewPage->setMessageCount(
-        m_model->data(m_model->index(0, Constants::Columns::OvMsgCount)).toString()
-    );
+        m_model->data(m_model->index(0, Constants::Columns::OvMsgCount)).toString());
     m_overviewPage->setSignalCount(
-        m_model->data(m_model->index(0, Constants::Columns::OvSigCount)).toString()
-    );
+        m_model->data(m_model->index(0, Constants::Columns::OvSigCount)).toString());
     m_overviewPage->setOrphanCount(
-        m_model->data(m_model->index(0, Constants::Columns::OvOrphans)).toString()
-    );
+        m_model->data(m_model->index(0, Constants::Columns::OvOrphans)).toString());
 }
 
 void DbcView::onEcuFilterTextChanged(const QString& text) {}

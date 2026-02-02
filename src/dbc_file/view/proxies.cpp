@@ -48,14 +48,11 @@ auto FlatListProxy::mapFromSource(const QModelIndex& sourceIndex) const -> QMode
             return index(i, sourceIndex.column());
         }
     }
-    return {}; // item not found
-
-
+    return {};  // item not found
 }
 auto FlatListProxy::mapToSource(const QModelIndex& proxyIndex) const -> QModelIndex
 {
-    if (!proxyIndex.isValid() || proxyIndex.row() >= m_mapping.size())
-        return {};
+    if (!proxyIndex.isValid() || proxyIndex.row() >= m_mapping.size()) return {};
 
     // Get source index
     const QPersistentModelIndex sourceIdx = m_mapping.at(proxyIndex.row());
@@ -63,7 +60,8 @@ auto FlatListProxy::mapToSource(const QModelIndex& proxyIndex) const -> QModelIn
     // Return right column
     return sourceIdx.sibling(sourceIdx.row(), proxyIndex.column());
 }
-auto FlatListProxy::index(const int row, const int column, const QModelIndex& parent) const -> QModelIndex
+auto FlatListProxy::index(const int row, const int column,
+                          const QModelIndex& parent) const -> QModelIndex
 {
     // No parents in flat list
     if (parent.isValid() || row >= m_mapping.size()) return {};
@@ -73,17 +71,17 @@ auto FlatListProxy::index(const int row, const int column, const QModelIndex& pa
 }
 auto FlatListProxy::parent(const QModelIndex& child) const -> QModelIndex
 {
-    return {}; // No parents in flat list
+    return {};  // No parents in flat list
 }
 auto FlatListProxy::rowCount(const QModelIndex& parent) const -> int
 {
-    if (parent.isValid()) return 0; // if parent valid -> no children in flat list
-    return m_mapping.size(); // if parent invalid -> return amount of items
+    if (parent.isValid()) return 0;  // if parent valid -> no children in flat list
+    return m_mapping.size();         // if parent invalid -> return amount of items
 }
 auto FlatListProxy::columnCount(const QModelIndex& parent) const -> int
 {
     if (parent.isValid()) return 0;
-    return sourceModel() ? sourceModel()->columnCount() : 0; // return column count of source model
+    return sourceModel() ? sourceModel()->columnCount() : 0;  // return column count of source model
 }
 void FlatListProxy::setSourceModel(QAbstractItemModel* sourceModel)
 {
@@ -112,8 +110,9 @@ void FlatListProxy::scanNode(const QModelIndex& parent)
     for (int i = 0; i < rows; i++)
     {
         // Get current index and type
-        QModelIndex currentInd = sourceModel()->index(i,0, parent);
-        auto type = static_cast<Core::DbcItemType>(sourceModel()->data(currentInd, DbcRoles::Role_ItemType).toInt());
+        QModelIndex currentInd = sourceModel()->index(i, 0, parent);
+        auto type = static_cast<Core::DbcItemType>(
+            sourceModel()->data(currentInd, DbcRoles::Role_ItemType).toInt());
 
         // Item at current index has correct type -> add mapping
         if (type == m_targetType)
@@ -140,11 +139,20 @@ void FlatListProxy::scanNode(const QModelIndex& parent)
         bool recurse = true;
 
         // ECUs/Messages cant have ECUs/Messages for children
-        if (m_targetType == Core::DbcItemType::Ecu && type == Core::DbcItemType::Ecu) {recurse = false;}
-        if (m_targetType == Core::DbcItemType::Message && type == Core::DbcItemType::Message) {recurse = false;}
+        if (m_targetType == Core::DbcItemType::Ecu && type == Core::DbcItemType::Ecu)
+        {
+            recurse = false;
+        }
+        if (m_targetType == Core::DbcItemType::Message && type == Core::DbcItemType::Message)
+        {
+            recurse = false;
+        }
 
         // skip overview item
-        if (type == Core::DbcItemType::Overview) {recurse = false;}
+        if (type == Core::DbcItemType::Overview)
+        {
+            recurse = false;
+        }
 
         if (recurse && sourceModel()->hasChildren(currentInd))
         {

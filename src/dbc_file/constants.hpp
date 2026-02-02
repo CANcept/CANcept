@@ -128,38 +128,28 @@ constexpr const char* None = "";
 // --- Overview Page Specifics ---
 namespace OverviewPage {
 
-static const QString FileInfoTitle =
-    QStringLiteral("File Information");
+static const QString FileInfoTitle = QStringLiteral("File Information");
 
-static const QString FileInfoSubTitle =
-    QStringLiteral("Basic information about the DBC file");
+static const QString FileInfoSubTitle = QStringLiteral("Basic information about the DBC file");
 
-static const QString FileNameTitle =
-    QStringLiteral("Filename: ");
+static const QString FileNameTitle = QStringLiteral("Filename: ");
 
-static const QString FileVersionTitle =
-    QStringLiteral("Version: ");
+static const QString FileVersionTitle = QStringLiteral("Version: ");
 
-static const QString LabelDefault =
-    QStringLiteral("-");
+static const QString LabelDefault = QStringLiteral("-");
 
-static const QString EcuStatTitle =
-    QStringLiteral("ECUs");
+static const QString EcuStatTitle = QStringLiteral("ECUs");
 
-static const QString MessagesStatTitle =
-    QStringLiteral("Messages");
+static const QString MessagesStatTitle = QStringLiteral("Messages");
 
-static const QString SignalsStatTitle =
-    QStringLiteral("Signals");
+static const QString SignalsStatTitle = QStringLiteral("Signals");
 
-static const QString OrphansStatTitle =
-    QStringLiteral("Orphan Messages");
+static const QString OrphansStatTitle = QStringLiteral("Orphan Messages");
 
 static const QString OverviewSuffix = QStringLiteral(" Overview");
 
-static const QString OverviewDescription =
-    QStringLiteral("All defined %1 in the network");
-} // namespace OverviewPage
+static const QString OverviewDescription = QStringLiteral("All defined %1 in the network");
+}  // namespace OverviewPage
 
 // --- ECUs Page Specifics ---
 namespace EcusPage {

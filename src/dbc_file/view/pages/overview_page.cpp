@@ -48,7 +48,8 @@ void OverviewPage::setupFileInfoSection(QVBoxLayout* parentLayout)
     const auto& colors = Core::ThemeManager::getInstance().colors();
     const auto& spacing = Core::ThemeManager::getInstance().spacing();
 
-    auto* fileInfoCard = new Core::CardWidget(Constants::OverviewPage::FileInfoTitle, Constants::OverviewPage::FileInfoSubTitle);
+    auto* fileInfoCard = new Core::CardWidget(Constants::OverviewPage::FileInfoTitle,
+                                              Constants::OverviewPage::FileInfoSubTitle);
     auto fileInfoLayout = fileInfoCard->contentLayout();
     fileInfoLayout->setSpacing(spacing.spacingSm);
     fileInfoLayout->addSpacing(spacing.spacingLg);
@@ -72,7 +73,6 @@ void OverviewPage::setupFileInfoSection(QVBoxLayout* parentLayout)
     grid->addWidget(fileVersionTitle, 1, 0, Qt::AlignLeft);
     grid->addWidget(m_lblVersion, 1, 1, Qt::AlignRight);
 
-
     fileInfoLayout->addLayout(grid);
     parentLayout->addWidget(fileInfoCard);
 }
@@ -81,20 +81,25 @@ void OverviewPage::setupStatsSection(QVBoxLayout* parentLayout)
 {
     auto* layout = new QHBoxLayout();
 
-    layout->addWidget(createStatCard(Constants::OverviewPage::EcuStatTitle, m_lblEcuCount, Constants::Sidebar::IconEcus));
-    layout->addWidget(createStatCard(Constants::OverviewPage::MessagesStatTitle, m_lblMessageCount, Constants::Sidebar::IconMessages));
-    layout->addWidget(createStatCard(Constants::OverviewPage::SignalsStatTitle, m_lblSignalCount, Constants::Sidebar::IconSignals));
-    layout->addWidget(createStatCard(Constants::OverviewPage::OrphansStatTitle, m_lblOrphanCount, Constants::Sidebar::IconMessages));
-
+    layout->addWidget(createStatCard(Constants::OverviewPage::EcuStatTitle, m_lblEcuCount,
+                                     Constants::Sidebar::IconEcus));
+    layout->addWidget(createStatCard(Constants::OverviewPage::MessagesStatTitle, m_lblMessageCount,
+                                     Constants::Sidebar::IconMessages));
+    layout->addWidget(createStatCard(Constants::OverviewPage::SignalsStatTitle, m_lblSignalCount,
+                                     Constants::Sidebar::IconSignals));
+    layout->addWidget(createStatCard(Constants::OverviewPage::OrphansStatTitle, m_lblOrphanCount,
+                                     Constants::Sidebar::IconMessages));
 
     parentLayout->addLayout(layout);
 }
 
 void OverviewPage::setupListsSection(QVBoxLayout* parentLayout)
 {
-    auto addList = [&](const QString& title, QListView*& listViewMember, const QString& badgeIconPath) {
-
-        auto* listCard = new Core::CardWidget(title + Constants::OverviewPage::OverviewSuffix, Constants::OverviewPage::OverviewDescription.arg(title));
+    auto addList = [&](const QString& title, QListView*& listViewMember,
+                       const QString& badgeIconPath) {
+        auto* listCard =
+            new Core::CardWidget(title + Constants::OverviewPage::OverviewSuffix,
+                                 Constants::OverviewPage::OverviewDescription.arg(title));
         auto* layout = listCard->contentLayout();
 
         //
@@ -107,13 +112,12 @@ void OverviewPage::setupListsSection(QVBoxLayout* parentLayout)
         listViewMember->setFrameShape(QFrame::NoFrame);
         listViewMember->setSelectionMode(QAbstractItemView::NoSelection);
         listViewMember->setStyleSheet(
-                                    "QListView { "
-                                        "  background: transparent; "
-                                        "  border: none; "
-                                        "  padding: 0px; "
-                                        "  margin: 0px; "
-                                        "}"
-                                    );
+            "QListView { "
+            "  background: transparent; "
+            "  border: none; "
+            "  padding: 0px; "
+            "  margin: 0px; "
+            "}");
         listViewMember->setFixedHeight(150);
 
         // Set delegate
@@ -124,12 +128,11 @@ void OverviewPage::setupListsSection(QVBoxLayout* parentLayout)
 
         layout->addWidget(listViewMember);
         parentLayout->addWidget(listCard);
-
     };
     addList(Constants::OverviewPage::EcuStatTitle, m_ecuList, Constants::Sidebar::IconMessages);
 
-    addList(Constants::OverviewPage::MessagesStatTitle, m_messageList, Constants::Sidebar::IconSignals);
-
+    addList(Constants::OverviewPage::MessagesStatTitle, m_messageList,
+            Constants::Sidebar::IconSignals);
 }
 
 void OverviewPage::setupUi()
@@ -144,7 +147,8 @@ void OverviewPage::setupUi()
     auto* scrollArea = new QScrollArea(this);
     scrollArea->setWidgetResizable(true);
     scrollArea->setFrameShape(QFrame::NoFrame);
-    scrollArea->setStyleSheet(QString("background-color: %1; width: 0px;").arg(colors.surfaceMain.name()));
+    scrollArea->setStyleSheet(
+        QString("background-color: %1; width: 0px;").arg(colors.surfaceMain.name()));
 
     auto* contentWidget = new QWidget();
     auto* contentLayout = new QVBoxLayout(contentWidget);
@@ -184,9 +188,9 @@ auto OverviewPage::createStatCard(const QString& title, QLabel*& valueLabelPtr,
     // Value
     valueLabelPtr = new QLabel(Constants::OverviewPage::LabelDefault);
     valueLabelPtr->setStyleSheet(QString("color: %1; font-weight: %2; font-size: %3px;")
-        .arg(colors.textPrimary.name())
-        .arg(spacing.fontWeightNormal)
-        .arg(spacing.fontSizeLg));
+                                     .arg(colors.textPrimary.name())
+                                     .arg(spacing.fontWeightNormal)
+                                     .arg(spacing.fontSizeLg));
     cardLayout->addWidget(valueLabelPtr);
 
     return card;

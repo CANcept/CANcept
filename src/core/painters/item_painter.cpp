@@ -25,7 +25,8 @@ void ItemPainter::paintCardBackground(QPainter* p, const QRect& rect, bool selec
     cardRect.adjust(gap + offset, gap + offset, -(gap + offset), -(gap + offset));
 
     const QColor bgColor = selected ? colors.surfaceSelected : colors.surfaceMain;
-    const QColor borderColor = selected ? colors.borderStrong.name(QColor::HexArgb) : colors.borderSubtle.name(QColor::HexArgb);
+    const QColor borderColor = selected ? colors.borderStrong.name(QColor::HexArgb)
+                                        : colors.borderSubtle.name(QColor::HexArgb);
 
     p->setBrush(bgColor);
     QPen pen(borderColor, penWidth);
@@ -45,7 +46,8 @@ void ItemPainter::paintIcon(QPainter* p, const QRect& rect, const QIcon& icon, b
 
     // Position: left (12px margin) + vertically centered
     const int size = s.iconSm;
-    const QRect target(rect.left() + s.itemCardPadding, rect.center().y() - (size / 2) + 1, size, size);
+    const QRect target(rect.left() + s.itemCardPadding, rect.center().y() - (size / 2) + 1, size,
+                       size);
 
     // Tinting
     QPixmap pix = icon.pixmap(size, size);
