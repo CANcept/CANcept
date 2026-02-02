@@ -60,11 +60,6 @@ class DbcSendingSubView final : public QWidget
     void signalSelectionChanged(uint16_t messageId, const QString& signalName, bool selected);
 
     /**
-     * @brief Emitted when user toggles signal selection checkbox.
-     */
-    void signalSelectionChanged(const QString& signalName, bool selected);
-
-    /**
      * @brief Emitted when user changes a signal value.
      * @param messageId The message ID containing the signal
      * @param signalName The signal name (unique within the message)
