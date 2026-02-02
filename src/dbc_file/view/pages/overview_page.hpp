@@ -25,7 +25,7 @@ namespace DbcFile {
 class OverviewPage : public QWidget
 {
     Q_OBJECT
-
+// TODO: comments aktualisieren
    public:
     explicit OverviewPage(QWidget* parent = nullptr);
     ~OverviewPage() override = default;

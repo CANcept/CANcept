@@ -25,7 +25,6 @@ void SidebarDelegate::initStyleOption(QStyleOptionViewItem* option, const QModel
     }
     // Get color theme
     const auto& colors = THEME.colors();
-
     // Get icon from index
     auto icon = index.data(Qt::DecorationRole).value<QIcon>();
     if (icon.isNull())
@@ -33,8 +32,20 @@ void SidebarDelegate::initStyleOption(QStyleOptionViewItem* option, const QModel
         return;
     }
     // Choose icon color depending on selected or unselected
-    QColor iconColor =
-        option->state & QStyle::State_Selected ? colors.textPrimary : colors.textSecondary;
+    QColor iconColor;
+    if (!(index.flags() & Qt::ItemIsEnabled)) {
+        // Item disabled
+        iconColor = colors.textDisabled;
+        option->palette.setColor(QPalette::Text, colors.textDisabled);
+
+    } else if (option->state & QStyle::State_Selected) {
+        // Item selected
+        iconColor = colors.textPrimary;
+
+    } else {
+        // Item not selected
+        iconColor = colors.textSecondary;
+    }
 
     // Paint item as pixmap with correct color
     QPixmap pixmap = icon.pixmap(option->decorationSize);

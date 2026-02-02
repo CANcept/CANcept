@@ -36,7 +36,6 @@ class DbcComponent : public Core::ITabComponent
     Q_OBJECT
 
    public:
-    void runUiTest();
     /**
      * @brief Constructs the DBC component.
      *
