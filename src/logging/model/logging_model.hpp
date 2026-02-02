@@ -21,13 +21,15 @@ struct LogSession {
     bool isRecording = false;
     QString deviceName;
     uint64_t entryCount = 0;
+    QStringList messageSignals;  // List of message signals recorded in this session
+    std::map<uint32_t, QStringList> selectedSignals;  // Map of message ID to selected signal names
 };
 
 /**
  * @class LoggingModel
  * @brief The central data authority for the Logging module.
  * * @details
- * This model manages the lifecycle of logging sessions. It acts as a, list and data provider.
+ * This model manages the lifecycle of logging sessions. It acts as a list and data provider.
  */
 class LoggingModel final : public QAbstractTableModel
 {
@@ -38,17 +40,16 @@ class LoggingModel final : public QAbstractTableModel
      * @enum Roles
      * @brief Custom roles for accessing session-specific data.
      */
-    enum Roles { SessionIdRole = Qt::UserRole + 1, SessionDataRole, IsActiveRole, EntryCountRole };
+    enum Roles {
+        SessionIdRole = Qt::UserRole + 1,
+        SessionDataRole,
+        IsActiveRole,
+        EntryCountRole,
+        SignalsListRole
+    };
 
     /** @brief Column definitions for the History Table. */
-    enum Columns {
-        Col_ID = 0,
-        Col_StartTime,
-        Col_Duration,
-        Col_Count,
-        Col_Actions,  // New column for Delegate-painted buttons
-        Col_MAX
-    };
+    enum Columns { Col_Timestamp = 0, Col_Duration, Col_Signals, Col_Actions, Col_MAX };
 
     explicit LoggingModel(QObject* parent = nullptr);
 
@@ -85,18 +86,20 @@ class LoggingModel final : public QAbstractTableModel
     /**
      * @brief Creates a new session and sets it as the active target for data.
      * @param deviceName The hardware interface used for this session.
+     * @param selectedSignals Map of message IDs to selected signal names for logging.
      */
-    void startNewSession(const QString& deviceName);
+    void startNewSession(const QString& deviceName,
+                         const std::map<uint32_t, QStringList>& selectedSignals = {});
 
     /**
      * @brief Finalizes the active session, locking it for export.
      */
     void stopActiveSession();
 
-   private:
     /** @brief Updates the duration string of the active session based on current time. */
     void updateActiveDuration();
 
+   private:
     Core::DbcConfig* m_currentDbc;
 
     std::vector<LogSession> m_sessions;

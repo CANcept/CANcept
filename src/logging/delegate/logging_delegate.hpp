@@ -26,17 +26,21 @@ class LoggingDelegate final : public QStyledItemDelegate
     explicit LoggingDelegate(QObject* parent = nullptr);
 
     /**
-     * @brief Renders simulated buttons in the "Actions" column.
+     * @brief Renders signal tags and action buttons in their respective columns.
      */
     void paint(QPainter* painter, const QStyleOptionViewItem& option,
                const QModelIndex& index) const override;
 
     /**
-     * @brief Handles mouse clicks to detect if a "button" was pressed.
-     * @details If a button area is clicked, it emits the corresponding signal from the View.
+     * @brief Handles mouse clicks to detect if an action button was pressed.
+     * @details If a button area is clicked, it emits the corresponding signal.
      */
     bool editorEvent(QEvent* event, QAbstractItemModel* model, const QStyleOptionViewItem& option,
                      const QModelIndex& index) override;
+
+   signals:
+    void exportClicked(const QModelIndex& index);
+    void detailClicked(const QModelIndex& index);
 };
 
 }  // namespace Logging
