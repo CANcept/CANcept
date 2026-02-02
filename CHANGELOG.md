@@ -10,7 +10,6 @@ All notable changes to this project will be documented in this file.
 - **AppRoot** - Main application window with tab-based navigation and composition root architecture (CBS-80, CBS-66)
 - **EventBroker** - Central event bus using EnTT dispatcher for type-safe event publishing and subscribing with RAII connection handles (CBS-82)
 - **Theme System** - Color and spacing themes with ThemeManager for consistent UI styling
-- **Logging Service** - Integrated spdlog for structured application logging (CBS-74)
 
 #### CAN Communication
 - **CanCommunicationHandler** - Core CAN hardware interface with lifecycle management (CBS-81)
