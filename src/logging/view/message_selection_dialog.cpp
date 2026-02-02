@@ -5,6 +5,7 @@
 #include "message_selection_dialog.hpp"
 
 #include <QIcon>
+#include <QTimer>
 
 namespace Logging {
 
@@ -202,7 +203,7 @@ void MessageSelectionDialog::setupUi()
 
     auto* startBtn = new QPushButton(bottomBar);
     startBtn->setText(" Start");
-    startBtn->setIcon(QIcon(":/assets/icon/logging_start.svg"));
+    startBtn->setIcon(QIcon(":/assets/icon/sending/send.svg"));
     startBtn->setIconSize(QSize(20, 20));
     startBtn->setFixedSize(150, 75);
     startBtn->setStyleSheet(
@@ -300,71 +301,56 @@ void MessageSelectionDialog::setDbcConfig(const Core::DbcConfig& config)
 QWidget* MessageSelectionDialog::createMessageCardWithSignals(
     const Core::DbcMessageDescription& message)
 {
-    auto* cardWidget = new QWidget(m_scrollContent);
-    cardWidget->setMinimumHeight(100);
-    cardWidget->setStyleSheet(
-        "QWidget {"
-        "   border: 1px solid rgba(0, 0, 0, 0.1);"
-        "   border-radius: 10px;"
-        "   background-color: white;"
-        "   padding: 10px;"
-        "}");
+    // Configure the DBC message card for logging selection mode
+    Core::DbcMessageCard::Config cardConfig;
+    cardConfig.showCheckbox = true;
+    cardConfig.startExpanded = false;
+    cardConfig.checkboxTooltip = "Select message for logging";
 
-    auto* cardLayout = new QVBoxLayout(cardWidget);
-    cardLayout->setContentsMargins(10, 10, 10, 10);
-    cardLayout->setSpacing(8);
+    // Create container widget to hold both the card and signal selection
+    auto* containerWidget = new QWidget(m_scrollContent);
+    auto* containerLayout = new QVBoxLayout(containerWidget);
+    containerLayout->setContentsMargins(0, 0, 0, 0);
+    containerLayout->setSpacing(8);
 
-    // Message header
-    auto* headerLayout = new QHBoxLayout();
+    // Create the DBC message card
+    auto* messageCard = new Core::DbcMessageCard(
+        QString::fromStdString(message.messageName),
+        message.messageId,
+        static_cast<int>(message.signalDescriptions.size()),
+        cardConfig,
+        containerWidget);
+    
+    containerLayout->addWidget(messageCard);
 
-    auto* nameLabel = new QLabel(QString::fromStdString(message.messageName), cardWidget);
-    nameLabel->setStyleSheet(
-        "QLabel {"
-        "   font-family: 'Roboto';"
-        "   font-size: 16px;"
-        "   font-weight: 500;"
-        "   color: black;"
-        "   border: none;"
-        "}");
-    headerLayout->addWidget(nameLabel);
-
-    auto* idLabel =
-        new QLabel(QString("ID: 0x%1").arg(message.messageId, 0, 16).toUpper(), cardWidget);
-    idLabel->setStyleSheet(
-        "QLabel {"
-        "   font-family: 'Roboto';"
-        "   font-size: 14px;"
-        "   font-weight: 400;"
-        "   color: #5a5a5a;"
-        "   border: none;"
-        "}");
-    headerLayout->addWidget(idLabel);
-
-    auto* sizeLabel = new QLabel(QString("DLC: %1").arg(message.messageSize), cardWidget);
-    sizeLabel->setStyleSheet(
-        "QLabel {"
-        "   font-family: 'Roboto';"
-        "   font-size: 14px;"
-        "   font-weight: 400;"
-        "   color: #5a5a5a;"
-        "   border: none;"
-        "}");
-    headerLayout->addWidget(sizeLabel);
-
-    headerLayout->addStretch();
-    cardLayout->addLayout(headerLayout);
-
-    // Signal selection widget
+    // Create signal selection widget (displayed below the card when expanded)
     auto* signalWidget = new SignalSelectionWidget(
-        message.messageId, QString::fromStdString(message.messageName), cardWidget);
+        message.messageId, 
+        QString::fromStdString(message.messageName), 
+        containerWidget);
     signalWidget->setSignals(message.signalDescriptions);
+    signalWidget->setVisible(false);  // Initially hidden
 
     // Store reference to the signal widget
     m_signalWidgets[message.messageId] = signalWidget;
+    
+    containerLayout->addWidget(signalWidget);
 
-    cardLayout->addWidget(signalWidget);
+    // Connect card expansion to show/hide signal selection
+    connect(messageCard, &QWidget::customContextMenuRequested, this, [signalWidget, messageCard]() {
+        signalWidget->setVisible(messageCard->isExpanded());
+    });
 
-    return cardWidget;
+    // Simple workaround: monitor the card's expand button state
+    // When card expands, show signal widget
+    auto* expandMonitorTimer = new QTimer(containerWidget);
+    expandMonitorTimer->setInterval(100);
+    connect(expandMonitorTimer, &QTimer::timeout, [messageCard, signalWidget]() {
+        signalWidget->setVisible(messageCard->isExpanded());
+    });
+    expandMonitorTimer->start();
+
+    return containerWidget;
 }
 
 // Returns map of message IDs to their selected signal names

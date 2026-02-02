@@ -85,9 +85,8 @@ void AppRoot::bootstrap()
     initTab<DbcFile::DbcComponent>();
     /*
     initTab<Monitoring::MonitoringComponent>();
-    initTab<Logging::LoggingComponent>();
     */
-
+    initTab<Logging::LoggingComponent>();
     initTab<Sending::SendingComponent>();
 
     LOG_INF("AppRoot", "Bootstrap Complete: launching internal logic.");
