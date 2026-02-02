@@ -71,14 +71,14 @@ class ItemPainter
 
     /**
      * @brief Paints detail text to the right of the Card item.
-     * @param p QPainter used for drawing.
+     * @param painter QPainter used for drawing.
      * @param rect Rectangle representing the card area.
      * @param text The detail text.
      * @param badgeWidth Width of the badge to avoid overlapping it.
      *
      * Ensures that the detail text does not overlap with the badge.
      */
-    static void paintDetailText(QPainter* p, const QRect& rect, const QString& text,
+    static void paintDetailText(QPainter* painter, const QRect& rect, const QString& text,
                                 int badgeWidth);
 };
 }  // namespace Core
