@@ -29,7 +29,6 @@ struct SpacingTheme {
     int fontWeightBold = 700;
 
     // Font Sizes
-    int fontSizeBadge = 8;
     int fontSizeXs = 10;
     int fontSizeSm = 12;
     int fontSizeMd = 14;
@@ -40,18 +39,18 @@ struct SpacingTheme {
     int iconSm = 20;
     int IconLg = 48;
 
-    // Item Card Spacing
-    int itemCardWidth = 300;
-    int itemCardHeight = 40;
-    int itemCardGap = 2;
-    int itemCardPadding = 12;
-    int badgePadding = 5;
 
-    // Stat Card Spacing
-    int statCardHeight = 120;
+    // Heights
+    int HeightSm = 20;
+    int HeigthMd = 40;
+    int HeigthLg = 120;
 
-    // Badge sizes
-    int badgeHeight = 18;
+    // Widths
+    int WidthSm = 120;
+    int WidthMd = 300;
+    int WidthLg = 600;
+
+
 };
 
 /**

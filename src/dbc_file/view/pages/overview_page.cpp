@@ -170,7 +170,7 @@ auto OverviewPage::createStatCard(const QString& title, QLabel*& valueLabelPtr,
     // Card container
     auto* card = new Core::CardWidget();
     auto* cardLayout = card->contentLayout();
-    card->setFixedHeight(spacing.statCardHeight);
+    card->setFixedHeight(spacing.HeightSm);
 
     // Top Row: Title + Icon
     auto* topRow = new QHBoxLayout();

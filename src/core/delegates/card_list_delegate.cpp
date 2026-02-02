@@ -3,6 +3,7 @@
 //
 #include "card_list_delegate.hpp"
 
+#include "core/macro/theme.hpp"
 #include "core/painters/item_painter.hpp"
 #include "core/theme/theme_manager.hpp"
 namespace Core {
@@ -15,11 +16,10 @@ CardListDelegate::CardListDelegate(const int badgeRole, const QIcon& badgeIcon,
 {
 }
 
-QSize CardListDelegate::sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const
+auto CardListDelegate::sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const -> QSize
 {
-    auto& spacing = ThemeManager::getInstance().spacing();
-
-    return {spacing.itemCardWidth, spacing.itemCardHeight};
+    const auto& s = THEME.spacing();
+    return {s.WidthMd,s.HeigthMd};
 }
 
 void CardListDelegate::paint(QPainter* painter, const QStyleOptionViewItem& option,
