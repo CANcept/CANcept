@@ -1,111 +1,98 @@
 #include "monitoring_model.hpp"
 
+#include <qdatetime.h>
+
+#include "monitoring/constants.hpp"
+#include "sending/model/sending_model.hpp"
+
 namespace Monitoring {
 
 MonitoringModel::MonitoringModel() : QAbstractItemModel(nullptr)
 {
-    addTestData();
-}
+    _execute = true;
+    deleteOldData = true;
+    message_check_thread = std::thread([this]() {
+        long long lastExecution = 0;
+        while (_execute)
+        {
+            const auto millisecondsBeforeErase =
+                std::chrono::duration_cast<std::chrono::milliseconds>(
+                    std::chrono::steady_clock::now().time_since_epoch())
+                    .count();
+            if (millisecondsBeforeErase > lastExecution + 50 && deleteOldData)
+            {
+                lastExecution = millisecondsBeforeErase;
 
-void MonitoringModel::addTestData()
-{
-    Core::DbcCanSignal signalA;
-    signalA.name = "A";
-    signalA.value = 13;
-
-    Core::DbcCanSignal signalB;
-    signalB.name = "B";
-    signalB.value = 12;
-
-    Core::DbcCanSignal signalC;
-    signalC.name = "C";
-    signalC.value = 12;
-
-    Core::DbcCanMessage testMessage1;
-    testMessage1.messageId = 0x123;
-    testMessage1.signalValues = {signalA, signalB, signalC};
-
-    Core::DbcCanSignal signalD;
-    signalD.name = "D";
-    signalD.value = 13;
-
-    Core::DbcCanSignal signalE;
-    signalE.name = "E";
-    signalE.value = 12;
-
-    Core::DbcCanSignal signalF;
-    signalF.name = "F";
-    signalF.value = 12;
-
-    Core::DbcCanMessage testMessage2;
-    testMessage2.messageId = 0x321;
-    testMessage2.signalValues = {signalD, signalE, signalF};
-
-    onIncomingDbcFrame(testMessage1);
-    onIncomingDbcFrame(testMessage2);
+                eraseOldData();
+            }
+            const auto millisecondsAfterErase =
+                std::chrono::duration_cast<std::chrono::milliseconds>(
+                    std::chrono::steady_clock::now().time_since_epoch())
+                    .count();
+            if (millisecondsAfterErase < lastExecution + 50)
+            {
+                std::this_thread::sleep_for(std::chrono::milliseconds(
+                    lastExecution + 50 - millisecondsAfterErase));
+            }
+        }
+    });
 }
 
 // --- Tree Navigation ---
 
 auto MonitoringModel::index(int row, int column, const QModelIndex& parent) const -> QModelIndex
 {
-    if (!hasIndex(row, column, parent)) return {};
-
-    // If no parent, we are looking for a Frame (Top Level)
+    if (!hasIndex(row, column, parent) || !m_currentDbc.has_value())
+    {
+        return {};
+    }
     if (!parent.isValid())
+    {  // message level
+        if (row < static_cast<int>(messageValues.size()))
+        {
+            return createIndex(row, column, nullptr);
+        }
+    } else
     {
-        return createIndex(row, column, (void*)&m_frames[row]);
+        // signal level
+        if (row < messageValues.at(parent.row()).signalValues.size())
+        {
+            return createIndex(row, column, reinterpret_cast<void*>(parent.row()));
+        }
     }
-
-    // If parent is valid, it's a Frame, and we are looking for a Signal (Child Level)
-    auto* parentFrame = static_cast<FrameNode*>(parent.internalPointer());
-    if (parentFrame && row < parentFrame->allSignals.size())
-    {
-        return createIndex(row, column, (void*)&parentFrame->allSignals[row]);
-    }
-
     return {};
 }
 
-auto MonitoringModel::parent(const QModelIndex& index) const -> QModelIndex
+auto MonitoringModel::parent(const QModelIndex& child) const -> QModelIndex
 {
-    if (!index.isValid()) return {};
+    if (!child.isValid()) return {};
 
-    // Determine if this pointer belongs to a Signal or a Frame
-    // We can check if it exists in the m_frames vector
-    void* ptr = index.internalPointer();
-
-    // Check if the pointer is one of our frames
-    for (const auto& m_frame : m_frames)
+    // If internal pointer is null, this is a message (root level item)
+    if (child.internalPointer() == nullptr)
     {
-        if (ptr == &m_frame) return {};  // Frames have no parent
+        return {};
     }
 
-    // If it's not a frame, it must be a signal. We find which frame owns it.
-    for (int i = 0; i < m_frames.size(); ++i)
-    {
-        for (int j = 0; j < m_frames[i].allSignals.size(); ++j)
-        {
-            if (ptr == &m_frames[i].allSignals[j])
-            {
-                return createIndex(i, 0, (void*)&m_frames[i]);
-            }
-        }
-    }
-
-    return {};
+    int messageRow = static_cast<int>(reinterpret_cast<quintptr>(child.internalPointer())) - 1;
+    return createIndex(messageRow, 0, nullptr);
 }
 
 auto MonitoringModel::rowCount(const QModelIndex& parent) const -> int
 {
-    if (parent.column() > 0) return 0;
+    if (!m_currentDbc.has_value())
+    {
+        return 0;
+    }
 
-    // Root level: return number of frames
-    if (!parent.isValid()) return m_frames.size();
-
-    // Child level: return number of signals in that frame
-    auto* frame = static_cast<FrameNode*>(parent.internalPointer());
-    return frame ? frame->allSignals.size() : 0;
+    if (!parent.isValid())
+    {  // message level
+        return static_cast<int>(messageValues.size());
+    }
+    if (parent.internalPointer() == nullptr)
+    {  // Signal level
+        return static_cast<int>(messageValues.at(parent.row()).signalValues.size());
+    }
+    return 0;
 }
 
 auto MonitoringModel::columnCount(const QModelIndex& /*parent*/) const -> int
@@ -117,117 +104,153 @@ auto MonitoringModel::columnCount(const QModelIndex& /*parent*/) const -> int
 
 auto MonitoringModel::data(const QModelIndex& index, int role) const -> QVariant
 {
-    if (!index.isValid()) return {};
-
-    void* ptr = index.internalPointer();
-
-    // Handle Frame Node
-    for (const auto& frame : m_frames)
-    {
-        if (ptr == &frame)
+    if (!index.isValid() || !m_currentDbc.has_value()) return {};
+    if (!index.parent().isValid())
+    {  // message level
+        switch (role)
         {
-            if (role == Qt::DisplayRole)
-            {
-                // Format frame display as "ID: 0x... Name: ..."
-                return QString("ID: 0x%1").arg(QString(frame.message.messageId));
-            }
-            if (role == Qt::CheckStateRole) return frame.checked;
-            if (role == Qt::UserRole + 1) return frame.message.messageId;
-            if (role == Qt::ItemDataRole) return frame.message.signalValues;
-            return {};
-        }
-    }
-
-    // Handle Signal Node (unchanged)
-    for (const auto& frame : m_frames)
-    {
-        for (const auto& sig : frame.allSignals)
-        {
-            if (ptr == &sig)
-            {
-                if (role == Qt::DisplayRole) return QString::fromStdString(sig.signal.name);
-                if (role == Qt::CheckStateRole) return sig.checked;
-                if (role == Qt::UserRole + 1) return frame.message.messageId;
+            case Qt::DisplayRole:
+            case Role_Name: {
+                auto it = m_currentDbc->messageDefinitions.begin();
+                std::advance(it, index.row());
+                if (it != m_currentDbc->messageDefinitions.end())
+                {
+                    return QString(it->messageName.data());
+                }
                 return {};
             }
-        }
-    }
-
-    return {};
-}
-
-// --- Interaction (Checkboxes) ---
-
-auto MonitoringModel::flags(const QModelIndex& index) const -> Qt::ItemFlags
-{
-    if (!index.isValid()) return Qt::NoItemFlags;
-    return Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsUserCheckable;
-}
-
-auto MonitoringModel::setData(const QModelIndex& index, const QVariant& value, int role) -> bool
-{
-    if (role == Qt::CheckStateRole)
-    {
-        void* ptr = index.internalPointer();
-        auto newState = static_cast<Qt::CheckState>(value.toInt());
-
-        // Find and update the node
-        for (auto& frame : m_frames)
-        {
-            if (ptr == &frame)
-            {
-                frame.checked = newState;
-                emit dataChanged(index, index, {role});
-                return true;
-            }
-            for (auto& sig : frame.allSignals)
-            {
-                if (ptr == &sig)
+            case Role_ID: {
+                auto it = m_currentDbc->messageDefinitions.begin();
+                std::advance(it, index.row());
+                if (it != m_currentDbc->messageDefinitions.end())
                 {
-                    sig.checked = newState;
-                    emit dataChanged(index, index, {role});
-                    return true;
+                    return it->messageId;
                 }
+                return {};
             }
+            case Role_LatestValue:
+                return messageValues.at(index.row()).timestamps.back();
+            case Role_ValueList:
+                return QVariant::fromValue(messageValues.at(index.row()).timestamps);
+            case Role_Unit:
+                return {};
+            default:
+                return {};
+        }
+    } else
+    {  // signal level
+        switch (role)
+        {
+            case Qt::DisplayRole:
+            case Role_Name: {
+                auto it = m_currentDbc->messageDefinitions.begin();
+                std::advance(it, index.parent().row());
+                if (it != m_currentDbc->messageDefinitions.end())
+                {
+                    auto it2 = it->signalDescriptions.begin();
+                    std::advance(it2, index.row());
+                    if (it2 != it->signalDescriptions.end())
+                    {
+                        return QString(it2->signalName.data());
+                    }
+                }
+                return {};
+            }
+            case Role_ID:
+                return {};
+            case Role_LatestValue:
+                return messageValues.at(index.parent().row()).signalValues.at(index.row()).back();
+            case Role_ValueList:
+                return QVariant::fromValue(
+                    messageValues.at(index.parent().row()).signalValues.at(index.row()));
+            case Role_Unit: {
+                auto it = m_currentDbc->messageDefinitions.begin();
+                std::advance(it, index.parent().row());
+                if (it != m_currentDbc->messageDefinitions.end())
+                {
+                    auto it2 = it->signalDescriptions.begin();
+                    std::advance(it2, index.row());
+                    if (it2 != it->signalDescriptions.end())
+                    {
+                        return QString(it2->unit.data());
+                    }
+                }
+                return {};
+            }
+            default:
+                return {};
         }
     }
-    return false;
 }
 
-// --- Incoming Data ---
 
 void MonitoringModel::onIncomingDbcFrame(const Core::DbcCanMessage& message)
 {
-    // Check if frame already exists
-    for (int i = 0; i < m_frames.size(); ++i)
+    if (!m_currentDbc.has_value() || !deleteOldData)
     {
-        if (m_frames[i].message.messageId == message.messageId)
+        return;
+    }
+    int i = 0;
+    for (auto it = m_currentDbc->messageDefinitions.begin(); it != m_currentDbc->messageDefinitions.end(); ++it)
+    {
+        if (it->messageId == message.messageId)
         {
-            m_frames[i].message = message;  // Update data
-            // We don't update allSignals structure here assuming DBC is static
-            emit dataChanged(this->index(i, 0, QModelIndex()), this->index(i, 0, QModelIndex()));
-            return;
+            int j = 0;
+            for (auto it2 = it->signalDescriptions.begin(); it2 != it->signalDescriptions.end(); ++it2)
+            {
+                bool valueExists = false;
+                for (auto it3 = message.signalValues.begin(); it3 != message.signalValues.end(); ++it3)
+                {
+                    if (it3->name == it2->signalName)
+                    {
+                        messageValues.at(i).signalValues.at(j).push_back(it3->value);
+                        valueExists = true;
+                        break;
+                    }
+                }
+                if (!valueExists)
+                {
+                    messageValues.at(i).signalValues.at(j).push_back(NAN);
+                }
+                j++;
+            }
+            break;
         }
+        i++;
     }
-
-    // New Frame discovered!
-    beginInsertRows(QModelIndex(), m_frames.size(), m_frames.size());
-    FrameNode newNode;
-    newNode.message = message;
-    newNode.checked = Qt::Unchecked;
-
-    for (const auto& sig : message.signalValues)
-    {
-        newNode.allSignals.append({.signal = sig, .checked = Qt::Unchecked});
-    }
-
-    m_frames.append(newNode);
-    endInsertRows();
 }
 
-void MonitoringModel::onIncomingRawFrame(const Core::RawCanMessage& /*message*/)
+void MonitoringModel::onDbcChange(const Core::DbcConfig& config)
 {
-    // Logic for raw frames if you want to show them in the tree
+    while (!messageValues.empty())
+    {
+        messageValues.pop_back();
+    }
+    for (auto it = messageValues.begin(); it != messageValues.end(); ++it)
+    {
+        std::vector<QList<double>> signalValues;
+        for (int i = 0; i < it->signalValues.size(); i++)
+        {
+            signalValues.push_back({});
+        }
+        messageValues.push_back(MessageTimestamp{.timestamps = {}, .signalValues = signalValues});
+    }
+}
+
+void MonitoringModel::eraseOldData()
+{
+    QTime currentTime = QTime::currentTime();
+    for (int i = 0; i < messageValues.size(); i++)
+    {
+        while (messageValues.at(i).timestamps.begin()->msecsTo(QTime::currentTime().addSecs(-Constants::HOLDING_SECONDS_IN_MODEL)) < 0)
+        {
+            for (int j = 0; j < messageValues.at(i).signalValues.size(); j++)
+            {
+                messageValues.at(i).signalValues.at(j).pop_front();
+            }
+            messageValues.at(i).timestamps.pop_front();
+        }
+    }
 }
 
 }  // namespace Monitoring
