@@ -70,7 +70,8 @@ auto MonitoringModel::parent(const QModelIndex& child) const -> QModelIndex
         return {};
     }
 
-    const int messageRow = static_cast<int>(reinterpret_cast<quintptr>(child.internalPointer())) - 1;
+    const int messageRow =
+        static_cast<int>(reinterpret_cast<quintptr>(child.internalPointer())) - 1;
     return createIndex(messageRow, 0, nullptr);
 }
 
@@ -104,7 +105,8 @@ auto MonitoringModel::columnCount(const QModelIndex& /*parent*/) const -> int
 
 auto MonitoringModel::data(const QModelIndex& index, int role) const -> QVariant
 {
-    if (!index.isValid() || !m_currentDbc.has_value() || index.row() >= rowCount(index.parent())) return {};
+    if (!index.isValid() || !m_currentDbc.has_value() || index.row() >= rowCount(index.parent()))
+        return {};
     if (index.internalPointer() == nullptr)
     {  // message level
         switch (role)
@@ -130,7 +132,9 @@ auto MonitoringModel::data(const QModelIndex& index, int role) const -> QVariant
             }
             case Role_LatestValue: {
             }
-                return messageValues.at(index.row()).timestamps.size() == 0 ? QVariant() : messageValues.at(index.row()).timestamps.back();
+                return messageValues.at(index.row()).timestamps.size() == 0
+                           ? QVariant()
+                           : messageValues.at(index.row()).timestamps.back();
             case Role_ValueList:
                 return QVariant::fromValue(messageValues.at(index.row()).timestamps);
             case Role_Unit:
@@ -140,7 +144,8 @@ auto MonitoringModel::data(const QModelIndex& index, int role) const -> QVariant
         }
     } else
     {  // signal level
-        const int messageRow = static_cast<int>(reinterpret_cast<quintptr>(index.internalPointer())) - 1;
+        const int messageRow =
+            static_cast<int>(reinterpret_cast<quintptr>(index.internalPointer())) - 1;
         switch (role)
         {
             case Qt::DisplayRole:
@@ -161,7 +166,11 @@ auto MonitoringModel::data(const QModelIndex& index, int role) const -> QVariant
             case Role_ID:
                 return {};
             case Role_LatestValue:
-                return messageValues.at(messageRow).signalValues.at(index.row()).size() == 0 ? QVariant() : messageValues.at(index.parent().row()).signalValues.at(index.row()).back();
+                return messageValues.at(messageRow).signalValues.at(index.row()).size() == 0
+                           ? QVariant()
+                           : messageValues.at(index.parent().row())
+                                 .signalValues.at(index.row())
+                                 .back();
             case Role_ValueList:
                 return QVariant::fromValue(
                     messageValues.at(messageRow).signalValues.at(index.row()));
@@ -231,7 +240,7 @@ void MonitoringModel::onDbcChange(const Core::DbcConfig& config)
     {
         messageValues.pop_back();
     }
-    for (auto & messageDefinition : m_currentDbc->messageDefinitions)
+    for (auto& messageDefinition : m_currentDbc->messageDefinitions)
     {
         std::vector<QList<double>> signalValues;
         for (int i = 0; i < messageDefinition.signalDescriptions.size(); i++)
@@ -240,22 +249,21 @@ void MonitoringModel::onDbcChange(const Core::DbcConfig& config)
         }
         messageValues.push_back(MessageTimestamp{.timestamps = {}, .signalValues = signalValues});
     }
-
 }
 
 void MonitoringModel::eraseOldData()
 {
     QTime currentTime = QTime::currentTime();
-    for (auto & [timestamps, signalValues] : messageValues)
+    for (auto& [timestamps, signalValues] : messageValues)
     {
         if (timestamps.isEmpty())
         {
             continue;
         }
         if (timestamps.begin()->msecsTo(
-                   QTime::currentTime().addSecs(Constants::HOLDING_SECONDS_IN_MODEL)) < 0)
+                QTime::currentTime().addSecs(Constants::HOLDING_SECONDS_IN_MODEL)) < 0)
         {
-            for (auto & j : signalValues)
+            for (auto& j : signalValues)
             {
                 j.pop_front();
             }
