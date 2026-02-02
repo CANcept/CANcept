@@ -54,7 +54,7 @@ auto MonitoringModel::index(int row, int column, const QModelIndex& parent) cons
         // signal level
         if (row < messageValues.at(parent.row()).signalValues.size())
         {
-            return createIndex(row, column, reinterpret_cast<void*>(parent.row()));
+            return createIndex(row, column, reinterpret_cast<void*>(parent.row() + 1));
         }
     }
     return {};
@@ -70,7 +70,7 @@ auto MonitoringModel::parent(const QModelIndex& child) const -> QModelIndex
         return {};
     }
 
-    int messageRow = static_cast<int>(reinterpret_cast<quintptr>(child.internalPointer())) - 1;
+    const int messageRow = static_cast<int>(reinterpret_cast<quintptr>(child.internalPointer())) - 1;
     return createIndex(messageRow, 0, nullptr);
 }
 
@@ -80,13 +80,16 @@ auto MonitoringModel::rowCount(const QModelIndex& parent) const -> int
     {
         return 0;
     }
-
     if (!parent.isValid())
-    {  // message level
+    {  // parent is root -> message count
         return static_cast<int>(messageValues.size());
     }
     if (parent.internalPointer() == nullptr)
-    {  // Signal level
+    {  // parent is message -> signal count for given message
+        if (parent.row() >= static_cast<int>(messageValues.size()))
+        {
+            return 0;
+        }
         return static_cast<int>(messageValues.at(parent.row()).signalValues.size());
     }
     return 0;
@@ -101,8 +104,8 @@ auto MonitoringModel::columnCount(const QModelIndex& /*parent*/) const -> int
 
 auto MonitoringModel::data(const QModelIndex& index, int role) const -> QVariant
 {
-    if (!index.isValid() || !m_currentDbc.has_value()) return {};
-    if (!index.parent().isValid())
+    if (!index.isValid() || !m_currentDbc.has_value() || index.row() >= rowCount(index.parent())) return {};
+    if (index.internalPointer() == nullptr)
     {  // message level
         switch (role)
         {
@@ -125,8 +128,9 @@ auto MonitoringModel::data(const QModelIndex& index, int role) const -> QVariant
                 }
                 return {};
             }
-            case Role_LatestValue:
-                return messageValues.at(index.row()).timestamps.back();
+            case Role_LatestValue: {
+            }
+                return messageValues.at(index.row()).timestamps.size() == 0 ? QVariant() : messageValues.at(index.row()).timestamps.back();
             case Role_ValueList:
                 return QVariant::fromValue(messageValues.at(index.row()).timestamps);
             case Role_Unit:
@@ -136,12 +140,13 @@ auto MonitoringModel::data(const QModelIndex& index, int role) const -> QVariant
         }
     } else
     {  // signal level
+        const int messageRow = static_cast<int>(reinterpret_cast<quintptr>(index.internalPointer())) - 1;
         switch (role)
         {
             case Qt::DisplayRole:
             case Role_Name: {
                 auto it = m_currentDbc->messageDefinitions.begin();
-                std::advance(it, index.parent().row());
+                std::advance(it, messageRow);
                 if (it != m_currentDbc->messageDefinitions.end())
                 {
                     auto it2 = it->signalDescriptions.begin();
@@ -156,13 +161,13 @@ auto MonitoringModel::data(const QModelIndex& index, int role) const -> QVariant
             case Role_ID:
                 return {};
             case Role_LatestValue:
-                return messageValues.at(index.parent().row()).signalValues.at(index.row()).back();
+                return messageValues.at(messageRow).signalValues.at(index.row()).size() == 0 ? QVariant() : messageValues.at(index.parent().row()).signalValues.at(index.row()).back();
             case Role_ValueList:
                 return QVariant::fromValue(
-                    messageValues.at(index.parent().row()).signalValues.at(index.row()));
+                    messageValues.at(messageRow).signalValues.at(index.row()));
             case Role_Unit: {
                 auto it = m_currentDbc->messageDefinitions.begin();
-                std::advance(it, index.parent().row());
+                std::advance(it, messageRow);
                 if (it != m_currentDbc->messageDefinitions.end())
                 {
                     auto it2 = it->signalDescriptions.begin();
