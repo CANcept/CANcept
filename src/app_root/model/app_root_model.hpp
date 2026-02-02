@@ -48,8 +48,8 @@ class AppRootModel : public QAbstractListModel
      * @param role The requested data role (DisplayRole, DecorationRole, etc.).
      * @return QVariant The data associated with the role.
      */
-    [[nodiscard]] auto data(const QModelIndex& index, int role = Qt::DisplayRole) const
-        -> QVariant override;
+    [[nodiscard]] auto data(const QModelIndex& index,
+                            int role = Qt::DisplayRole) const -> QVariant override;
 
     /**
      * @brief Appends a tab and connects its 'updated()' signal to the model's 'dataChanged'.
