@@ -194,6 +194,14 @@ void SignalList::clearMessages()
         }
         delete item;  // Deletes the layout spacer or container
     }
+    while (!m_signalValues.empty())
+    {
+        if (m_signalValues.last() != nullptr)
+        {
+            delete m_signalValues.last();
+        }
+        m_signalValues.removeLast();
+    }
 }
 
 void SignalList::updateViewData()
