@@ -17,7 +17,7 @@ struct CanDriverChangeEvent final : public Event {
      */
     std::string driverName;
 
-    explicit CanDriverChangeEvent(const std::string& driverName) : driverName(driverName) {};
+    explicit CanDriverChangeEvent(const std::string& driverName) : driverName(driverName){};
 };
 /**
  * @brief Event, that gets called to get all currently available can drivers
@@ -29,7 +29,7 @@ struct GetAvailableCanDriversEvent final : public Event {
     std::list<std::string>* driversNames;
 
     explicit GetAvailableCanDriversEvent(std::list<std::string>* driversNames)
-        : driversNames(driversNames) {};
+        : driversNames(driversNames){};
 };
 }  // namespace Core
 #endif  // CANBUSMANAGER_CAN_DRIVER_EVENT_HPP
