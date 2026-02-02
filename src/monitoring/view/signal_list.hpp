@@ -13,7 +13,7 @@ class SignalList final : public QWidget
 {
     Q_OBJECT
    public:
-    explicit SignalList(QWidget* parent = nullptr);
+    explicit SignalList(QWidget* parent, MonitoringModel* model);
 
     void setupUi();
 
@@ -21,11 +21,12 @@ class SignalList final : public QWidget
 
     void updateViewData();
 
+    void populateDecodedFromModel();
+
    signals:
     void signalMonitoringToggled(bool checked, const QString& messageId, const QString& signalName);
 
    private:
-    void populateDecodedFromModel();
     /**
      * @brief Scroll area providing vertical scrolling for the graph list.
      */
@@ -33,8 +34,8 @@ class SignalList final : public QWidget
     QVBoxLayout* m_cardsLayout;
     QWidget* m_scrollContent;
     MonitoringModel* m_model;
-    QList<QLabel*>* m_signalValues;
-    QList<QWidget*>* m_signalLists;
+    QList<QLabel*> m_signalValues;
+    QList<QWidget*> m_signalLists;
 };
 
 }  // namespace Monitoring

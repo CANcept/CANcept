@@ -34,6 +34,8 @@ MonitoringComponent::MonitoringComponent(Core::IEventBroker& broker)
     // Forward internal signal to the view to refresh UI (e.g. the TreeView)
     connect(this, &MonitoringComponent::dbcConfigurationChanged, m_model.get(),
             &MonitoringModel::onDbcChange);
+    connect(this, &MonitoringComponent::dbcConfigurationChanged, m_view->getSignalListView(),
+            &SignalList::populateDecodedFromModel);
 
     // Forward dbc decoded frame received signal to the model
     connect(this, &MonitoringComponent::dbcFrameReceived, m_model.get(),
@@ -52,6 +54,7 @@ MonitoringComponent::MonitoringComponent(Core::IEventBroker& broker)
             });
 
     connect(&m_updateTimer, &QTimer::timeout, m_view.get(), &MonitoringView::onUpdateMessages);
+    m_updateTimer.start(1000);
 }
 
 MonitoringComponent::~MonitoringComponent() = default;

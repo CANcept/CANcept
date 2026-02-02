@@ -17,8 +17,8 @@
  * @namespace Monitoring
  * @brief Contains data models and UI components for CAN signal monitoring.
  */
-namespace Monitoring {
 
+namespace Monitoring {
 struct MessageTimestamp {
     QList<QTime> timestamps;
     std::vector<QList<double>> signalValues;
@@ -109,6 +109,6 @@ class MonitoringModel final : public QAbstractItemModel
 };
 }  // namespace Monitoring
 
-Q_DECLARE_METATYPE(Monitoring::MessageTimestamp)
+//Q_DECLARE_METATYPE(Monitoring::MessageTimestamp)
 
-// Q_DECLARE_METATYPE(QList<QTime>);
+Q_DECLARE_METATYPE(QList<QTime>)
