@@ -13,6 +13,7 @@
 #include <QVBoxLayout>
 #include <QWidget>
 
+#include "core/macro/theme.hpp"
 #include "core/theme/theme_manager.hpp"
 #include "core/widgets/card_widget.hpp"
 #include "dbc_file/constants.hpp"
@@ -53,7 +54,6 @@ void updateDragStyle(QWidget* widget, const QString& state)
  */
 auto createUploadIcon(QWidget* parent) -> QLabel*
 {
-    const auto& THEME = Core::ThemeManager::getInstance();
     const auto& colors = THEME.colors();
     const auto& spacing = THEME.spacing();
 
@@ -90,7 +90,6 @@ auto createUploadIcon(QWidget* parent) -> QLabel*
  */
 auto createUploadInstruction(QWidget* parent) -> QLabel*
 {
-    const auto& THEME = Core::ThemeManager::getInstance();
     const auto& colors = THEME.colors();
     const auto& spacing = THEME.spacing();
 
@@ -108,7 +107,6 @@ auto createUploadInstruction(QWidget* parent) -> QLabel*
 
 void LoadPage::showStatusMessage(const QString& message, const bool isError) const
 {
-    const auto& THEME = Core::ThemeManager::getInstance();
     const auto& colors = THEME.colors();
     const auto& spacing = THEME.spacing();
     m_statusLabel->setText(message);
@@ -243,7 +241,6 @@ void LoadPage::onBrowseButtonClicked()
 
 auto LoadPage::createCardFrame(QVBoxLayout* parentLayout) -> QVBoxLayout*
 {
-    const auto& THEME = Core::ThemeManager::getInstance();
     const auto& colors = THEME.colors();
     const auto& spacing = THEME.spacing();
 
@@ -264,7 +261,6 @@ auto LoadPage::createCardFrame(QVBoxLayout* parentLayout) -> QVBoxLayout*
 
 void LoadPage::setupUploadZone(QVBoxLayout* layout)
 {
-    const auto& THEME = Core::ThemeManager::getInstance();
     const auto& colors = THEME.colors();
     const auto& spacing = THEME.spacing();
 

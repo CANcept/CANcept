@@ -15,7 +15,7 @@ namespace Core {
  * @brief A reusable navigation sidebar widget based on QListView.
  *
  * @details
- * This class encapsulates the visual styling (CSS), item behavior (bold on selection, spacing),
+ * This class encapsulates the visual styling, item behavior (bold on selection, spacing),
  * and interaction logic (preventing empty selection, emitting signals on valid clicks)
  * required for a vertical navigation bar. It is designed to be populated via `addTab()`
  * and integrates with the application's ThemeManager.

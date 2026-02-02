@@ -35,18 +35,19 @@ struct SpacingTheme {
     int fontSizeLg = 18;
 
     // Icon Sizes
-    int iconXs = 12;
-    int iconSm = 20;
+    int IconXs = 12;
+    int IconSm = 20;
     int IconLg = 48;
 
 
     // Heights
     int HeightSm = 20;
-    int HeigthMd = 40;
-    int HeigthLg = 120;
+    int HeightMd = 40;
+    int HeightLg = 120;
 
     // Widths
-    int WidthSm = 120;
+    int WidthXs = 120;
+    int WidthSm = 200;
     int WidthMd = 300;
     int WidthLg = 600;
 

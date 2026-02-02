@@ -19,7 +19,7 @@ CardListDelegate::CardListDelegate(const int badgeRole, const QIcon& badgeIcon,
 auto CardListDelegate::sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const -> QSize
 {
     const auto& s = THEME.spacing();
-    return {s.WidthMd,s.HeigthMd};
+    return {s.WidthMd,s.HeightMd};
 }
 
 void CardListDelegate::paint(QPainter* painter, const QStyleOptionViewItem& option,

@@ -8,6 +8,7 @@
 #include <QVBoxLayout>
 
 #include "core/delegates/card_list_delegate.hpp"
+#include "core/macro/theme.hpp"
 #include "core/theme/theme_manager.hpp"
 #include "core/widgets/card_widget.hpp"
 #include "dbc_file/constants.hpp"
@@ -45,8 +46,8 @@ OverviewPage::OverviewPage(QWidget* parent) : QWidget(parent)
 }
 void OverviewPage::setupFileInfoSection(QVBoxLayout* parentLayout)
 {
-    const auto& colors = Core::ThemeManager::getInstance().colors();
-    const auto& spacing = Core::ThemeManager::getInstance().spacing();
+    const auto& colors = THEME.colors();
+    const auto& spacing = THEME.spacing();
 
     auto* fileInfoCard = new Core::CardWidget(Constants::OverviewPage::FileInfoTitle,
                                               Constants::OverviewPage::FileInfoSubTitle);
@@ -101,7 +102,6 @@ void OverviewPage::setupListsSection(QVBoxLayout* parentLayout)
             new Core::CardWidget(title + Constants::OverviewPage::OverviewSuffix,
                                  Constants::OverviewPage::OverviewDescription.arg(title));
         auto* layout = listCard->contentLayout();
-
         //
         listViewMember = new QListView(this);
         listViewMember->setViewMode(QListView::ListMode);
@@ -118,7 +118,8 @@ void OverviewPage::setupListsSection(QVBoxLayout* parentLayout)
             "  padding: 0px; "
             "  margin: 0px; "
             "}");
-        listViewMember->setFixedHeight(150);
+        const auto& spacing = THEME.spacing();
+        listViewMember->setFixedHeight(spacing.HeightLg);
 
         // Set delegate
         int badgeRole = DbcRoles::Role_ChildCount;
@@ -137,8 +138,8 @@ void OverviewPage::setupListsSection(QVBoxLayout* parentLayout)
 
 void OverviewPage::setupUi()
 {
-    const auto& colors = Core::ThemeManager::getInstance().colors();
-    const auto& spacing = Core::ThemeManager::getInstance().spacing();
+    const auto& colors = THEME.colors();
+    const auto& spacing = THEME.spacing();
 
     auto* mainLayout = new QVBoxLayout(this);
     mainLayout->setContentsMargins(0, 0, 0, 0);
@@ -164,25 +165,25 @@ void OverviewPage::setupUi()
 auto OverviewPage::createStatCard(const QString& title, QLabel*& valueLabelPtr,
                                   const QString& iconName) -> QWidget*
 {
-    const auto& colors = Core::ThemeManager::getInstance().colors();
-    const auto& spacing = Core::ThemeManager::getInstance().spacing();
+    const auto& colors = THEME.colors();
+    const auto& spacing = THEME.spacing();
 
     // Card container
     auto* card = new Core::CardWidget();
     auto* cardLayout = card->contentLayout();
-    card->setFixedHeight(spacing.HeightSm);
+    card->setFixedHeight(spacing.HeightLg);
 
     // Top Row: Title + Icon
     auto* topRow = new QHBoxLayout();
     auto* lblTitle = new QLabel(title);
     lblTitle->setStyleSheet(QString("color: %1;").arg(colors.textPrimary.name()));
 
-    auto* icon = new QLabel();
-    QIcon ico(iconName);
-    if (!ico.isNull()) icon->setPixmap(ico.pixmap(spacing.iconSm, spacing.iconSm));
+    auto* iconLabel = new QLabel();
+    QIcon icon(iconName);
+    if (!icon.isNull()) iconLabel->setPixmap(icon.pixmap(spacing.IconSm, spacing.IconSm));
     topRow->addWidget(lblTitle);
     topRow->addStretch();
-    topRow->addWidget(icon);
+    topRow->addWidget(iconLabel);
     cardLayout->addLayout(topRow);
 
     // Value
