@@ -1,7 +1,10 @@
 #pragma once
 #include <QAbstractItemModel>
+#include <thread>
+#include <vector>
 
 #include "core/dto/can_dto.hpp"
+#include "core/dto/dbc_dto.hpp"
 /**
  * @namespace Monitoring
  * @brief Contains data models and UI components for CAN signal monitoring.
@@ -38,6 +41,11 @@ class MonitoringModel final : public QAbstractItemModel
      *
      */
     explicit MonitoringModel();
+    ~MonitoringModel() override
+    {
+        _execute = false;
+        message_check_thread.join();
+    }
 
     /**
      * @brief Returns the model index for the given row and column.
@@ -48,7 +56,7 @@ class MonitoringModel final : public QAbstractItemModel
     /**
      * @brief Returns the parent index of a given model index.
      */
-    [[nodiscard]] auto parent(const QModelIndex& index) const -> QModelIndex override;
+    [[nodiscard]] auto parent(const QModelIndex& child) const -> QModelIndex override;
 
     /**
      * @brief Returns the number of rows under the given parent.
@@ -65,20 +73,6 @@ class MonitoringModel final : public QAbstractItemModel
      */
     [[nodiscard]] auto data(const QModelIndex& index, int role) const -> QVariant override;
 
-    /**
-     * @brief Returns the item flags for the given model index.
-     *
-     * Enables checkable and selectable behavior for frames and signals.
-     */
-    [[nodiscard]] auto flags(const QModelIndex& index) const -> Qt::ItemFlags override;
-
-    /**
-     * @brief Updates the data stored at the given index.
-     *
-     * Primarily used to handle check state changes initiated by the view.
-     */
-    auto setData(const QModelIndex& index, const QVariant& value, int role) -> bool override;
-
    public slots:
 
     /**
@@ -90,44 +84,22 @@ class MonitoringModel final : public QAbstractItemModel
      */
     void onIncomingDbcFrame(const Core::DbcCanMessage& message);
 
-    /**
-     * @brief Triggered when a new raw frame is incoming
-     *
-     * Adds the data to the batch.
-     *
-     * @param message Reference to the received raw CAN message.
-     */
-    void onIncomingRawFrame(const Core::RawCanMessage& message);
+    void onDbcChange(const Core::DbcConfig& config);
 
+    void eraseOldData();
+
+    Q_DECLARE_METATYPE(QList<QTime>)
+    struct MessageTimestamp
+    {
+        QList<QTime> timestamps;
+        std::vector<QList<double>> signalValues;
+    };
    private:
-    /**
-     * @struct SignalNode
-     * @brief Internal representation of a single CAN signal within a frame.
-     */
-    struct SignalNode {
-        Core::DbcCanSignal signal;
-        Qt::CheckState checked;
-    };
+    std::vector<MessageTimestamp> messageValues;
+    std::optional<Core::DbcConfig> m_currentDbc;
+    std::atomic<bool> _execute;
+    std::atomic<bool> deleteOldData;
+    std::thread message_check_thread;
 
-    /**
-     * @struct FrameNode
-     * @brief Internal representation of a CAN frame and its contained signals.
-     */
-    struct FrameNode {
-        Core::DbcCanMessage message;
-        QVector<SignalNode> allSignals;
-        Qt::CheckState checked;
-    };
-
-    void addTestData();
-
-    /**
-     * @brief Collection of all tracked CAN frames.
-     *
-     * Each frame node contains its most recent data and associated signals.
-     * The model maintains the hierarchical relationship required by the
-     * tree view.
-     */
-    QVector<FrameNode> m_frames;  // contains last 1min/whatever of signal data
 };
 }  // namespace Monitoring

@@ -79,6 +79,8 @@ inline const int SIGNAL_GRAPH_LINE_WIDTH = 2;
 /** @brief Label for messages list in view */
 inline const QString MESSAGES_LABEL = "Messages";
 
+const int HOLDING_SECONDS_IN_MODEL = 60;
+
 }  // namespace Monitoring::Constants
 
 // namespace Sending
