@@ -44,15 +44,6 @@ All notable changes to this project will be documented in this file.
 - **DbcMessageCard** - Widget for displaying DBC message details with signals
 - **DbcSignalRow** - Widget for displaying and editing individual signal values
 
-### Fixed
-- Memory leak in CanDbcHandler when deleting handler (CBS-95)
-- Deadlock issues in CanDbcHandler and CanCommunicationHandler (CBS-95)
-- Segmentation faults in DBC parser when handling long files (CBS-96)
-- Comment parsing and integer parsing bugs in DBC parser (CBS-96)
-- Regex patterns in DBC parser for C identifiers (CBS-95, CBS-96)
-- Sidebar item deselection when clicking below items (CBS-98)
-- Signal wiring issues in DbcComponent (CBS-98)
-
 ### Changed
 - DBC config DTOs restructured to better reflect DBC file structure (CBS-81)
 - Time values in CAN DTOs updated for consistency (CBS-81)
