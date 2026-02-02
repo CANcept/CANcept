@@ -92,7 +92,7 @@ void Sidebar::setupConnections()
             });
 }
 
-void Sidebar::setToolTipText(const QString& toolTipText)
+void Sidebar::setToolTipText(const QString& toolTipText) const
 {
     m_delegate->setToolTipText(toolTipText);
 }

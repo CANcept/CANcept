@@ -32,7 +32,7 @@ class Sidebar : public QListView
     explicit Sidebar(QWidget* parent = nullptr);
     ~Sidebar() override = default;
 
-    void setToolTipText(const QString& toolTipText);
+    void setToolTipText(const QString& toolTipText) const;
     /**
      * @brief Adds a new navigation tab to the sidebar.
      *

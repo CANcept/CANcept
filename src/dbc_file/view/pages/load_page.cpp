@@ -16,6 +16,7 @@
 #include "core/macro/theme.hpp"
 #include "core/theme/theme_manager.hpp"
 #include "core/widgets/card_widget.hpp"
+#include "core/widgets/tinted_icon_label.hpp"
 #include "dbc_file/constants.hpp"
 
 namespace DbcFile {
@@ -42,45 +43,6 @@ void updateDragStyle(QWidget* widget, const QString& state)
     widget->style()->unpolish(widget);
     widget->style()->polish(widget);
     widget->update();
-}
-
-/**
- * @brief Creates a themed upload icon for the upload zone.
- * @param parent Parent widget.
- * @return QLabel containing the icon.
- *
- * @details Uses QPainter to tint the SVG icon according to the theme. Falls back
- * to text if the icon resource is missing.
- */
-auto createUploadIcon(QWidget* parent) -> QLabel*
-{
-    const auto& colors = THEME.colors();
-    const auto& spacing = THEME.spacing();
-
-    auto* iconLabel = new QLabel(parent);
-    iconLabel->setAlignment(Qt::AlignCenter);
-
-    QIcon icon(Constants::LoadPage::CardIcon);
-    QPixmap pixmap = icon.pixmap(spacing.IconLg, spacing.IconLg);
-
-    if (!pixmap.isNull())
-    {
-        QPainter painter(&pixmap);
-        painter.setCompositionMode(QPainter::CompositionMode_SourceIn);
-        painter.fillRect(pixmap.rect(), colors.textSecondary);
-        painter.end();
-
-        iconLabel->setPixmap(pixmap);
-    } else
-    {
-        // Fallback text if icon resource is missing
-        iconLabel->setText(Constants::LoadPage::CardIconFallback);
-        iconLabel->setStyleSheet(QString("font-size: %1px; color: %2;")
-                                     .arg(spacing.fontSizeLg)
-                                     .arg(colors.textSecondary.name()));
-    }
-
-    return iconLabel;
 }
 
 /**
@@ -246,8 +208,8 @@ auto LoadPage::createCardFrame(QVBoxLayout* parentLayout) -> QVBoxLayout*
 
     auto* loadCard =
         new Core::CardWidget(Constants::LoadPage::CardTitle, Constants::LoadPage::CardSubtitle);
-    loadCard->setMaximumWidth(650);
-    loadCard->setMaximumHeight(350);
+    loadCard->setMaximumWidth(spacing.WidthLg);
+    loadCard->setMaximumHeight(spacing.HeightXl);
     loadCard->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     parentLayout->addWidget(loadCard);
 
@@ -312,7 +274,13 @@ void LoadPage::setupUploadZone(QVBoxLayout* layout)
     zoneLayout->setAlignment(Qt::AlignCenter);
 
     // Upload Icon + Instruction Text
-    zoneLayout->addWidget(createUploadIcon(m_uploadBoxFrame));
+    auto* iconLabel = new Core::TintedIconLabel(
+                                                Constants::LoadPage::CardIcon,
+                                                spacing.IconLg,
+                                                THEME.colors().textSecondary,
+                                                m_uploadBoxFrame
+                                                );
+    zoneLayout->addWidget(iconLabel);
     zoneLayout->addWidget(createUploadInstruction(m_uploadBoxFrame));
 
     // Status label

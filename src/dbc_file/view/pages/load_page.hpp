@@ -108,7 +108,7 @@ class LoadPage : public QWidget
      * @param parentLayout The main layout where the card should be added.
      * @return The internal layout of the created card, used to add further content.
      */
-    auto createCardFrame(QVBoxLayout* parentLayout) -> QVBoxLayout*;
+    static auto createCardFrame(QVBoxLayout* parentLayout) -> QVBoxLayout*;
 
     /**
      * @brief Creates the interactive Upload Zone frame.

@@ -37,6 +37,7 @@ struct SpacingTheme {
     // Icon Sizes
     int IconXs = 12;
     int IconSm = 20;
+    int IconMd = 24;
     int IconLg = 48;
 
 
@@ -44,6 +45,7 @@ struct SpacingTheme {
     int HeightSm = 20;
     int HeightMd = 40;
     int HeightLg = 120;
+    int HeightXl = 350;
 
     // Widths
     int WidthXs = 120;

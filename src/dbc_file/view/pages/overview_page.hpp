@@ -76,7 +76,7 @@ class OverviewPage : public QWidget
      * @caller Internal setupUi().
      */
     auto createStatCard(const QString& title, QLabel*& valueLabelPtr,
-                        const QString& iconName) -> QWidget*;
+                        const QString& iconPath) -> QWidget*;
 
     // --- 1. Labels for File Info Card ---
     QLabel* m_lblFileName;

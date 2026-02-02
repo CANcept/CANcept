@@ -8,6 +8,7 @@
 #include <QScrollArea>
 #include <QVBoxLayout>
 
+#include "core/widgets/tinted_icon_label.hpp"
 #include "core/delegates/card_list_delegate.hpp"
 #include "core/macro/theme.hpp"
 #include "core/theme/theme_manager.hpp"
@@ -179,7 +180,7 @@ void OverviewPage::setupUi()
     mainLayout->addWidget(scrollArea);
 }
 auto OverviewPage::createStatCard(const QString& title, QLabel*& valueLabelPtr,
-                                  const QString& iconName) -> QWidget*
+                                  const QString& iconPath) -> QWidget*
 {
     const auto& colors = THEME.colors();
     const auto& spacing = THEME.spacing();
@@ -195,17 +196,12 @@ auto OverviewPage::createStatCard(const QString& title, QLabel*& valueLabelPtr,
     lblTitle->setStyleSheet(QString("color: %1; font-size: %2px;").arg(colors.textPrimary.name()).arg(spacing.fontSizeMd));
 
 
-    auto* iconLabel = new QLabel();
-    if (const QIcon icon(iconName); !icon.isNull()) {
-        QPixmap pix = icon.pixmap(24, 24);
-
-        QPainter p(&pix);
-        p.setCompositionMode(QPainter::CompositionMode_SourceIn);
-        p.fillRect(pix.rect(), THEME.colors().textPrimary);
-        p.end();
-
-        iconLabel->setPixmap(pix);
-    }
+    auto* iconLabel = new Core::TintedIconLabel(
+    iconPath,
+    spacing.IconMd,
+    THEME.colors().textPrimary, // Schwarz
+    card
+);
     topRow->addWidget(lblTitle);
     topRow->addStretch();
     topRow->addWidget(iconLabel);
