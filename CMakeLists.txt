@@ -16,7 +16,6 @@ set(CMAKE_AUTORCC ON)
 
 # Temporary until implementation -----------------------------------
 set(SKIP_AUTOMOC_DIRS
-        src/logging
         src/monitoring
 )
 

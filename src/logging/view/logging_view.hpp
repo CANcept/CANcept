@@ -1,3 +1,7 @@
+//
+// Logging view header
+//
+
 #pragma once
 
 #include <QFrame>
@@ -57,6 +61,18 @@ class LoggingView final : public QWidget
      */
     void setRecordingState(bool isRecording);
 
+    /**
+     * @brief Updates the timer display during active logging.
+     * @param elapsedMs The number of milliseconds elapsed since logging started.
+     */
+    void updateTimer(qint64 elapsedMs);
+
+    /**
+     * @brief Updates the message status tags shown during recording.
+     * @param messages List of message IDs/names to display as tags.
+     */
+    void updateStatusTags(const QStringList& messages);
+
    signals:
     /** @brief Emitted when user wants to start; triggers the Modal Selection Dialog. */
     void startRequested();
@@ -73,8 +89,14 @@ class LoggingView final : public QWidget
     void setupUi();
 
     QWidget* m_headerBox;
-    QLabel* m_statusLabel;    /**< Displays status (e.g., "Idle", "Recording..."). */
+    QLabel* m_timerLabel;     /**< Displays elapsed time during recording. */
     QPushButton* m_btnAction; /**< The Start/Stop toggle button. */
+
+    QWidget* m_statusContainer;  /**< Container for message status tags. */
+    QHBoxLayout* m_statusLayout; /**< Layout for message status tags. */
+
+    QLabel* m_emptyLabel; /**< Empty state placeholder when no sessions exist. */
+    bool m_isRecording{false};
 
     QFrame* m_mainFrame;            /**< The bordered container for consistent UI. */
     QStackedWidget* m_contentStack; /**< Handles swapping between Table and Details. */
