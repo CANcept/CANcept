@@ -20,7 +20,7 @@ MonitoringComponent::MonitoringComponent(Core::IEventBroker& broker)
       m_model(std::make_unique<MonitoringModel>()),
       m_delegate(std::make_unique<MonitoringDelegate>(m_model.get())),
       m_view(std::make_unique<MonitoringView>(m_model.get(), m_delegate.get())),
-      m_updateTimer(nullptr)
+      m_updateTimer(this)
 {
     // --- Internal Signal/Slot Connections ---
 
@@ -50,10 +50,6 @@ MonitoringComponent::MonitoringComponent(Core::IEventBroker& broker)
                     onDeviceChanged(deviceName);
                 }
             });
-
-    // Mode selection changes
-    connect(m_view->modeToggle(), &QPushButton::clicked, this,
-            [this]() -> void { m_dbcModeEnabled = !m_dbcModeEnabled; });
 
     connect(&m_updateTimer, &QTimer::timeout, m_view.get(), &MonitoringView::onUpdateMessages);
 }

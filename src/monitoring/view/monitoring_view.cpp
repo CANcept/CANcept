@@ -61,31 +61,6 @@ void MonitoringView::setupUi()
     mainLayout->addWidget(m_configCard, 1);
     mainLayout->addWidget(m_splitter, 5);
 
-    // Connect the data changed signal of the model to intercept checkbox toggles
-    // We do this via the proxy so we get the correct indices
-    connect(m_treeProxy, &QSortFilterProxyModel::dataChanged, this,
-            [this](const QModelIndex& topLeft, const QModelIndex& bottomRight,
-                   const QVector<int>& roles) -> void {
-                if (roles.contains(Qt::CheckStateRole) || roles.isEmpty())
-                {
-                    // In a tree, we check if the item now has a checkmark
-                    bool isChecked = topLeft.data(Qt::CheckStateRole) == Qt::Checked;
-
-                    // Extract data needed for the signals
-                    // Note: We assume the model stores ID and Name in specific user roles or
-                    // columns
-                    char msgId = static_cast<char>(topLeft.data(Qt::UserRole + 1).toInt());
-                    std::string sigName = topLeft.data(Qt::DisplayRole).toString().toStdString();
-
-                    if (isChecked)
-                    {
-                        emit signalChecked(msgId, sigName);
-                    } else
-                    {
-                        emit signalUnchecked(msgId, sigName);
-                    }
-                }
-            });
     // Connect checkboxes in signalListview to graphlistview
     connect(m_signalListView, &SignalList::signalMonitoringToggled, m_graphListView,
             &GraphListView::signalChecked);

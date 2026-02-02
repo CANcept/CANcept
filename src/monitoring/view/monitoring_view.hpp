@@ -36,11 +36,6 @@ class MonitoringView : public QWidget
         return m_configCard ? m_configCard->interfaceSelector() : nullptr;
     }
 
-    [[nodiscard]] auto modeToggle() const -> QPushButton*
-    {
-        return m_configCard ? m_configCard->modeToggle() : nullptr;
-    }
-
     /**
      * Sets a model for the view.
      * @param model contains the model to be added
