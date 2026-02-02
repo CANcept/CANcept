@@ -221,34 +221,40 @@ void MonitoringModel::onIncomingDbcFrame(const Core::DbcCanMessage& message)
 
 void MonitoringModel::onDbcChange(const Core::DbcConfig& config)
 {
+    m_currentDbc = config;
     while (!messageValues.empty())
     {
         messageValues.pop_back();
     }
-    for (auto it = messageValues.begin(); it != messageValues.end(); ++it)
+    for (auto & messageDefinition : m_currentDbc->messageDefinitions)
     {
         std::vector<QList<double>> signalValues;
-        for (int i = 0; i < it->signalValues.size(); i++)
+        for (int i = 0; i < messageDefinition.signalDescriptions.size(); i++)
         {
-            signalValues.push_back({});
+            signalValues.emplace_back();
         }
         messageValues.push_back(MessageTimestamp{.timestamps = {}, .signalValues = signalValues});
     }
+
 }
 
 void MonitoringModel::eraseOldData()
 {
     QTime currentTime = QTime::currentTime();
-    for (int i = 0; i < messageValues.size(); i++)
+    for (auto & [timestamps, signalValues] : messageValues)
     {
-        while (messageValues.at(i).timestamps.begin()->msecsTo(
+        if (timestamps.isEmpty())
+        {
+            continue;
+        }
+        if (timestamps.begin()->msecsTo(
                    QTime::currentTime().addSecs(Constants::HOLDING_SECONDS_IN_MODEL)) < 0)
         {
-            for (int j = 0; j < messageValues.at(i).signalValues.size(); j++)
+            for (auto & j : signalValues)
             {
-                messageValues.at(i).signalValues.at(j).pop_front();
+                j.pop_front();
             }
-            messageValues.at(i).timestamps.pop_front();
+            timestamps.pop_front();
         }
     }
 }

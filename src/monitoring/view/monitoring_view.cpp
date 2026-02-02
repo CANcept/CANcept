@@ -17,7 +17,7 @@ namespace Monitoring {
 MonitoringView::MonitoringView(MonitoringModel* model, MonitoringDelegate* delegate)
     : QWidget(nullptr),
       m_treeProxy(new QSortFilterProxyModel(this)),
-      m_signalListView(new SignalList(this)),
+      m_signalListView(new SignalList(this, model)),
       m_splitter(new QSplitter(Qt::Horizontal, this))
 {
     m_model = model;

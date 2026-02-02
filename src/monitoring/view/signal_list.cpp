@@ -16,9 +16,9 @@
 
 namespace Monitoring {
 
-SignalList::SignalList(QWidget* parent)
+SignalList::SignalList(QWidget* parent, MonitoringModel* model)
     : QWidget(parent),
-      m_model(nullptr),
+      m_model(model),
       m_scrollArea(nullptr),
       m_scrollContent(nullptr),
       m_cardsLayout(nullptr)
@@ -95,8 +95,8 @@ void SignalList::populateDecodedFromModel()
         messageCard->contentLayout()->addLayout(horizontalLayout);
 
         // Create signal cards container (initially hidden)
-        m_signalLists->append(new QWidget(messageCard));
-        auto* signalsLayout = new QVBoxLayout(m_signalLists->last());
+        m_signalLists.append(new QWidget(messageCard));
+        auto* signalsLayout = new QVBoxLayout(m_signalLists.last());
         signalsLayout->setContentsMargins(0, 0, 0, 0);
         signalsLayout->setSpacing(THEME.spacing().spacingSm);
 
@@ -112,7 +112,7 @@ void SignalList::populateDecodedFromModel()
 
             // Create signal card
             auto* signalCard =
-                new Core::CardWidget(signalName, QString(), nullptr, m_signalLists->last());
+                new Core::CardWidget(signalName, QString(), nullptr, m_signalLists.last());
 
             // Add value display/editor in signal card content
             if (auto* contentLayout = signalCard->contentLayout())
@@ -130,8 +130,8 @@ void SignalList::populateDecodedFromModel()
                 horizontalLayout->addStretch();
 
                 // 3. Value Label (Aligned to the Right)
-                m_signalValues->append(new QLabel(signalCard));
-                m_signalValues->last()->setText(
+                m_signalValues.append(new QLabel(signalCard));
+                m_signalValues.last()->setText(
                     QString("%1 / %2")
                         .arg(m_model
                                  ->data(signalIndex,
@@ -139,8 +139,8 @@ void SignalList::populateDecodedFromModel()
                                  .toString())
                         .arg(m_model->data(signalIndex, MonitoringModel::MonitoringRoles::Role_Unit)
                                  .toString()));
-                m_signalValues->last()->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
-                horizontalLayout->addWidget(m_signalValues->last());
+                m_signalValues.last()->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+                horizontalLayout->addWidget(m_signalValues.last());
 
                 contentLayout->addLayout(horizontalLayout);
 
@@ -153,10 +153,10 @@ void SignalList::populateDecodedFromModel()
             signalsLayout->addWidget(signalCard);
         }
 
-        m_signalLists->last()->hide();
+        m_signalLists.last()->hide();
 
         // Connect expand button to show/hide signals
-        connect(expandButton, &QPushButton::toggled, m_signalLists->last(), &QWidget::setVisible);
+        connect(expandButton, &QPushButton::toggled, m_signalLists.last(), &QWidget::setVisible);
 
         connect(expandButton, &QPushButton::toggled, this,
                 [expandButton](const bool expanded) -> void {
@@ -172,7 +172,7 @@ void SignalList::populateDecodedFromModel()
         // Add signals container to message card
         if (auto* contentLayout = messageCard->contentLayout())
         {
-            contentLayout->addWidget(m_signalLists->last());
+            contentLayout->addWidget(m_signalLists.last());
         }
 
         // Add message card to main layout
@@ -212,7 +212,7 @@ void SignalList::updateViewData()
         {
             const QModelIndex signalIndex = m_model->index(signalRow, 0, messageIndex);
 
-            m_signalValues->at(absoluteSignalId)
+            m_signalValues.at(absoluteSignalId)
                 ->setText(
                     QString("%1 / %2")
                         .arg(m_model
