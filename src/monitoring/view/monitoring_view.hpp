@@ -8,6 +8,7 @@
 #include <QSplitter>
 
 #include "can_bus_config_card.hpp"
+#include "core/dto/dbc_dto.hpp"
 #include "monitoring/delegate/monitoring_delegate.hpp"
 #include "monitoring/model/monitoring_model.hpp"
 #include "signal_list.hpp"
@@ -62,6 +63,8 @@ class MonitoringView : public QWidget
         return m_graphListView;
     }
 
+    void stopTimer();
+
    signals:
 
     /**
@@ -81,21 +84,13 @@ class MonitoringView : public QWidget
      */
     void signalUnchecked(char messageId, const std::string& signalName);
 
-   public slots:
+    void refreshDataView();
 
-    /**
-     * @brief Triggered when the dbc configuration is changed
-     * Notifies GraphListView to clear graph list.
-     */
-    void onDbcConfigurationChanged();
+   public slots:
+    void onUpdateMessages();
 
    private:
     void setupUi();
-
-    QTimer* m_dbcMessageTimer;
-    QTimer* m_rawMessageTimer;
-    void listenDbcMessages();
-    void listenRawMessages();
 
     /**
      * @brief Proxy model used to filter and sort the signal tree data.
@@ -113,5 +108,7 @@ class MonitoringView : public QWidget
     MonitoringDelegate* m_delegate;
 
     CanBusConfigCard* m_configCard;
+
+    Core::DbcConfig m_dbcConfig;
 };
 }  // namespace Monitoring

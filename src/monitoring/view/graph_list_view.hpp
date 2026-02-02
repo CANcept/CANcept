@@ -63,6 +63,12 @@ class GraphListView : public QWidget
     void appendDataToGraph();
 
     /**
+     * @brief Deletes all contained graphs.
+     *
+     */
+    void clearAll();
+
+    /**
      * @brief Removes the graph associated with the given signal.
      *
      * Called when a signal is deselected or no longer monitored.
@@ -71,6 +77,9 @@ class GraphListView : public QWidget
      * @param signalName the name of the plotted signal
      */
     void deleteGraph(char messageId, const std::string& signalName);
+
+   public slots:
+    void signalChecked(bool enabled, const QString& messageId, const QString& signalId);
 
    private:
     /**

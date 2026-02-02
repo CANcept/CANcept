@@ -1,5 +1,13 @@
 #pragma once
+#pragma once
+
 #include <QAbstractItemModel>
+#include <QList>
+#include <QMetaType>
+#include <QTime>
+#include <QVariant>
+#include <atomic>
+#include <optional>
 #include <thread>
 #include <vector>
 
@@ -10,6 +18,11 @@
  * @brief Contains data models and UI components for CAN signal monitoring.
  */
 namespace Monitoring {
+
+struct MessageTimestamp {
+    QList<QTime> timestamps;
+    std::vector<QList<double>> signalValues;
+};
 
 /**
  * @class MonitoringModel
@@ -28,8 +41,7 @@ class MonitoringModel final : public QAbstractItemModel
 {
     Q_OBJECT
    public:
-    enum MonitoringRoles
-    {
+    enum MonitoringRoles {
         Role_Name = Qt::UserRole + 1,
         Role_ID,
         Role_ValueList,
@@ -88,18 +100,15 @@ class MonitoringModel final : public QAbstractItemModel
 
     void eraseOldData();
 
-    Q_DECLARE_METATYPE(QList<QTime>)
-    struct MessageTimestamp
-    {
-        QList<QTime> timestamps;
-        std::vector<QList<double>> signalValues;
-    };
    private:
     std::vector<MessageTimestamp> messageValues;
     std::optional<Core::DbcConfig> m_currentDbc;
     std::atomic<bool> _execute;
     std::atomic<bool> deleteOldData;
     std::thread message_check_thread;
-
 };
 }  // namespace Monitoring
+
+Q_DECLARE_METATYPE(Monitoring::MessageTimestamp)
+
+// Q_DECLARE_METATYPE(QList<QTime>);

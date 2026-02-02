@@ -19,7 +19,8 @@ MonitoringComponent::MonitoringComponent(Core::IEventBroker& broker)
                           QIcon(Constants::TAB_ICON_PATH)),
       m_model(std::make_unique<MonitoringModel>()),
       m_delegate(std::make_unique<MonitoringDelegate>(m_model.get())),
-      m_view(std::make_unique<MonitoringView>(m_model.get(), m_delegate.get()))
+      m_view(std::make_unique<MonitoringView>(m_model.get(), m_delegate.get())),
+      m_updateTimer(nullptr)
 {
     // --- Internal Signal/Slot Connections ---
 
@@ -31,16 +32,12 @@ MonitoringComponent::MonitoringComponent(Core::IEventBroker& broker)
             &MonitoringComponent::onSignalUnchecked);
 
     // Forward internal signal to the view to refresh UI (e.g. the TreeView)
-    connect(this, &MonitoringComponent::dbcConfigurationChanged, m_view.get(),
-            &MonitoringView::onDbcConfigurationChanged);
+    connect(this, &MonitoringComponent::dbcConfigurationChanged, m_model.get(),
+            &MonitoringModel::onDbcChange);
 
     // Forward dbc decoded frame received signal to the model
     connect(this, &MonitoringComponent::dbcFrameReceived, m_model.get(),
             &MonitoringModel::onIncomingDbcFrame);
-
-    // Forward raw frame received signal to the model
-    connect(this, &MonitoringComponent::rawFrameReceived, m_model.get(),
-            &MonitoringModel::onIncomingRawFrame);
 
     // Device selection changes
     connect(m_view->interfaceSelector(), QOverload<int>::of(&QComboBox::currentIndexChanged), this,
@@ -57,6 +54,8 @@ MonitoringComponent::MonitoringComponent(Core::IEventBroker& broker)
     // Mode selection changes
     connect(m_view->modeToggle(), &QPushButton::clicked, this,
             [this]() -> void { m_dbcModeEnabled = !m_dbcModeEnabled; });
+
+    connect(&m_updateTimer, &QTimer::timeout, m_view.get(), &MonitoringView::onUpdateMessages);
 }
 
 MonitoringComponent::~MonitoringComponent() = default;
@@ -81,7 +80,7 @@ void MonitoringComponent::onStart()
     m_parseSuccessConn = m_eventBroker.subscribe<Core::DBCParsedEvent>(
         [this](const Core::DBCParsedEvent& event) -> void {
             // Logic to update model with new DBC data could go here
-            emit dbcConfigurationChanged();
+            emit dbcConfigurationChanged(event.config);
         });
 
     // 3. Subscribe to incoming dbc decoded CAN traffic
@@ -92,9 +91,14 @@ void MonitoringComponent::onStart()
             emit dbcFrameReceived(event.canMessage);
         });
 }
+
 void MonitoringComponent::onStop()
 {
     // Disconnect event broker handles to prevent callbacks to a stopped component
+    if (m_updateTimer.isActive())
+    {
+        m_updateTimer.stop();
+    }
     m_parseSuccessConn = {};
     m_parseErrorConn = {};
 }
@@ -124,4 +128,5 @@ void MonitoringComponent::onSignalUnchecked(char messageId, const std::string& s
         m_view->getGraphListView()->deleteGraph(messageId, signalName);
     }
 }
+
 }  // namespace Monitoring
