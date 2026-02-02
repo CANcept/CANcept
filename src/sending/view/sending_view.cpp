@@ -7,6 +7,7 @@
 #include <QVBoxLayout>
 
 #include "core/macro/theme.hpp"
+#include "core/widgets/common/styled_combo_box.hpp"
 #include "sending/constants.hpp"
 
 namespace Sending {
@@ -135,6 +136,20 @@ void SendingView::setupUi()
     mainLayout->addWidget(m_contentStack, 1);
 
     connect(m_sidebarList, &QListView::clicked, this, &SendingView::onSidebarSelectionChanged);
+
+    // Connect interface dropdowns to emit signal when opening (for on-the-fly refresh)
+    if (const auto* rawInterfaceCombo =
+            qobject_cast<Core::StyledComboBox*>(m_rawView->interfaceSelector()))
+    {
+        connect(rawInterfaceCombo, &Core::StyledComboBox::aboutToShowPopup, this,
+                &SendingView::interfaceDropdownOpening);
+    }
+    if (const auto* dbcInterfaceCombo =
+            qobject_cast<Core::StyledComboBox*>(m_dbcView->interfaceSelector()))
+    {
+        connect(dbcInterfaceCombo, &Core::StyledComboBox::aboutToShowPopup, this,
+                &SendingView::interfaceDropdownOpening);
+    }
 }
 
 void SendingView::onSidebarSelectionChanged(const QModelIndex& index)
@@ -262,17 +277,6 @@ void SendingView::setModel(SendingModel* model)
     // DBC Send Button to Model Transmit
     connect(m_dbcView->sendButton(), &QPushButton::clicked, this,
             [model]() { model->transmitCurrent(); });
-
-    // Forward model's send requests to view signals
-    connect(model, &SendingModel::requestSendRaw, this,
-            [this](const std::string&, const Core::RawCanMessage& message) {
-                emit sendRawRequested(message);
-            });
-
-    connect(model, &SendingModel::requestSendDbc, this,
-            [this](const std::string&, const Core::DbcCanMessage& message) {
-                emit sendDbcRequested(message);
-            });
 
     // Initial button state
     updateSendButtonStates();

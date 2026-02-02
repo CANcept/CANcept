@@ -5,7 +5,6 @@
 #include <QStackedWidget>
 #include <QWidget>
 
-#include "core/dto/can_dto.hpp"
 #include "dbc_based_sending_subview.hpp"
 #include "raw_sending_subview.hpp"
 #include "sending/model/sending_model.hpp"
@@ -48,14 +47,12 @@ class SendingView final : public QWidget
     /** @brief Emitted when the sidebar selection changes (0=Raw, 1=DBC) */
     void modeChanged(bool isDbcMode);
 
-    /** @brief Emitted when raw send button is clicked with parsed message */
-    void sendRawRequested(const Core::RawCanMessage& message);
-
-    /** @brief Emitted when DBC send completes via model */
-    void sendDbcRequested(const Core::DbcCanMessage& message);
-
     /** @brief Emitted when the device dropdown changes */
     void deviceSelectionChanged(const std::string& deviceName);
+
+    /** @brief Emitted when an interface dropdown is about to open, allowing refresh of available
+     * interfaces */
+    void interfaceDropdownOpening();
 
    public slots:
     /** @brief Switches the visible sub-view (0 for Raw, 1 for DBC) */

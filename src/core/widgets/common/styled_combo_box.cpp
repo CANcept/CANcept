@@ -112,6 +112,7 @@ void StyledComboBox::applyStyle()
 
 void StyledComboBox::showPopup()
 {
+    emit aboutToShowPopup();
     QComboBox::showPopup();
 
     if (QWidget* popup = findChild<QFrame*>())
