@@ -19,26 +19,32 @@
 namespace DbcFile {
 void OverviewPage::setFileName(const QString& text) const
 {
+    if (text.isEmpty()) return;
     m_lblFileName->setText(text);
 }
 auto OverviewPage::setVersion(const QString& text) const -> void
 {
+    if (text.isEmpty()) return;
     m_lblVersion->setText(text);
 }
 void OverviewPage::setEcuCount(const QString& text) const
 {
+    if (text.isEmpty()) return;
     m_lblEcuCount->setText(text);
 }
 void OverviewPage::setMessageCount(const QString& text) const
 {
+    if (text.isEmpty()) return;
     m_lblMessageCount->setText(text);
 }
 void OverviewPage::setSignalCount(const QString& text) const
 {
+    if (text.isEmpty()) return;
     m_lblSignalCount->setText(text);
 }
 void OverviewPage::setOrphanCount(const QString& text) const
 {
+    if (text.isEmpty()) return;
     m_lblOrphanCount->setText(text);
 }
 // --- OverviewPage Dummy ---
@@ -57,7 +63,7 @@ void OverviewPage::setupFileInfoSection(QVBoxLayout* parentLayout)
     fileInfoLayout->setSpacing(spacing.spacingSm);
     fileInfoLayout->addSpacing(spacing.spacingLg);
 
-    auto* grid = new QGridLayout;
+    auto* grid = new QGridLayout();
 
     auto* fileNameTitle = new QLabel(Constants::OverviewPage::FileNameTitle);
     fileNameTitle->setStyleSheet(QString("color: %1;").arg(colors.textSecondary.name()));
@@ -95,61 +101,67 @@ void OverviewPage::setupStatsSection(QVBoxLayout* parentLayout)
 
     parentLayout->addLayout(layout);
 }
+void OverviewPage::createOverviewList(QHBoxLayout* parentLayout, const QString& title,
+                                      QListView*& listViewMember, const QString& badgeIconPath)
+{
+    // Card container
+    auto* listCard = new Core::CardWidget(
+        title + Constants::OverviewPage::OverviewSuffix,
+        Constants::OverviewPage::OverviewDescription.arg(title));
+
+    listCard->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
+    auto* layout = listCard->contentLayout();
+
+    // Create and configure list view
+    listViewMember = new QListView(listCard);
+    listViewMember->setViewMode(QListView::ListMode);
+    listViewMember->setFlow(QListView::TopToBottom);
+    listViewMember->setWrapping(false);
+    listViewMember->setFrameShape(QFrame::NoFrame);
+    listViewMember->setSelectionMode(QAbstractItemView::NoSelection);
+    listViewMember->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    listViewMember->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
+    listViewMember->setStyleSheet(
+        "background: transparent; border: none; padding: 0px; margin: 0px;");
+
+    // Delegate
+    constexpr int BadgeRole = DbcRoles::Role_ChildCount;
+    constexpr int DetailRole = -1; // no detail to item
+    const auto badgeIcon = QIcon(badgeIconPath);
+
+    auto* delegate = new Core::CardListDelegate(
+        BadgeRole,
+        badgeIcon,
+        DetailRole,                 // no column
+        listViewMember      // parent → ownership
+    );
+
+    listViewMember->setItemDelegate(delegate);
+
+    // Assemble
+    layout->addWidget(listViewMember);
+    parentLayout->addWidget(listCard);
+}
 
 void OverviewPage::setupListsSection(QVBoxLayout* parentLayout)
 {
     const auto& spacing = THEME.spacing();
 
-
     auto* listsRowLayout = new QHBoxLayout();
     listsRowLayout->setSpacing(spacing.spacingSm);
 
-    auto addList = [&](const QString& title, QListView*& listViewMember,
-                       const QString& badgeIconPath) {
+    createOverviewList(listsRowLayout,
+                       Constants::OverviewPage::EcuStatTitle,
+                       m_ecuList,
+                       Constants::Sidebar::IconMessages);
 
-        // Card Frame for the list
-        auto* listCard =
-            new Core::CardWidget(title + Constants::OverviewPage::OverviewSuffix,
-                                 Constants::OverviewPage::OverviewDescription.arg(title));
-        listCard->setSizePolicy(
-                            QSizePolicy::Expanding,
-                            QSizePolicy::Expanding
-                                );
-        auto* layout = listCard->contentLayout();
+    createOverviewList(listsRowLayout,
+                       Constants::OverviewPage::MessagesStatTitle,
+                       m_messageList,
+                       Constants::Sidebar::IconSignals);
 
-        // Initalize listView
-        listViewMember = new QListView(listCard);
-
-        listViewMember->setViewMode(QListView::ListMode);
-        listViewMember->setFlow(QListView::TopToBottom);
-        listViewMember->setWrapping(false);
-        listViewMember->setFrameShape(QFrame::NoFrame);
-        listViewMember->setSelectionMode(QAbstractItemView::NoSelection);
-        listViewMember->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-
-        listViewMember->setSizePolicy(
-            QSizePolicy::Expanding,
-            QSizePolicy::Expanding
-        );
-
-        // Style
-        listViewMember->setStyleSheet("background: transparent; border: none; padding: 0px; margin: 0px;");
-
-
-        // Set delegate
-        const int badgeRole = DbcRoles::Role_ChildCount;
-        const auto badgeIcon = QIcon(badgeIconPath);
-        auto* delegate = new Core::CardListDelegate(badgeRole, badgeIcon, -1, listViewMember);
-        listViewMember->setItemDelegate(delegate);
-
-        // Add List to layout
-        layout->addWidget(listViewMember);
-        listsRowLayout->addWidget(listCard);
-    };
-    // Add to lists two parent layout
-    addList(Constants::OverviewPage::EcuStatTitle, m_ecuList, Constants::Sidebar::IconMessages);
-    addList(Constants::OverviewPage::MessagesStatTitle, m_messageList,
-            Constants::Sidebar::IconSignals);
     parentLayout->addLayout(listsRowLayout);
 }
 
