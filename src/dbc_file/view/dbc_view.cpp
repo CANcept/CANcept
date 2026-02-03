@@ -77,8 +77,7 @@ void DbcView::updateOverviewLabels() const
     // Overview item always first child to root
     if (m_model->rowCount() == 0) return;
 
-    QModelIndex overviewIndex = m_model->index(0, 0, QModelIndex());
-    if (!overviewIndex.isValid()) return;
+    if (const QModelIndex overviewIndex = m_model->index(0, 0, QModelIndex()); !overviewIndex.isValid()) return;
 
     m_overviewPage->setFileName(
         m_model->data(m_model->index(0, Constants::Columns::OvFilename)).toString());

@@ -3,16 +3,18 @@
 //
 #include "card_list_delegate.hpp"
 
+#include <utility>
+
 #include "core/macro/theme.hpp"
 #include "core/painters/item_painter.hpp"
 #include "core/theme/theme_manager.hpp"
 namespace Core {
-CardListDelegate::CardListDelegate(const int badgeRole, const QIcon& badgeIcon,
+CardListDelegate::CardListDelegate(const int badgeRole, QIcon  badgeIcon,
                                    const int detailRole, QObject* parent)
     : QStyledItemDelegate(parent),
       m_badgeRole(badgeRole),
       m_detailRole(detailRole),
-      m_badgeIcon(badgeIcon)
+      m_badgeIcon(std::move(badgeIcon))
 {
 }
 

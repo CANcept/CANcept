@@ -16,7 +16,7 @@ namespace Core {
  * Visual Layout:
  * [ Icon ]  [ Title ]   [ Detail Text (optional) ]   [ Badge (Pill) ]
  */
-class CardListDelegate : public QStyledItemDelegate
+class CardListDelegate final : public QStyledItemDelegate
 {
     Q_OBJECT
 
@@ -31,7 +31,7 @@ class CardListDelegate : public QStyledItemDelegate
      * @param badgeIcon Icon to put into the badge.
      * @param parent Parent object.
      */
-    explicit CardListDelegate(int badgeRole, const QIcon& badgeIcon = QIcon(), int detailRole = -1,
+    explicit CardListDelegate(int badgeRole, QIcon  badgeIcon = QIcon(), int detailRole = -1,
                               QObject* parent = nullptr);
     ~CardListDelegate() override = default;
 
@@ -55,7 +55,7 @@ class CardListDelegate : public QStyledItemDelegate
      *
      * The size is determined by ThemeManager::spacing().itemCardWidth/Height.
      */
-    QSize sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const override;
+    [[nodiscard]] auto sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const -> QSize override;
 
    private:
     /** Model role to retrieve badge text */
