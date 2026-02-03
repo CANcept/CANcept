@@ -254,11 +254,13 @@ void MonitoringModel::onDbcChange(const Core::DbcConfig& config)
 
 void MonitoringModel::eraseOldData()
 {
-    const auto milliseconds
-        = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    const auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(
+                                  std::chrono::system_clock::now().time_since_epoch())
+                                  .count();
     for (auto& [timestamps, signalValues] : messageValues)
     {
-        while (!timestamps.empty() && timestamps.front() + Constants::HOLDING_SECONDS_IN_MODEL * 1000 < milliseconds)
+        while (!timestamps.empty() &&
+               timestamps.front() + Constants::HOLDING_SECONDS_IN_MODEL * 1000 < milliseconds)
         {
             for (auto& j : signalValues)
             {
