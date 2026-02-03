@@ -9,8 +9,8 @@
 #include "core/painters/item_painter.hpp"
 #include "core/theme/theme_manager.hpp"
 namespace Core {
-CardListDelegate::CardListDelegate(const int badgeRole, QIcon  badgeIcon,
-                                   const int detailRole, QObject* parent)
+CardListDelegate::CardListDelegate(const int badgeRole, QIcon badgeIcon, const int detailRole,
+                                   QObject* parent)
     : QStyledItemDelegate(parent),
       m_badgeRole(badgeRole),
       m_detailRole(detailRole),
@@ -18,10 +18,11 @@ CardListDelegate::CardListDelegate(const int badgeRole, QIcon  badgeIcon,
 {
 }
 
-auto CardListDelegate::sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const -> QSize
+auto CardListDelegate::sizeHint(const QStyleOptionViewItem& option,
+                                const QModelIndex& index) const -> QSize
 {
     const auto& s = THEME.spacing();
-    return {s.WidthMd,s.HeightMd};
+    return {s.WidthMd, s.HeightMd};
 }
 
 void CardListDelegate::paint(QPainter* painter, const QStyleOptionViewItem& option,

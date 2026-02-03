@@ -274,12 +274,8 @@ void LoadPage::setupUploadZone(QVBoxLayout* layout)
     zoneLayout->setAlignment(Qt::AlignCenter);
 
     // Upload Icon + Instruction Text
-    auto* iconLabel = new Core::TintedIconLabel(
-                                                Constants::LoadPage::CardIcon,
-                                                spacing.IconLg,
-                                                THEME.colors().textSecondary,
-                                                m_uploadBoxFrame
-                                                );
+    auto* iconLabel = new Core::TintedIconLabel(Constants::LoadPage::CardIcon, spacing.IconLg,
+                                                THEME.colors().textSecondary, m_uploadBoxFrame);
     zoneLayout->addWidget(iconLabel);
     zoneLayout->addWidget(createUploadInstruction(m_uploadBoxFrame));
 

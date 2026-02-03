@@ -8,11 +8,11 @@
 #include <QScrollArea>
 #include <QVBoxLayout>
 
-#include "core/widgets/tinted_icon_label.hpp"
 #include "core/delegates/card_list_delegate.hpp"
 #include "core/macro/theme.hpp"
 #include "core/theme/theme_manager.hpp"
 #include "core/widgets/card_widget.hpp"
+#include "core/widgets/tinted_icon_label.hpp"
 #include "dbc_file/constants.hpp"
 #include "dbc_file/model/dbc_roles.hpp"
 #include "spdlog/fmt/bundled/os.h"
@@ -105,9 +105,8 @@ void OverviewPage::createOverviewList(QHBoxLayout* parentLayout, const QString& 
                                       QListView*& listViewMember, const QString& badgeIconPath)
 {
     // Card container
-    auto* listCard = new Core::CardWidget(
-        title + Constants::OverviewPage::OverviewSuffix,
-        Constants::OverviewPage::OverviewDescription.arg(title));
+    auto* listCard = new Core::CardWidget(title + Constants::OverviewPage::OverviewSuffix,
+                                          Constants::OverviewPage::OverviewDescription.arg(title));
 
     listCard->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
@@ -128,14 +127,12 @@ void OverviewPage::createOverviewList(QHBoxLayout* parentLayout, const QString& 
 
     // Delegate
     constexpr int BadgeRole = DbcRoles::Role_ChildCount;
-    constexpr int DetailRole = -1; // no detail to item
+    constexpr int DetailRole = -1;  // no detail to item
     const auto badgeIcon = QIcon(badgeIconPath);
 
-    auto* delegate = new Core::CardListDelegate(
-        BadgeRole,
-        badgeIcon,
-        DetailRole,                 // no column
-        listViewMember      // parent → ownership
+    auto* delegate = new Core::CardListDelegate(BadgeRole, badgeIcon,
+                                                DetailRole,     // no column
+                                                listViewMember  // parent → ownership
     );
 
     listViewMember->setItemDelegate(delegate);
@@ -152,14 +149,10 @@ void OverviewPage::setupListsSection(QVBoxLayout* parentLayout)
     auto* listsRowLayout = new QHBoxLayout();
     listsRowLayout->setSpacing(spacing.spacingSm);
 
-    createOverviewList(listsRowLayout,
-                       Constants::OverviewPage::EcuStatTitle,
-                       m_ecuList,
+    createOverviewList(listsRowLayout, Constants::OverviewPage::EcuStatTitle, m_ecuList,
                        Constants::Sidebar::IconMessages);
 
-    createOverviewList(listsRowLayout,
-                       Constants::OverviewPage::MessagesStatTitle,
-                       m_messageList,
+    createOverviewList(listsRowLayout, Constants::OverviewPage::MessagesStatTitle, m_messageList,
                        Constants::Sidebar::IconSignals);
 
     parentLayout->addLayout(listsRowLayout);
@@ -205,15 +198,13 @@ auto OverviewPage::createStatCard(const QString& title, QLabel*& valueLabelPtr,
     // Top Row: Title + Icon
     auto* topRow = new QHBoxLayout();
     auto* lblTitle = new QLabel(title);
-    lblTitle->setStyleSheet(QString("color: %1; font-size: %2px;").arg(colors.textPrimary.name()).arg(spacing.fontSizeMd));
+    lblTitle->setStyleSheet(QString("color: %1; font-size: %2px;")
+                                .arg(colors.textPrimary.name())
+                                .arg(spacing.fontSizeMd));
 
-
-    auto* iconLabel = new Core::TintedIconLabel(
-    iconPath,
-    spacing.IconMd,
-    THEME.colors().textPrimary, // Schwarz
-    card
-);
+    auto* iconLabel = new Core::TintedIconLabel(iconPath, spacing.IconMd,
+                                                THEME.colors().textPrimary,  // Schwarz
+                                                card);
     topRow->addWidget(lblTitle);
     topRow->addStretch();
     topRow->addWidget(iconLabel);

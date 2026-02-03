@@ -3,9 +3,9 @@
 //
 #pragma once
 
-#include <QLabel>
-#include <QIcon>
 #include <QColor>
+#include <QIcon>
+#include <QLabel>
 
 namespace Core {
 /**
@@ -22,7 +22,7 @@ class TintedIconLabel : public QLabel
 {
     Q_OBJECT
 
-public:
+   public:
     /**
      * @brief Constructs the tinted icon label.
      *
@@ -31,7 +31,8 @@ public:
      * @param color The color to apply to the icon content.
      * @param parent The parent widget.
      */
-    explicit TintedIconLabel(const QString& iconPath, int size, const QColor& color, QWidget* parent = nullptr);
+    explicit TintedIconLabel(const QString& iconPath, int size, const QColor& color,
+                             QWidget* parent = nullptr);
 
     ~TintedIconLabel() override = default;
 
@@ -51,7 +52,7 @@ public:
      */
     void setIconSize(int size);
 
-private:
+   private:
     /**
      * @brief Internal helper to redraw the pixmap with the current settings.
      */
@@ -61,4 +62,4 @@ private:
     QColor m_color;
     int m_size;
 };
-}
+}  // namespace Core

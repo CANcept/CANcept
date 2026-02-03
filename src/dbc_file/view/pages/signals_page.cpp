@@ -15,7 +15,5 @@ auto SignalsPage::getFilterCombo() const -> QComboBox*
 {
     return nullptr;
 }
-void SignalsPage::setupUi()
-{
-};
+void SignalsPage::setupUi() {};
 }  // namespace DbcFile

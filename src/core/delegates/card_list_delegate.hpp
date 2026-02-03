@@ -31,7 +31,7 @@ class CardListDelegate final : public QStyledItemDelegate
      * @param badgeIcon Icon to put into the badge.
      * @param parent Parent object.
      */
-    explicit CardListDelegate(int badgeRole, QIcon  badgeIcon = QIcon(), int detailRole = -1,
+    explicit CardListDelegate(int badgeRole, QIcon badgeIcon = QIcon(), int detailRole = -1,
                               QObject* parent = nullptr);
     ~CardListDelegate() override = default;
 
@@ -55,7 +55,8 @@ class CardListDelegate final : public QStyledItemDelegate
      *
      * The size is determined by ThemeManager::spacing().itemCardWidth/Height.
      */
-    [[nodiscard]] auto sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const -> QSize override;
+    [[nodiscard]] auto sizeHint(const QStyleOptionViewItem& option,
+                                const QModelIndex& index) const -> QSize override;
 
    private:
     /** Model role to retrieve badge text */

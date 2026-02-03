@@ -17,7 +17,7 @@ void ItemPainter::paintCardBackground(QPainter* painter, const QRect& rect, bool
     painter->save();
     painter->setRenderHint(QPainter::Antialiasing);
 
-    const int itemGap = spacing.spacingSm/2;
+    const int itemGap = spacing.spacingSm / 2;
 
     qreal penWidth = spacing.borderThin;
     qreal offset = penWidth / 2.0;
@@ -48,8 +48,8 @@ void ItemPainter::paintIcon(QPainter* painter, const QRect& rect, const QIcon& i
     const int itemCardPadding = s.spacingMd;
 
     // Create rect for icon
-    const QRect target(rect.left() + itemCardPadding, rect.center().y() - (iconSize / 2) + 1, iconSize,
-                       iconSize);
+    const QRect target(rect.left() + itemCardPadding, rect.center().y() - (iconSize / 2) + 1,
+                       iconSize, iconSize);
 
     // Tinting icon
     QPixmap pix = icon.pixmap(iconSize, iconSize);
@@ -81,7 +81,8 @@ void ItemPainter::paintTitle(QPainter* painter, const QRect& rect, const QString
     painter->setFont(font);
 
     // "..." if text too long
-    const QString elided = painter->fontMetrics().elidedText(text, Qt::ElideRight, textRect.width());
+    const QString elided =
+        painter->fontMetrics().elidedText(text, Qt::ElideRight, textRect.width());
     painter->drawText(textRect, Qt::AlignVCenter | Qt::AlignLeft, elided);
 
     painter->restore();
@@ -106,8 +107,8 @@ auto ItemPainter::paintBadge(QPainter* painter, const QRect& rect, const QString
     const int maxTextWidth = rect.width() / 2;
     const auto elidedText = painter->fontMetrics().elidedText(text, Qt::ElideRight, maxTextWidth);
     const int textWidth = painter->fontMetrics().horizontalAdvance(elidedText);
-    const int badgeWidth = badgePadding + iconWidth + (icon.isNull() ? 0 : badgePadding) +
-                           textWidth + badgePadding;
+    const int badgeWidth =
+        badgePadding + iconWidth + (icon.isNull() ? 0 : badgePadding) + textWidth + badgePadding;
     const int itemCardPadding = s.spacingMd;
     const QRect badgeRect(rect.right() - badgeWidth - itemCardPadding,
                           rect.center().y() - (badgeHeight / 2) + 1, badgeWidth, badgeHeight);

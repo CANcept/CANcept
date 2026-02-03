@@ -33,16 +33,19 @@ void SidebarDelegate::initStyleOption(QStyleOptionViewItem* option, const QModel
     }
     // Choose icon color depending on selected or unselected
     QColor iconColor;
-    if (!(index.flags() & Qt::ItemIsEnabled)) {
+    if (!(index.flags() & Qt::ItemIsEnabled))
+    {
         // Item disabled
         iconColor = colors.textDisabled;
         option->palette.setColor(QPalette::Text, colors.textDisabled);
 
-    } else if (option->state & QStyle::State_Selected) {
+    } else if (option->state & QStyle::State_Selected)
+    {
         // Item selected
         iconColor = colors.textPrimary;
 
-    } else {
+    } else
+    {
         // Item not selected
         iconColor = colors.textSecondary;
     }

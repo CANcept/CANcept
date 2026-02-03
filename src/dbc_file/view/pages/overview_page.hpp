@@ -45,21 +45,20 @@ class OverviewPage : public QWidget
      */
     void setFileName(const QString& text) const;
     /**
- * @brief Sets the displayed DBC version.
- *
- * @param text Version string of the DBC file.
- */
+     * @brief Sets the displayed DBC version.
+     *
+     * @param text Version string of the DBC file.
+     */
     void setVersion(const QString& text) const;
 
     // --- Stats ---
 
     /**
- * @brief Sets the displayed ECU count.
- *
- * @param text Number of ECUs as text.
- */
+     * @brief Sets the displayed ECU count.
+     *
+     * @param text Number of ECUs as text.
+     */
     void setEcuCount(const QString& text) const;
-
 
     /**
      * @brief Sets the displayed message count.
@@ -68,18 +67,17 @@ class OverviewPage : public QWidget
      */
     void setMessageCount(const QString& text) const;
     /**
- * @brief Sets the displayed signal count.
- *
- * @param text Number of signals as text.
- */
+     * @brief Sets the displayed signal count.
+     *
+     * @param text Number of signals as text.
+     */
     void setSignalCount(const QString& text) const;
     /**
- * @brief Sets the displayed orphan signal count.
- *
- * @param text Number of orphan signals as text.
- */
+     * @brief Sets the displayed orphan signal count.
+     *
+     * @param text Number of orphan signals as text.
+     */
     void setOrphanCount(const QString& text) const;
-
 
     /**
      * @brief Returns the list view for the ECUs section.
@@ -103,14 +101,13 @@ class OverviewPage : public QWidget
 
    private:
     /**
- * @brief Creates the file information section.
- *
- * Displays file name and version inside a card widget.
- *
- * @param parentLayout Parent layout to which the section is added.
- */
+     * @brief Creates the file information section.
+     *
+     * Displays file name and version inside a card widget.
+     *
+     * @param parentLayout Parent layout to which the section is added.
+     */
     void setupFileInfoSection(QVBoxLayout* parentLayout);
-
 
     /**
      * @brief Creates a statistic card widget.
@@ -124,8 +121,7 @@ class OverviewPage : public QWidget
      * @return Pointer to the created statistic card widget.
      */
     static auto createStatCard(const QString& title, QLabel*& valueLabelPtr,
-                        const QString& iconPath) -> QWidget*;
-
+                               const QString& iconPath) -> QWidget*;
 
     /**
      * @brief Creates the statistics section.
@@ -148,18 +144,16 @@ class OverviewPage : public QWidget
      * @param listViewMember Reference to the member pointer that receives the created QListView.
      * @param badgeIconPath Icon used for the item badge.
      */
-    static void createOverviewList(QHBoxLayout* parentLayout,
-                            const QString& title,
-                            QListView*& listViewMember,
-                            const QString& badgeIconPath);
+    static void createOverviewList(QHBoxLayout* parentLayout, const QString& title,
+                                   QListView*& listViewMember, const QString& badgeIconPath);
 
     /**
- * @brief Creates the list overview section.
- *
- * Adds card-based overview lists for ECUs and messages.
- *
- * @param parentLayout Parent layout to which the section is added.
- */
+     * @brief Creates the list overview section.
+     *
+     * Adds card-based overview lists for ECUs and messages.
+     *
+     * @param parentLayout Parent layout to which the section is added.
+     */
     void setupListsSection(QVBoxLayout* parentLayout);
 
     /**
@@ -169,7 +163,6 @@ class OverviewPage : public QWidget
      * (file info, statistics, and overview lists).
      */
     void setupUi();
-
 
     // --- 1. Labels for File Info Card ---
     /** @brief Label displaying the DBC file name. */

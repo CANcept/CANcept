@@ -8,15 +8,18 @@
 
 namespace Core {
 
-TintedIconLabel::TintedIconLabel(const QString& iconPath, const int size, const QColor& color, QWidget* parent)
+TintedIconLabel::TintedIconLabel(const QString& iconPath, const int size, const QColor& color,
+                                 QWidget* parent)
     : QLabel(parent), m_path(iconPath), m_color(color), m_size(size)
 {
     setAlignment(Qt::AlignCenter);
     updatePixmap();
 }
 
-void TintedIconLabel::setColor(const QColor& color) {
-    if (m_color != color) {
+void TintedIconLabel::setColor(const QColor& color)
+{
+    if (m_color != color)
+    {
         m_color = color;
         updatePixmap();
     }
@@ -30,7 +33,8 @@ void TintedIconLabel::setIconSize(const int size)
     m_size = size;
 }
 
-void TintedIconLabel::updatePixmap() {
+void TintedIconLabel::updatePixmap()
+{
     if (m_path.isEmpty()) return;
 
     const QIcon icon(m_path);
@@ -46,4 +50,4 @@ void TintedIconLabel::updatePixmap() {
     setPixmap(pix);
 }
 
-}
+}  // namespace Core
