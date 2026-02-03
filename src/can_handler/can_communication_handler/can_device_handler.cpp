@@ -53,7 +53,9 @@ void CanDeviceHandler::updateCanDevice(const Core::CanDriverChangeEvent& event)
     {
         canDriver.reset(new CanDriver{event.driverName, CAN_RAW});
         LOG_INF("CanDeviceHandler", "CAN driver initialized successfully on {}", event.driverName);
-        // canDriver->setReceiveOwnMessages(true);
+        canDriver->setReceiveOwnMessages(true);
+        canDriver->setReturnRelativeTimestamps(false);
+        canDriver->setCollectTelemetry(true);
     } catch (const std::exception& e)
     {
         LOG_ERR("CanDeviceHandler", "Failed to initialize CAN driver: {}", e.what());
