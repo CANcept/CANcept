@@ -227,6 +227,7 @@ void MonitoringModel::onIncomingDbcFrame(const Core::DbcCanMessage& message)
                 }
                 j++;
             }
+            messageValues.at(i).timestamps.push_back(message.receiveTime.count());
             break;
         }
         i++;
@@ -253,15 +254,11 @@ void MonitoringModel::onDbcChange(const Core::DbcConfig& config)
 
 void MonitoringModel::eraseOldData()
 {
-    QTime currentTime = QTime::currentTime();
+    const auto milliseconds
+        = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     for (auto& [timestamps, signalValues] : messageValues)
     {
-        if (timestamps.isEmpty())
-        {
-            continue;
-        }
-        if (timestamps.begin()->msecsTo(
-                QTime::currentTime().addSecs(Constants::HOLDING_SECONDS_IN_MODEL)) < 0)
+        while (!timestamps.empty() && timestamps.front() + Constants::HOLDING_SECONDS_IN_MODEL * 1000 < milliseconds)
         {
             for (auto& j : signalValues)
             {
