@@ -20,8 +20,9 @@
 
 namespace Monitoring {
 struct MessageTimestamp {
-    QList<qlonglong> timestamps;
-    std::vector<QList<double>> signalValues;
+    QList<qreal> timestamps;
+    std::vector<QList<qreal>> signalValues;
+    QList<QString> signalNames;
 };
 
 /**
@@ -101,7 +102,7 @@ class MonitoringModel final : public QAbstractItemModel
     void eraseOldData();
 
    private:
-    std::vector<MessageTimestamp> messageValues;
+    std::unique_ptr<std::array<MessageTimestamp, 2048>> messageValues;
     std::optional<Core::DbcConfig> m_currentDbc;
     std::atomic<bool> _execute;
     std::atomic<bool> deleteOldData;
