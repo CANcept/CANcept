@@ -43,4 +43,4 @@ class SignalTableDelegate : public QStyledItemDelegate
     auto sizeHint(const QStyleOptionViewItem& option,
                   const QModelIndex& index) const -> QSize override;
 };
-}
+}  // namespace DbcFile

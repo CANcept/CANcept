@@ -46,7 +46,7 @@ void OverviewPage::setupFileInfoSection(QVBoxLayout* parentLayout)
     const auto& spacing = THEME.spacing();
 
     auto* fileInfoCard = new Core::CardWidget(Constants::OverviewPage::FileInfoTitle,
-                                              Constants::OverviewPage::FileInfoSubTitle,"",this);
+                                              Constants::OverviewPage::FileInfoSubTitle, "", this);
     auto fileInfoLayout = fileInfoCard->contentLayout();
     fileInfoLayout->setSpacing(spacing.spacingSm);
     fileInfoLayout->addSpacing(spacing.spacingLg);
@@ -59,10 +59,10 @@ void OverviewPage::setupFileInfoSection(QVBoxLayout* parentLayout)
     m_lblFileName = new QLabel(Constants::OverviewPage::LabelDefault, fileInfoCard);
     m_lblFileName->setStyleSheet(QString("color: %1;").arg(colors.textSecondary.name()));
 
-    auto* fileVersionTitle = new QLabel(Constants::OverviewPage::FileVersionTitle,fileInfoCard);
+    auto* fileVersionTitle = new QLabel(Constants::OverviewPage::FileVersionTitle, fileInfoCard);
     fileVersionTitle->setStyleSheet(QString("color: %1;").arg(colors.textSecondary.name()));
 
-    m_lblVersion = new QLabel(Constants::OverviewPage::LabelDefault,fileInfoCard);
+    m_lblVersion = new QLabel(Constants::OverviewPage::LabelDefault, fileInfoCard);
     m_lblVersion->setStyleSheet(QString("color: %1;").arg(colors.textSecondary.name()));
 
     grid->addWidget(fileNameTitle, 0, 0, Qt::AlignLeft);
@@ -90,11 +90,13 @@ void OverviewPage::setupStatsSection(QVBoxLayout* parentLayout)
     parentLayout->addLayout(layout);
 }
 void OverviewPage::createOverviewList(QHBoxLayout* parentLayout, const QString& title,
-                                      QListView*& listViewMember, const QString& badgeIconPath, QWidget* parent)
+                                      QListView*& listViewMember, const QString& badgeIconPath,
+                                      QWidget* parent)
 {
     // Card container
-    auto* listCard = new Core::CardWidget(title + Constants::OverviewPage::OverviewSuffix,
-                                          Constants::OverviewPage::OverviewDescription.arg(title),"", parent);
+    auto* listCard =
+        new Core::CardWidget(title + Constants::OverviewPage::OverviewSuffix,
+                             Constants::OverviewPage::OverviewDescription.arg(title), "", parent);
 
     listCard->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
@@ -119,9 +121,8 @@ void OverviewPage::createOverviewList(QHBoxLayout* parentLayout, const QString& 
     const auto badgeIcon = QIcon(badgeIconPath);
 
     auto* delegate = new Core::CardListDelegate(BadgeRole, badgeIcon,
-                                                DetailRole,     // no column
-                                                listViewMember
-    );
+                                                DetailRole,  // no column
+                                                listViewMember);
 
     listViewMember->setItemDelegate(delegate);
 
@@ -179,7 +180,7 @@ auto OverviewPage::createStatCard(const QString& title, QLabel*& valueLabelPtr,
     const auto& spacing = THEME.spacing();
 
     // Card container
-    auto* card = new Core::CardWidget("","","", parent);
+    auto* card = new Core::CardWidget("", "", "", parent);
     auto* cardLayout = card->contentLayout();
     card->setFixedHeight(spacing.HeightLg);
 

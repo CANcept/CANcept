@@ -66,7 +66,6 @@ void ItemPainter::paintTitle(QPainter* painter, const QRect& rect, const QString
     const auto& colors = THEME.colors();
     const auto& spacing = THEME.spacing();
 
-
     const int itemCardPadding = spacing.spacingMd;
 
     // [Padding] [icon] [Padding] [text]
@@ -125,7 +124,8 @@ auto ItemPainter::paintBadge(QPainter* painter, const QRect& rect, const QString
     {
         const int yPos = badgeRect.top() + (badgeRect.height() - spacing.IconXs) / 2;
 
-        const QRect iconTarget(badgeRect.left() + badgePadding, yPos, spacing.IconXs, spacing.IconXs);
+        const QRect iconTarget(badgeRect.left() + badgePadding, yPos, spacing.IconXs,
+                               spacing.IconXs);
 
         QPixmap pix = icon.pixmap(spacing.IconXs, spacing.IconXs, QIcon::Normal, QIcon::On);
 

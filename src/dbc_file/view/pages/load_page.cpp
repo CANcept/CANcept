@@ -206,8 +206,8 @@ auto LoadPage::createCardLayout(QVBoxLayout* parentLayout, QWidget* parent) -> Q
     const auto& colors = THEME.colors();
     const auto& spacing = THEME.spacing();
 
-    auto* loadCard =
-        new Core::CardWidget(Constants::LoadPage::CardTitle, Constants::LoadPage::CardSubtitle, "", parent);
+    auto* loadCard = new Core::CardWidget(Constants::LoadPage::CardTitle,
+                                          Constants::LoadPage::CardSubtitle, "", parent);
     loadCard->setMaximumWidth(spacing.WidthLg);
     loadCard->setMaximumHeight(spacing.HeightXl);
     loadCard->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);

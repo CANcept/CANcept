@@ -107,7 +107,7 @@ class DbcItem
      */
     [[nodiscard]] auto type() const -> Core::DbcItemType;
 
-private:
+   private:
     Core::DbcItemType m_type;
     DbcItem* m_parent;  // Raw pointer (non-owning) to prevent circular references
 

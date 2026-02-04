@@ -159,13 +159,13 @@ class DbcView : public QWidget
      */
     void onSignalFilterTypeChanged(int index);
     /**
- * @brief Adds a page to the content stack and sidebar.
- *
- * @param page Page widget to add.
- * @param title Sidebar tab title.
- * @param iconPath Path to the tab icon.
- * @param enabled Whether the tab is initially enabled.
- */
+     * @brief Adds a page to the content stack and sidebar.
+     *
+     * @param page Page widget to add.
+     * @param title Sidebar tab title.
+     * @param iconPath Path to the tab icon.
+     * @param enabled Whether the tab is initially enabled.
+     */
     void addPage(QWidget* page, const QString& title, const QString& iconPath, bool enabled) const;
 
     /**
@@ -181,7 +181,6 @@ class DbcView : public QWidget
      * all subviews.
      */
     void setupUi();
-
 
     /**
      * @brief Sets up signal-slot connections.

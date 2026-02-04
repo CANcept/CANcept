@@ -42,9 +42,9 @@ class MessagesDetailDelegate : public QStyledItemDelegate
     auto sizeHint(const QStyleOptionViewItem& option,
                   const QModelIndex& index) const -> QSize override;
 
-private:
+   private:
     void drawGridItem(QPainter* painter, const QRect& rect, const QString& label,
                       const QString& value) const;
     void drawBadge(QPainter* painter, const QRect& rect, const QString& text) const;
 };
-}
+}  // namespace DbcFile

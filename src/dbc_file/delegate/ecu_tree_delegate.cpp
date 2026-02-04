@@ -33,4 +33,4 @@ void EcuTreeDelegate::drawBadge(QPainter* painter, const QRect& rect, const QStr
                                 const QColor& bg, const QColor& fg) const
 {
 }
-}
+}  // namespace DbcFile

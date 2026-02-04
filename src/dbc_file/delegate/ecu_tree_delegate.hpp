@@ -63,4 +63,4 @@ class EcuTreeDelegate : public QStyledItemDelegate
 
     QTreeView* m_treeView;
 };
-}
+}  // namespace DbcFile

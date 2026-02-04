@@ -40,11 +40,9 @@ void DbcView::setSourceModel(QAbstractItemModel* model)
     m_overviewPage->getEcuList()->setModel(m_ecuOverviewProxy.get());
     m_overviewPage->getMessageList()->setModel(m_messagesProxy.get());
 
-
     // Update Labels in m_overviewPage at model reset
-    connect(model, &QAbstractItemModel::modelReset, this, [this, model](){
-    m_overviewPage->updateLabels(model);
-});
+    connect(model, &QAbstractItemModel::modelReset, this,
+            [this, model]() { m_overviewPage->updateLabels(model); });
 }
 void DbcView::setDataItemDelegate(QAbstractItemDelegate* delegate) {}
 void DbcView::setNavigationEnabled(const bool enabled) const
@@ -94,7 +92,8 @@ void DbcView::setupSidebarTabs()
 
     // 2. Overview
     m_overviewPage = new OverviewPage(this);
-    addPage(m_overviewPage, Constants::Sidebar::TitleOverview, Constants::Sidebar::IconOverview, false);
+    addPage(m_overviewPage, Constants::Sidebar::TitleOverview, Constants::Sidebar::IconOverview,
+            false);
 
     // 3. ECUs
     m_ecuPage = new EcusPage(this);
@@ -102,12 +101,13 @@ void DbcView::setupSidebarTabs()
 
     // 4. Messages
     m_messagesPage = new MessagesPage(this);
-    addPage(m_messagesPage, Constants::Sidebar::TitleMessages, Constants::Sidebar::IconMessages, false);
+    addPage(m_messagesPage, Constants::Sidebar::TitleMessages, Constants::Sidebar::IconMessages,
+            false);
 
     // 5. Messages
     m_signalsPage = new SignalsPage(this);
-    addPage(m_signalsPage, Constants::Sidebar::TitleSignals, Constants::Sidebar::IconSignals, false);
-
+    addPage(m_signalsPage, Constants::Sidebar::TitleSignals, Constants::Sidebar::IconSignals,
+            false);
 }
 void DbcView::setupUi()
 {
@@ -118,7 +118,8 @@ void DbcView::setupUi()
 
     // --- Sidebar setup ---
     m_sidebar = new Core::Sidebar(this);
-    m_sidebar->setToolTipText(Constants::Sidebar::HoverText);     // Tooltip shown for disabled navigation entries
+    m_sidebar->setToolTipText(
+        Constants::Sidebar::HoverText);  // Tooltip shown for disabled navigation entries
     mainLayout->addWidget(m_sidebar);
     m_contentStack = new QStackedWidget(this);
     mainLayout->addWidget(m_contentStack);
