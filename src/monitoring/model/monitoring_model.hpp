@@ -47,7 +47,9 @@ class MonitoringModel final : public QAbstractItemModel
         Role_ID,
         Role_ValueList,
         Role_LatestValue,
-        Role_Unit
+        Role_Unit,
+        Role_Max,
+        Role_Min
     };
     /**
      * @brief Constructs the signal tree model.
