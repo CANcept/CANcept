@@ -17,40 +17,28 @@
 #include "dbc_file/model/dbc_roles.hpp"
 #include "spdlog/fmt/bundled/os.h"
 namespace DbcFile {
-void OverviewPage::setFileName(const QString& text) const
-{
-    if (text.isEmpty()) return;
-    m_lblFileName->setText(text);
-}
-auto OverviewPage::setVersion(const QString& text) const -> void
-{
-    if (text.isEmpty()) return;
-    m_lblVersion->setText(text);
-}
-void OverviewPage::setEcuCount(const QString& text) const
-{
-    if (text.isEmpty()) return;
-    m_lblEcuCount->setText(text);
-}
-void OverviewPage::setMessageCount(const QString& text) const
-{
-    if (text.isEmpty()) return;
-    m_lblMessageCount->setText(text);
-}
-void OverviewPage::setSignalCount(const QString& text) const
-{
-    if (text.isEmpty()) return;
-    m_lblSignalCount->setText(text);
-}
-void OverviewPage::setOrphanCount(const QString& text) const
-{
-    if (text.isEmpty()) return;
-    m_lblOrphanCount->setText(text);
-}
-// --- OverviewPage Dummy ---
 OverviewPage::OverviewPage(QWidget* parent) : QWidget(parent)
 {
     setupUi();
+}
+
+void OverviewPage::updateLabels(const QAbstractItemModel* model) const
+{
+    if (!model || model->rowCount() == 0) return;
+    if (const QModelIndex overviewIndex = model->index(0, 0, QModelIndex());
+        !overviewIndex.isValid())
+        return;
+
+    auto getData = [&](const int col) {
+        return model->data(model->index(0, col), Qt::DisplayRole).toString();
+    };
+
+    m_lblFileName->setText(getData(Constants::Columns::OvFilename));
+    m_lblVersion->setText(getData(Constants::Columns::OvVersion));
+    m_lblEcuCount->setText(getData(Constants::Columns::OvEcuCount));
+    m_lblMessageCount->setText(getData(Constants::Columns::OvMsgCount));
+    m_lblSignalCount->setText(getData(Constants::Columns::OvSigCount));
+    m_lblOrphanCount->setText(getData(Constants::Columns::OvOrphans));
 }
 void OverviewPage::setupFileInfoSection(QVBoxLayout* parentLayout)
 {

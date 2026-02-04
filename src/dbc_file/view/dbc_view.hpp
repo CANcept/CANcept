@@ -104,7 +104,6 @@ class DbcView : public QWidget
      * @param index Index of the selected sidebar tab.
      */
     void onSidebarSelectionChanged(int index) const;
-    void updateOverviewLabels() const;
 
     // --- ECU PAGE INTERACTION ---
 

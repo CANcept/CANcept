@@ -36,49 +36,6 @@ class OverviewPage : public QWidget
     explicit OverviewPage(QWidget* parent = nullptr);
     ~OverviewPage() override = default;
 
-    // --- File Info ---
-
-    /**
-     * @brief Sets the displayed file name.
-     *
-     * @param text Name of the DBC file.
-     */
-    void setFileName(const QString& text) const;
-    /**
-     * @brief Sets the displayed DBC version.
-     *
-     * @param text Version string of the DBC file.
-     */
-    void setVersion(const QString& text) const;
-
-    // --- Stats ---
-
-    /**
-     * @brief Sets the displayed ECU count.
-     *
-     * @param text Number of ECUs as text.
-     */
-    void setEcuCount(const QString& text) const;
-
-    /**
-     * @brief Sets the displayed message count.
-     *
-     * @param text Number of messages as text.
-     */
-    void setMessageCount(const QString& text) const;
-    /**
-     * @brief Sets the displayed signal count.
-     *
-     * @param text Number of signals as text.
-     */
-    void setSignalCount(const QString& text) const;
-    /**
-     * @brief Sets the displayed orphan signal count.
-     *
-     * @param text Number of orphan signals as text.
-     */
-    void setOrphanCount(const QString& text) const;
-
     /**
      * @brief Returns the list view for the ECUs section.
      * @caller DbcView::setSourceModel() to set the ECU Proxy.
@@ -98,6 +55,20 @@ class OverviewPage : public QWidget
     {
         return m_messageList;
     }
+
+    /**
+     * @brief Updates all static labels on the page using data from the model.
+     *
+     * @caller DbcView::setSourceModel() and connected lambda on modelReset.
+     *
+     * @details
+     * Queries the provided model for the "Overview Item" (Row 0) and extracts
+     * metadata (Filename, Version) and statistics (Counts) using the defined
+     * column constants. It populates the File Info card and the KPI cards directly.
+     *
+     * @param model The source data model containing the parsed DBC structure.
+     */
+    void updateLabels(const QAbstractItemModel* model) const;
 
    private:
     /**

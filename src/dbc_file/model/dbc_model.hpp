@@ -90,6 +90,7 @@ class DbcModel : public QAbstractItemModel
 
     // --- Helper Methods ---
 
+private:
     /**
      * @brief Callback: Triggered when the EventBroker publishes a parsing success event.
      * @caller Core::IEventBroker (via lambda callback).

@@ -41,9 +41,11 @@ void DbcView::setSourceModel(QAbstractItemModel* model)
     m_overviewPage->getEcuList()->setModel(m_ecuOverviewProxy.get());
     m_overviewPage->getMessageList()->setModel(m_messagesProxy.get());
 
-    // Update overview labels ind overviewpage and connect it to modelreset
-    updateOverviewLabels();
-    connect(model, &QAbstractItemModel::modelReset, this, [this]() { updateOverviewLabels(); });
+
+    // Update Labels in m_overviewPage at model reset
+    connect(model, &QAbstractItemModel::modelReset, this, [this, model](){
+    m_overviewPage->updateLabels(model);
+});
 }
 void DbcView::setDataItemDelegate(QAbstractItemDelegate* delegate) {}
 void DbcView::setNavigationEnabled(const bool enabled) const
@@ -69,30 +71,6 @@ void DbcView::onSidebarSelectionChanged(int index) const
 
     // Switch page in content stack
     m_contentStack->setCurrentIndex(index);
-}
-void DbcView::updateOverviewLabels() const
-{
-    if (!m_overviewPage || !m_model) return;
-
-    // Overview item always first child to root
-    if (m_model->rowCount() == 0) return;
-
-    if (const QModelIndex overviewIndex = m_model->index(0, 0, QModelIndex());
-        !overviewIndex.isValid())
-        return;
-
-    m_overviewPage->setFileName(
-        m_model->data(m_model->index(0, Constants::Columns::OvFilename)).toString());
-    m_overviewPage->setVersion(
-        m_model->data(m_model->index(0, Constants::Columns::OvVersion)).toString());
-    m_overviewPage->setEcuCount(
-        m_model->data(m_model->index(0, Constants::Columns::OvEcuCount)).toString());
-    m_overviewPage->setMessageCount(
-        m_model->data(m_model->index(0, Constants::Columns::OvMsgCount)).toString());
-    m_overviewPage->setSignalCount(
-        m_model->data(m_model->index(0, Constants::Columns::OvSigCount)).toString());
-    m_overviewPage->setOrphanCount(
-        m_model->data(m_model->index(0, Constants::Columns::OvOrphans)).toString());
 }
 
 void DbcView::onEcuFilterTextChanged(const QString& text) {}

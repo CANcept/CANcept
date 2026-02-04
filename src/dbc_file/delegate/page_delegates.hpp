@@ -10,7 +10,7 @@
 
 namespace DbcFile {
 // ==============================================================================
-// 2. Overview Lists Delegate (Overview Page)
+// 1. Overview Lists Delegate (Overview Page)
 // ==============================================================================
 
 /**
@@ -21,7 +21,7 @@ namespace DbcFile {
  * Used in the QListViews on the Overview Page.
  * Draws a rounded rectangle containing an icon, the name, and a statistic badge.
  */
-class OverviewListsDelegate : public QStyledItemDelegate
+class OverviewListsDelegate final : public QStyledItemDelegate
 {
     Q_OBJECT
    public:
@@ -57,7 +57,7 @@ class OverviewListsDelegate : public QStyledItemDelegate
 };
 
 // ==============================================================================
-// 3. ECU Tree Delegate (ECU Page)
+// 2. ECU Tree Delegate (ECU Page)
 // ==============================================================================
 
 /**
@@ -120,7 +120,7 @@ class EcuTreeDelegate : public QStyledItemDelegate
 };
 
 // ==============================================================================
-// 4. Message Signal Card Delegate (Message Detail Pane)
+// 3. Message Signal Card Delegate (Message Detail Pane)
 // ==============================================================================
 
 /**
@@ -168,7 +168,7 @@ class MessagesSignalCardDelegate : public QStyledItemDelegate
 };
 
 // ==============================================================================
-// 5. Signal Table Delegate (Global Signals Page)
+// 4. Signal Table Delegate (Global Signals Page)
 // ==============================================================================
 
 /**
