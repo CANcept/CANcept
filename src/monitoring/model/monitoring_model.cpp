@@ -206,6 +206,34 @@ auto MonitoringModel::data(const QModelIndex& index, int role) const -> QVariant
                 }
                 return {};
             }
+            case Role_Max: {
+                auto it = m_currentDbc->messageDefinitions.begin();
+                std::advance(it, messageRow);
+                if (it != m_currentDbc->messageDefinitions.end())
+                {
+                    auto it2 = it->signalDescriptions.begin();
+                    std::advance(it2, index.row());
+                    if (it2 != it->signalDescriptions.end())
+                    {
+                        return it2->maximum;
+                    }
+                }
+                return {};
+            }
+            case Role_Min: {
+                auto it = m_currentDbc->messageDefinitions.begin();
+                std::advance(it, messageRow);
+                if (it != m_currentDbc->messageDefinitions.end())
+                {
+                    auto it2 = it->signalDescriptions.begin();
+                    std::advance(it2, index.row());
+                    if (it2 != it->signalDescriptions.end())
+                    {
+                        return it2->minimum;
+                    }
+                }
+                return {};
+            }
             default:
                 return {};
         }
