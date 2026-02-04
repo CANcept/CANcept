@@ -51,7 +51,6 @@ class DbcView : public QWidget
      * @return Pointer to m_loadPage
      */
     [[nodiscard]] auto getLoadPage() const -> LoadPage&;
-    auto getOverviewPage() const -> LoadPage&;
 
     /**
      * @brief Initializes the view with the source data.
@@ -159,6 +158,20 @@ class DbcView : public QWidget
      * @caller SignalsPage (combo box).
      */
     void onSignalFilterTypeChanged(int index);
+    /**
+ * @brief Adds a page to the content stack and sidebar.
+ *
+ * @param page Page widget to add.
+ * @param title Sidebar tab title.
+ * @param iconPath Path to the tab icon.
+ * @param enabled Whether the tab is initially enabled.
+ */
+    void addPage(QWidget* page, const QString& title, const QString& iconPath, bool enabled) const;
+
+    /**
+     * @brief Creates and registers all sidebar tabs and pages.
+     */
+    void setupSidebarTabs();
 
    private:
     /**
@@ -169,13 +182,6 @@ class DbcView : public QWidget
      */
     void setupUi();
 
-    /**
-     * @brief Creates and registers all subviews.
-     *
-     * The order of added widgets must match the sidebar
-     * tab order.
-     */
-    void createSubViews();
 
     /**
      * @brief Sets up signal-slot connections.

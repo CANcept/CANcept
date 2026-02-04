@@ -81,57 +81,55 @@ void DbcView::onMessageSelected(const QModelIndex& proxyIndex) {}
 void DbcView::onSignalFilterTextChanged(const QString& text) {}
 void DbcView::onSignalFilterTypeChanged(int index) {}
 
+void DbcView::addPage(QWidget* page, const QString& title, const QString& iconPath,
+                      const bool enabled) const
+{
+    m_contentStack->addWidget(page);
+    m_sidebar->addTab(QIcon(iconPath), title, enabled);
+}
+void DbcView::setupSidebarTabs()
+{
+    // 1. Load New
+    m_loadPage = new LoadPage(this);
+    addPage(m_loadPage, Constants::Sidebar::TitleLoadNew, Constants::Sidebar::IconLoadNew, true);
+
+    // 2. Overview
+    m_overviewPage = new OverviewPage(this);
+    addPage(m_overviewPage, Constants::Sidebar::TitleOverview, Constants::Sidebar::IconOverview, false);
+
+    // 3. ECUs
+    m_ecuPage = new EcusPage(this);
+    addPage(m_ecuPage, Constants::Sidebar::TitleEcus, Constants::Sidebar::IconEcus, false);
+
+    // 4. Messages
+    m_messagesPage = new MessagesPage(this);
+    addPage(m_messagesPage, Constants::Sidebar::TitleMessages, Constants::Sidebar::IconMessages, false);
+
+    // 5. Messages
+    m_signalsPage = new SignalsPage(this);
+    addPage(m_signalsPage, Constants::Sidebar::TitleSignals, Constants::Sidebar::IconSignals, false);
+
+}
 void DbcView::setupUi()
 {
-    // Create main layout
+    // --- Main layout setup ---
     auto* mainLayout = new QHBoxLayout(this);
     mainLayout->setContentsMargins(0, 0, 0, 0);
     mainLayout->setSpacing(0);
 
     // --- Sidebar setup ---
     m_sidebar = new Core::Sidebar(this);
-
-    // Add sidebar tabs
-    m_sidebar->addTab(QIcon(Constants::Sidebar::IconLoadNew), Constants::Sidebar::TitleLoadNew,
-                      true);
-    m_sidebar->addTab(QIcon(Constants::Sidebar::IconOverview), Constants::Sidebar::TitleOverview,
-                      false);
-    m_sidebar->addTab(QIcon(Constants::Sidebar::IconEcus), Constants::Sidebar::TitleEcus, false);
-    m_sidebar->addTab(QIcon(Constants::Sidebar::IconMessages), Constants::Sidebar::TitleMessages,
-                      false);
-    m_sidebar->addTab(QIcon(Constants::Sidebar::IconSignals), Constants::Sidebar::TitleSignals,
-                      false);
-
-    // Tooltip shown for disabled navigation entries
-    m_sidebar->setToolTipText(Constants::Sidebar::HoverText);
+    m_sidebar->setToolTipText(Constants::Sidebar::HoverText);     // Tooltip shown for disabled navigation entries
     mainLayout->addWidget(m_sidebar);
-
-    // --- Content stack setup ---
     m_contentStack = new QStackedWidget(this);
     mainLayout->addWidget(m_contentStack);
-    createSubViews();
+    setupSidebarTabs();
 
     // --- Signal connections ---
     setupConnections();
 }
-void DbcFile::DbcView::createSubViews()
-{
-    m_loadPage = new LoadPage(this);
-    m_contentStack->addWidget(m_loadPage);
 
-    m_overviewPage = new OverviewPage(this);
-    m_contentStack->addWidget(m_overviewPage);
-
-    m_ecuPage = new EcusPage(this);
-    m_contentStack->addWidget(m_ecuPage);
-
-    m_messagesPage = new MessagesPage(this);
-    m_contentStack->addWidget(m_messagesPage);
-
-    m_signalsPage = new SignalsPage(this);
-    m_contentStack->addWidget(m_signalsPage);
-}
-void DbcFile::DbcView::setupConnections()
+void DbcView::setupConnections()
 {
     connect(m_sidebar, &Core::Sidebar::tabSelected, this,
             &DbcFile::DbcView::onSidebarSelectionChanged);
