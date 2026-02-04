@@ -33,8 +33,14 @@ void OverviewPage::updateLabels(const QAbstractItemModel* model) const
         return model->data(model->index(0, col), Qt::DisplayRole).toString();
     };
 
-    m_lblFileName->setText(getData(Constants::Columns::OvFilename));
-    m_lblVersion->setText(getData(Constants::Columns::OvVersion));
+    if (!getData(Constants::Columns::OvFilename).isEmpty())
+    {
+        m_lblFileName->setText(getData(Constants::Columns::OvFilename));
+    }
+    if (!getData(Constants::Columns::OvVersion).isEmpty())
+    {
+        m_lblVersion->setText(getData(Constants::Columns::OvVersion));
+    }
     m_lblEcuCount->setText(getData(Constants::Columns::OvEcuCount));
     m_lblMessageCount->setText(getData(Constants::Columns::OvMsgCount));
     m_lblSignalCount->setText(getData(Constants::Columns::OvSigCount));
