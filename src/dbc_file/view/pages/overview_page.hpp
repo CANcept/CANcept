@@ -88,11 +88,12 @@ class OverviewPage : public QWidget
      * @param title Title of the statistic.
      * @param valueLabelPtr Reference to a pointer that receives the value QLabel.
      * @param iconPath Path to the icon displayed in the card.
+     * @param parent
      *
      * @return Pointer to the created statistic card widget.
      */
     static auto createStatCard(const QString& title, QLabel*& valueLabelPtr,
-                               const QString& iconPath) -> QWidget*;
+                               const QString& iconPath, QWidget* parent = nullptr) -> QWidget*;
 
     /**
      * @brief Creates the statistics section.
@@ -114,9 +115,11 @@ class OverviewPage : public QWidget
      * @param title Title of the list/card.
      * @param listViewMember Reference to the member pointer that receives the created QListView.
      * @param badgeIconPath Icon used for the item badge.
+     * @param parent
      */
     static void createOverviewList(QHBoxLayout* parentLayout, const QString& title,
-                                   QListView*& listViewMember, const QString& badgeIconPath);
+                                   QListView*& listViewMember, const QString& badgeIconPath,
+                                   QWidget* parent = nullptr);
 
     /**
      * @brief Creates the list overview section.

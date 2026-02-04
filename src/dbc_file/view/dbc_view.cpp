@@ -10,7 +10,6 @@
 #include "core/theme/theme_manager.hpp"
 #include "core/widgets/sidebar.hpp"
 #include "dbc_file/constants.hpp"
-#include "dbc_file/delegate/page_delegates.hpp"
 
 namespace DbcFile {
 DbcView::DbcView(QWidget* parent) : QWidget(parent)

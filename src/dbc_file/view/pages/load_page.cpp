@@ -201,13 +201,13 @@ void LoadPage::onBrowseButtonClicked()
     emit fileSelected(fileName);
 }
 
-auto LoadPage::createCardFrame(QVBoxLayout* parentLayout) -> QVBoxLayout*
+auto LoadPage::createCardLayout(QVBoxLayout* parentLayout, QWidget* parent) -> QVBoxLayout*
 {
     const auto& colors = THEME.colors();
     const auto& spacing = THEME.spacing();
 
     auto* loadCard =
-        new Core::CardWidget(Constants::LoadPage::CardTitle, Constants::LoadPage::CardSubtitle);
+        new Core::CardWidget(Constants::LoadPage::CardTitle, Constants::LoadPage::CardSubtitle, "", parent);
     loadCard->setMaximumWidth(spacing.WidthLg);
     loadCard->setMaximumHeight(spacing.HeightXl);
     loadCard->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
@@ -295,7 +295,7 @@ void LoadPage::setupUi()
     mainLayout->setAlignment(Qt::AlignCenter);
     mainLayout->setContentsMargins(0, 0, 0, 0);
 
-    auto* cardLayout = createCardFrame(mainLayout);
+    auto* cardLayout = createCardLayout(mainLayout);
     setupUploadZone(cardLayout);
 }
 }  // namespace DbcFile
