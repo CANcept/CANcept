@@ -1,5 +1,7 @@
 #include "monitoring_model.hpp"
 
+#include <memory>
+
 #include "monitoring/constants.hpp"
 
 namespace Monitoring {
@@ -8,6 +10,7 @@ MonitoringModel::MonitoringModel() : QAbstractItemModel(nullptr)
 {
     _execute = true;
     deleteOldData = true;
+    messageValues = std::make_unique<std::array<MessageTimestamp, 2048>>();
     message_check_thread = std::thread([this]() {
         long long lastExecution = 0;
         while (_execute)
@@ -45,14 +48,16 @@ auto MonitoringModel::index(int row, int column, const QModelIndex& parent) cons
     }
     if (!parent.isValid())
     {  // message level
-        if (row < static_cast<int>(messageValues.size()))
+        if (m_currentDbc->messageDefinitions.size() > row)
         {
             return createIndex(row, column, nullptr);
         }
     } else
     {
         // signal level
-        if (row < messageValues.at(parent.row()).signalValues.size())
+        auto it = m_currentDbc->messageDefinitions.begin();
+        std::advance(it, parent.row());
+        if (row < it->signalDescriptions.size())
         {
             return createIndex(row, column, reinterpret_cast<void*>(parent.row() + 1));
         }
@@ -83,15 +88,17 @@ auto MonitoringModel::rowCount(const QModelIndex& parent) const -> int
     }
     if (!parent.isValid())
     {  // parent is root -> message count
-        return static_cast<int>(messageValues.size());
+        return static_cast<int>(m_currentDbc->messageDefinitions.size());
     }
     if (parent.internalPointer() == nullptr)
     {  // parent is message -> signal count for given message
-        if (parent.row() >= static_cast<int>(messageValues.size()))
+        if (parent.row() >= static_cast<int>(m_currentDbc->messageDefinitions.size()))
         {
             return 0;
         }
-        return static_cast<int>(messageValues.at(parent.row()).signalValues.size());
+        auto it = m_currentDbc->messageDefinitions.begin();
+        std::advance(it, parent.row());
+        return static_cast<int>(it->signalDescriptions.size());
     }
     return 0;
 }
@@ -131,12 +138,17 @@ auto MonitoringModel::data(const QModelIndex& index, int role) const -> QVariant
                 return {};
             }
             case Role_LatestValue: {
-            }
-                return messageValues.at(index.row()).timestamps.size() == 0
+                auto it = m_currentDbc->messageDefinitions.begin();
+                std::advance(it, index.row());
+                return messageValues->at(it->messageId).timestamps.size() == 0
                            ? QVariant()
-                           : messageValues.at(index.row()).timestamps.back();
-            case Role_ValueList:
-                return QVariant::fromValue(messageValues.at(index.row()).timestamps);
+                           : messageValues->at(it->messageId).timestamps.back();
+            }
+            case Role_ValueList: {
+                auto it = m_currentDbc->messageDefinitions.begin();
+                std::advance(it, index.row());
+                return QVariant::fromValue(messageValues->at(it->messageId).timestamps);
+            }
             case Role_Unit:
                 return {};
             default:
@@ -165,15 +177,21 @@ auto MonitoringModel::data(const QModelIndex& index, int role) const -> QVariant
             }
             case Role_ID:
                 return {};
-            case Role_LatestValue:
-                return messageValues.at(messageRow).signalValues.at(index.row()).size() == 0
+            case Role_LatestValue: {
+                auto it = m_currentDbc->messageDefinitions.begin();
+                std::advance(it, messageRow);
+                return messageValues->at(it->messageId).signalValues.at(index.row()).size() == 0
                            ? QVariant()
-                           : messageValues.at(index.parent().row())
+                           : messageValues->at(it->messageId)
                                  .signalValues.at(index.row())
                                  .back();
-            case Role_ValueList:
+            }
+            case Role_ValueList: {
+                auto it = m_currentDbc->messageDefinitions.begin();
+                std::advance(it, messageRow);
                 return QVariant::fromValue(
-                    messageValues.at(messageRow).signalValues.at(index.row()));
+                    messageValues->at(it->messageId).signalValues.at(index.row()));
+            }
             case Role_Unit: {
                 auto it = m_currentDbc->messageDefinitions.begin();
                 std::advance(it, messageRow);
@@ -196,59 +214,51 @@ auto MonitoringModel::data(const QModelIndex& index, int role) const -> QVariant
 
 void MonitoringModel::onIncomingDbcFrame(const Core::DbcCanMessage& message)
 {
-    if (!m_currentDbc.has_value() || !deleteOldData)
+    if (!m_currentDbc.has_value() || !deleteOldData || message.messageId >= messageValues->size())
     {
         return;
     }
-    int i = 0;
-    for (auto it = m_currentDbc->messageDefinitions.begin();
-         it != m_currentDbc->messageDefinitions.end(); ++it)
+    int j = 0;
+    for (auto & signalName : messageValues->at(message.messageId).signalNames)
     {
-        if (it->messageId == message.messageId)
+        bool valueExists = false;
+        for (auto it3 = message.signalValues.begin(); it3 != message.signalValues.end();
+             ++it3)
         {
-            int j = 0;
-            for (auto it2 = it->signalDescriptions.begin(); it2 != it->signalDescriptions.end();
-                 ++it2)
+            if (signalName == QString::fromStdString(it3->name))
             {
-                bool valueExists = false;
-                for (auto it3 = message.signalValues.begin(); it3 != message.signalValues.end();
-                     ++it3)
-                {
-                    if (it3->name == it2->signalName)
-                    {
-                        messageValues.at(i).signalValues.at(j).push_back(it3->value);
-                        valueExists = true;
-                        break;
-                    }
-                }
-                if (!valueExists)
-                {
-                    messageValues.at(i).signalValues.at(j).push_back(NAN);
-                }
-                j++;
+                messageValues->at(message.messageId).signalValues.at(j).push_back(it3->value);
+                valueExists = true;
+                break;
             }
-            messageValues.at(i).timestamps.push_back(message.receiveTime.count());
-            break;
         }
-        i++;
+        if (!valueExists)
+        {
+            messageValues->at(message.messageId).signalValues.at(j).push_back(NAN);
+        }
+        j++;
     }
+    messageValues->at(message.messageId).timestamps.push_back(message.receiveTime.count());
 }
 
 void MonitoringModel::onDbcChange(const Core::DbcConfig& config)
 {
     m_currentDbc = config;
-    while (!messageValues.empty())
-    {
-        messageValues.pop_back();
-    }
+    messageValues = std::make_unique<std::array<MessageTimestamp, 2048>>();
     for (auto& messageDefinition : m_currentDbc->messageDefinitions)
     {
         std::vector<QList<double>> signalValues;
-        for (int i = 0; i < messageDefinition.signalDescriptions.size(); i++)
+        QList<QString> signalNames;
+        for (auto & signalDescription : messageDefinition.signalDescriptions)
         {
             signalValues.emplace_back();
+            signalNames.push_back(QString::fromStdString(signalDescription.signalName));
         }
-        messageValues.push_back(MessageTimestamp{.timestamps = {}, .signalValues = signalValues});
+        if (messageDefinition.messageId >= messageValues->size())
+        {
+            continue;
+        }
+        messageValues->at(messageDefinition.messageId) = MessageTimestamp{.timestamps = {}, .signalValues = signalValues, .signalNames = signalNames};
     }
 }
 
@@ -257,16 +267,16 @@ void MonitoringModel::eraseOldData()
     const auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(
                                   std::chrono::system_clock::now().time_since_epoch())
                                   .count();
-    for (auto& [timestamps, signalValues] : messageValues)
+    for (auto & messageValue : *messageValues)
     {
-        while (!timestamps.empty() &&
-               timestamps.front() + Constants::HOLDING_SECONDS_IN_MODEL * 1000 < milliseconds)
+        while (!messageValue.timestamps.empty() &&
+               messageValue.timestamps.front() + Constants::HOLDING_SECONDS_IN_MODEL * 1000 < milliseconds)
         {
-            for (auto& j : signalValues)
+            for (auto& j : messageValue.signalValues)
             {
                 j.pop_front();
             }
-            timestamps.pop_front();
+            messageValue.timestamps.pop_front();
         }
     }
 }
