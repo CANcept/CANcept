@@ -182,9 +182,7 @@ auto MonitoringModel::data(const QModelIndex& index, int role) const -> QVariant
                 std::advance(it, messageRow);
                 return messageValues->at(it->messageId).signalValues.at(index.row()).size() == 0
                            ? QVariant()
-                           : messageValues->at(it->messageId)
-                                 .signalValues.at(index.row())
-                                 .back();
+                           : messageValues->at(it->messageId).signalValues.at(index.row()).back();
             }
             case Role_ValueList: {
                 auto it = m_currentDbc->messageDefinitions.begin();
@@ -247,11 +245,10 @@ void MonitoringModel::onIncomingDbcFrame(const Core::DbcCanMessage& message)
         return;
     }
     int j = 0;
-    for (auto & signalName : messageValues->at(message.messageId).signalNames)
+    for (auto& signalName : messageValues->at(message.messageId).signalNames)
     {
         bool valueExists = false;
-        for (auto it3 = message.signalValues.begin(); it3 != message.signalValues.end();
-             ++it3)
+        for (auto it3 = message.signalValues.begin(); it3 != message.signalValues.end(); ++it3)
         {
             if (signalName == QString::fromStdString(it3->name))
             {
@@ -277,7 +274,7 @@ void MonitoringModel::onDbcChange(const Core::DbcConfig& config)
     {
         std::vector<QList<double>> signalValues;
         QList<QString> signalNames;
-        for (auto & signalDescription : messageDefinition.signalDescriptions)
+        for (auto& signalDescription : messageDefinition.signalDescriptions)
         {
             signalValues.emplace_back();
             signalNames.push_back(QString::fromStdString(signalDescription.signalName));
@@ -286,7 +283,8 @@ void MonitoringModel::onDbcChange(const Core::DbcConfig& config)
         {
             continue;
         }
-        messageValues->at(messageDefinition.messageId) = MessageTimestamp{.timestamps = {}, .signalValues = signalValues, .signalNames = signalNames};
+        messageValues->at(messageDefinition.messageId) = MessageTimestamp{
+            .timestamps = {}, .signalValues = signalValues, .signalNames = signalNames};
     }
 }
 
@@ -295,10 +293,11 @@ void MonitoringModel::eraseOldData()
     const auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(
                                   std::chrono::system_clock::now().time_since_epoch())
                                   .count();
-    for (auto & messageValue : *messageValues)
+    for (auto& messageValue : *messageValues)
     {
         while (!messageValue.timestamps.empty() &&
-               messageValue.timestamps.front() + Constants::HOLDING_SECONDS_IN_MODEL * 1000 < milliseconds)
+               messageValue.timestamps.front() + Constants::HOLDING_SECONDS_IN_MODEL * 1000 <
+                   milliseconds)
         {
             for (auto& j : messageValue.signalValues)
             {
