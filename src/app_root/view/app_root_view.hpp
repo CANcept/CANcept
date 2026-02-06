@@ -2,12 +2,15 @@
 
 #include <QLabel>
 #include <QListView>
+#include <QPushButton>
 #include <QStackedWidget>
 #include <QVBoxLayout>
 #include <QWidget>
 
 #include "app_root/delegate/app_root_delegate.hpp"
 #include "app_root/model/app_root_model.hpp"
+#include "app_root/model/settings_model.hpp"
+#include "app_root/view/settings_view.hpp"
 #include "core/interface/i_tab_component.hpp"
 
 namespace AppRoot {
@@ -29,17 +32,9 @@ class AppRootView : public QWidget
     explicit AppRootView(QWidget* parent = nullptr);
     ~AppRootView() override = default;
 
-    /**
-     * @brief Injects the model and sets up synchronization logic.
-     * @param model Pointer to the data model.
-     */
     void setModel(AppRootModel* model);
-
-    /**
-     * @brief Sets the delegate for custom tab bar rendering.
-     * @param delegate Pointer to the tab delegate.
-     */
     void setDelegate(AppRootDelegate* delegate) const;
+    void setSettingsModel(SettingsModel* settingsModel);
 
    private slots:
     /**
@@ -57,11 +52,14 @@ class AppRootView : public QWidget
      */
     void onDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight,
                        const QList<int>& roles = QList<int>()) const;
-
     /**
      * @brief Handles tab switching to keep the stack in sync.
      */
-    void handleTabChanged(int index) const;
+    void handleTabChanged(int index);
+    /**
+     * @brief Handles the switch to the settings part.
+     */
+    void onSettingsClicked();
 
    protected:
     /**
@@ -86,36 +84,28 @@ class AppRootView : public QWidget
      */
     void resizeEvent(QResizeEvent* event) override;
 
+    /**
+     * @brief Handes the rerender of the AppRootView.
+     * @param event The received event.
+     */
+    bool event(QEvent* event) override;
+
    private:
-    /**
-     * @brief The tab bar populated by the options provided in the m_tabs.
-     */
+    void updateSettingsButtonStyle(bool active);
+
+    void applyStyle();
+
     QListView* m_tabView;
-
-    /**
-     * @brief The different Widgets of the tabs with one selected.
-     */
     QStackedWidget* m_contentStack;
-
-    /**
-     * @brief Layout to order The m_tabBar and m_contentStack.
-     */
     QVBoxLayout* m_mainLayout;
-
-    /**
-     * @brief Layout to order The top bar of the main window.
-     */
     QHBoxLayout* m_topBarLayout{nullptr};
-
-    /**
-     * @brief Label showing the icon of the CanBusManager.
-     */
     QLabel* m_logoLabel{nullptr};
-
-    /**
-     * @brief Pointer to the injected model.
-     */
-    AppRootModel* m_model = nullptr;
+    QPushButton* m_settingsButton{nullptr};
+    SettingsView* m_settingsView{nullptr};
+    AppRootModel* m_model{nullptr};
+    SettingsModel* m_settingsModel{nullptr};
+    bool m_settingsActive{false};
+    int m_lastTabIndex{0};
 };
 
 }  // namespace AppRoot

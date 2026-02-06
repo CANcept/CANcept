@@ -11,6 +11,7 @@
 #include "app_root/constants.hpp"
 #include "core/macro/console_logging.hpp"
 #include "core/macro/theme.hpp"
+#include "core/theme/style_event.hpp"
 
 namespace AppRoot {
 
@@ -20,19 +21,21 @@ AppRootView::AppRootView(QWidget* parent)
       m_contentStack(new QStackedWidget(this)),
       m_mainLayout(new QVBoxLayout(this)),
       m_topBarLayout(new QHBoxLayout()),
-      m_logoLabel(new QLabel(this))
+      m_logoLabel(new QLabel(this)),
+      m_settingsButton(new QPushButton(this))
 {
-    // Set Initial Window Size
     resize(1200, 800);
+    applyStyle();
+}
 
-    // Set Background Color
+void AppRootView::applyStyle()
+{
     this->setObjectName("AppRootView");
     this->setStyleSheet(QString("#AppRootView {"
                                 "  background-color: %1;"
                                 "}")
                             .arg(THEME.colors().surfaceMain.name()));
 
-    // Configure the ListView as a horizontal top bar
     m_tabView->setFlow(QListView::LeftToRight);
     m_tabView->setViewMode(QListView::ListMode);
     m_tabView->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
@@ -58,21 +61,34 @@ AppRootView::AppRootView(QWidget* parent)
                                  .arg(THEME.colors().surfacePrimary.name())
                                  .arg(THEME.spacing().radiusMd));
 
-    // Layout configuration: Top-to-Bottom
+    constexpr int settingsIconSize = 20;
+    const QIcon settingsIcon(Constants::SETTINGS_ICON_PATH);
+    QPixmap settingsPixmap =
+        settingsIcon.pixmap(QSize(settingsIconSize, settingsIconSize), devicePixelRatioF());
+    QPainter settingsPainter(&settingsPixmap);
+    settingsPainter.setCompositionMode(QPainter::CompositionMode_SourceIn);
+    settingsPainter.fillRect(settingsPixmap.rect(), THEME.colors().textSecondary);
+    settingsPainter.end();
+
+    m_settingsButton->setIcon(QIcon(settingsPixmap));
+    m_settingsButton->setIconSize(QSize(settingsIconSize, settingsIconSize));
+    m_settingsButton->setFixedSize(THEME.spacing().radiusMd * 2, THEME.spacing().radiusMd * 2);
+    m_settingsButton->setCursor(Qt::PointingHandCursor);
+    updateSettingsButtonStyle(false);
+    connect(m_settingsButton, &QPushButton::clicked, this, &AppRootView::onSettingsClicked);
+
     m_mainLayout->setContentsMargins(0, 0, 0, 0);
     m_mainLayout->setSpacing(THEME.spacing().spacingXs);
     m_mainLayout->addLayout(m_topBarLayout);
     m_mainLayout->addWidget(m_contentStack);
 
-    // LAyout Configuration: Left-to-Right
     m_topBarLayout->setContentsMargins(THEME.spacing().spacingLg, THEME.spacing().spacingMd,
                                        THEME.spacing().spacingXl, THEME.spacing().spacingMd);
     m_topBarLayout->setSpacing(THEME.spacing().spacingXl);
     m_topBarLayout->addWidget(m_logoLabel);
     m_topBarLayout->addWidget(m_tabView, 1);
-    m_topBarLayout->addStretch();
+    m_topBarLayout->addWidget(m_settingsButton);
 
-    // Render CanBusManager Icon on the left
     constexpr QSize iconSize(22, 26);
     const QIcon icon(Constants::CAN_BUS_ICON_PATH);
     QPixmap pixmap = icon.pixmap(iconSize, devicePixelRatioF());
@@ -109,7 +125,8 @@ void AppRootView::setModel(AppRootModel* model)
             [this](const QItemSelection& selected, const QItemSelection& deselected) {
                 m_tabView->viewport()->update();
 
-                if (selected.isEmpty() && !deselected.isEmpty() && m_model->rowCount() > 0)
+                if (selected.isEmpty() && !deselected.isEmpty() && !m_settingsActive &&
+                    m_model->rowCount() > 0)
                 {
                     const QModelIndex lastIndex = deselected.first().indexes().first();
                     m_tabView->selectionModel()->select(lastIndex, QItemSelectionModel::Select);
@@ -136,13 +153,75 @@ void AppRootView::setDelegate(AppRootDelegate* delegate) const
     m_tabView->setItemDelegate(delegate);
 }
 
-void AppRootView::handleTabChanged(const int index) const
+void AppRootView::setSettingsModel(SettingsModel* settingsModel)
+{
+    m_settingsModel = settingsModel;
+    m_settingsView = new SettingsView(m_settingsModel, this);
+    m_contentStack->addWidget(m_settingsView);
+}
+
+void AppRootView::handleTabChanged(const int index)
 {
     LOG_INF("AppRoot", "Switching tab...")
-    if (index >= 0 && index < m_contentStack->count())
+    if (m_settingsActive)
     {
+        m_settingsActive = false;
+        updateSettingsButtonStyle(false);
+    }
+
+    if (index >= 0 && index < m_contentStack->count() - 1)
+    {
+        m_lastTabIndex = index;
         m_contentStack->setCurrentIndex(index);
     }
+}
+
+void AppRootView::onSettingsClicked()
+{
+    if (m_settingsActive)
+    {
+        m_settingsActive = false;
+        updateSettingsButtonStyle(false);
+        m_tabView->selectionModel()->setCurrentIndex(
+            m_model->index(m_lastTabIndex, 0),
+            QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
+        m_contentStack->setCurrentIndex(m_lastTabIndex);
+    } else
+    {
+        m_settingsActive = true;
+        updateSettingsButtonStyle(true);
+        if (m_tabView->selectionModel()->currentIndex().isValid())
+        {
+            m_lastTabIndex = m_tabView->selectionModel()->currentIndex().row();
+        }
+        m_tabView->selectionModel()->clear();
+        if (m_settingsView)
+        {
+            m_settingsView->rebuild();
+        }
+        m_contentStack->setCurrentWidget(m_settingsView);
+    }
+}
+
+void AppRootView::updateSettingsButtonStyle(bool active)
+{
+    const auto& spacing = THEME.spacing();
+    const auto& colors = THEME.colors();
+
+    QString bgColor = active ? colors.surfaceSecondary.name() : "transparent";
+    QString hoverColor = colors.surfaceSecondary.name();
+
+    m_settingsButton->setStyleSheet(QString("QPushButton {"
+                                            "  background-color: %1;"
+                                            "  border: none;"
+                                            "  border-radius: %2px;"
+                                            "}"
+                                            "QPushButton:hover {"
+                                            "  background-color: %3;"
+                                            "}")
+                                        .arg(bgColor)
+                                        .arg(spacing.radiusMd)
+                                        .arg(hoverColor));
 }
 
 bool AppRootView::eventFilter(QObject* watched, QEvent* event)
@@ -182,6 +261,16 @@ void AppRootView::resizeEvent(QResizeEvent* event)
     {
         emit m_model->layoutChanged();
     }
+}
+
+bool AppRootView::event(QEvent* event)
+{
+    if (event->type() == Core::StyleEvent::EventType)
+    {
+        applyStyle();
+        return true;
+    }
+    return QWidget::event(event);
 }
 
 void AppRootView::onRowsInserted(const QModelIndex&, const int first, const int last) const

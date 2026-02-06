@@ -7,7 +7,6 @@
 #include <QVBoxLayout>
 
 #include "core/macro/theme.hpp"
-#include "core/widgets/common/styled_combo_box.hpp"
 #include "sending/constants.hpp"
 
 namespace Sending {
@@ -136,20 +135,6 @@ void SendingView::setupUi()
     mainLayout->addWidget(m_contentStack, 1);
 
     connect(m_sidebarList, &QListView::clicked, this, &SendingView::onSidebarSelectionChanged);
-
-    // Connect interface dropdowns to emit signal when opening (for on-the-fly refresh)
-    if (const auto* rawInterfaceCombo =
-            qobject_cast<Core::StyledComboBox*>(m_rawView->interfaceSelector()))
-    {
-        connect(rawInterfaceCombo, &Core::StyledComboBox::aboutToShowPopup, this,
-                &SendingView::interfaceDropdownOpening);
-    }
-    if (const auto* dbcInterfaceCombo =
-            qobject_cast<Core::StyledComboBox*>(m_dbcView->interfaceSelector()))
-    {
-        connect(dbcInterfaceCombo, &Core::StyledComboBox::aboutToShowPopup, this,
-                &SendingView::interfaceDropdownOpening);
-    }
 }
 
 void SendingView::onSidebarSelectionChanged(const QModelIndex& index)
@@ -203,29 +188,6 @@ void SendingView::setModel(SendingModel* model)
     connect(m_dbcView, &DbcSendingSubView::signalValueChanged, model,
             [model](uint16_t messageId, const QString& signalName, const double newValue) {
                 model->setSignalValue(messageId, signalName.toStdString(), newValue);
-            });
-
-    // Interface Selection to Emit Signal
-    connect(m_rawView->interfaceSelector(), QOverload<int>::of(&QComboBox::currentIndexChanged),
-            this, [this](const int index) {
-                m_rawInterfaceSelected = (index >= 0);
-                if (index >= 0)
-                {
-                    emit deviceSelectionChanged(
-                        m_rawView->interfaceSelector()->currentText().toStdString());
-                }
-                updateSendButtonStates();
-            });
-
-    connect(m_dbcView->interfaceSelector(), QOverload<int>::of(&QComboBox::currentIndexChanged),
-            this, [this](const int index) {
-                m_dbcInterfaceSelected = (index >= 0);
-                if (index >= 0)
-                {
-                    emit deviceSelectionChanged(
-                        m_dbcView->interfaceSelector()->currentText().toStdString());
-                }
-                updateSendButtonStates();
             });
 
     // Raw CAN ID input changes to Model
@@ -284,11 +246,6 @@ void SendingView::setModel(SendingModel* model)
 
 void SendingView::updateSendButtonStates() const
 {
-    if (auto* rawSendBtn = m_rawView->sendButton())
-    {
-        rawSendBtn->setEnabled(m_rawInterfaceSelected);
-    }
-
     if (auto* dbcSendBtn = m_dbcView->sendButton())
     {
         bool anySignalSelected = false;
@@ -311,19 +268,7 @@ void SendingView::updateSendButtonStates() const
             }
         }
 
-        dbcSendBtn->setEnabled(m_dbcInterfaceSelected && anySignalSelected);
-    }
-}
-
-void SendingView::setAvailableDevices(const std::vector<std::string>& devices) const
-{
-    if (m_rawView)
-    {
-        m_rawView->setAvailableInterfaces(devices);
-    }
-    if (m_dbcView)
-    {
-        m_dbcView->setAvailableInterfaces(devices);
+        dbcSendBtn->setEnabled(anySignalSelected);
     }
 }
 

@@ -15,7 +15,6 @@ namespace Sending {
 
 RawSendingSubView::RawSendingSubView(QWidget* parent)
     : QWidget(parent),
-      m_configCard(nullptr),
       m_frameCard(nullptr),
       m_canIdEditor(nullptr),
       m_messageDataEditor(nullptr),
@@ -47,10 +46,6 @@ void RawSendingSubView::setupUi()
     contentLayout->setContentsMargins(spacing.spacingLg, spacing.spacingLg, spacing.spacingLg,
                                       spacing.spacingLg);
     contentLayout->setSpacing(spacing.spacingLg);
-
-    // CAN-Bus Configuration Card
-    m_configCard = new CanBusConfigCard(true, this);
-    contentLayout->addWidget(m_configCard);
 
     // CAN Frame Card
     m_frameCard = new Core::CardWidget(Constants::CAN_FRAME_TITLE, Constants::CAN_FRAME_DESCRIPTION,
@@ -93,14 +88,6 @@ void RawSendingSubView::setupUi()
     m_sendButton = new SendMessageButton(buttonContainer);
     buttonLayout->addWidget(m_sendButton);
     mainLayout->addWidget(buttonContainer);
-}
-
-void RawSendingSubView::setAvailableInterfaces(const std::vector<std::string>& interfaces) const
-{
-    if (m_configCard)
-    {
-        m_configCard->setAvailableInterfaces(interfaces);
-    }
 }
 
 void RawSendingSubView::setupCanIdInput() const

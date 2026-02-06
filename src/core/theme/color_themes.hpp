@@ -42,4 +42,40 @@ struct ColorTheme {
 struct LightTheme : public ColorTheme {
 };
 
+/**
+ * @brief A dark color theme of the CanBusManager
+ */
+struct DarkTheme : public ColorTheme {
+    DarkTheme()
+    {
+        // Text Colors
+        textPrimary = QColor(0xe0e0e0);
+        textSecondary = QColor(0x9e9e9e);
+        textDisabled = QColor(0x616161);
+        textOnPrimary = QColor(0, 0, 0);
+
+        // Surfaces
+        surfaceMain = QColor(0x1e, 0x1e, 0x2e);
+        surfacePrimary = QColor(0x2a, 0x2a, 0x3c);
+        surfaceSecondary = QColor(0x38, 0x38, 0x4c);
+        surfaceForeground = QColor(0xe0e0e0);
+        surfaceHover = QColor(0x33, 0x33, 0x46);
+        surfaceSelected = QColor(0x33, 0x33, 0x46);
+
+        // Standard Color
+        colorPrimary = QColor(0x38, 0x38, 0x4c);
+        colorPrimaryHover = QColor(0x4a, 0x4a, 0x60);
+
+        // Borders
+        borderSubtle = QColor(255, 255, 255, 0x19);
+        borderStrong = QColor(255, 255, 255, 0x32);
+
+        // Status (keep readable on dark background)
+        statusSuccess = QColor(0x66, 0xBB, 0x6A);
+        statusError = QColor(0xEF, 0x53, 0x50);
+        statusWarning = QColor(0xFF, 0xA7, 0x26);
+        statusRunning = QColor(0xFF, 0xCA, 0x28);
+    }
+};
+
 }  // namespace Core

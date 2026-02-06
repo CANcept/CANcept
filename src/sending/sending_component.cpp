@@ -4,7 +4,6 @@
 #include <QtConcurrent/QtConcurrentRun>
 
 #include "constants.hpp"
-#include "core/event/can_driver_event.hpp"
 #include "core/event/can_event.hpp"
 #include "core/event/dbc_event.hpp"
 #include "core/macro/console_logging.hpp"
@@ -105,23 +104,6 @@ void SendingComponent::publishDbcMessageAsync(const Core::DbcCanMessage& message
 
 void SendingComponent::setupConnections()
 {
-    // Fetch available interfaces when dropdown is about to open
-    connect(m_view.get(), &SendingView::interfaceDropdownOpening, this, [this]() {
-        std::list<std::string> drivers;
-        m_eventBroker.publish(Core::GetAvailableCanDriversEvent(&drivers));
-        m_view->setAvailableDevices({drivers.begin(), drivers.end()});
-        LOG_INF(Constants::MODULE_IDENTIFIER, "Refreshed available interfaces: {} found",
-                drivers.size());
-    });
-
-    // Device selection changes
-    connect(m_view.get(), &SendingView::deviceSelectionChanged, this,
-            [this](const std::string& deviceName) {
-                LOG_INF(Constants::MODULE_IDENTIFIER, "CAN device changed to: {}", deviceName);
-                m_eventBroker.publish<Core::CanDriverChangeEvent>(
-                    Core::CanDriverChangeEvent(deviceName));
-            });
-
     // Model requests to send raw messages - single path from Model to event broker
     connect(m_model.get(), &SendingModel::requestSendRaw, this,
             [this](const std::string&, const Core::RawCanMessage& message) {

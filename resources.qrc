@@ -1,6 +1,8 @@
 <!DOCTYPE RCC><RCC version="1.0">
     <qresource prefix="/">
-        <file>assets/icon/can_bus.svg</file>
+        <file>assets/icon/app_root/can_bus.svg</file>
+        <file>assets/icon/app_root/settings.svg</file>
+        <file>assets/icon/can_handler/configuration.svg</file>
         <file>assets/icon/upload.svg</file>
         <file>assets/icon/overview.svg</file>
         <file>assets/icon/ecus.svg</file>
@@ -13,7 +15,6 @@
         <file>assets/icon/sending/raw_based_send_icon.svg</file>
         <file>assets/icon/sending/dbc_based_send_icon.svg</file>
         <file>assets/icon/sending/send.svg</file>
-        <file>assets/icon/sending/configuration.svg</file>
         <file>assets/icon/sending/can_frame.svg</file>
         <file>assets/icon/sending/messages.svg</file>
     </qresource>

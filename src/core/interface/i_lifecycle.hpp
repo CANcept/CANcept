@@ -1,6 +1,7 @@
 #pragma once
 #include "core/event/lifecycle_event.hpp"
 #include "i_event_broker.hpp"
+#include "i_settings_registry.hpp"
 
 namespace Core {
 
@@ -43,6 +44,10 @@ class ILifecycle
      * @brief ILifecycle components should typically not be copied.
      */
     auto operator=(const ILifecycle&) -> ILifecycle& = delete;
+    /**
+     * @brief This allows the extending component to register settings.
+     */
+    virtual void registerSettings(ISettingsRegistry& registry) {}
 
    protected:
     /**

@@ -50,6 +50,11 @@ class CanCommunicationHandler final : public Core::ILifecycle
      */
     void onStop() override;
 
+    /**
+     * @brief Lets all can parsers register settings.
+     */
+    void registerSettings(Core::ISettingsRegistry& registry) override;
+
    private:
     /**
      * @brief Method that gets called periodically to check on new can messages over the bus.

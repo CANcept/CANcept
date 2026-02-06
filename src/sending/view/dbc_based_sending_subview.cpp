@@ -17,7 +17,6 @@ namespace Sending {
 
 DbcSendingSubView::DbcSendingSubView(QWidget* parent)
     : QWidget(parent),
-      m_configCard(nullptr),
       m_messagesCard(nullptr),
       m_scrollArea(nullptr),
       m_scrollContent(nullptr),
@@ -49,9 +48,6 @@ void DbcSendingSubView::setupUi()
     mainLayout->setContentsMargins(spacing.spacingLg, spacing.spacingLg, spacing.spacingLg,
                                    spacing.spacingLg);
     mainLayout->setSpacing(spacing.spacingLg);
-
-    m_configCard = new CanBusConfigCard(true, scrollContent);
-    mainLayout->addWidget(m_configCard);
 
     m_messagesCard = new Core::CardWidget(Constants::MESSAGES_LABEL, QString(),
                                           QString(Constants::MESSAGES_ICON_PATH), scrollContent);
@@ -187,14 +183,6 @@ void DbcSendingSubView::clearMessages() const
             widget->deleteLater();
         }
         delete item;
-    }
-}
-
-void DbcSendingSubView::setAvailableInterfaces(const std::vector<std::string>& interfaces) const
-{
-    if (m_configCard)
-    {
-        m_configCard->setAvailableInterfaces(interfaces);
     }
 }
 

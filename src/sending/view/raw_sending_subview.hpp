@@ -4,11 +4,9 @@
 #include <QPushButton>
 #include <QWidget>
 
-#include "components/can_bus_config_card.hpp"
 #include "components/hex_id_line_edit.hpp"
 #include "components/send_message_button.hpp"
 #include "core/widgets/card_widget.hpp"
-#include "core/widgets/common/styled_combo_box.hpp"
 #include "sending/view/formatter/hex_data_formatter.hpp"
 
 namespace Sending {
@@ -31,20 +29,6 @@ class RawSendingSubView final : public QWidget
    public:
     explicit RawSendingSubView(QWidget* parent = nullptr);
     ~RawSendingSubView() override = default;
-
-    /**
-     * @name Configuration Accessors
-     * @{
-     */
-    [[nodiscard]] auto interfaceSelector() const -> QComboBox*
-    {
-        return m_configCard ? m_configCard->interfaceSelector() : nullptr;
-    }
-    [[nodiscard]] auto baudRateSelector() const -> QComboBox*
-    {
-        return m_configCard ? m_configCard->baudRateSelector() : nullptr;
-    }
-    /** @} */
 
     /**
      * @name Frame Data Accessors
@@ -70,19 +54,10 @@ class RawSendingSubView final : public QWidget
     }
     /** @} */
 
-    /**
-     * @brief Populates the interface dropdown.
-     * @param interfaces List of available CAN interface names (e.g., "can0", "vcan0").
-     */
-    void setAvailableInterfaces(const std::vector<std::string>& interfaces) const;
-
    private:
     void setupUi();
     void setupCanIdInput() const;
     void setupMessageDataInput();
-
-    // CAN-Bus Configuration Card
-    CanBusConfigCard* m_configCard;
 
     // CAN Frame Card
     Core::CardWidget* m_frameCard;

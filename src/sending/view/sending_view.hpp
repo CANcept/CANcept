@@ -1,6 +1,5 @@
 #pragma once
 
-#include <QComboBox>
 #include <QListView>
 #include <QStackedWidget>
 #include <QWidget>
@@ -40,19 +39,9 @@ class SendingView final : public QWidget
      */
     void setModel(SendingModel* model);
 
-    // UI Interaction API
-    void setAvailableDevices(const std::vector<std::string>& devices) const;
-
    signals:
     /** @brief Emitted when the sidebar selection changes (0=Raw, 1=DBC) */
     void modeChanged(bool isDbcMode);
-
-    /** @brief Emitted when the device dropdown changes */
-    void deviceSelectionChanged(const std::string& deviceName);
-
-    /** @brief Emitted when an interface dropdown is about to open, allowing refresh of available
-     * interfaces */
-    void interfaceDropdownOpening();
 
    public slots:
     /** @brief Switches the visible sub-view (0 for Raw, 1 for DBC) */
@@ -97,10 +86,6 @@ class SendingView final : public QWidget
 
     // Model reference for button state checks
     SendingModel* m_model = nullptr;
-
-    // Interface selection tracking
-    bool m_rawInterfaceSelected = false;
-    bool m_dbcInterfaceSelected = false;
 };
 
 }  // namespace Sending
