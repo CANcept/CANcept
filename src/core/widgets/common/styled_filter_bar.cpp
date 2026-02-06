@@ -1,15 +1,19 @@
 #include "styled_filter_bar.hpp"
 
 #include <QAction>
+#include <QApplication>
+#include <QComboBox>
 #include <QHBoxLayout>
+#include <QLineEdit>
 #include <QListView>
+#include <QStandardItemModel>
 
 #include "core/constants.hpp"
 #include "core/macro/theme.hpp"
 
 namespace Core {
-
-StyledFilterBar::StyledFilterBar(QWidget* parent) : QWidget(parent)
+StyledFilterBar::StyledFilterBar(QWidget* parent)
+    : QWidget(parent)
 {
     setupUi();
     setupStyles();
@@ -17,40 +21,40 @@ StyledFilterBar::StyledFilterBar(QWidget* parent) : QWidget(parent)
 
 // --- Getter ---
 
-auto StyledFilterBar::searchText() const -> QString
+QString StyledFilterBar::searchText() const
 {
     return m_searchBar->text();
 }
 
-auto StyledFilterBar::currentFilter() const -> QString
+QString StyledFilterBar::currentFilter() const
 {
     return m_filterBox->currentText();
 }
 
 // --- Setter ---
 
-void StyledFilterBar::setPlaceholderText(const QString& text)
+void StyledFilterBar::setPlaceholderText(const QString& text) const
 {
     m_searchBar->setPlaceholderText(text);
 }
 
-void StyledFilterBar::setSearchText(const QString& text)
+void StyledFilterBar::setSearchText(const QString& text) const
 {
     m_searchBar->setText(text);
 }
 
-void StyledFilterBar::setFilterOptions(const QStringList& options)
+void StyledFilterBar::setFilterOptions(const QStringList& options) const
 {
     m_filterBox->clear();
     m_filterBox->addItems(options);
 }
 
-void StyledFilterBar::setCurrentFilter(const QString& text)
+void StyledFilterBar::setCurrentFilter(const QString& text) const
 {
     m_filterBox->setCurrentText(text);
 }
 
-void StyledFilterBar::setCurrentFilterIndex(int index)
+void StyledFilterBar::setCurrentFilterIndex(int index) const
 {
     m_filterBox->setCurrentIndex(index);
 }
@@ -66,9 +70,8 @@ void StyledFilterBar::setupUi()
     // --- Search field ---------------------------------------------------------
     m_searchBar = new QLineEdit(this);
     m_searchBar->setObjectName("SearchField");
-    m_searchBar->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
-    // Search icon
+    // Icon
     auto* searchAction = new QAction(m_searchBar);
     searchAction->setIcon(QIcon(Constants::SEARCH_ICON));
     m_searchBar->addAction(searchAction, QLineEdit::LeadingPosition);
@@ -77,8 +80,6 @@ void StyledFilterBar::setupUi()
     m_filterBox = new QComboBox(this);
     m_filterBox->setObjectName("FilterCombo");
     m_filterBox->setView(new QListView(m_filterBox));
-    m_filterBox->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
-
     // --- Layout ---------------------------------------------------------------
     auto* layout = new QHBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
@@ -88,20 +89,21 @@ void StyledFilterBar::setupUi()
     layout->addWidget(m_filterBox, 1);
 
     // --- Signals --------------------------------------------------------------
-    connect(m_searchBar, &QLineEdit::textChanged, this, &StyledFilterBar::searchTextChanged);
+    connect(m_searchBar, &QLineEdit::textChanged,
+            this, &StyledFilterBar::searchTextChanged);
 
-    connect(m_filterBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
-            &StyledFilterBar::filterIndexChanged);
+    connect(m_filterBox, &QComboBox::currentTextChanged,
+            this, &StyledFilterBar::filterChanged);
 }
 
 // -----------------------------------------------------------------------------
 // Styles
 // -----------------------------------------------------------------------------
 
-void StyledFilterBar::setupStyles()
+void StyledFilterBar::setupStyles() const
 {
     const auto& spacing = THEME.spacing();
-    const auto& colors = THEME.colors();
+    const auto& colors  = THEME.colors();
 
     // --- Search ---------------------------------------------------------------
     const QString searchStyle = QString(R"(
@@ -122,14 +124,14 @@ QLineEdit#SearchField::placeholder {
     color: %8;
 }
 )")
-                                    .arg(colors.surfacePrimary.name())
-                                    .arg(spacing.radiusMd)
-                                    .arg(spacing.HeightSm)
-                                    .arg(spacing.spacingLg)
-                                    .arg(spacing.spacingMd)
-                                    .arg(colors.textPrimary.name())
-                                    .arg(spacing.fontSizeSm)
-                                    .arg(colors.textSecondary.name());
+        .arg(colors.surfacePrimary.name())   // %1
+        .arg(spacing.radiusMd)               // %2
+        .arg(32)                             // %3
+        .arg(spacing.spacingLg)              // %4
+        .arg(spacing.spacingMd)              // %5
+        .arg(colors.textPrimary.name())      // %6
+        .arg(spacing.fontSizeSm)             // %7
+        .arg(colors.textSecondary.name());   // %8
 
     m_searchBar->setStyleSheet(searchStyle);
 
@@ -190,19 +192,18 @@ QComboBox#FilterCombo QAbstractItemView::item:selected {
     color: %2;
 }
 )")
-                                   .arg(colors.surfacePrimary.name())
-                                   .arg(colors.textSecondary.name())
-                                   .arg(spacing.radiusMd)
-                                   .arg(spacing.HeightSm)
-                                   .arg(spacing.spacingLg)
-                                   .arg(spacing.spacingXl * 2)
-                                   .arg(spacing.fontSizeSm)
-                                   .arg(Constants::ARROW_DOWN_ICON)
-                                   .arg(spacing.spacingSm)
-                                   .arg(spacing.radiusSm)
-                                   .arg(colors.surfaceMain.name());
+        .arg(colors.surfacePrimary.name())     // %1
+        .arg(colors.textSecondary.name())      // %2
+        .arg(spacing.radiusMd)                 // %3
+        .arg(32)                               // %4
+        .arg(spacing.spacingLg)                // %5
+        .arg(spacing.spacingXl * 2)            // %6
+        .arg(spacing.fontSizeSm)               // %7
+        .arg(Constants::ARROW_DOWN_ICON)       // %8
+        .arg(spacing.spacingSm)                // %9
+        .arg(spacing.radiusSm)                 // %10
+        .arg(colors.surfaceMain.name());       // %11
 
     m_filterBox->setStyleSheet(comboStyle);
 }
-
-}  // namespace Core
+} // namespace Core
