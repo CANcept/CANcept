@@ -69,7 +69,7 @@ void CardWidget::setupUi(const QString& title, const QString& subtitle, const QS
         {
             auto* titleLabel = new QLabel(title, this);
             QFont titleFont = titleLabel->font();
-            titleFont.setPointSize(spacing.fontSizeMd);
+            titleFont.setPointSize(spacing.fontSizeSm);
             titleFont.setWeight(static_cast<QFont::Weight>(spacing.fontWeightNormal));
             titleLabel->setFont(titleFont);
             titleLabel->setStyleSheet(QString("color: %1;").arg(colors.textPrimary.name()));

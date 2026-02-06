@@ -10,7 +10,7 @@
 #include "core/interface/i_tab_component.hpp"
 
 // MVD Classes
-#include "delegate/dbc_delegate.hpp"
+#include "delegate/message_table_delegate.hpp"
 #include "model/dbc_model.hpp"
 #include "view/dbc_view.hpp"
 
@@ -84,7 +84,7 @@ class DbcComponent : public Core::ITabComponent
      *
      * @param filePath Path to the selected DBC file.
      */
-    void onFileLoadRequested(const QString& filePath);
+    void onFileLoadRequested(const QString& filePath) const;
 
    private:
     /**
@@ -96,7 +96,7 @@ class DbcComponent : public Core::ITabComponent
      *
      * @param event Event containing the parsed DBC result.
      */
-    void onDbcParsed(const Core::DBCParsedEvent& event);
+    void onDbcParsed(const Core::DBCParsedEvent& event) const;
 
     /**
      * @brief Handles DBC parsing errors.
@@ -107,7 +107,7 @@ class DbcComponent : public Core::ITabComponent
      *
      * @param event Event containing error details.
      */
-    void onDbcParseError(const Core::DBCParseErrorEvent& event);
+    void onDbcParseError(const Core::DBCParseErrorEvent& event) const;
 
     /**
      * @brief Sets up signal-slot and event broker connections.
@@ -128,7 +128,7 @@ class DbcComponent : public Core::ITabComponent
     std::unique_ptr<DbcView> m_view;
 
     /** @brief Ownership of the Formatting Delegate (passed to View). */
-    std::unique_ptr<DbcDelegate> m_delegate;
+    std::unique_ptr<MessageTableDelegate> m_delegate;
 
     /** @brief RAII Handle for success event subscription. */
     Core::Connection m_parseSuccessConn;

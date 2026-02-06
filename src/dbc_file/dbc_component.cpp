@@ -6,38 +6,40 @@
 #include "constants.hpp"
 
 namespace DbcFile {
-
 DbcComponent::DbcComponent(Core::IEventBroker& broker)
     : Core::ITabComponent(broker, Constants::Component::TabId, Constants::Component::TabTitle,
                           QIcon(Constants::Component::TabIcon))
 {
+    m_model = std::make_unique<DbcModel>(broker, this);
     m_view = std::make_unique<DbcView>();
-
-    setupConnections();
+    m_view->setSourceModel(m_model.get());
 }
 DbcComponent::~DbcComponent() = default;
 auto DbcComponent::getView() -> QWidget*
 {
     return m_view.get();
 }
-void DbcComponent::onStart() {}
+void DbcComponent::onStart()
+{
+    setupConnections();
+}
 void DbcComponent::onStop()
 {
     m_parseSuccessConn.release();
     m_parseErrorConn.release();
 }
-void DbcComponent::onFileLoadRequested(const QString& filePath)
+void DbcComponent::onFileLoadRequested(const QString& filePath) const
 {
     Core::ParseDBCRequestEvent event(filePath.toStdString());
     event.filePath = filePath.toStdString();
     m_eventBroker.publish(event);
 }
-void DbcComponent::onDbcParsed(const Core::DBCParsedEvent& event)
+void DbcComponent::onDbcParsed(const Core::DBCParsedEvent& event) const
 {
     m_view->getLoadPage().showStatusMessage(Constants::Status::ParseSuccess, false);
     m_view->setNavigationEnabled(true);
 }
-void DbcComponent::onDbcParseError(const Core::DBCParseErrorEvent& event)
+void DbcComponent::onDbcParseError(const Core::DBCParseErrorEvent& event) const
 {
     QString errorMsg = Constants::Status::ErrorPrefix + QString::fromStdString(event.errorMessage);
     m_view->getLoadPage().showStatusMessage(errorMsg, true);

@@ -1,17 +1,11 @@
 //
-// Created by Adrian Rupp on 29.12.25.
+// Created by Adrian Rupp on 04.02.26.
 //
 #pragma once
-
 #include <QStyledItemDelegate>
-
-// Include Roles to access semantic data (Hex, Unit)
-#include "../model/dbc_roles.hpp"
-
 namespace DbcFile {
-
 /**
- * @class DbcDelegate
+ * @class MessageTableDelegate
  * @brief Standard delegate for formatting cell data in read-only QTableViews.
  *
  * USE CASE:
@@ -20,13 +14,13 @@ namespace DbcFile {
  * RESPONSIBILITIES:
  * Intercepts the data before painting to apply text formatting based on Custom Roles.
  */
-class DbcDelegate : public QStyledItemDelegate
+class MessageTableDelegate : public QStyledItemDelegate
 {
     Q_OBJECT
 
    public:
-    explicit DbcDelegate(QObject* parent = nullptr);
-    ~DbcDelegate() override = default;
+    explicit MessageTableDelegate(QObject* parent = nullptr);
+    ~MessageTableDelegate() override = default;
 
     /**
      * @brief Initializes the style option structure with data from the model.

@@ -13,7 +13,10 @@
 #include <QVBoxLayout>
 #include <QWidget>
 
+#include "core/macro/theme.hpp"
 #include "core/theme/theme_manager.hpp"
+#include "core/widgets/card_widget.hpp"
+#include "core/widgets/tinted_icon_label.hpp"
 #include "dbc_file/constants.hpp"
 
 namespace DbcFile {
@@ -43,53 +46,12 @@ void updateDragStyle(QWidget* widget, const QString& state)
 }
 
 /**
- * @brief Creates a themed upload icon for the upload zone.
- * @param parent Parent widget.
- * @return QLabel containing the icon.
- *
- * @details Uses QPainter to tint the SVG icon according to the theme. Falls back
- * to text if the icon resource is missing.
- */
-auto createUploadIcon(QWidget* parent) -> QLabel*
-{
-    const auto& THEME = Core::ThemeManager::getInstance();
-    const auto& colors = THEME.colors();
-    const auto& spacing = THEME.spacing();
-
-    auto* iconLabel = new QLabel(parent);
-    iconLabel->setAlignment(Qt::AlignCenter);
-
-    QIcon icon(Constants::LoadPage::CardIcon);
-    QPixmap pixmap = icon.pixmap(spacing.IconSize, spacing.IconSize);
-
-    if (!pixmap.isNull())
-    {
-        QPainter painter(&pixmap);
-        painter.setCompositionMode(QPainter::CompositionMode_SourceIn);
-        painter.fillRect(pixmap.rect(), colors.textSecondary);
-        painter.end();
-
-        iconLabel->setPixmap(pixmap);
-    } else
-    {
-        // Fallback text if icon resource is missing
-        iconLabel->setText(Constants::LoadPage::CardIconFallback);
-        iconLabel->setStyleSheet(QString("font-size: %1px; color: %2;")
-                                     .arg(spacing.fontSizeLg)
-                                     .arg(colors.textSecondary.name()));
-    }
-
-    return iconLabel;
-}
-
-/**
  * @brief Creates an instruction label for the upload zone.
  * @param parent Parent widget.
  * @return QLabel containing the instruction text.
  */
 auto createUploadInstruction(QWidget* parent) -> QLabel*
 {
-    const auto& THEME = Core::ThemeManager::getInstance();
     const auto& colors = THEME.colors();
     const auto& spacing = THEME.spacing();
 
@@ -107,7 +69,6 @@ auto createUploadInstruction(QWidget* parent) -> QLabel*
 
 void LoadPage::showStatusMessage(const QString& message, const bool isError) const
 {
-    const auto& THEME = Core::ThemeManager::getInstance();
     const auto& colors = THEME.colors();
     const auto& spacing = THEME.spacing();
     m_statusLabel->setText(message);
@@ -240,67 +201,28 @@ void LoadPage::onBrowseButtonClicked()
     emit fileSelected(fileName);
 }
 
-auto LoadPage::createCardFrame(QVBoxLayout* parentLayout) -> QVBoxLayout*
+auto LoadPage::createCardLayout(QVBoxLayout* parentLayout, QWidget* parent) -> QVBoxLayout*
 {
-    const auto& THEME = Core::ThemeManager::getInstance();
     const auto& colors = THEME.colors();
     const auto& spacing = THEME.spacing();
 
-    auto* loadCard = new QFrame(this);
-    loadCard->setObjectName(Constants::LoadPage::ObjectName::LoadCard);
-    loadCard->setMaximumWidth(650);
-    loadCard->setMaximumHeight(350);
+    auto* loadCard = new Core::CardWidget(Constants::LoadPage::CardTitle,
+                                          Constants::LoadPage::CardSubtitle, "", parent);
+    loadCard->setMaximumWidth(spacing.WidthLg);
+    loadCard->setMaximumHeight(spacing.HeightXl);
     loadCard->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-    const QString cardStyle = QString(
-                                  "#LoadCard { "
-                                  "background-color: %1; "
-                                  "border: %2px solid %3; "
-                                  "border-radius: %4px; "
-                                  "}")
-                                  .arg(colors.surfaceMain.name())
-                                  .arg(spacing.borderThick)
-                                  .arg(colors.borderSubtle.name(QColor::HexArgb))
-                                  .arg(spacing.radiusSm);
-    loadCard->setStyleSheet(cardStyle);
     parentLayout->addWidget(loadCard);
 
     // Inner layout of load card
-    auto* cardLayout = new QVBoxLayout(loadCard);
+    auto* cardLayout = loadCard->contentLayout();
     cardLayout->setContentsMargins(spacing.spacingXl, spacing.spacingXl, spacing.spacingXl,
                                    spacing.spacingXl);
     cardLayout->setSpacing(spacing.spacingMd);
     return cardLayout;
 }
 
-void LoadPage::setupHeader(QVBoxLayout* layout)
-{
-    const auto& THEME = Core::ThemeManager::getInstance();
-    const auto& colors = THEME.colors();
-    const auto& spacing = THEME.spacing();
-
-    auto* title = new QLabel(Constants::LoadPage::CardTitle);
-    title->setStyleSheet(QString("font-size: %1px;"
-                                 "font-weight: %2;"
-                                 "color: %3;")
-                             .arg(spacing.fontSizeLg)
-                             .arg(spacing.fontWeightNormal)
-                             .arg(colors.textPrimary.name()));
-    layout->addWidget(title);
-
-    // Subtitle "Load a DBC file to analyze its content" below the title in the upper left
-    auto* subTitle = new QLabel(Constants::LoadPage::CardSubtitle);
-    subTitle->setStyleSheet(QString("font-size: %1px;"
-                                    "font-weight: %2;"
-                                    "color: %3;")
-                                .arg(spacing.fontSizeMd)
-                                .arg(spacing.fontWeightNormal)
-                                .arg(colors.textSecondary.name()));
-    layout->addWidget(subTitle);
-}
-
 void LoadPage::setupUploadZone(QVBoxLayout* layout)
 {
-    const auto& THEME = Core::ThemeManager::getInstance();
     const auto& colors = THEME.colors();
     const auto& spacing = THEME.spacing();
 
@@ -352,7 +274,9 @@ void LoadPage::setupUploadZone(QVBoxLayout* layout)
     zoneLayout->setAlignment(Qt::AlignCenter);
 
     // Upload Icon + Instruction Text
-    zoneLayout->addWidget(createUploadIcon(m_uploadBoxFrame));
+    auto* iconLabel = new Core::TintedIconLabel(Constants::LoadPage::CardIcon, spacing.IconLg,
+                                                colors.textSecondary, m_uploadBoxFrame);
+    zoneLayout->addWidget(iconLabel);
     zoneLayout->addWidget(createUploadInstruction(m_uploadBoxFrame));
 
     // Status label
@@ -371,8 +295,7 @@ void LoadPage::setupUi()
     mainLayout->setAlignment(Qt::AlignCenter);
     mainLayout->setContentsMargins(0, 0, 0, 0);
 
-    auto* cardLayout = createCardFrame(mainLayout);
-    setupHeader(cardLayout);
+    auto* cardLayout = createCardLayout(mainLayout);
     setupUploadZone(cardLayout);
 }
 }  // namespace DbcFile

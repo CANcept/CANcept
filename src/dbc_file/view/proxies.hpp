@@ -23,10 +23,10 @@ namespace DbcFile {
  * @brief Flattens a hierarchical tree structure into a linear list based on item type.
  *
  * @details
- * **USE CASE:**
+ * USE CASE:
  * Used for "Overview Page" lists (ECUs, Messages) and "Messages/Signals Page" tables.
  *
- * **MECHANISM:**
+ * MECHANISM:
  * It does NOT use QSortFilterProxyModel because it structurally transforms the data
  * (Tree -> List). It performs a manual recursive scan to find all items of `m_targetType`.
  */
@@ -44,16 +44,21 @@ class FlatListProxy : public QAbstractProxyModel
     ~FlatListProxy() override = default;
 
     /**
-     * @brief Updates the search filter. Triggers rebuildMapping().
-     * @caller DbcView::on...FilterTextChanged().
-     * @param text Case-insensitive search string.
+     * @brief Sets the text filter.
+     *
+     * Filters items by their DisplayRole (case-insensitive).
+     * Triggers a full rebuild of the internal mapping.
+     *
+     * @param text Filter text
      */
     void setSearchFilter(const QString& text);
 
     /**
-     * @brief Updates the category filter. Triggers rebuildMapping().
-     * @caller DbcView::on...FilterTypeChanged().
-     * @param index The selected index from the UI ComboBox (0 = All).
+     * @brief Sets the category filter.
+     *
+     * Currently not implemented, but still triggers a mapping rebuild.
+     *
+     * @param index Category index
      */
     void setFilterCategory(int index);
 
@@ -85,17 +90,17 @@ class FlatListProxy : public QAbstractProxyModel
 
    public slots:
     /**
-     * @brief Scans the source tree and rebuilds the internal index list.
-     * @caller
-     * - Internal: When filters change via setSearchFilter/setFilterCategory.
-     * - Signal: When sourceModel emits modelReset or layoutChanged.
+     * @brief Rebuilds the internal mapping list.
+     *
+     * Recursively traverses the source model and collects all matching items
+     * according to the target type and filter settings.
      */
     void rebuildMapping();
 
    private:
     /**
      * @brief Recursive scanner helper.
-     * @caller Internal (rebuildMapping).
+     *
      * @details Scans the tree and appends matching indices to m_mapping if they match
      * Type, SearchText, and FilterCategory.
      */
@@ -103,7 +108,7 @@ class FlatListProxy : public QAbstractProxyModel
 
     Core::DbcItemType m_targetType;
     QString m_filterText;
-    int m_filterCategory = 0;
+    int m_filterCategory = -1;
 
     /** @brief The flattened list of persistent pointers to the source items. */
     QList<QPersistentModelIndex> m_mapping;
@@ -118,10 +123,10 @@ class FlatListProxy : public QAbstractProxyModel
  * @brief A proxy that maintains the tree hierarchy but filters nodes by text and type.
  *
  * @details
- * **USE CASE:**
+ * USE CASE:
  * Used for the "ECUs Page" (Tree View).
  *
- * **LOGIC:**
+ * LOGIC:
  * - Hides the "Overview" metadata row.
  * - Filters ECUs/Messages based on search text (Search Bar).
  * - Filters ECUs based on category (Filter Box).
