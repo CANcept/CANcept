@@ -88,12 +88,17 @@ class DbcMessageCard : public QWidget
      */
     void updateHeaderFromSignals() const;
 
+   protected:
+    bool event(QEvent* event) override;
+
    private:
     void setupUi(const QString& name, uint32_t id, int signalCount, const Config& config);
+    void applyStyle();
     void connectHeaderToSignals();
 
     QLabel* m_nameLabel;
     QLabel* m_idLabel;
+    QLabel* m_signalCountLabel;
     StyledCheckBox* m_headerCheckbox;
     QPushButton* m_expandBtn;
 

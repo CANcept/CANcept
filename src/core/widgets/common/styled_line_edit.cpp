@@ -4,6 +4,7 @@
 #include <QPainter>
 
 #include "core/macro/theme.hpp"
+#include "core/theme/style_event.hpp"
 
 namespace Core {
 
@@ -83,6 +84,16 @@ void StyledLineEdit::applyStyle()
                               .arg(colors.surfaceSecondary.name());
 
     setStyleSheet(style);
+}
+
+bool StyledLineEdit::event(QEvent* event)
+{
+    if (event->type() == StyleEvent::EventType)
+    {
+        applyStyle();
+        return true;
+    }
+    return QLineEdit::event(event);
 }
 
 }  // namespace Core

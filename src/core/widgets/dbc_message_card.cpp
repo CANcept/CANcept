@@ -5,6 +5,7 @@
 #include "card_widget.hpp"
 #include "common/styled_checkbox.hpp"
 #include "core/macro/theme.hpp"
+#include "core/theme/style_event.hpp"
 #include "dbc_signal_row.hpp"
 
 namespace Core {
@@ -14,6 +15,7 @@ DbcMessageCard::DbcMessageCard(const QString& name, const uint32_t id, int signa
     : QWidget(parent),
       m_nameLabel(nullptr),
       m_idLabel(nullptr),
+      m_signalCountLabel(nullptr),
       m_headerCheckbox(nullptr),
       m_expandBtn(nullptr),
       m_bodyContainer(nullptr),
@@ -26,6 +28,7 @@ DbcMessageCard::DbcMessageCard(const QString& name, uint32_t id, int signalCount
     : QWidget(parent),
       m_nameLabel(nullptr),
       m_idLabel(nullptr),
+      m_signalCountLabel(nullptr),
       m_headerCheckbox(nullptr),
       m_expandBtn(nullptr),
       m_bodyContainer(nullptr),
@@ -42,7 +45,6 @@ void DbcMessageCard::setupUi(const QString& name, const uint32_t id, const int s
                              const Config& config)
 {
     const auto& spacing = THEME.spacing();
-    const auto& colors = THEME.colors();
 
     auto* mainLayout = new QVBoxLayout(this);
     mainLayout->setContentsMargins(0, 0, 0, 0);
@@ -69,52 +71,22 @@ void DbcMessageCard::setupUi(const QString& name, const uint32_t id, const int s
     m_expandBtn->setFlat(true);
     m_expandBtn->setText(config.startExpanded ? QString::fromUtf8("\u25BC")
                                               : QString::fromUtf8("\u25B6"));
-    m_expandBtn->setStyleSheet(QString("QPushButton { "
-                                       "  border: none; "
-                                       "  font-size: %1px; "
-                                       "  color: %2; "
-                                       "  background: transparent; "
-                                       "}")
-                                   .arg(spacing.fontSizeSm)
-                                   .arg(colors.textSecondary.name()));
     headerRow->addWidget(m_expandBtn);
 
     // Message Name
     m_nameLabel = new QLabel(name, card);
-    m_nameLabel->setStyleSheet(QString("QLabel { "
-                                       "  font-weight: %1; "
-                                       "  font-size: %2px; "
-                                       "  color: %3; "
-                                       "  text-decoration: none; "
-                                       "}")
-                                   .arg(spacing.fontWeightMedium)
-                                   .arg(spacing.fontSizeSm)
-                                   .arg(colors.textPrimary.name()));
     headerRow->addWidget(m_nameLabel);
 
     // CAN ID with 0x prefix
     m_idLabel = new QLabel(QString("0x%1").arg(id, 3, 16, QChar('0')).toUpper(), card);
-    m_idLabel->setStyleSheet(QString("QLabel { "
-                                     "  color: %1; "
-                                     "  font-size: %2px; "
-                                     "  text-decoration: none; "
-                                     "}")
-                                 .arg(colors.textSecondary.name())
-                                 .arg(spacing.fontSizeXs));
     headerRow->addWidget(m_idLabel);
 
     headerRow->addStretch();
 
-    // Signal count (textSecondary)
-    auto* signalCountLabel =
+    // Signal count
+    m_signalCountLabel =
         new QLabel(QString("%1 signal%2").arg(signalCount).arg(signalCount != 1 ? "s" : ""), card);
-    signalCountLabel->setStyleSheet(QString("QLabel { "
-                                            "  color: %1; "
-                                            "  font-size: %2px; "
-                                            "}")
-                                        .arg(colors.textSecondary.name())
-                                        .arg(spacing.fontSizeXs));
-    headerRow->addWidget(signalCountLabel);
+    headerRow->addWidget(m_signalCountLabel);
 
     // Selection checkbox (optional)
     if (config.showCheckbox)
@@ -147,6 +119,58 @@ void DbcMessageCard::setupUi(const QString& name, const uint32_t id, const int s
 
     // Set initial expand state
     setExpanded(config.startExpanded);
+
+    applyStyle();
+}
+
+void DbcMessageCard::applyStyle()
+{
+    const auto& spacing = THEME.spacing();
+    const auto& colors = THEME.colors();
+
+    m_expandBtn->setStyleSheet(QString("QPushButton { "
+                                       "  border: none; "
+                                       "  font-size: %1px; "
+                                       "  color: %2; "
+                                       "  background: transparent; "
+                                       "}")
+                                   .arg(spacing.fontSizeSm)
+                                   .arg(colors.textSecondary.name()));
+
+    m_nameLabel->setStyleSheet(QString("QLabel { "
+                                       "  font-weight: %1; "
+                                       "  font-size: %2px; "
+                                       "  color: %3; "
+                                       "  text-decoration: none; "
+                                       "}")
+                                   .arg(spacing.fontWeightMedium)
+                                   .arg(spacing.fontSizeSm)
+                                   .arg(colors.textPrimary.name()));
+
+    m_idLabel->setStyleSheet(QString("QLabel { "
+                                     "  color: %1; "
+                                     "  font-size: %2px; "
+                                     "  text-decoration: none; "
+                                     "}")
+                                 .arg(colors.textSecondary.name())
+                                 .arg(spacing.fontSizeXs));
+
+    m_signalCountLabel->setStyleSheet(QString("QLabel { "
+                                              "  color: %1; "
+                                              "  font-size: %2px; "
+                                              "}")
+                                          .arg(colors.textSecondary.name())
+                                          .arg(spacing.fontSizeXs));
+}
+
+bool DbcMessageCard::event(QEvent* event)
+{
+    if (event->type() == StyleEvent::EventType)
+    {
+        applyStyle();
+        return true;
+    }
+    return QWidget::event(event);
 }
 
 void DbcMessageCard::addSignalRow(DbcSignalRowWidget* rowWidget)

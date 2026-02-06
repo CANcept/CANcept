@@ -38,6 +38,8 @@ class StyledLineEdit : public QLineEdit
      */
     void paintEvent(QPaintEvent* event) override;
 
+    bool event(QEvent* event) override;
+
    private:
     /**
      * @brief Applies the application theme via Qt Stylesheets.

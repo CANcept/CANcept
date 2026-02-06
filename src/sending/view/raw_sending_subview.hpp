@@ -1,7 +1,9 @@
 #pragma once
 
+#include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
+#include <QScrollArea>
 #include <QWidget>
 
 #include "components/hex_id_line_edit.hpp"
@@ -54,16 +56,25 @@ class RawSendingSubView final : public QWidget
     }
     /** @} */
 
+   protected:
+    bool event(QEvent* event) override;
+
    private:
     void setupUi();
+    void applyStyle();
     void setupCanIdInput() const;
     void setupMessageDataInput();
+
+    // Scroll area
+    QScrollArea* m_scrollArea;
 
     // CAN Frame Card
     Core::CardWidget* m_frameCard;
     HexIdLineEdit* m_canIdEditor;
     QLineEdit* m_messageDataEditor;
     HexDataFormatter* m_messageDataFormatter;
+    QLabel* m_canIdLabel;
+    QLabel* m_messageDataLabel;
 
     // Floating Send Button
     QPushButton* m_sendButton;

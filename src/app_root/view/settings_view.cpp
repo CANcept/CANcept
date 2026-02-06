@@ -14,13 +14,25 @@ auto SettingRenderer<Core::SettingType::Select>::create(const Core::ISetting* se
                                                         SettingsModel* model,
                                                         QWidget* parent) -> QWidget*
 {
+    const auto& spacing = THEME.spacing();
+    const auto& colors = THEME.colors();
     const auto placeholder = setting->getPlaceholder();
     const auto settingKey = setting->getKey();
 
-    auto* card = new Core::CardWidget(QString(), QString::fromStdString(settingKey.settingId),
-                                      QString(), parent);
+    auto* container = new QWidget(parent);
+    auto* layout = new QVBoxLayout(container);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(spacing.spacingSm);
 
-    auto* combo = new Core::StyledComboBox(card);
+    auto* label = new QLabel(QString::fromStdString(settingKey.settingId), container);
+    QFont labelFont = label->font();
+    labelFont.setPointSize(spacing.fontSizeXs);
+    labelFont.setWeight(static_cast<QFont::Weight>(spacing.fontWeightMedium));
+    label->setFont(labelFont);
+    label->setStyleSheet(QString("color: %1;").arg(colors.textSecondary.name()));
+    layout->addWidget(label);
+
+    auto* combo = new Core::StyledComboBox(container);
     combo->setPlaceholderText(QString::fromStdString(placeholder));
 
     auto populateCombo = [settingKey, model, combo]() {
@@ -60,9 +72,9 @@ auto SettingRenderer<Core::SettingType::Select>::create(const Core::ISetting* se
         combo->blockSignals(false);
     };
 
-    QObject::connect(combo, &Core::StyledComboBox::aboutToShowPopup, card, populateCombo);
+    QObject::connect(combo, &Core::StyledComboBox::aboutToShowPopup, container, populateCombo);
 
-    QObject::connect(combo, QOverload<int>::of(&QComboBox::currentIndexChanged), card,
+    QObject::connect(combo, QOverload<int>::of(&QComboBox::currentIndexChanged), container,
                      [settingKey, model, combo](const int index) {
                          if (index < 0)
                          {
@@ -74,8 +86,8 @@ auto SettingRenderer<Core::SettingType::Select>::create(const Core::ISetting* se
 
     populateCombo();
 
-    card->contentLayout()->addWidget(combo);
-    return card;
+    layout->addWidget(combo);
+    return container;
 }
 
 // Dispatch the correct render defintion based on the type of the setting
@@ -113,7 +125,7 @@ void SettingsView::setupUi()
     m_scrollArea->setWidgetResizable(true);
     m_scrollArea->setFrameShape(QFrame::NoFrame);
     m_scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    m_scrollArea->setStyleSheet("QScrollArea { background: transparent; }");
+    m_scrollArea->setStyleSheet(QString("background-color: %1;").arg(colors.surfaceMain.name()));
 
     m_contentWidget = new QWidget(m_scrollArea);
     m_contentWidget->setObjectName("settingsContent");

@@ -1,9 +1,9 @@
 #pragma once
 
-#include <QListView>
 #include <QStackedWidget>
 #include <QWidget>
 
+#include "core/widgets/sidebar.hpp"
 #include "dbc_based_sending_subview.hpp"
 #include "raw_sending_subview.hpp"
 #include "sending/model/sending_model.hpp"
@@ -47,38 +47,14 @@ class SendingView final : public QWidget
     /** @brief Switches the visible sub-view (0 for Raw, 1 for DBC) */
     void displayMode(int index);
 
-   private slots:
-    /**
-     * @brief Handles sidebar navigation to switch between Raw and DBC views.
-     */
-    void onSidebarSelectionChanged(const QModelIndex& index);
-
    private:
-    /**
-     * @brief Describes a single entry in the sidebar model.
-     */
-    struct SidebarEntry {
-        QString iconPath;
-        QString title;
-        bool enabled;
-    };
-
-    /** @brief Prevents deselection of items in the sidebar list. */
-    void disableSidebarDeselection();
-
-    /** @brief Initializes and configures the sidebar list view. */
-    void setupSidebarList();
-
-    /** @brief Sets up the model for the sidebar list. */
-    void setSidebarModel();
-
     void setupUi();
 
     /** @brief Updates send button enabled states based on current selections */
     void updateSendButtonStates() const;
 
     // Sidebar
-    QListView* m_sidebarList;
+    Core::Sidebar* m_sidebar;
 
     QStackedWidget* m_contentStack;
     RawSendingSubView* m_rawView;

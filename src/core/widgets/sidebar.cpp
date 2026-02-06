@@ -9,6 +9,7 @@
 
 #include "core/delegates/sidebar_delegate.hpp"
 #include "core/macro/theme.hpp"
+#include "core/theme/style_event.hpp"
 #include "core/theme/theme_manager.hpp"
 namespace Core {
 Sidebar::Sidebar(QWidget* parent) : QListView(parent)
@@ -19,37 +20,49 @@ Sidebar::Sidebar(QWidget* parent) : QListView(parent)
 
 void Sidebar::setupUi()
 {
-    const auto& colors = THEME.colors();
-    const auto& spacing = THEME.spacing();
-
     setSelectionMode(QAbstractItemView::SingleSelection);
     setSelectionBehavior(QAbstractItemView::SelectRows);
-    setMaximumWidth(spacing.WidthSm);
+    setMaximumWidth(THEME.spacing().WidthSm);
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     setFrameShape(QFrame::NoFrame);
     setEditTriggers(QAbstractItemView::NoEditTriggers);
     setSelectionRectVisible(false);
+
+    m_model = new QStandardItemModel(this);
+    setModel(m_model);
+
+    m_delegate = new SidebarDelegate(this);
+    setItemDelegate(m_delegate);
+
+    applyStyle();
+}
+
+void Sidebar::applyStyle()
+{
+    const auto& colors = THEME.colors();
+    const auto& spacing = THEME.spacing();
+
     setStyleSheet(QString(R"(
-                                QListView {
-                                    background-color: %1;
-                                    border-right: %2px solid %3;
-                                    color: %4;
-                                    font-size: %5px;
-                                    outline: 0;
-                                }
+        QListView {
+            background-color: %1;
+            border-right: %2px solid %3;
+            color: %4;
+            font-size: %5px;
+            outline: 0;
+        }
 
-                                QListView::item {
-                                    border-radius: %6px;
-                                    padding: %7px;
-                                    margin-right: %8px;
-                                    margin-left: %8px;
-                                }
+        QListView::item {
+            border-radius: %6px;
+            padding: %7px;
+            margin-right: %8px;
+            margin-left: %8px;
+        }
 
-                                QListView::item:selected {
-                                    background-color: %9;
-                                    color: %10;
-                                }
-                                )")
+        QListView::item:selected {
+            background-color: %9;
+            color: %10;
+        }
+    )")
                       .arg(colors.surfaceMain.name(QColor::HexArgb))
                       .arg(spacing.borderThin)
                       .arg(colors.borderSubtle.name(QColor::HexArgb))
@@ -60,12 +73,16 @@ void Sidebar::setupUi()
                       .arg(spacing.spacingMd)
                       .arg(colors.surfacePrimary.name(QColor::HexArgb))
                       .arg(colors.textPrimary.name(QColor::HexArgb)));
+}
 
-    m_model = new QStandardItemModel(this);
-    setModel(m_model);
-
-    m_delegate = new SidebarDelegate(this);
-    setItemDelegate(m_delegate);
+bool Sidebar::event(QEvent* event)
+{
+    if (event->type() == StyleEvent::EventType)
+    {
+        applyStyle();
+        return true;
+    }
+    return QListView::event(event);
 }
 
 void Sidebar::setupConnections()

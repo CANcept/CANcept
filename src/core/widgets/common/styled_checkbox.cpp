@@ -1,6 +1,7 @@
 #include "styled_checkbox.hpp"
 
 #include "core/macro/theme.hpp"
+#include "core/theme/style_event.hpp"
 
 namespace Core {
 
@@ -58,6 +59,16 @@ void StyledCheckBox::applyStyle()
                             .arg(colors.colorPrimary.name(), colors.colorPrimaryHover.name());
 
     this->setStyleSheet(qss);
+}
+
+bool StyledCheckBox::event(QEvent* event)
+{
+    if (event->type() == StyleEvent::EventType)
+    {
+        applyStyle();
+        return true;
+    }
+    return QCheckBox::event(event);
 }
 
 }  // namespace Core

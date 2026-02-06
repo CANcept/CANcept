@@ -91,8 +91,8 @@ class AppRootView : public QWidget
     bool event(QEvent* event) override;
 
    private:
+    void setupUi();
     void updateSettingsButtonStyle(bool active);
-
     void applyStyle();
 
     QListView* m_tabView;

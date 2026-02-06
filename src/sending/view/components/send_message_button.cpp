@@ -4,6 +4,7 @@
 #include <QPainter>
 
 #include "core/macro/theme.hpp"
+#include "core/theme/style_event.hpp"
 #include "sending/constants.hpp"
 
 namespace Sending {
@@ -14,7 +15,12 @@ SendMessageButton::SendMessageButton(QWidget* parent) : QPushButton(parent)
     setMinimumHeight(Constants::SEND_BUTTON_MIN_HEIGHT);
     setMinimumWidth(Constants::SEND_BUTTON_MIN_WIDTH);
 
-    // Set Icon
+    applyStyle();
+}
+
+void SendMessageButton::applyStyle()
+{
+    // Tint icon with current theme color
     QPixmap pixmap(Constants::SEND_BUTTON_ICON_PATH);
     QPainter painter(&pixmap);
     painter.setCompositionMode(QPainter::CompositionMode_SourceIn);
@@ -22,11 +28,6 @@ SendMessageButton::SendMessageButton(QWidget* parent) : QPushButton(parent)
     painter.end();
     setIcon(QIcon(pixmap));
 
-    applyStyle();
-}
-
-void SendMessageButton::applyStyle()
-{
     const auto& spacing = THEME.spacing();
     const auto& colors = THEME.colors();
 
@@ -66,6 +67,16 @@ void SendMessageButton::applyStyle()
                                     .arg(colors.surfaceSecondary.name())
                                     .arg(colors.textDisabled.name());
     setStyleSheet(buttonStyle);
+}
+
+bool SendMessageButton::event(QEvent* event)
+{
+    if (event->type() == Core::StyleEvent::EventType)
+    {
+        applyStyle();
+        return true;
+    }
+    return QPushButton::event(event);
 }
 
 }  // namespace Sending

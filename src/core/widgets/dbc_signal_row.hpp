@@ -77,12 +77,16 @@ class DbcSignalRowWidget final : public QWidget
         return m_selectionCheckbox;
     }
 
+   protected:
+    bool event(QEvent* event) override;
+
    private:
     void setupUi(const QString& name, const QString& unit, double min, double max,
                  const Config& config);
     void setupFullMode(const QString& name, const QString& unit, double min, double max,
                        const Config& config);
     void setupSelectionMode(const QString& name, const QString& unit, const Config& config);
+    void applyStyle();
     void clampInput() const;
 
     CardWidget* m_cardContainer;

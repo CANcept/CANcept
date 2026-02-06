@@ -25,23 +25,19 @@ AppRootView::AppRootView(QWidget* parent)
       m_settingsButton(new QPushButton(this))
 {
     resize(1200, 800);
+    setupUi();
     applyStyle();
 }
 
-void AppRootView::applyStyle()
+void AppRootView::setupUi()
 {
-    this->setObjectName("AppRootView");
-    this->setStyleSheet(QString("#AppRootView {"
-                                "  background-color: %1;"
-                                "}")
-                            .arg(THEME.colors().surfaceMain.name()));
+    setObjectName("AppRootView");
 
     m_tabView->setFlow(QListView::LeftToRight);
     m_tabView->setViewMode(QListView::ListMode);
     m_tabView->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     m_tabView->setWrapping(false);
     m_tabView->setUniformItemSizes(true);
-    m_tabView->setFixedHeight(THEME.spacing().radiusMd * 2);
     m_tabView->setFrameShape(QFrame::NoFrame);
     m_tabView->setFocusPolicy(Qt::StrongFocus);
     m_tabView->setAttribute(Qt::WA_StyledBackground);
@@ -51,15 +47,43 @@ void AppRootView::applyStyle()
     m_tabView->setEditTriggers(QAbstractItemView::NoEditTriggers);
     m_tabView->viewport()->installEventFilter(this);
     m_tabView->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+
+    m_settingsButton->setCursor(Qt::PointingHandCursor);
+    connect(m_settingsButton, &QPushButton::clicked, this, &AppRootView::onSettingsClicked);
+
+    m_mainLayout->setContentsMargins(0, 0, 0, 0);
+    m_mainLayout->addLayout(m_topBarLayout);
+    m_mainLayout->addWidget(m_contentStack);
+
+    m_topBarLayout->addWidget(m_logoLabel);
+    m_topBarLayout->addWidget(m_tabView, 1);
+    m_topBarLayout->addWidget(m_settingsButton);
+
+    constexpr QSize iconSize(22, 26);
+    m_logoLabel->setFixedSize(iconSize);
+
+    setLayout(m_mainLayout);
+}
+
+void AppRootView::applyStyle()
+{
+    const auto& colors = THEME.colors();
+    const auto& spacing = THEME.spacing();
+
+    setStyleSheet(QString("#AppRootView {"
+                          "  background-color: %1;"
+                          "}")
+                      .arg(colors.surfaceMain.name()));
+
+    m_tabView->setFixedHeight(spacing.radiusMd * 2);
     m_tabView->setStyleSheet(QString("QListView {"
                                      "background-color: %1;"
                                      "border-radius: %2px;"
                                      "border: none;"
                                      "outline: none;"
-                                     "}"
-                                     "")
-                                 .arg(THEME.colors().surfacePrimary.name())
-                                 .arg(THEME.spacing().radiusMd));
+                                     "}")
+                                 .arg(colors.surfacePrimary.name())
+                                 .arg(spacing.radiusMd));
 
     constexpr int settingsIconSize = 20;
     const QIcon settingsIcon(Constants::SETTINGS_ICON_PATH);
@@ -67,27 +91,19 @@ void AppRootView::applyStyle()
         settingsIcon.pixmap(QSize(settingsIconSize, settingsIconSize), devicePixelRatioF());
     QPainter settingsPainter(&settingsPixmap);
     settingsPainter.setCompositionMode(QPainter::CompositionMode_SourceIn);
-    settingsPainter.fillRect(settingsPixmap.rect(), THEME.colors().textSecondary);
+    settingsPainter.fillRect(settingsPixmap.rect(), colors.textSecondary);
     settingsPainter.end();
 
     m_settingsButton->setIcon(QIcon(settingsPixmap));
     m_settingsButton->setIconSize(QSize(settingsIconSize, settingsIconSize));
-    m_settingsButton->setFixedSize(THEME.spacing().radiusMd * 2, THEME.spacing().radiusMd * 2);
-    m_settingsButton->setCursor(Qt::PointingHandCursor);
-    updateSettingsButtonStyle(false);
-    connect(m_settingsButton, &QPushButton::clicked, this, &AppRootView::onSettingsClicked);
+    m_settingsButton->setFixedSize(spacing.radiusMd * 2, spacing.radiusMd * 2);
+    updateSettingsButtonStyle(m_settingsActive);
 
-    m_mainLayout->setContentsMargins(0, 0, 0, 0);
-    m_mainLayout->setSpacing(THEME.spacing().spacingXs);
-    m_mainLayout->addLayout(m_topBarLayout);
-    m_mainLayout->addWidget(m_contentStack);
+    m_mainLayout->setSpacing(spacing.spacingXs);
 
-    m_topBarLayout->setContentsMargins(THEME.spacing().spacingLg, THEME.spacing().spacingMd,
-                                       THEME.spacing().spacingXl, THEME.spacing().spacingMd);
-    m_topBarLayout->setSpacing(THEME.spacing().spacingXl);
-    m_topBarLayout->addWidget(m_logoLabel);
-    m_topBarLayout->addWidget(m_tabView, 1);
-    m_topBarLayout->addWidget(m_settingsButton);
+    m_topBarLayout->setContentsMargins(spacing.spacingLg, spacing.spacingMd, spacing.spacingXl,
+                                       spacing.spacingMd);
+    m_topBarLayout->setSpacing(spacing.spacingXl);
 
     constexpr QSize iconSize(22, 26);
     const QIcon icon(Constants::CAN_BUS_ICON_PATH);
@@ -95,13 +111,10 @@ void AppRootView::applyStyle()
 
     QPainter painter(&pixmap);
     painter.setCompositionMode(QPainter::CompositionMode_SourceIn);
-    painter.fillRect(pixmap.rect(), THEME.colors().surfaceForeground);
+    painter.fillRect(pixmap.rect(), colors.surfaceForeground);
     painter.end();
 
     m_logoLabel->setPixmap(pixmap);
-    m_logoLabel->setFixedSize(iconSize);
-
-    setLayout(m_mainLayout);
 }
 
 void AppRootView::setModel(AppRootModel* model)

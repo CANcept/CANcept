@@ -9,6 +9,7 @@
 #include "common/styled_checkbox.hpp"
 #include "common/styled_line_edit.hpp"
 #include "core/macro/theme.hpp"
+#include "core/theme/style_event.hpp"
 
 namespace Core {
 
@@ -64,7 +65,6 @@ void DbcSignalRowWidget::setupFullMode(const QString& name, const QString& unit,
                                        const double max, const Config& config)
 {
     const auto& spacing = THEME.spacing();
-    const auto& colors = THEME.colors();
 
     auto* mainLayout = new QVBoxLayout(this);
     mainLayout->setContentsMargins(0, 0, 0, 0);
@@ -89,10 +89,6 @@ void DbcSignalRowWidget::setupFullMode(const QString& name, const QString& unit,
     firstRow->addWidget(m_selectionCheckbox);
 
     m_nameLabel = new QLabel(name, m_cardContainer);
-    m_nameLabel->setStyleSheet(QString("QLabel { font-size: %1px; font-weight: %2; color: %3; }")
-                                   .arg(spacing.fontSizeSm)
-                                   .arg(spacing.fontWeightNormal)
-                                   .arg(colors.textPrimary.name()));
     firstRow->addWidget(m_nameLabel);
     firstRow->addStretch();
 
@@ -101,9 +97,6 @@ void DbcSignalRowWidget::setupFullMode(const QString& name, const QString& unit,
         const QString rangeText =
             QString("%1-%2 %3").arg(min, 0, 'f', 0).arg(max, 0, 'f', 0).arg(unit);
         m_rangeLabel = new QLabel(rangeText, m_cardContainer);
-        m_rangeLabel->setStyleSheet(QString("QLabel { color: %1; font-size: %2px; }")
-                                        .arg(colors.textDisabled.name())
-                                        .arg(spacing.fontSizeXs));
         firstRow->addWidget(m_rangeLabel);
     }
     cardLayout->addLayout(firstRow);
@@ -145,22 +138,20 @@ void DbcSignalRowWidget::setupFullMode(const QString& name, const QString& unit,
     secondRow->addWidget(m_valueEditor, 1);
 
     m_unitLabel = new QLabel(unit, m_cardContainer);
-    m_unitLabel->setStyleSheet(QString("QLabel { color: %1; font-size: %2px; }")
-                                   .arg(colors.textSecondary.name())
-                                   .arg(spacing.fontSizeSm));
     m_unitLabel->setMinimumWidth(40);
     secondRow->addWidget(m_unitLabel);
 
     cardLayout->addLayout(secondRow);
 
     mainLayout->addWidget(m_cardContainer);
+
+    applyStyle();
 }
 
 void DbcSignalRowWidget::setupSelectionMode(const QString& name, const QString& unit,
                                             const Config& config)
 {
     const auto& spacing = THEME.spacing();
-    const auto& colors = THEME.colors();
 
     auto* layout = new QHBoxLayout(this);
     layout->setContentsMargins(0, spacing.spacingXs / 2, 0, spacing.spacingXs / 2);
@@ -175,12 +166,6 @@ void DbcSignalRowWidget::setupSelectionMode(const QString& name, const QString& 
 
     // Signal name
     m_nameLabel = new QLabel(name, this);
-    m_nameLabel->setStyleSheet(QString("QLabel { "
-                                       "  font-size: %1px; "
-                                       "  color: %2; "
-                                       "}")
-                                   .arg(spacing.fontSizeSm)
-                                   .arg(colors.textPrimary.name()));
     layout->addWidget(m_nameLabel);
 
     layout->addStretch();
@@ -189,14 +174,49 @@ void DbcSignalRowWidget::setupSelectionMode(const QString& name, const QString& 
     if (!unit.isEmpty())
     {
         m_unitLabel = new QLabel(unit, this);
-        m_unitLabel->setStyleSheet(QString("QLabel { "
-                                           "  color: %1; "
-                                           "  font-size: %2px; "
-                                           "}")
-                                       .arg(colors.textSecondary.name())
-                                       .arg(spacing.fontSizeXs));
         layout->addWidget(m_unitLabel);
     }
+
+    applyStyle();
+}
+
+void DbcSignalRowWidget::applyStyle()
+{
+    const auto& spacing = THEME.spacing();
+    const auto& colors = THEME.colors();
+
+    if (m_nameLabel)
+    {
+        m_nameLabel->setStyleSheet(
+            QString("QLabel { font-size: %1px; font-weight: %2; color: %3; }")
+                .arg(spacing.fontSizeSm)
+                .arg(spacing.fontWeightNormal)
+                .arg(colors.textPrimary.name()));
+    }
+
+    if (m_rangeLabel)
+    {
+        m_rangeLabel->setStyleSheet(QString("QLabel { color: %1; font-size: %2px; }")
+                                        .arg(colors.textDisabled.name())
+                                        .arg(spacing.fontSizeXs));
+    }
+
+    if (m_unitLabel)
+    {
+        m_unitLabel->setStyleSheet(QString("QLabel { color: %1; font-size: %2px; }")
+                                       .arg(colors.textSecondary.name())
+                                       .arg(spacing.fontSizeSm));
+    }
+}
+
+bool DbcSignalRowWidget::event(QEvent* event)
+{
+    if (event->type() == StyleEvent::EventType)
+    {
+        applyStyle();
+        return true;
+    }
+    return QWidget::event(event);
 }
 
 void DbcSignalRowWidget::clampInput() const

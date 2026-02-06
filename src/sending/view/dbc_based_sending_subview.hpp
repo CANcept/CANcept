@@ -67,9 +67,14 @@ class DbcSendingSubView final : public QWidget
      */
     void signalValueChanged(uint16_t messageId, const QString& signalName, double newValue);
 
+   protected:
+    bool event(QEvent* event) override;
+
    private:
     void setupUi();
+    void applyStyle();
 
+    QScrollArea* m_outerScrollArea;
     Core::CardWidget* m_messagesCard;
     QScrollArea* m_scrollArea;
     QWidget* m_scrollContent;
