@@ -32,8 +32,22 @@ class AppRootView : public QWidget
     explicit AppRootView(QWidget* parent = nullptr);
     ~AppRootView() override = default;
 
+    /**
+     * @brief Injects the model and sets up synchronization logic.
+     * @param model Pointer to the data model.
+     */
     void setModel(AppRootModel* model);
+
+    /**
+     * @brief Sets the delegate for custom tab bar rendering.
+     * @param delegate Pointer to the tab delegate.
+     */
     void setDelegate(AppRootDelegate* delegate) const;
+
+    /**
+     * @brief Sets the model for a custom setting model.
+     * @param settingsModel Pointer to the setting model.
+     */
     void setSettingsModel(SettingsModel* settingsModel);
 
    private slots:
@@ -95,14 +109,46 @@ class AppRootView : public QWidget
     void updateSettingsButtonStyle(bool active);
     void applyStyle();
 
+    /**
+     * @brief The tab bar populated by the options provided in the m_tabs.
+     */
     QListView* m_tabView;
+
+    /**
+     * @brief The different Widgets of the tabs with one selected.
+     */
     QStackedWidget* m_contentStack;
+
+    /**
+     * @brief Layout to order The m_tabBar and m_contentStack.
+     */
     QVBoxLayout* m_mainLayout;
+
+    /**
+     * @brief Layout to order The top bar of the main window.
+     */
     QHBoxLayout* m_topBarLayout{nullptr};
+
+    /**
+     * @brief Label showing the icon of the CanBusManager.
+     */
     QLabel* m_logoLabel{nullptr};
+    /**
+     * @brief Pointer to the button to select the setings.
+     */
     QPushButton* m_settingsButton{nullptr};
+    /**
+     * @brief Pointer to the view of the setting selection.
+     */
     SettingsView* m_settingsView{nullptr};
+
+    /**
+     * @brief Pointer to the injected model.
+     */
     AppRootModel* m_model{nullptr};
+    /**
+     * @brief Pointer to the setting model.
+     */
     SettingsModel* m_settingsModel{nullptr};
     bool m_settingsActive{false};
     int m_lastTabIndex{0};
