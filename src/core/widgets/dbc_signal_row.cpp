@@ -180,7 +180,7 @@ void DbcSignalRowWidget::setupSelectionMode(const QString& name, const QString& 
     applyStyle();
 }
 
-void DbcSignalRowWidget::applyStyle()
+void DbcSignalRowWidget::applyStyle() const
 {
     const auto& spacing = THEME.spacing();
     const auto& colors = THEME.colors();
@@ -206,6 +206,15 @@ void DbcSignalRowWidget::applyStyle()
         m_unitLabel->setStyleSheet(QString("QLabel { color: %1; font-size: %2px; }")
                                        .arg(colors.textSecondary.name())
                                        .arg(spacing.fontSizeSm));
+    }
+
+    if (m_valueEditor)
+    {
+        m_valueEditor->setFixedHeight(spacing.spacingXl + spacing.spacingMd);
+        m_valueEditor->setStyleSheet(m_valueEditor->styleSheet() +
+                                     QString("QLineEdit { padding: %1px %2px; }")
+                                         .arg(spacing.spacingXs)
+                                         .arg(spacing.spacingMd));
     }
 }
 

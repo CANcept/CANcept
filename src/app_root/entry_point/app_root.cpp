@@ -4,6 +4,7 @@
 #include <qfile.h>
 
 #include <QApplication>
+#include <QPalette>
 #include <algorithm>
 
 #include "app_root/constants.hpp"
@@ -70,6 +71,26 @@ void AppRoot::bootstrap()
             Constants::THEME_ICON_PATH,
             Core::TypeTraits<Core::SettingType::Select, Core::GetAvailableThemesEvent>{
                 "Select Theme"}));
+
+    // Detect system theme preference and set initial theme value
+    LOG_INF("AppRoot", "Detecting system theme preference...");
+    std::string initialTheme = Constants::THEME_LIGHT;
+    const QPalette systemPalette = QApplication::palette();
+    const QColor windowColor = systemPalette.color(QPalette::Window);
+    const QColor textColor = systemPalette.color(QPalette::WindowText);
+
+    if (windowColor.lightness() < textColor.lightness())
+    {
+        initialTheme = Constants::THEME_DARK;
+        LOG_INF("AppRoot", "System dark mode detected, setting initial theme to Dark");
+        Core::ThemeManager::getInstance().setColorTheme(std::make_unique<Core::DarkTheme>());
+    } else
+    {
+        LOG_INF("AppRoot", "System light mode detected, keeping initial theme as Light");
+    }
+
+    m_settingsService->setValue(
+        Core::SettingKey{Constants::THEME_SETTING_ID, Constants::THEME_COMPONENT_ID}, initialTheme);
 
     LOG_INF("AppRoot", "Instantiating Can Communication Handler...");
     m_can_communication_handler = std::make_unique<CanHandler::CanCommunicationHandler>(*m_broker);
@@ -138,21 +159,34 @@ void AppRoot::start()
                 Core::SelectOption{Constants::THEME_LIGHT, Constants::THEME_LIGHT});
             event.options->push_back(
                 Core::SelectOption{Constants::THEME_DARK, Constants::THEME_DARK});
+            event.options->push_back(
+                Core::SelectOption{Constants::THEME_AQUA, Constants::THEME_AQUA});
+            event.options->push_back(
+                Core::SelectOption{Constants::THEME_MAROON, Constants::THEME_MAROON});
+            event.options->push_back(
+                Core::SelectOption{Constants::THEME_DRACULA, Constants::THEME_DRACULA});
         });
 
     // Apply the selected theme when the user changes it
-    m_themeChangeConn =
-        m_broker->subscribe<Core::ThemeChangeEvent>([](const Core::ThemeChangeEvent& event) {
-            if (event.themeName == Constants::THEME_DARK)
-            {
-                Core::ThemeManager::getInstance().setColorTheme(
-                    std::make_unique<Core::DarkTheme>());
-            } else
-            {
-                Core::ThemeManager::getInstance().setColorTheme(
-                    std::make_unique<Core::LightTheme>());
-            }
-        });
+    m_themeChangeConn = m_broker->subscribe<Core::ThemeChangeEvent>([](const Core::ThemeChangeEvent&
+                                                                           event) {
+        if (event.themeName == Constants::THEME_DARK)
+        {
+            Core::ThemeManager::getInstance().setColorTheme(std::make_unique<Core::DarkTheme>());
+        } else if (event.themeName == Constants::THEME_AQUA)
+        {
+            Core::ThemeManager::getInstance().setColorTheme(std::make_unique<Core::AquaTheme>());
+        } else if (event.themeName == Constants::THEME_MAROON)
+        {
+            Core::ThemeManager::getInstance().setColorTheme(std::make_unique<Core::MaroonTheme>());
+        } else if (event.themeName == Constants::THEME_DRACULA)
+        {
+            Core::ThemeManager::getInstance().setColorTheme(std::make_unique<Core::DraculaTheme>());
+        } else
+        {
+            Core::ThemeManager::getInstance().setColorTheme(std::make_unique<Core::LightTheme>());
+        }
+    });
 
     LOG_INF("AppRoot", "Application started: publishing AppStartedEvent!");
     m_broker->publish<Core::AppStartedEvent>(Core::AppStartedEvent());

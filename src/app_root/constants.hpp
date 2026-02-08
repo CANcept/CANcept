@@ -29,12 +29,21 @@ inline const std::string THEME_COMPONENT_ID = "Appearance";
 inline const std::string THEME_SETTING_ID = "Theme";
 
 /** @brief Icon path for the theme setting. */
-inline const std::string THEME_ICON_PATH = ":/assets/icon/app_root/settings.svg";
+inline const std::string THEME_ICON_PATH = ":/assets/icon/app_root/palette.svg";
 
 /** @brief Display value for the light theme option. */
 inline const std::string THEME_LIGHT = "Light";
 
 /** @brief Display value for the dark theme option. */
 inline const std::string THEME_DARK = "Dark";
+
+/** @brief Display value for the aqua theme option. */
+inline const std::string THEME_AQUA = "Aqua";
+
+/** @brief Display value for the maroon theme option. */
+inline const std::string THEME_MAROON = "Maroon";
+
+/** @brief Display value for the dracula theme option. */
+inline const std::string THEME_DRACULA = "Dracula";
 
 }  // namespace AppRoot::Constants

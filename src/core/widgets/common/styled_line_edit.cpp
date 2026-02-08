@@ -58,7 +58,6 @@ void StyledLineEdit::applyStyle()
     const auto& spacing = THEME.spacing();
     const auto& colors = THEME.colors();
 
-    // basic styles with border overwrite in the paintEvent
     const QString style = QString(
                               "QLineEdit {"
                               "  background-color: %1;"
@@ -84,6 +83,7 @@ void StyledLineEdit::applyStyle()
                               .arg(colors.surfaceSecondary.name());
 
     setStyleSheet(style);
+    updateGeometry();
 }
 
 bool StyledLineEdit::event(QEvent* event)

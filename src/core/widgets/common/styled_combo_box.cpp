@@ -109,6 +109,8 @@ void StyledComboBox::applyStyle()
                               .arg(Constants::ARROW_DOWN_ICON)
                               .arg(spacing.radiusSm);
     setStyleSheet(style);
+    updateGeometry();
+    update();
 }
 
 bool StyledComboBox::event(QEvent* event)

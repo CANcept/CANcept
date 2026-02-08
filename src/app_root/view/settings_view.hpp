@@ -34,12 +34,16 @@ class SettingsView final : public QWidget
     /** @brief Rebuilds the entire settings UI from the current registry state. */
     void rebuild() const;
 
+   protected:
+    bool event(QEvent* event) override;
+
    private:
     void setupUi();
     void buildComponentSection(const std::string& componentId) const;
+    void applyStyle() const;
 
     /** @brief Dispatches to the correct SettingRenderer based on ISetting::getType(). */
-    static auto createSettingWidget(Core::ISetting* setting, SettingsModel* model,
+    static auto createSettingWidget(const Core::ISetting* setting, SettingsModel* model,
                                     QWidget* parent) -> QWidget*;
 
     SettingsModel* m_model;

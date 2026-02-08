@@ -2,9 +2,11 @@
 
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QTimer>
 #include <algorithm>
 
 #include "core/macro/theme.hpp"
+#include "core/theme/style_event.hpp"
 #include "core/widgets/card_widget.hpp"
 #include "core/widgets/common/styled_combo_box.hpp"
 
@@ -91,7 +93,7 @@ auto SettingRenderer<Core::SettingType::Select>::create(const Core::ISetting* se
 }
 
 // Dispatch the correct render defintion based on the type of the setting
-auto SettingsView::createSettingWidget(Core::ISetting* setting, SettingsModel* model,
+auto SettingsView::createSettingWidget(const Core::ISetting* setting, SettingsModel* model,
                                        QWidget* parent) -> QWidget*
 {
     switch (setting->getType())
@@ -116,7 +118,6 @@ SettingsView::SettingsView(SettingsModel* model, QWidget* parent)
 void SettingsView::setupUi()
 {
     const auto& spacing = THEME.spacing();
-    const auto& colors = THEME.colors();
 
     auto* mainLayout = new QVBoxLayout(this);
     mainLayout->setContentsMargins(spacing.spacingXl, spacing.spacingLg, spacing.spacingXl,
@@ -125,7 +126,6 @@ void SettingsView::setupUi()
     m_scrollArea->setWidgetResizable(true);
     m_scrollArea->setFrameShape(QFrame::NoFrame);
     m_scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    m_scrollArea->setStyleSheet(QString("background-color: %1;").arg(colors.surfaceMain.name()));
 
     m_contentWidget = new QWidget(m_scrollArea);
     m_contentWidget->setObjectName("settingsContent");
@@ -137,6 +137,8 @@ void SettingsView::setupUi()
 
     m_scrollArea->setWidget(m_contentWidget);
     mainLayout->addWidget(m_scrollArea, 1);
+
+    applyStyle();
 }
 
 void SettingsView::rebuild() const
@@ -187,6 +189,23 @@ void SettingsView::buildComponentSection(const std::string& componentId) const
 
     const int stretchIndex = m_contentLayout->count() - 1;
     m_contentLayout->insertWidget(stretchIndex, sectionCard);
+}
+
+void SettingsView::applyStyle() const
+{
+    const auto& colors = THEME.colors();
+    m_scrollArea->setStyleSheet(QString("background-color: %1;").arg(colors.surfaceMain.name()));
+}
+
+bool SettingsView::event(QEvent* event)
+{
+    if (event->type() == Core::StyleEvent::EventType)
+    {
+        applyStyle();
+        QTimer::singleShot(0, this, [this]() { rebuild(); });
+        return true;
+    }
+    return QWidget::event(event);
 }
 
 }  // namespace AppRoot

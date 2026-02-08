@@ -123,7 +123,7 @@ void DbcMessageCard::setupUi(const QString& name, const uint32_t id, const int s
     applyStyle();
 }
 
-void DbcMessageCard::applyStyle()
+void DbcMessageCard::applyStyle() const
 {
     const auto& spacing = THEME.spacing();
     const auto& colors = THEME.colors();

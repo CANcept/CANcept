@@ -93,7 +93,7 @@ class DbcMessageCard : public QWidget
 
    private:
     void setupUi(const QString& name, uint32_t id, int signalCount, const Config& config);
-    void applyStyle();
+    void applyStyle() const;
     void connectHeaderToSignals();
 
     QLabel* m_nameLabel;
