@@ -93,7 +93,8 @@ void AppRoot::bootstrap()
         Core::SettingKey{Constants::THEME_SETTING_ID, Constants::THEME_COMPONENT_ID}, initialTheme);
 
     LOG_INF("AppRoot", "Instantiating Can Communication Handler...");
-    m_can_communication_handler = std::make_unique<CanHandler::CanCommunicationHandler>(*m_broker);
+    // m_can_communication_handler =
+    // std::make_unique<CanHandler::CanCommunicationHandler>(*m_broker);
     m_can_communication_handler->registerSettings(*m_settingsService);
 
     LOG_INF("AppRoot", "Instanciating Dbc Handler");
@@ -120,6 +121,10 @@ void AppRoot::bootstrap()
     m_tabs.clear();
 
     initTab<DbcFile::DbcComponent>();
+    /*
+    initTab<Monitoring::MonitoringComponent>();
+    */
+    initTab<Logging::LoggingComponent>();
     initTab<Sending::SendingComponent>();
 
     for (const auto& tab : m_tabs)
