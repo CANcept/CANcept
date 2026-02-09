@@ -121,6 +121,7 @@ void AppRoot::bootstrap()
 
     initTab<DbcFile::DbcComponent>();
     initTab<Sending::SendingComponent>();
+    initTab<Monitoring::MonitoringComponent>();
 
     for (const auto& tab : m_tabs)
     {
