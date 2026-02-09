@@ -1,0 +1,69 @@
+//
+// Created by Adrian Rupp on 09.02.26.
+// Filterable proxy model for ECU tree, using integer category
+//
+
+#pragma once
+
+#include <QSortFilterProxyModel>
+#include <QString>
+
+namespace Core {
+enum class DbcItemType;
+}
+
+namespace DbcFile {
+
+/**
+ * @brief Proxy model for filtering ECUs and Messages in a tree view.
+ *
+ * Provides:
+ * - Text search filtering
+ * - Category-based filtering (active/passive/all) using integers
+ * - Custom child handling (Messages are treated as leaf nodes)
+ */
+class EcuTreeProxy : public QSortFilterProxyModel
+{
+    Q_OBJECT
+public:
+    /**
+     * @brief Construct a new EcuTreeProxy.
+     * @param parent Optional parent QObject
+     */
+    explicit EcuTreeProxy(QObject* parent = nullptr);
+
+    /**
+     * @brief Set the text used for filtering by name.
+     * @param text Filter string
+     */
+    void setSearchText(const QString& text);
+
+    /**
+     * @brief Set the category filter using an integer.
+     * @param index 0 = all, 1 = active, 2 = passive
+     */
+    void setFilterCategory(int index);
+
+protected:
+    /**
+     * @brief Overrides default child handling for Messages.
+     * Messages are considered leaf nodes.
+     * @param parent Parent index
+     * @return true if parent has children
+     */
+    [[nodiscard]] auto hasChildren(const QModelIndex& parent) const -> bool override;
+
+    /**
+     * @brief Determines whether a row should be visible based on search text and category.
+     * @param sourceRow Row in the source model
+     * @param sourceParent Parent index in the source model
+     * @return true if row matches current filter
+     */
+    [[nodiscard]] auto filterAcceptsRow(int sourceRow, const QModelIndex& sourceParent) const -> bool override;
+
+private:
+    QString m_filterText;  ///< Current search text
+    int m_filterCategory{}; ///< Current category filter (0=all, 1=active, 2=passive)
+};
+
+} // namespace DbcFile

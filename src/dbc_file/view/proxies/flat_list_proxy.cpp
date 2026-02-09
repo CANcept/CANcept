@@ -3,12 +3,10 @@
 #include <qopenglcontext_platform.h>
 
 namespace DbcFile {
-
 FlatListProxy::FlatListProxy(const Core::DbcItemType targetType, QObject* parent)
     : QAbstractProxyModel(parent), m_targetType(targetType)
 {
 }
-
 void FlatListProxy::setSearchFilter(const QString& text)
 {
     if (m_filterText == text) return;
@@ -109,7 +107,7 @@ void FlatListProxy::scanNode(const QModelIndex& parent)
         // Get current index and type
         QModelIndex currentInd = sourceModel()->index(i, 0, parent);
         auto type = static_cast<Core::DbcItemType>(
-            sourceModel()->data(currentInd, DbcRoles::Role_ItemType).toInt());
+            sourceModel()->data(currentInd, Role_ItemType).toInt());
 
         // Item at current index has correct type -> add mapping
         if (type == m_targetType)
@@ -157,24 +155,4 @@ void FlatListProxy::scanNode(const QModelIndex& parent)
         }
     }
 }
-
-// --- TreeFilterProxy (Dummy) ---
-
-TreeFilterProxy::TreeFilterProxy(QObject* parent) : QSortFilterProxyModel(parent) {}
-void TreeFilterProxy::setSearchFilter(const QString& text) {}
-void TreeFilterProxy::setFilterCategory(int index) {}
-bool TreeFilterProxy::filterAcceptsRow(int sourceRow, const QModelIndex& sourceParent) const
-{
-    return true;
 }
-
-// --- SingleMessageProxy (Dummy) ---
-
-SingleMessageProxy::SingleMessageProxy(QObject* parent) : QSortFilterProxyModel(parent) {}
-void SingleMessageProxy::setFilterParentIndex(const QModelIndex& parentIndex) {}
-bool SingleMessageProxy::filterAcceptsRow(int sourceRow, const QModelIndex& sourceParent) const
-{
-    return true;
-}
-
-}  // namespace DbcFile
