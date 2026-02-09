@@ -16,6 +16,10 @@ constexpr int OvMsgCount = 3;
 constexpr int OvSigCount = 4;
 constexpr int OvOrphans = 5;
 
+// Ecus
+constexpr int EcuName = 0;
+constexpr int EcuTotalSignals = 1;
+
 // Messages
 constexpr int MsgName = 0;
 constexpr int MsgId = 1;
@@ -156,6 +160,8 @@ const QString SearchbarText = "Search ECU by name...";
 const QString FilterAllText = "All ECUs";
 const QString FilterActive = "Only Sending ECUs";
 const QString FilterPassive = "Only receiving ECUs";
+constexpr int NoFilterIndex = 0;
+constexpr int FilterActiveIndex = 1;
 }
 
 // --- Messages Page Specifics ---
