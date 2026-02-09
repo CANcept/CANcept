@@ -11,7 +11,7 @@
 #include "core/widgets/common/styled_filter_bar.hpp"
 #include "dbc_file/constants.hpp"
 
-namespace DbcFile {
+namespace Core {
 
 // --- SearchableFilterTable ---
 SearchableFilterTable::SearchableFilterTable(QWidget* parent) : QWidget(parent)

@@ -1,5 +1,5 @@
 #pragma once
-#include "dbc_file/view/searchable_filter_widgets.hpp"
+#include "../../../core/widgets/common/searchable_filter_widgets.hpp"
 namespace DbcFile {
 /**
  * @class SignalsPage
@@ -54,6 +54,6 @@ class SignalsPage : public QWidget
      */
     void setupUi();
 
-    SearchableFilterTable* m_tableWidget;
+    Core::SearchableFilterTable* m_tableWidget;
 };
 }  // namespace DbcFile

@@ -117,7 +117,7 @@ void OverviewPage::createOverviewList(QHBoxLayout* parentLayout, const QString& 
         "background: transparent; border: none; padding: 0px; margin: 0px;");
 
     // Delegate
-    constexpr int BadgeRole = DbcRoles::Role_ChildCount;
+    constexpr int BadgeRole = Role_ChildCount;
     constexpr int DetailRole = -1;  // no detail to item
     const auto badgeIcon = QIcon(badgeIconPath);
 

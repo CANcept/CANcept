@@ -13,7 +13,7 @@
 namespace Core {
 class StyledFilterBar;
 }
-namespace DbcFile {
+namespace Core {
 
 // ==============================================================================
 // 1. Searchable Filter Table

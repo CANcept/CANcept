@@ -49,7 +49,7 @@ class TintedIconLabel : public QLabel
      */
     void setIconSize(int size);
 
-   private:
+private:
     /**
      * @brief Internal helper to redraw the pixmap with the current settings.
      */
