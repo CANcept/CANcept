@@ -1,13 +1,17 @@
 #include "dbc_view.hpp"
 
-#include <QList>
 #include <QStandardItemModel>
 #include <QVBoxLayout>
 
 #include "core/constants.hpp"
+#include "core/enum/dbc_itemtype.hpp"
 #include "core/theme/theme_manager.hpp"
 #include "core/widgets/sidebar.hpp"
 #include "dbc_file/constants.hpp"
+#include "dbc_file/delegate/ecu_tree_delegate.hpp"
+#include "dbc_file/view/proxies/flat_list_proxy.hpp"
+#include "dbc_file/view/proxies/single_message_proxy.hpp"
+#include "dbc_file/view/proxies/ecu_tree_proxy.hpp"
 
 namespace DbcFile {
 DbcView::DbcView(QWidget* parent) : QWidget(parent)
@@ -37,6 +41,10 @@ void DbcView::setSourceModel(QAbstractItemModel* model)
     // Pass proxies to overview page lists
     m_overviewPage->getEcuList()->setModel(m_ecuOverviewProxy.get());
     m_overviewPage->getMessageList()->setModel(m_messagesProxy.get());
+
+    m_ecuTreeProxy = std::make_unique<EcuTreeProxy>(this);
+    m_ecuTreeProxy->setSourceModel(model);
+    m_ecuPage->setModel(m_ecuTreeProxy.get());
 
     // Update Labels in m_overviewPage at model reset
     connect(model, &QAbstractItemModel::modelReset, this,
@@ -68,8 +76,14 @@ void DbcView::onSidebarSelectionChanged(int index) const
     m_contentStack->setCurrentIndex(index);
 }
 
-void DbcView::onEcuFilterTextChanged(const QString& text) {}
-void DbcView::onEcuFilterTypeChanged(int index) {}
+void DbcView::onEcuFilterTextChanged(const QString& text) const
+{
+    m_ecuTreeProxy->setSearchText(text);
+}
+void DbcView::onEcuFilterIndexChanged(int index) const
+{
+    m_ecuTreeProxy->setFilterCategory(index);
+}
 void DbcView::onMessageFilterTextChanged(const QString& text) {}
 void DbcView::onMessageFilterTypeChanged(int index) {}
 void DbcView::onMessageSelected(const QModelIndex& proxyIndex) {}
@@ -133,5 +147,8 @@ void DbcView::setupConnections()
             &DbcFile::DbcView::onSidebarSelectionChanged);
     connect(m_loadPage, &LoadPage::fileSelected, this,
             [this](const QString& path) { emit fileLoadRequested(path); });
+
+    connect(m_ecuPage, &EcusPage::filterTextChanged, this, &DbcView::onEcuFilterTextChanged);
+    connect(m_ecuPage, &EcusPage::filterIndexChanged, this, &DbcView::onEcuFilterIndexChanged);
 }
 }  // namespace DbcFile
