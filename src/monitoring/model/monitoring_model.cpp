@@ -140,6 +140,10 @@ auto MonitoringModel::data(const QModelIndex& index, int role) const -> QVariant
             case Role_LatestValue: {
                 auto it = m_currentDbc->messageDefinitions.begin();
                 std::advance(it, index.row());
+                if (it->messageId >= messageValues->size())
+                {
+                    return QVariant();
+                }
                 return messageValues->at(it->messageId).timestamps.size() == 0
                            ? QVariant()
                            : messageValues->at(it->messageId).timestamps.back();
@@ -147,6 +151,10 @@ auto MonitoringModel::data(const QModelIndex& index, int role) const -> QVariant
             case Role_ValueList: {
                 auto it = m_currentDbc->messageDefinitions.begin();
                 std::advance(it, index.row());
+                if (it->messageId >= messageValues->size())
+                {
+                    return QVariant();
+                }
                 return QVariant::fromValue(messageValues->at(it->messageId).timestamps);
             }
             case Role_Unit:
@@ -180,6 +188,10 @@ auto MonitoringModel::data(const QModelIndex& index, int role) const -> QVariant
             case Role_LatestValue: {
                 auto it = m_currentDbc->messageDefinitions.begin();
                 std::advance(it, messageRow);
+                if (it->messageId >= messageValues->size())
+                {
+                    return QVariant();
+                }
                 return messageValues->at(it->messageId).signalValues.at(index.row()).size() == 0
                            ? QVariant()
                            : messageValues->at(it->messageId).signalValues.at(index.row()).back();
@@ -187,6 +199,10 @@ auto MonitoringModel::data(const QModelIndex& index, int role) const -> QVariant
             case Role_ValueList: {
                 auto it = m_currentDbc->messageDefinitions.begin();
                 std::advance(it, messageRow);
+                if (it->messageId >= messageValues->size())
+                {
+                    return QVariant();
+                }
                 return QVariant::fromValue(
                     messageValues->at(it->messageId).signalValues.at(index.row()));
             }
