@@ -2,7 +2,6 @@
 
 #include <QTimer>
 
-#include "core/event/can_event.hpp"
 #include "core/interface/i_event_broker.hpp"
 #include "core/interface/i_tab_component.hpp"
 #include "monitoring/delegate/monitoring_delegate.hpp"
@@ -67,11 +66,6 @@ class MonitoringComponent final : public Core::ITabComponent
      */
     void onStop() override;
 
-    auto isDbcModeEnabled() -> bool
-    {
-        return m_dbcModeEnabled;
-    };
-
    signals:
     /**
      * @brief Signal emitted when a new dbcConfiguration is used.
@@ -104,23 +98,6 @@ class MonitoringComponent final : public Core::ITabComponent
    private slots:
 
     /**
-     * @brief Triggered when the user checks a signal to display in a graph
-     * Notifies GraphListView to plot the checked signal in a new Graph.
-     * @param messageId the id of the message the checked signal belongs to
-     * @param signalName the name of the checked signal
-     */
-    void onSignalChecked(char messageId, const std::string& signalName);
-
-    /**
-     * @brief Triggered when the user unchecks a signal currently checked (therefor plotted in a
-     * graph) Notifies GraphListView to erase graph of the checked signal and discontinue the
-     * plotting
-     * @param messageId the id of the message the unchecked signal belongs to
-     * @param signalName the name of the unchecked signal
-     */
-    void onSignalUnchecked(char messageId, const std::string& signalName);
-
-    /**
      * @brief Triggered when the user selects a different CAN device/interface.
      * It also publishes the CanDriverChangeEvent.
      * @param deviceName The identifier of the newly selected hardware.
@@ -147,19 +124,11 @@ class MonitoringComponent final : public Core::ITabComponent
     Core::Connection m_parseErrorConn;
 
     /** @brief RAII Handle for incoming CAN frames subscription. */
-    Core::Connection m_rawFrameReceivedConn;
-
-    /** @brief RAII Handle for incoming CAN frames subscription. */
     Core::Connection m_decodedFrameReceivedConn;
 
     /** @brief Tracks whether a CAN interface is currently selected */
     bool m_interfaceSelected = false;
 
-    /** @brief Tracks whether the DBC mode is enabled or instead the raw mode */
-    bool m_dbcModeEnabled = false;
-
     QTimer m_updateTimer;
-
-    void updateMessages();
 };
 }  // namespace Monitoring

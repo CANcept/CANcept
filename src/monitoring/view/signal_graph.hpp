@@ -4,7 +4,9 @@
 #include <QWidget>
 
 #include "core/dto/can_dto.hpp"
+#include "core/widgets/card_widget.hpp"
 #include "qwt_plot.h"
+#include "qwt_plot_grid.h"
 
 /**
  * @namespace Monitoring
@@ -40,7 +42,7 @@ class SignalGraph : public QWidget
      *               transferred to the internal model.
      * @param parent Optional Qt parent widget.
      */
-    explicit SignalGraph(char messageId, std::string signalName, QWidget* parent = nullptr);
+    explicit SignalGraph(QString messageId, QString signalName, QWidget* parent = nullptr);
 
     /**
      * @brief Destroys the SignalGraph widget and releases associated
@@ -54,38 +56,42 @@ class SignalGraph : public QWidget
      * This method is typically called when a new CAN message for the
      * corresponding signal is received.
      *
-     * @param signal Rvalue reference containing the latest signal value
+     * @param signalValues QVariant reference containing the latest signal value
      *               to be appended.
+     * @param timestamps QVariant reference containing the timestamp of the new
      */
-    void appendDataToGraph(Core::DbcCanSignal& signal);
+    void updateGraphData(QVariant timestamps, QVariant signalValues);
 
     // Getters for identification in the list
-    [[nodiscard]] auto getSignalName() const -> std::string
+    [[nodiscard]] auto getSignalName() const -> QString
     {
         return m_signalName;
     }
 
-    [[nodiscard]] auto getMessageId() const -> char
+    [[nodiscard]] auto getMessageId() const -> QString
     {
         return m_messageId;
     }
 
-    /**
-     * @brief Removes the graph corresponding to the given signal.
-     *
-     * Used when a signal is deselected or removed from monitoring.
-     *
-     * @param signal Reference to the signal identifying the graph to remove.
-     */
-    void deleteGraph(Core::DbcCanSignal& signal);
+    [[nodiscard]] auto getContainer() const -> Core::CardWidget*
+    {
+        return m_container;
+    }
+
+    void setContainer(Core::CardWidget* container)
+    {
+        m_container = container;
+    }
 
    private:
     void setupPlot();
 
     QwtPlot* m_plot;
     QwtPlotCurve* m_curve;
+    QwtPlotGrid* m_grid;
+    Core::CardWidget* m_container;
 
-    char m_messageId;
-    std::string m_signalName;
+    QString m_messageId;
+    QString m_signalName;
 };
 }  // namespace Monitoring
