@@ -1,6 +1,3 @@
-//
-// Created by Adrian Rupp on 22.01.26.
-//
 #include "overview_page.hpp"
 
 #include <QLineEdit>

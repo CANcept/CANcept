@@ -1,6 +1,3 @@
-//
-// Created by Adrian Rupp on 02.02.26.
-//
 #pragma once
 
 #include <QColor>

@@ -1,6 +1,3 @@
-//
-// Created by Adrian Rupp on 04.02.26.
-//
 #pragma once
 #include <QStyledItemDelegate>
 namespace DbcFile {

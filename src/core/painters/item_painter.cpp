@@ -1,6 +1,3 @@
-//
-// Created by Adrian Rupp on 29.01.26.
-//
 #include "../painters/item_painter.hpp"
 
 #include <QIcon>

@@ -1,6 +1,3 @@
-//
-// Created by Adrian Rupp on 21.01.26.
-//
 #include "load_page.hpp"
 
 #include <QDragEnterEvent>

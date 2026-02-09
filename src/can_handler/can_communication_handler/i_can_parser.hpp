@@ -1,7 +1,3 @@
-//
-// Created by flori on 28.12.2025.
-//
-
 #pragma once
 #include <CanDriver.hpp>
 using sockcanpp::CanMessage;

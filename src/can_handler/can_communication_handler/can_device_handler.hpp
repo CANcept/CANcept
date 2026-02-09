@@ -1,6 +1,3 @@
-//
-// Created by flori on 03.01.2026.
-//
 #pragma once
 #include <ifaddrs.h>
 

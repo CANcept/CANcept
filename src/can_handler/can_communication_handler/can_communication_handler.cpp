@@ -1,6 +1,3 @@
-//
-// Created by Florian on 14.01.2026.
-//
 #include "can_communication_handler.hpp"
 namespace CanHandler {
 void CanCommunicationHandler::checkCanDeviceForMessages() const

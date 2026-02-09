@@ -1,6 +1,3 @@
-//
-// Created by Adrian Rupp on 28.01.26.
-//
 #include "../delegates/sidebar_delegate.hpp"
 
 #include <QAbstractItemView>

@@ -1,7 +1,3 @@
-//
-// Created by flori on 28.12.2025.
-//
-
 #pragma once
 #include "core/event/can_event.hpp"
 #include "core/event/dbc_event.hpp"

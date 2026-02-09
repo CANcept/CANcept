@@ -1,7 +1,3 @@
-//
-// Created by flori on 30.12.2025.
-//
-
 #pragma once
 #include "core/event/dbc_event.hpp"
 #include "core/interface/i_lifecycle.hpp"

@@ -1,5 +1,3 @@
-//
-// Created by Adrian Rupp on 20.01.26.
 #include "dbc_view.hpp"
 
 #include <QList>
