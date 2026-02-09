@@ -6,8 +6,7 @@
 namespace Logging {
 // Initialize base class and members
 // Constructs the logging data model
-LoggingModel::LoggingModel(QObject* parent)
-    : QAbstractTableModel(parent), m_currentDbc(nullptr), m_activeSessionIndex(-1)
+LoggingModel::LoggingModel(QObject* parent) : QAbstractTableModel(parent), m_activeSessionIndex(-1)
 {
 }
 
@@ -127,10 +126,10 @@ QString LoggingModel::sessionIdAt(const QModelIndex& index) const
     return m_activeSessionIndex != -1;
 }
 
-// Updates the stored DBC configuration reference
+// Updates the stored DBC configuration reference HIER
 void LoggingModel::updateDbcConfig(const Core::DbcConfig& config)
 {
-    m_currentDbc = const_cast<Core::DbcConfig*>(&config);
+    m_currentDbc = config;  // Store a copy in std::optional
 }
 
 // Creates and starts a new logging session with selected signals
@@ -241,7 +240,7 @@ void LoggingModel::onRawFrameReceived(const Core::RawCanMessage& msg)
 // Handles incoming DBC decoded messages with signal filtering
 void LoggingModel::onDbcSignalsReceived(const Core::DbcCanMessage& msg)
 {
-    if (!isRecording() || m_currentDbc == nullptr)
+    if (!isRecording() || !m_currentDbc.has_value())
     {
         return;
     }

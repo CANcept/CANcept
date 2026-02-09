@@ -2,6 +2,12 @@
 
 #include <QIcon>
 
+#include "core/macro/theme.hpp"
+#include "core/widgets/card_widget.hpp"
+#include "core/widgets/common/styled_checkbox.hpp"
+#include "core/widgets/dbc_signal_row.hpp"
+#include "logging/view/components/action_button.hpp"
+
 namespace Logging {
 
 // Constructs the message selection dialog for logging configuration
@@ -9,6 +15,7 @@ MessageSelectionDialog::MessageSelectionDialog(QWidget* parent)
     : QDialog(parent),
       m_headerWidget(nullptr),
       m_deviceSelector(nullptr),
+      m_messagesCard(nullptr),
       m_scrollArea(nullptr),
       m_scrollContent(nullptr),
       m_scrollLayout(nullptr)
@@ -19,6 +26,9 @@ MessageSelectionDialog::MessageSelectionDialog(QWidget* parent)
 // Initializes the dialog UI with header, device selector, and scroll area
 void MessageSelectionDialog::setupUi()
 {
+    const auto& spacing = THEME.spacing();
+    const auto& colors = THEME.colors();
+
     // Remove window frame to show only the custom dialog
     setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint);
     setModal(false);
@@ -26,53 +36,68 @@ void MessageSelectionDialog::setupUi()
 
     // Main container layout
     auto* mainLayout = new QVBoxLayout(this);
-    mainLayout->setContentsMargins(10, 10, 10, 10);
-    mainLayout->setSpacing(10);
+    mainLayout->setContentsMargins(spacing.spacingMd, spacing.spacingMd, spacing.spacingMd,
+                                   spacing.spacingMd);
+    mainLayout->setSpacing(spacing.spacingMd);
 
     // Apply dialog styling
-    setStyleSheet(
-        "QDialog {"
-        "   background-color: white;"
-        "   border: 1px solid rgba(0, 0, 0, 0.5);"
-        "   border-radius: 10px;"
-        "}");
+    const QString dialogStyle = QString(
+                                    "QDialog {"
+                                    "   background-color: %1;"
+                                    "   border: %2px solid %3;"
+                                    "   border-radius: %4px;"
+                                    "}")
+                                    .arg(colors.surfaceMain.name())
+                                    .arg(spacing.borderThin)
+                                    .arg(colors.borderStrong.name())
+                                    .arg(spacing.radiusMd);
+    setStyleSheet(dialogStyle);
 
     // ===== Header Section =====
     m_headerWidget = new QWidget(this);
     auto* headerLayout = new QHBoxLayout(m_headerWidget);
-    headerLayout->setContentsMargins(10, 10, 10, 10);
-    headerLayout->setSpacing(10);
+    headerLayout->setContentsMargins(spacing.spacingMd, spacing.spacingMd, spacing.spacingMd,
+                                     spacing.spacingMd);
+    headerLayout->setSpacing(spacing.spacingMd);
 
     // Title
     auto* titleLabel = new QLabel("Select Messages to Log", m_headerWidget);
-    titleLabel->setStyleSheet(
-        "QLabel {"
-        "   font-family: 'Roboto';"
-        "   font-size: 24px;"
-        "   font-weight: 500;"
-        "   color: black;"
-        "}");
+    const QString titleStyle = QString(
+                                   "QLabel {"
+                                   "   font-family: 'Roboto';"
+                                   "   font-size: 24px;"
+                                   "   font-weight: %1;"
+                                   "   color: %2;"
+                                   "}")
+                                   .arg(spacing.fontWeightMedium)
+                                   .arg(colors.textPrimary.name());
+    titleLabel->setStyleSheet(titleStyle);
     headerLayout->addWidget(titleLabel);
     headerLayout->addStretch();
 
     // Close button
     auto* closeBtn = new QPushButton("×", m_headerWidget);
     closeBtn->setFixedSize(48, 48);
-    closeBtn->setStyleSheet(
-        "QPushButton {"
-        "   background-color: transparent;"
-        "   border: none;"
-        "   font-size: 32px;"
-        "   font-weight: bold;"
-        "   color: #1e1e1e;"
-        "}"
-        "QPushButton:hover {"
-        "   background-color: rgba(0, 0, 0, 0.05);"
-        "   border-radius: 24px;"
-        "}"
-        "QPushButton:pressed {"
-        "   background-color: rgba(0, 0, 0, 0.1);"
-        "}");
+    const QString closeBtnStyle = QString(
+                                      "QPushButton {"
+                                      "   background-color: transparent;"
+                                      "   border: none;"
+                                      "   font-size: 32px;"
+                                      "   font-weight: %1;"
+                                      "   color: %2;"
+                                      "}"
+                                      "QPushButton:hover {"
+                                      "   background-color: %3;"
+                                      "   border-radius: 24px;"
+                                      "}"
+                                      "QPushButton:pressed {"
+                                      "   background-color: %4;"
+                                      "}")
+                                      .arg(spacing.fontWeightBold)
+                                      .arg(colors.textPrimary.name())
+                                      .arg(QColor(0, 0, 0, 13).name(QColor::HexArgb))
+                                      .arg(QColor(0, 0, 0, 26).name(QColor::HexArgb));
+    closeBtn->setStyleSheet(closeBtnStyle);
     connect(closeBtn, &QPushButton::clicked, this, &QDialog::reject);
     headerLayout->addWidget(closeBtn);
 
@@ -82,112 +107,122 @@ void MessageSelectionDialog::setupUi()
     auto* interfaceContainer = new QWidget(this);
     interfaceContainer->setMinimumHeight(94);
     auto* interfaceLayout = new QVBoxLayout(interfaceContainer);
-    interfaceLayout->setContentsMargins(17, 17, 17, 10);
-    interfaceLayout->setSpacing(8);
+    interfaceLayout->setContentsMargins(spacing.spacingLg + 1, spacing.spacingLg + 1,
+                                        spacing.spacingLg + 1, spacing.spacingMd);
+    interfaceLayout->setSpacing(spacing.spacingSm);
 
     // Interface label
     auto* interfaceLabel = new QLabel("Interface", interfaceContainer);
-    interfaceLabel->setStyleSheet(
-        "QLabel {"
-        "   border: none;"
-        "   font-family: 'Roboto';"
-        "   font-size: 16px;"
-        "   font-weight: 400;"
-        "   color: black;"
-        "}");
+    const QString interfaceLabelStyle = QString(
+                                            "QLabel {"
+                                            "   border: none;"
+                                            "   font-family: 'Roboto';"
+                                            "   font-size: %1px;"
+                                            "   font-weight: %2;"
+                                            "   color: %3;"
+                                            "}")
+                                            .arg(spacing.fontSizeLg)
+                                            .arg(spacing.fontWeightNormal)
+                                            .arg(colors.textPrimary.name());
+    interfaceLabel->setStyleSheet(interfaceLabelStyle);
     interfaceLayout->addWidget(interfaceLabel);
 
     // Device selector (combo box styled as filter bar)
     m_deviceSelector = new QComboBox(interfaceContainer);
     m_deviceSelector->setMinimumHeight(34);
-    m_deviceSelector->setStyleSheet(
-        "QComboBox {"
-        "   background-color: #f3f3f5;"
-        "   border: none;"
-        "   border-radius: 17px;"
-        "   padding: 1px 16px;"
-        "   font-family: 'Roboto';"
-        "   font-size: 14px;"
-        "   font-weight: 400;"
-        "   color: #5a5a5a;"
-        "   min-width: 200px;"
-        "}"
-        "QComboBox:hover {"
-        "   background-color: #e8e8ea;"
-        "}"
-        "QComboBox::drop-down {"
-        "   border: none;"
-        "   width: 24px;"
-        "}"
-        "QComboBox::down-arrow {"
-        "   image: none;"
-        "   border: none;"
-        "   width: 16px;"
-        "   height: 9px;"
-        "}"
-        "QComboBox QAbstractItemView {"
-        "   background-color: white;"
-        "   border: 1px solid rgba(0, 0, 0, 0.1);"
-        "   border-radius: 10px;"
-        "   padding: 5px;"
-        "   selection-background-color: #f3f3f5;"
-        "   font-family: 'Roboto';"
-        "   font-size: 14px;"
-        "}");
+    const QString comboStyle = QString(
+                                   "QComboBox {"
+                                   "   background-color: %1;"
+                                   "   border: none;"
+                                   "   border-radius: 17px;"
+                                   "   padding: 1px %2px;"
+                                   "   font-family: 'Roboto';"
+                                   "   font-size: %3px;"
+                                   "   font-weight: %4;"
+                                   "   color: %5;"
+                                   "   min-width: 200px;"
+                                   "}"
+                                   "QComboBox:hover {"
+                                   "   background-color: %6;"
+                                   "}"
+                                   "QComboBox::drop-down {"
+                                   "   border: none;"
+                                   "   width: %7px;"
+                                   "}"
+                                   "QComboBox::down-arrow {"
+                                   "   image: none;"
+                                   "   border: none;"
+                                   "   width: %2px;"
+                                   "   height: 9px;"
+                                   "}"
+                                   "QComboBox QAbstractItemView {"
+                                   "   background-color: %8;"
+                                   "   border: %9px solid %10;"
+                                   "   border-radius: %11px;"
+                                   "   padding: %12px;"
+                                   "   selection-background-color: %1;"
+                                   "   font-family: 'Roboto';"
+                                   "   font-size: %3px;"
+                                   "}")
+                                   .arg(colors.surfacePrimary.name())
+                                   .arg(spacing.spacingLg)
+                                   .arg(spacing.fontSizeMd)
+                                   .arg(spacing.fontWeightNormal)
+                                   .arg(colors.textSecondary.name())
+                                   .arg(colors.surfaceHover.name())
+                                   .arg(spacing.spacingXl)
+                                   .arg(colors.surfaceMain.name())
+                                   .arg(spacing.borderThin)
+                                   .arg(colors.borderSubtle.name())
+                                   .arg(spacing.radiusMd)
+                                   .arg(spacing.spacingXs + 1);
+    m_deviceSelector->setStyleSheet(comboStyle);
     m_deviceSelector->setPlaceholderText("Select interface...");
     interfaceLayout->addWidget(m_deviceSelector);
 
     // Add border to interface container
-    interfaceContainer->setStyleSheet(
-        "QWidget {"
-        "   border: 1px solid rgba(0, 0, 0, 0.1);"
-        "   border-radius: 10px;"
-        "   background-color: white;"
-        "}");
+    const QString containerStyle = QString(
+                                       "QWidget {"
+                                       "   border: %1px solid %2;"
+                                       "   border-radius: %3px;"
+                                       "   background-color: %4;"
+                                       "}")
+                                       .arg(spacing.borderThin)
+                                       .arg(colors.borderSubtle.name())
+                                       .arg(spacing.radiusMd)
+                                       .arg(colors.surfaceMain.name());
+    interfaceContainer->setStyleSheet(containerStyle);
 
     mainLayout->addWidget(interfaceContainer);
 
-    // ===== Scrollable Message Cards Area =====
-    m_scrollArea = new QScrollArea(this);
-    m_scrollArea->setWidgetResizable(true);
-    m_scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    m_scrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-    m_scrollArea->setMinimumHeight(263);
-    m_scrollArea->setStyleSheet(
-        "QScrollArea {"
-        "   border: 1px solid rgba(0, 0, 0, 0.1);"
-        "   border-radius: 10px;"
-        "   background-color: white;"
-        "}"
-        "QScrollBar:vertical {"
-        "   border: none;"
-        "   background-color: #f3f3f5;"
-        "   width: 10px;"
-        "   border-radius: 5px;"
-        "}"
-        "QScrollBar::handle:vertical {"
-        "   background-color: #c0c0c0;"
-        "   border-radius: 5px;"
-        "   min-height: 20px;"
-        "}"
-        "QScrollBar::handle:vertical:hover {"
-        "   background-color: #a0a0a0;"
-        "}"
-        "QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {"
-        "   border: none;"
-        "   background: none;"
-        "   height: 0px;"
-        "}");
+    // ===== Messages Card Widget =====
+    m_messagesCard =
+        new Core::CardWidget("Messages", QString(), QString(":/assets/icon/messages.svg"), this);
 
-    m_scrollContent = new QWidget();
-    m_scrollLayout = new QVBoxLayout(m_scrollContent);
-    m_scrollLayout->setContentsMargins(10, 10, 10, 10);
-    m_scrollLayout->setSpacing(10);
+    if (auto* messagesCardLayout = m_messagesCard->contentLayout())
+    {
+        // ===== Scrollable Message Cards Area =====
+        m_scrollArea = new QScrollArea(m_messagesCard);
+        m_scrollArea->setWidgetResizable(true);
+        m_scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        m_scrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+        m_scrollArea->setFrameShape(QFrame::NoFrame);
 
-    m_scrollLayout->addStretch();
+        m_scrollContent = new QWidget(m_scrollArea);
+        m_scrollContent->setObjectName("scrollContent");
+        m_scrollContent->setStyleSheet(QString("QWidget#scrollContent { background-color: %1; }")
+                                           .arg(colors.surfaceMain.name()));
 
-    m_scrollArea->setWidget(m_scrollContent);
-    mainLayout->addWidget(m_scrollArea, 1);
+        m_scrollLayout = new QVBoxLayout(m_scrollContent);
+        m_scrollLayout->setContentsMargins(0, 0, 0, 0);
+        m_scrollLayout->setSpacing(spacing.spacingSm);
+        m_scrollLayout->addStretch();
+
+        m_scrollArea->setWidget(m_scrollContent);
+        messagesCardLayout->addWidget(m_scrollArea);
+    }
+
+    mainLayout->addWidget(m_messagesCard, 1);
 
     // ===== Bottom Bar with Start Button =====
     auto* bottomBar = new QWidget(this);
@@ -196,28 +231,8 @@ void MessageSelectionDialog::setupUi()
     bottomLayout->setSpacing(0);
     bottomLayout->addStretch();
 
-    auto* startBtn = new QPushButton(bottomBar);
-    startBtn->setText(" Start");
-    startBtn->setIcon(QIcon(":/assets/icon/logging_start.svg"));
-    startBtn->setIconSize(QSize(20, 20));
-    startBtn->setFixedSize(150, 75);
-    startBtn->setStyleSheet(
-        "QPushButton {"
-        "   border: none;"
-        "   border-radius: 30px;"
-        "   font-family: 'Roboto';"
-        "   font-size: 22px;"
-        "   font-weight: 500;"
-        "   padding: 10px 10px;"
-        "   background-color: #f3f3f5;"
-        "   color: black;"
-        "}"
-        "QPushButton:hover {"
-        "   background-color: #e8e8ea;"
-        "}"
-        "QPushButton:pressed {"
-        "   background-color: #d8d8da;"
-        "}");
+    auto* startBtn = new ActionButton(bottomBar);
+    startBtn->setRecordingState(false);  // Start state (not recording)
     connect(startBtn, &QPushButton::clicked, this, &QDialog::accept);
     bottomLayout->addWidget(startBtn);
 
@@ -257,8 +272,8 @@ void MessageSelectionDialog::addMessageCard(Core::DbcMessageCard* card)
 // Removes all message cards
 void MessageSelectionDialog::clearCards()
 {
-    // Clear signal widgets map
-    m_signalWidgets.clear();
+    // Clear message cards vector
+    m_messageCards.clear();
 
     // Remove all widgets except the stretch
     while (m_scrollLayout->count() > 1)
@@ -279,88 +294,48 @@ void MessageSelectionDialog::setDbcConfig(const Core::DbcConfig& config)
     clearCards();
 
     // Create a card for each message in the DBC config
-    for (const auto& message : config.messageDefinitions)
+    for (const auto& msgDef : config.messageDefinitions)
     {
-        QWidget* messageCard = createMessageCardWithSignals(message);
+        // Configure the card for logging/selection mode
+        Core::DbcMessageCard::Config cardConfig;
+        cardConfig.showCheckbox = true;
+        cardConfig.startExpanded = false;
+        cardConfig.checkboxTooltip = tr("Select message for logging");
 
+        // Create message card (parent is dialog, will be reparented when added to layout)
+        auto* card = new Core::DbcMessageCard(
+            QString::fromStdString(msgDef.messageName), msgDef.messageId,
+            static_cast<int>(msgDef.signalDescriptions.size()), cardConfig, this);
+
+        // Add signal rows with selection mode
+        for (const auto& sigDef : msgDef.signalDescriptions)
+        {
+            Core::DbcSignalRowWidget::Config signalConfig;
+            signalConfig.mode = Core::DbcSignalRowWidget::Mode::Selection;
+            signalConfig.showSelectionCheckbox = true;
+            signalConfig.showRange = false;
+
+            auto* signalRow = new Core::DbcSignalRowWidget(
+                QString::fromStdString(sigDef.signalName), QString::fromStdString(sigDef.unit),
+                sigDef.minimum, sigDef.maximum, signalConfig, card);
+
+            card->addSignalRow(signalRow);
+        }
+
+        // Update header state based on signals
+        card->updateHeaderFromSignals();
+
+        // Store reference to the card with message ID as key
+        m_messageCards[msgDef.messageId] = card;
+
+        // Add card to layout
         int insertPos = m_scrollLayout->count() - 1;
         if (insertPos < 0)
         {
             insertPos = 0;
         }
-        m_scrollLayout->insertWidget(insertPos, messageCard);
+        m_scrollLayout->insertWidget(insertPos, card);
     }
-}
-
-// Creates a message card widget with embedded signal selection
-QWidget* MessageSelectionDialog::createMessageCardWithSignals(
-    const Core::DbcMessageDescription& message)
-{
-    auto* cardWidget = new QWidget(m_scrollContent);
-    cardWidget->setMinimumHeight(100);
-    cardWidget->setStyleSheet(
-        "QWidget {"
-        "   border: 1px solid rgba(0, 0, 0, 0.1);"
-        "   border-radius: 10px;"
-        "   background-color: white;"
-        "   padding: 10px;"
-        "}");
-
-    auto* cardLayout = new QVBoxLayout(cardWidget);
-    cardLayout->setContentsMargins(10, 10, 10, 10);
-    cardLayout->setSpacing(8);
-
-    // Message header
-    auto* headerLayout = new QHBoxLayout();
-
-    auto* nameLabel = new QLabel(QString::fromStdString(message.messageName), cardWidget);
-    nameLabel->setStyleSheet(
-        "QLabel {"
-        "   font-family: 'Roboto';"
-        "   font-size: 16px;"
-        "   font-weight: 500;"
-        "   color: black;"
-        "   border: none;"
-        "}");
-    headerLayout->addWidget(nameLabel);
-
-    auto* idLabel =
-        new QLabel(QString("ID: 0x%1").arg(message.messageId, 0, 16).toUpper(), cardWidget);
-    idLabel->setStyleSheet(
-        "QLabel {"
-        "   font-family: 'Roboto';"
-        "   font-size: 14px;"
-        "   font-weight: 400;"
-        "   color: #5a5a5a;"
-        "   border: none;"
-        "}");
-    headerLayout->addWidget(idLabel);
-
-    auto* sizeLabel = new QLabel(QString("DLC: %1").arg(message.messageSize), cardWidget);
-    sizeLabel->setStyleSheet(
-        "QLabel {"
-        "   font-family: 'Roboto';"
-        "   font-size: 14px;"
-        "   font-weight: 400;"
-        "   color: #5a5a5a;"
-        "   border: none;"
-        "}");
-    headerLayout->addWidget(sizeLabel);
-
-    headerLayout->addStretch();
-    cardLayout->addLayout(headerLayout);
-
-    // Signal selection widget
-    auto* signalWidget = new SignalSelectionWidget(
-        message.messageId, QString::fromStdString(message.messageName), cardWidget);
-    signalWidget->setSignals(message.signalDescriptions);
-
-    // Store reference to the signal widget
-    m_signalWidgets[message.messageId] = signalWidget;
-
-    cardLayout->addWidget(signalWidget);
-
-    return cardWidget;
 }
 
 // Returns map of message IDs to their selected signal names
@@ -368,9 +343,40 @@ std::map<uint32_t, QStringList> MessageSelectionDialog::getSelectedSignals() con
 {
     std::map<uint32_t, QStringList> selectedSignalsMap;
 
-    for (const auto& [messageId, widget] : m_signalWidgets)
+    for (const auto& [messageId, card] : m_messageCards)
     {
-        QStringList selectedSignals = widget->getSelectedSignals();
+        if (!card || !card->headerCheckbox())
+        {
+            continue;
+        }
+
+        // Only include messages with at least partial selection
+        if (card->headerCheckbox()->checkState() == Qt::Unchecked)
+        {
+            continue;
+        }
+
+        QStringList selectedSignals;
+
+        // Collect selected signals from signal rows
+        const auto signalRows = card->findChildren<Core::DbcSignalRowWidget*>();
+        for (const auto* signalRow : signalRows)
+        {
+            if (const auto* checkbox = signalRow->selectionCheckbox())
+            {
+                if (checkbox->isChecked())
+                {
+                    // Get signal name from the row's name label
+                    const auto labels = signalRow->findChildren<QLabel*>();
+                    if (!labels.isEmpty())
+                    {
+                        // First label is typically the signal name
+                        selectedSignals.append(labels.first()->text());
+                    }
+                }
+            }
+        }
+
         if (!selectedSignals.isEmpty())
         {
             selectedSignalsMap[messageId] = selectedSignals;

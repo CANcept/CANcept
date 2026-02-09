@@ -4,6 +4,7 @@
 #include <QDateTime>
 #include <QString>
 #include <map>
+#include <optional>
 #include <vector>
 
 #include "core/dto/can_dto.hpp"
@@ -100,7 +101,7 @@ class LoggingModel final : public QAbstractTableModel
     void updateActiveDuration();
 
    private:
-    Core::DbcConfig* m_currentDbc;
+    std::optional<Core::DbcConfig> m_currentDbc;
 
     std::vector<LogSession> m_sessions;
     int m_activeSessionIndex = -1;

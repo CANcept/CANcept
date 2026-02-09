@@ -10,7 +10,10 @@
 
 #include "core/dto/dbc_dto.hpp"
 #include "core/widgets/dbc_message_card.hpp"
-#include "signal_selection_widget.hpp"
+
+namespace Core {
+class CardWidget;
+}
 
 namespace Logging {
 
@@ -74,19 +77,17 @@ class MessageSelectionDialog final : public QDialog
     /** @brief Initializes the structural layout and styling. */
     void setupUi();
 
-    /** @brief Creates a message card with signal selection for a given message. */
-    QWidget* createMessageCardWithSignals(const Core::DbcMessageDescription& message);
-
     QWidget* m_headerWidget;
     QComboBox* m_deviceSelector;
     QDialogButtonBox* m_buttonBox;
 
+    Core::CardWidget* m_messagesCard;
     QScrollArea* m_scrollArea;
     QWidget* m_scrollContent;
     QVBoxLayout* m_scrollLayout;
 
-    // Storage for DBC configuration and signal widgets
-    std::map<uint32_t, SignalSelectionWidget*> m_signalWidgets;
+    // Storage for message cards mapped by message ID
+    std::map<uint32_t, Core::DbcMessageCard*> m_messageCards;
 };
 
 }  // namespace Logging
