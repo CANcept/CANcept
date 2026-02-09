@@ -5,15 +5,16 @@
 #pragma once
 
 #include <QFrame>
-#include <QHBoxLayout>
-#include <QLabel>
 #include <QModelIndex>
-#include <QPushButton>
 #include <QStackedWidget>
-#include <QTreeView>
 #include <QVBoxLayout>
 #include <QWidget>
 
+#include "components/action_button.hpp"
+#include "components/empty_state_label.hpp"
+#include "components/history_table.hpp"
+#include "components/status_tags_container.hpp"
+#include "components/timer_label.hpp"
 #include "logging/model/logging_model.hpp"
 
 namespace Logging {
@@ -40,7 +41,7 @@ class LoggingView final : public QWidget
     void setModel(LoggingModel* model);
 
     /** @brief Provides access to the tree view for Model/Delegate binding. */
-    auto getHistoryTable() const -> QTreeView*
+    auto getHistoryTable() const -> HistoryTable*
     {
         return m_historyTable;
     }
@@ -89,20 +90,18 @@ class LoggingView final : public QWidget
     void setupUi();
 
     QWidget* m_headerBox;
-    QLabel* m_timerLabel;     /**< Displays elapsed time during recording. */
-    QPushButton* m_btnAction; /**< The Start/Stop toggle button. */
+    TimerLabel* m_timerLabel;               /**< Displays elapsed time during recording. */
+    ActionButton* m_btnAction;              /**< The Start/Stop toggle button. */
+    StatusTagsContainer* m_statusContainer; /**< Container for message status tags. */
 
-    QWidget* m_statusContainer;  /**< Container for message status tags. */
-    QHBoxLayout* m_statusLayout; /**< Layout for message status tags. */
-
-    QLabel* m_emptyLabel; /**< Empty state placeholder when no sessions exist. */
+    EmptyStateLabel* m_emptyLabel; /**< Empty state placeholder when no sessions exist. */
     bool m_isRecording{false};
 
     QFrame* m_mainFrame;            /**< The bordered container for consistent UI. */
     QStackedWidget* m_contentStack; /**< Handles swapping between Table and Details. */
 
     QWidget* m_historyPage;
-    QTreeView* m_historyTable;
+    HistoryTable* m_historyTable;
 
     QWidget* m_detailPage;
     QVBoxLayout* m_detailLayout;

@@ -24,64 +24,15 @@ void LoggingView::setupUi()
     headerLayout->setSpacing(10);
 
     // Action Button (Start/Stop)
-    m_btnAction = new QPushButton(m_headerBox);
-    m_btnAction->setIconSize(QSize(20, 20));
-    m_btnAction->setFixedSize(150, 75);
-    m_btnAction->setProperty("recording", false);
-    m_btnAction->setStyleSheet(
-        "QPushButton {"
-        "   border: none;"
-        "   border-radius: 30px;"
-        "   font-family: 'Roboto';"
-        "   font-size: 22px;"
-        "   font-weight: 500;"
-        "   padding: 10px 10px;"
-        "}"
-        "QPushButton[recording=\"false\"] {"
-        "   background-color: #f3f3f5;"
-        "   color: black;"
-        "}"
-        "QPushButton[recording=\"false\"]:hover {"
-        "   background-color: #e8e8ea;"
-        "}"
-        "QPushButton[recording=\"false\"]:pressed {"
-        "   background-color: #d8d8da;"
-        "}"
-        "QPushButton[recording=\"true\"] {"
-        "   background-color: #e85d5d;"
-        "   color: white;"
-        "}"
-        "QPushButton[recording=\"true\"]:hover {"
-        "   background-color: #d84848;"
-        "}"
-        "QPushButton[recording=\"true\"]:pressed {"
-        "   background-color: #c83333;"
-        "}");
-
-    // Set initial state
-    m_btnAction->setText(" Start");
-    m_btnAction->setIcon(QIcon(":/assets/icon/logging_start.svg"));
+    m_btnAction = new ActionButton(m_headerBox);
     headerLayout->addWidget(m_btnAction);
 
     // Timer Label
-    m_timerLabel = new QLabel("00:00:00:00", m_headerBox);
-    m_timerLabel->setStyleSheet(
-        "QLabel {"
-        "   font-family: 'Roboto';"
-        "   font-size: 24px;"
-        "   font-weight: 400;"
-        "   color: black;"
-        "}");
-    m_timerLabel->setVisible(false);
+    m_timerLabel = new TimerLabel(m_headerBox);
     headerLayout->addWidget(m_timerLabel);
 
     // Status container for message tags (shown during recording)
-    m_statusContainer = new QWidget(m_headerBox);
-    m_statusLayout = new QHBoxLayout(m_statusContainer);
-    m_statusLayout->setContentsMargins(0, 0, 0, 0);
-    m_statusLayout->setSpacing(10);
-    m_statusLayout->addStretch();
-    m_statusContainer->setVisible(false);
+    m_statusContainer = new StatusTagsContainer(m_headerBox);
     headerLayout->addWidget(m_statusContainer);
 
     headerLayout->addStretch();
@@ -110,76 +61,11 @@ void LoggingView::setupUi()
     auto* historyLayout = new QVBoxLayout(m_historyPage);
     historyLayout->setContentsMargins(10, 10, 10, 10);
 
-    m_historyTable = new QTreeView(m_historyPage);
-    m_historyTable->setRootIsDecorated(false);
-    m_historyTable->setAlternatingRowColors(false);
-    m_historyTable->setSelectionBehavior(QAbstractItemView::SelectRows);
-    m_historyTable->setSelectionMode(QAbstractItemView::SingleSelection);
-    m_historyTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    m_historyTable->setFrameShape(QFrame::NoFrame);
-    m_historyTable->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    m_historyTable->setStyleSheet(
-        "QTreeView {"
-        "   border: none;"
-        "   background-color: white;"
-        "   font-family: 'Roboto';"
-        "   font-size: 20px;"
-        "   font-weight: 400;"
-        "   padding: 32px;"
-        "   outline: none;"
-        "}"
-        "QTreeView::item {"
-        "   height: 61px;"
-        "   border: none;"
-        "   padding: 5px;"
-        "   margin-bottom: 12px;"
-        "   background-color: transparent;"
-        "}"
-        "QTreeView::item:hover {"
-        "   background-color: transparent;"
-        "   border: none;"
-        "}"
-        "QTreeView::item:selected {"
-        "   background-color: transparent;"
-        "   border: none;"
-        "}"
-        "QTreeView::branch {"
-        "   border: none;"
-        "}"
-        "QHeaderView {"
-        "   background-color: white;"
-        "   border: none;"
-        "}"
-        "QHeaderView::section {"
-        "   background-color: white;"
-        "   border: none;"
-        "   border-bottom: 1px solid rgba(0, 0, 0, 0.1);"
-        "   padding: 12px 10px;"
-        "   font-family: 'Roboto';"
-        "   font-size: 24px;"
-        "   font-weight: 500;"
-        "   color: black;"
-        "}");
-
-    // Configure header
-    QHeaderView* header = m_historyTable->header();
-    header->setStretchLastSection(true);
-    header->setSectionResizeMode(QHeaderView::Stretch);
-
+    m_historyTable = new HistoryTable(m_historyPage);
     historyLayout->addWidget(m_historyTable);
 
     // Empty state label
-    m_emptyLabel = new QLabel("No past logs", m_historyPage);
-    m_emptyLabel->setAlignment(Qt::AlignCenter);
-    m_emptyLabel->setStyleSheet(
-        "QLabel {"
-        "   border: none;"
-        "   font-family: 'Roboto';"
-        "   font-size: 24px;"
-        "   font-weight: 500;"
-        "   color: #5a5a5a;"
-        "}");
-    m_emptyLabel->setVisible(false);
+    m_emptyLabel = new EmptyStateLabel(m_historyPage);
     historyLayout->addWidget(m_emptyLabel);
 
     m_contentStack->addWidget(m_historyPage);
@@ -290,72 +176,19 @@ void LoggingView::setRecordingState(bool isRecording)
 {
     m_isRecording = isRecording;
 
-    if (isRecording)
-    {
-        // Recording state - Red Stop button
-        m_btnAction->setProperty("recording", true);
-        m_btnAction->setText(" Stop");
-        m_btnAction->setIcon(QIcon(":/assets/icon/stop_logging.svg"));
-        m_timerLabel->setVisible(true);
-        m_statusContainer->setVisible(true);
-    } else
-    {
-        // Idle state - Start button
-        m_btnAction->setProperty("recording", false);
-        m_btnAction->setText(" Start");
-        m_btnAction->setIcon(QIcon(":/assets/icon/logging_start.svg"));
-        m_timerLabel->setVisible(false);
-        m_statusContainer->setVisible(false);
-    }
-
-    // Force style refresh
-    m_btnAction->style()->unpolish(m_btnAction);
-    m_btnAction->style()->polish(m_btnAction);
+    m_btnAction->setRecordingState(isRecording);
+    m_timerLabel->setVisible(isRecording);
+    m_statusContainer->setVisible(isRecording);
 }
 
 void LoggingView::updateTimer(qint64 elapsedMs)
 {
-    int hours = elapsedMs / 3600000;
-    int minutes = (elapsedMs % 3600000) / 60000;
-    int seconds = (elapsedMs % 60000) / 1000;
-    int centiseconds = (elapsedMs % 1000) / 10;
-
-    m_timerLabel->setText(QString("%1:%2:%3:%4")
-                              .arg(hours, 2, 10, QChar('0'))
-                              .arg(minutes, 2, 10, QChar('0'))
-                              .arg(seconds, 2, 10, QChar('0'))
-                              .arg(centiseconds, 2, 10, QChar('0')));
+    m_timerLabel->updateTimer(elapsedMs);
 }
 
 void LoggingView::updateStatusTags(const QStringList& messages)
 {
-    // Clear existing tags
-    while (m_statusLayout->count() > 1)  // Keep the stretch
-    {
-        QLayoutItem* item = m_statusLayout->takeAt(0);
-        if (item->widget())
-        {
-            item->widget()->deleteLater();
-        }
-        delete item;
-    }
-
-    // Add new tags
-    for (const QString& message : messages)
-    {
-        auto* tagLabel = new QLabel(message, m_statusContainer);
-        tagLabel->setStyleSheet(
-            "QLabel {"
-            "   background-color: #e2e2e2;"
-            "   border-radius: 5px;"
-            "   padding: 8px;"
-            "   font-family: 'Roboto';"
-            "   font-size: 20px;"
-            "   font-weight: 400;"
-            "   color: black;"
-            "}");
-        m_statusLayout->insertWidget(m_statusLayout->count() - 1, tagLabel);
-    }
+    m_statusContainer->updateStatusTags(messages);
 }
 
 }  // namespace Logging
