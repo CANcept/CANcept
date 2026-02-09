@@ -55,6 +55,9 @@ class StyledComboBox final : public QComboBox
      */
     void aboutToShowPopup();
 
+   protected:
+    bool event(QEvent* event) override;
+
    private:
     void applyStyle();
 };

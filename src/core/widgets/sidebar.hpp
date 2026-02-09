@@ -65,6 +65,9 @@ class Sidebar : public QListView
      */
     void tabSelected(int index);
 
+   protected:
+    bool event(QEvent* event) override;
+
    private:
     /**
      * @brief Initializes visual appearance and view configuration.
@@ -73,6 +76,9 @@ class Sidebar : public QListView
      * and sets up the item model and delegate.
      */
     void setupUi();
+
+    /** @brief Re-applies all theme-dependent styles. */
+    void applyStyle();
 
     /**
      * @brief Sets up internal signal-slot connections.

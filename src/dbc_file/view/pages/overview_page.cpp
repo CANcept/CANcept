@@ -6,10 +6,12 @@
 #include <QLineEdit>
 #include <QPainter>
 #include <QScrollArea>
+#include <QTimer>
 #include <QVBoxLayout>
 
 #include "core/delegates/card_list_delegate.hpp"
 #include "core/macro/theme.hpp"
+#include "core/theme/style_event.hpp"
 #include "core/theme/theme_manager.hpp"
 #include "core/widgets/card_widget.hpp"
 #include "core/widgets/tinted_icon_label.hpp"
@@ -48,7 +50,6 @@ void OverviewPage::updateLabels(const QAbstractItemModel* model) const
 }
 void OverviewPage::setupFileInfoSection(QVBoxLayout* parentLayout)
 {
-    const auto& colors = THEME.colors();
     const auto& spacing = THEME.spacing();
 
     auto* fileInfoCard = new Core::CardWidget(Constants::OverviewPage::FileInfoTitle,
@@ -57,23 +58,16 @@ void OverviewPage::setupFileInfoSection(QVBoxLayout* parentLayout)
     fileInfoLayout->setSpacing(spacing.spacingSm);
     fileInfoLayout->addSpacing(spacing.spacingLg);
 
-    auto* grid = new QGridLayout(fileInfoCard);
+    auto* grid = new QGridLayout();
 
-    auto* fileNameTitle = new QLabel(Constants::OverviewPage::FileNameTitle, fileInfoCard);
-    fileNameTitle->setStyleSheet(QString("color: %1;").arg(colors.textSecondary.name()));
-
+    m_fileNameTitle = new QLabel(Constants::OverviewPage::FileNameTitle, fileInfoCard);
     m_lblFileName = new QLabel(Constants::OverviewPage::LabelDefault, fileInfoCard);
-    m_lblFileName->setStyleSheet(QString("color: %1;").arg(colors.textSecondary.name()));
-
-    auto* fileVersionTitle = new QLabel(Constants::OverviewPage::FileVersionTitle, fileInfoCard);
-    fileVersionTitle->setStyleSheet(QString("color: %1;").arg(colors.textSecondary.name()));
-
+    m_fileVersionTitle = new QLabel(Constants::OverviewPage::FileVersionTitle, fileInfoCard);
     m_lblVersion = new QLabel(Constants::OverviewPage::LabelDefault, fileInfoCard);
-    m_lblVersion->setStyleSheet(QString("color: %1;").arg(colors.textSecondary.name()));
 
-    grid->addWidget(fileNameTitle, 0, 0, Qt::AlignLeft);
+    grid->addWidget(m_fileNameTitle, 0, 0, Qt::AlignLeft);
     grid->addWidget(m_lblFileName, 0, 1, Qt::AlignRight);
-    grid->addWidget(fileVersionTitle, 1, 0, Qt::AlignLeft);
+    grid->addWidget(m_fileVersionTitle, 1, 0, Qt::AlignLeft);
     grid->addWidget(m_lblVersion, 1, 1, Qt::AlignRight);
 
     fileInfoLayout->addLayout(grid);
@@ -82,16 +76,20 @@ void OverviewPage::setupFileInfoSection(QVBoxLayout* parentLayout)
 
 void OverviewPage::setupStatsSection(QVBoxLayout* parentLayout)
 {
-    auto* layout = new QHBoxLayout(this);
+    auto* layout = new QHBoxLayout();
 
     layout->addWidget(createStatCard(Constants::OverviewPage::EcuStatTitle, m_lblEcuCount,
-                                     Constants::Sidebar::IconEcus, this));
+                                     Constants::Sidebar::IconEcus, m_statTitleLabels,
+                                     m_statIconLabels, this));
     layout->addWidget(createStatCard(Constants::OverviewPage::MessagesStatTitle, m_lblMessageCount,
-                                     Constants::Sidebar::IconMessages, this));
+                                     Constants::Sidebar::IconMessages, m_statTitleLabels,
+                                     m_statIconLabels, this));
     layout->addWidget(createStatCard(Constants::OverviewPage::SignalsStatTitle, m_lblSignalCount,
-                                     Constants::Sidebar::IconSignals, this));
+                                     Constants::Sidebar::IconSignals, m_statTitleLabels,
+                                     m_statIconLabels, this));
     layout->addWidget(createStatCard(Constants::OverviewPage::OrphansStatTitle, m_lblOrphanCount,
-                                     Constants::Sidebar::IconMessages, this));
+                                     Constants::Sidebar::IconMessages, m_statTitleLabels,
+                                     m_statIconLabels, this));
 
     parentLayout->addLayout(layout);
 }
@@ -141,7 +139,7 @@ void OverviewPage::setupListsSection(QVBoxLayout* parentLayout)
 {
     const auto& spacing = THEME.spacing();
 
-    auto* listsRowLayout = new QHBoxLayout(this);
+    auto* listsRowLayout = new QHBoxLayout();
     listsRowLayout->setSpacing(spacing.spacingSm);
 
     createOverviewList(listsRowLayout, Constants::OverviewPage::EcuStatTitle, m_ecuList,
@@ -155,18 +153,15 @@ void OverviewPage::setupListsSection(QVBoxLayout* parentLayout)
 
 void OverviewPage::setupUi()
 {
-    const auto& colors = THEME.colors();
     const auto& spacing = THEME.spacing();
 
     auto* mainLayout = new QVBoxLayout(this);
     mainLayout->setContentsMargins(0, 0, 0, 0);
 
     // ScrollArea
-    auto* scrollArea = new QScrollArea(this);
-    scrollArea->setWidgetResizable(true);
-    scrollArea->setFrameShape(QFrame::NoFrame);
-    scrollArea->setStyleSheet(
-        QString("background-color: %1; width: 0px;").arg(colors.surfaceMain.name()));
+    m_scrollArea = new QScrollArea(this);
+    m_scrollArea->setWidgetResizable(true);
+    m_scrollArea->setFrameShape(QFrame::NoFrame);
 
     auto* contentWidget = new QWidget(this);
     auto* contentLayout = new QVBoxLayout(contentWidget);
@@ -176,13 +171,16 @@ void OverviewPage::setupUi()
     setupStatsSection(contentLayout);
     setupListsSection(contentLayout);
 
-    scrollArea->setWidget(contentWidget);
-    mainLayout->addWidget(scrollArea);
+    m_scrollArea->setWidget(contentWidget);
+    mainLayout->addWidget(m_scrollArea);
+
+    applyStyle();
 }
 auto OverviewPage::createStatCard(const QString& title, QLabel*& valueLabelPtr,
-                                  const QString& iconPath, QWidget* parent) -> QWidget*
+                                  const QString& iconPath, std::vector<QLabel*>& titleLabelsOut,
+                                  std::vector<Core::TintedIconLabel*>& iconLabelsOut,
+                                  QWidget* parent) -> QWidget*
 {
-    const auto& colors = THEME.colors();
     const auto& spacing = THEME.spacing();
 
     // Card container
@@ -191,15 +189,13 @@ auto OverviewPage::createStatCard(const QString& title, QLabel*& valueLabelPtr,
     card->setFixedHeight(spacing.HeightLg);
 
     // Top Row: Title + Icon
-    auto* topRow = new QHBoxLayout(card);
-    auto* lblTitle = new QLabel(title);
-    lblTitle->setStyleSheet(QString("color: %1; font-size: %2px;")
-                                .arg(colors.textPrimary.name())
-                                .arg(spacing.fontSizeMd));
+    auto* topRow = new QHBoxLayout();
+    auto* lblTitle = new QLabel(title, card);
+    titleLabelsOut.push_back(lblTitle);
 
-    auto* iconLabel = new Core::TintedIconLabel(iconPath, spacing.IconMd,
-                                                colors.textPrimary,  // Schwarz
-                                                card);
+    auto* iconLabel = new Core::TintedIconLabel(iconPath, spacing.IconMd, Qt::black, card);
+    iconLabelsOut.push_back(iconLabel);
+
     topRow->addWidget(lblTitle);
     topRow->addStretch();
     topRow->addWidget(iconLabel);
@@ -207,13 +203,74 @@ auto OverviewPage::createStatCard(const QString& title, QLabel*& valueLabelPtr,
 
     // Value
     valueLabelPtr = new QLabel(Constants::OverviewPage::LabelDefault, card);
-    valueLabelPtr->setStyleSheet(QString("color: %1; font-weight: %2; font-size: %3px;")
-                                     .arg(colors.textPrimary.name())
-                                     .arg(spacing.fontWeightNormal)
-                                     .arg(spacing.fontSizeLg));
+    titleLabelsOut.push_back(valueLabelPtr);
     cardLayout->addWidget(valueLabelPtr);
 
     return card;
+}
+
+void OverviewPage::applyStyle() const
+{
+    const auto& colors = THEME.colors();
+    const auto& spacing = THEME.spacing();
+
+    if (m_scrollArea)
+    {
+        m_scrollArea->setStyleSheet(
+            QString("background-color: %1; width: 0px;").arg(colors.surfaceMain.name()));
+    }
+
+    if (m_fileNameTitle)
+    {
+        m_fileNameTitle->setStyleSheet(QString("color: %1;").arg(colors.textSecondary.name()));
+    }
+    if (m_lblFileName)
+    {
+        m_lblFileName->setStyleSheet(QString("color: %1;").arg(colors.textSecondary.name()));
+    }
+    if (m_fileVersionTitle)
+    {
+        m_fileVersionTitle->setStyleSheet(QString("color: %1;").arg(colors.textSecondary.name()));
+    }
+    if (m_lblVersion)
+    {
+        m_lblVersion->setStyleSheet(QString("color: %1;").arg(colors.textSecondary.name()));
+    }
+
+    for (size_t i = 0; i < m_statTitleLabels.size(); ++i)
+    {
+        if (i % 2 == 0)
+        {
+            m_statTitleLabels[i]->setStyleSheet(QString("color: %1; font-size: %2px;")
+                                                    .arg(colors.textPrimary.name())
+                                                    .arg(spacing.fontSizeMd));
+        } else
+        {
+            m_statTitleLabels[i]->setStyleSheet(
+                QString("color: %1; font-weight: %2; font-size: %3px;")
+                    .arg(colors.textPrimary.name())
+                    .arg(spacing.fontWeightNormal)
+                    .arg(spacing.fontSizeLg));
+        }
+    }
+
+    for (auto* iconLabel : m_statIconLabels)
+    {
+        if (iconLabel)
+        {
+            iconLabel->setColor(colors.textPrimary);
+        }
+    }
+}
+
+bool OverviewPage::event(QEvent* event)
+{
+    if (event->type() == Core::StyleEvent::EventType)
+    {
+        applyStyle();
+        return true;
+    }
+    return QWidget::event(event);
 }
 
 }  // namespace DbcFile

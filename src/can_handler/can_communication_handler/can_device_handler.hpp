@@ -8,6 +8,8 @@
 
 #include <CanDriver.hpp>
 #include <list>
+
+#include "core/interface/i_settings_registry.hpp"
 using sockcanpp::CanDriver;
 using sockcanpp::CanMessage;
 #include "core/event/can_driver_event.hpp"
@@ -31,14 +33,19 @@ class CanDeviceHandler
      * @brief Checks if new messages were received over the CAN bus.
      * @return A list of received messages
      */
-    auto checkForCanMessage() const -> std::list<CanMessage>;
+    [[nodiscard]] auto checkForCanMessage() const -> std::list<CanMessage>;
 
     /**
      * @brief Sends a message to the current can driver
      * @param canMessage The message to be sent
      * @return A bool indicating if the sending was successful
      */
-    auto sendCanMessage(const CanMessage& canMessage) const -> bool;
+    [[nodiscard]] auto sendCanMessage(const CanMessage& canMessage) const -> bool;
+
+    /**
+     * @brief The handler registers the can device selection here.
+     */
+    void registerSettings(Core::ISettingsRegistry& registry);
 
    private:
     /**

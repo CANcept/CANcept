@@ -2,12 +2,15 @@
 
 #include <QLabel>
 #include <QListView>
+#include <QPushButton>
 #include <QStackedWidget>
 #include <QVBoxLayout>
 #include <QWidget>
 
 #include "app_root/delegate/app_root_delegate.hpp"
 #include "app_root/model/app_root_model.hpp"
+#include "app_root/model/settings_model.hpp"
+#include "app_root/view/settings_view.hpp"
 #include "core/interface/i_tab_component.hpp"
 
 namespace AppRoot {
@@ -41,6 +44,12 @@ class AppRootView : public QWidget
      */
     void setDelegate(AppRootDelegate* delegate) const;
 
+    /**
+     * @brief Sets the model for a custom setting model.
+     * @param settingsModel Pointer to the setting model.
+     */
+    void setSettingsModel(SettingsModel* settingsModel);
+
    private slots:
     /**
      * @brief Reacts to model changes to add tabs in the UI.
@@ -57,11 +66,14 @@ class AppRootView : public QWidget
      */
     void onDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight,
                        const QList<int>& roles = QList<int>()) const;
-
     /**
      * @brief Handles tab switching to keep the stack in sync.
      */
-    void handleTabChanged(int index) const;
+    void handleTabChanged(int index);
+    /**
+     * @brief Handles the switch to the settings part.
+     */
+    void onSettingsClicked();
 
    protected:
     /**
@@ -86,7 +98,17 @@ class AppRootView : public QWidget
      */
     void resizeEvent(QResizeEvent* event) override;
 
+    /**
+     * @brief Handes the rerender of the AppRootView.
+     * @param event The received event.
+     */
+    bool event(QEvent* event) override;
+
    private:
+    void setupUi();
+    void updateSettingsButtonStyle(bool active);
+    void applyStyle();
+
     /**
      * @brief The tab bar populated by the options provided in the m_tabs.
      */
@@ -111,11 +133,25 @@ class AppRootView : public QWidget
      * @brief Label showing the icon of the CanBusManager.
      */
     QLabel* m_logoLabel{nullptr};
+    /**
+     * @brief Pointer to the button to select the setings.
+     */
+    QPushButton* m_settingsButton{nullptr};
+    /**
+     * @brief Pointer to the view of the setting selection.
+     */
+    SettingsView* m_settingsView{nullptr};
 
     /**
      * @brief Pointer to the injected model.
      */
-    AppRootModel* m_model = nullptr;
+    AppRootModel* m_model{nullptr};
+    /**
+     * @brief Pointer to the setting model.
+     */
+    SettingsModel* m_settingsModel{nullptr};
+    bool m_settingsActive{false};
+    int m_lastTabIndex{0};
 };
 
 }  // namespace AppRoot

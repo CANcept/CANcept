@@ -62,7 +62,7 @@ static const QString Receivers = "Receiver";
 namespace Component {
 static const QString TabId = "dbc-tab";
 static const QString TabTitle = "DBC File";
-static const QString TabIcon = ":/assets/icon/dbc_file_tab.svg";
+static const QString TabIcon = ":/assets/icon/dbc_file/dbc_file_tab.svg";
 }  // namespace Component
 
 namespace Status {
@@ -85,11 +85,11 @@ static const QString TitleSignals = "Signals";
 
 static const QString HoverText = "Load DBC file first";
 // Icons
-static const QString IconLoadNew = ":/assets/icon/load_new.svg";
-static const QString IconOverview = ":/assets/icon/overview.svg";
-static const QString IconEcus = ":/assets/icon/ecus.svg";
-static const QString IconMessages = ":/assets/icon/messages.svg";
-static const QString IconSignals = ":/assets/icon/signals.svg";
+static const QString IconLoadNew = ":/assets/icon/dbc_file/load_new.svg";
+static const QString IconOverview = ":/assets/icon/dbc_file/overview.svg";
+static const QString IconEcus = ":/assets/icon/dbc_file/ecus.svg";
+static const QString IconMessages = ":/assets/icon/dbc_file/messages.svg";
+static const QString IconSignals = ":/assets/icon/dbc_file/signals.svg";
 }  // namespace Sidebar
 
 // --- Load Page Specifics ---
@@ -99,7 +99,7 @@ static const QString CardSubtitle = "Load a DBC file to analyze its content";
 static const QString CardInstruction =
     "Click to upload or drag and drop a file here<br>DBC file (*.dbc)";
 static const QString CardIconFallback = "⬆";
-static const QString CardIcon = ":/assets/icon/upload.svg";
+static const QString CardIcon = ":/assets/icon/dbc_file/upload.svg";
 static const QString StatusParsing = "Parsing...";
 
 static const char* FileDialogTitle = "Choose DBC file";

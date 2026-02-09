@@ -3,6 +3,8 @@
 #include <memory>
 #include <vector>
 
+#include "app_root/model/settings_model.hpp"
+#include "app_root/service/settings_service.hpp"
 #include "app_root/view/app_root_view.hpp"
 #include "core/interface/i_event_broker.hpp"
 #include "core/interface/i_lifecycle.hpp"
@@ -97,6 +99,7 @@ class AppRoot
      * @related Core::IEventBroker
      */
     std::unique_ptr<Core::IEventBroker> m_broker;
+    std::unique_ptr<SettingsService> m_settingsService;
     std::unique_ptr<Core::ILifecycle> m_can_communication_handler;
     std::unique_ptr<Core::ILifecycle> m_dbc_handler;
 
@@ -111,6 +114,12 @@ class AppRoot
      */
     Core::Connection m_module_stop_connection;
 
+    /** @brief Handle for the theme provider subscription. */
+    Core::Connection m_themeProviderConn;
+
+    /** @brief Handle for the theme change subscription. */
+    Core::Connection m_themeChangeConn;
+
     /** * @brief Memory ownership of the tab components.
      * @details The Model only holds raw pointers; this vector ensures the objects
      * live as long as the AppRoot kernel.
@@ -123,6 +132,13 @@ class AppRoot
      * @related AppRootModel
      */
     std::unique_ptr<AppRootModel> m_model;
+
+    /**
+     * @brief Pointer to the model component of the settings part to instantiate it.
+     * @relationship "Instantiates" SettingsModel pointer.
+     * @related SettingsModel
+     */
+    std::unique_ptr<SettingsModel> m_settingsModel;
 
     /**
      * @brief Pointer to the Delegate component of the app root to instantiate it.

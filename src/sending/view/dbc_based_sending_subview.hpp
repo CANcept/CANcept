@@ -1,15 +1,11 @@
 #pragma once
 
-#include <QComboBox>
 #include <QGroupBox>
 #include <QLineEdit>
 #include <QPushButton>
 #include <QScrollArea>
 #include <QWidget>
-#include <string>
-#include <vector>
 
-#include "components/can_bus_config_card.hpp"
 #include "components/send_message_button.hpp"
 #include "core/widgets/dbc_message_card.hpp"
 
@@ -44,19 +40,10 @@ class DbcSendingSubView final : public QWidget
      */
     void clearMessages() const;
 
-    /**
-     * @name Control Accessors
-     */
-    [[nodiscard]] auto interfaceSelector() const -> QComboBox*
-    {
-        return m_configCard ? m_configCard->interfaceSelector() : nullptr;
-    }
     [[nodiscard]] auto sendButton() const -> QPushButton*
     {
         return m_sendButton;
     }
-
-    void setAvailableInterfaces(const std::vector<std::string>& interfaces) const;
 
    signals:
     /**
@@ -80,11 +67,14 @@ class DbcSendingSubView final : public QWidget
      */
     void signalValueChanged(uint16_t messageId, const QString& signalName, double newValue);
 
+   protected:
+    bool event(QEvent* event) override;
+
    private:
     void setupUi();
+    void applyStyle();
 
-    CanBusConfigCard* m_configCard;
-
+    QScrollArea* m_outerScrollArea;
     Core::CardWidget* m_messagesCard;
     QScrollArea* m_scrollArea;
     QWidget* m_scrollContent;

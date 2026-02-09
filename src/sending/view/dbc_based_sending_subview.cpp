@@ -6,6 +6,7 @@
 #include <QVBoxLayout>
 
 #include "core/macro/theme.hpp"
+#include "core/theme/style_event.hpp"
 #include "core/widgets/card_widget.hpp"
 #include "core/widgets/common/styled_checkbox.hpp"
 #include "core/widgets/common/styled_line_edit.hpp"
@@ -17,7 +18,7 @@ namespace Sending {
 
 DbcSendingSubView::DbcSendingSubView(QWidget* parent)
     : QWidget(parent),
-      m_configCard(nullptr),
+      m_outerScrollArea(nullptr),
       m_messagesCard(nullptr),
       m_scrollArea(nullptr),
       m_scrollContent(nullptr),
@@ -30,28 +31,23 @@ DbcSendingSubView::DbcSendingSubView(QWidget* parent)
 void DbcSendingSubView::setupUi()
 {
     const auto& spacing = THEME.spacing();
-    const auto& colors = THEME.colors();
 
     auto* outerLayout = new QVBoxLayout(this);
     outerLayout->setContentsMargins(0, 0, 0, 0);
     outerLayout->setSpacing(0);
 
-    auto* outerScrollArea = new QScrollArea(this);
-    outerScrollArea->setStyleSheet(QString("background-color: %1;").arg(colors.surfaceMain.name()));
-    outerScrollArea->setWidgetResizable(true);
-    outerScrollArea->setFrameShape(QFrame::NoFrame);
-    outerScrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    m_outerScrollArea = new QScrollArea(this);
+    m_outerScrollArea->setWidgetResizable(true);
+    m_outerScrollArea->setFrameShape(QFrame::NoFrame);
+    m_outerScrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
-    auto* scrollContent = new QWidget(outerScrollArea);
-    outerScrollArea->setWidget(scrollContent);
+    auto* scrollContent = new QWidget(m_outerScrollArea);
+    m_outerScrollArea->setWidget(scrollContent);
 
     auto* mainLayout = new QVBoxLayout(scrollContent);
     mainLayout->setContentsMargins(spacing.spacingLg, spacing.spacingLg, spacing.spacingLg,
                                    spacing.spacingLg);
     mainLayout->setSpacing(spacing.spacingLg);
-
-    m_configCard = new CanBusConfigCard(true, scrollContent);
-    mainLayout->addWidget(m_configCard);
 
     m_messagesCard = new Core::CardWidget(Constants::MESSAGES_LABEL, QString(),
                                           QString(Constants::MESSAGES_ICON_PATH), scrollContent);
@@ -64,8 +60,6 @@ void DbcSendingSubView::setupUi()
 
         m_scrollContent = new QWidget(m_scrollArea);
         m_scrollContent->setObjectName("scrollContent");
-        m_scrollContent->setStyleSheet(QString("QWidget#scrollContent { background-color: %1; }")
-                                           .arg(colors.surfaceMain.name()));
         m_cardsLayout = new QVBoxLayout(m_scrollContent);
         m_cardsLayout->setContentsMargins(0, 0, 0, 0);
         m_cardsLayout->setSpacing(spacing.spacingSm);
@@ -77,7 +71,7 @@ void DbcSendingSubView::setupUi()
 
     mainLayout->addWidget(m_messagesCard, 1);
 
-    outerLayout->addWidget(outerScrollArea, 1);
+    outerLayout->addWidget(m_outerScrollArea, 1);
 
     // Footer outside the scroll area
     auto* footerContainer = new QWidget(this);
@@ -91,6 +85,28 @@ void DbcSendingSubView::setupUi()
     footerLayout->addWidget(m_sendButton);
 
     outerLayout->addWidget(footerContainer);
+
+    applyStyle();
+}
+
+void DbcSendingSubView::applyStyle()
+{
+    const auto& colors = THEME.colors();
+
+    m_outerScrollArea->setStyleSheet(
+        QString("background-color: %1;").arg(colors.surfaceMain.name()));
+    m_scrollContent->setStyleSheet(
+        QString("QWidget#scrollContent { background-color: %1; }").arg(colors.surfaceMain.name()));
+}
+
+bool DbcSendingSubView::event(QEvent* event)
+{
+    if (event->type() == Core::StyleEvent::EventType)
+    {
+        applyStyle();
+        return true;
+    }
+    return QWidget::event(event);
 }
 
 void DbcSendingSubView::populateFromModel(const SendingModel* model)
@@ -187,14 +203,6 @@ void DbcSendingSubView::clearMessages() const
             widget->deleteLater();
         }
         delete item;
-    }
-}
-
-void DbcSendingSubView::setAvailableInterfaces(const std::vector<std::string>& interfaces) const
-{
-    if (m_configCard)
-    {
-        m_configCard->setAvailableInterfaces(interfaces);
     }
 }
 

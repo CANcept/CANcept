@@ -7,7 +7,12 @@
 #include <QDataWidgetMapper>
 #include <QLabel>
 #include <QListView>
+#include <QScrollArea>
 #include <QWidget>
+#include <vector>
+
+#include "core/widgets/tinted_icon_label.hpp"
+
 namespace DbcFile {
 
 /**
@@ -88,12 +93,16 @@ class OverviewPage : public QWidget
      * @param title Title of the statistic.
      * @param valueLabelPtr Reference to a pointer that receives the value QLabel.
      * @param iconPath Path to the icon displayed in the card.
+     * @param titleLabelsOut Vector to store title label pointers.
+     * @param iconLabelsOut Vector to store icon label pointers.
      * @param parent
      *
      * @return Pointer to the created statistic card widget.
      */
-    static auto createStatCard(const QString& title, QLabel*& valueLabelPtr,
-                               const QString& iconPath, QWidget* parent = nullptr) -> QWidget*;
+    auto createStatCard(const QString& title, QLabel*& valueLabelPtr, const QString& iconPath,
+                        std::vector<QLabel*>& titleLabelsOut,
+                        std::vector<Core::TintedIconLabel*>& iconLabelsOut,
+                        QWidget* parent = nullptr) -> QWidget*;
 
     /**
      * @brief Creates the statistics section.
@@ -138,6 +147,15 @@ class OverviewPage : public QWidget
      */
     void setupUi();
 
+    /**
+     * @brief Applies current theme styles to all widgets.
+     */
+    void applyStyle() const;
+
+   protected:
+    bool event(QEvent* event) override;
+
+   private:
     // --- 1. Labels for File Info Card ---
     /** @brief Label displaying the DBC file name. */
     QLabel* m_lblFileName;
@@ -159,5 +177,11 @@ class OverviewPage : public QWidget
     QListView* m_ecuList;
     /** @brief List view displaying an overview of messages. */
     QListView* m_messageList;
+
+    QScrollArea* m_scrollArea;
+    QLabel* m_fileNameTitle;
+    QLabel* m_fileVersionTitle;
+    std::vector<QLabel*> m_statTitleLabels;
+    std::vector<Core::TintedIconLabel*> m_statIconLabels;
 };
 }  // namespace DbcFile

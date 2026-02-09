@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QFrame>
+#include <QLabel>
 #include <QString>
 #include <QVBoxLayout>
 
@@ -38,10 +39,18 @@ class CardWidget final : public QFrame
         return m_contentLayout;
     }
 
+   protected:
+    bool event(QEvent* event) override;
+
    private:
     void setupUi(const QString& title, const QString& subtitle, const QString& iconPath);
+    void applyStyle();
 
     QVBoxLayout* m_contentLayout;
+    QLabel* m_iconLabel{nullptr};
+    QLabel* m_titleLabel{nullptr};
+    QLabel* m_subtitleLabel{nullptr};
+    QString m_iconPath;
 };
 
 }  // namespace Core

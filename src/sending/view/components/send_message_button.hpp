@@ -19,6 +19,9 @@ class SendMessageButton final : public QPushButton
     explicit SendMessageButton(QWidget* parent = nullptr);
     ~SendMessageButton() override = default;
 
+   protected:
+    bool event(QEvent* event) override;
+
    private:
     void applyStyle();
 };

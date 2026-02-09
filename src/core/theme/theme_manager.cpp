@@ -1,9 +1,13 @@
 #include "theme_manager.hpp"
 
+#include <qlayout.h>
+
+#include <QStyle>
 #include <QWidget>
 
 #include "color_themes.hpp"
 #include "spacing_themes.hpp"
+#include "style_event.hpp"
 
 namespace Core {
 
@@ -44,13 +48,37 @@ void ThemeManager::setColorTheme(std::unique_ptr<ColorTheme> theme)
 
 void ThemeManager::refreshApplication()
 {
-    // Reapply global stylesheet if any
-    qApp->setStyleSheet(qApp->styleSheet());
-
-    // Repaint all widgets
-    for (QWidget* w : QApplication::allWidgets())
+    for (QWidget* widget : QApplication::allWidgets())
     {
-        w->update();  // schedules repaint
+        QApplication::postEvent(widget, new StyleEvent());
+    }
+
+    QApplication::processEvents();
+    for (QWidget* widget : QApplication::allWidgets())
+    {
+        widget->style()->unpolish(widget);
+        widget->setStyleSheet(widget->styleSheet());
+    }
+
+    for (QWidget* widget : QApplication::allWidgets())
+    {
+        if (widget->layout())
+        {
+            widget->layout()->invalidate();
+            widget->layout()->activate();
+        }
+        widget->updateGeometry();
+    }
+
+    for (QWidget* widget : QApplication::allWidgets())
+    {
+        widget->style()->polish(widget);
+        widget->update();
+    }
+
+    for (QWidget* topLevel : QApplication::topLevelWidgets())
+    {
+        topLevel->repaint();
     }
 }
 

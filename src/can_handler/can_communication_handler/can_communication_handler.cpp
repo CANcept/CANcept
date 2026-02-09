@@ -55,4 +55,10 @@ void CanCommunicationHandler::onStop()
     }
     deviceHandler.reset();
 }
+
+void CanCommunicationHandler::registerSettings(Core::ISettingsRegistry &registry)
+{
+    deviceHandler->registerSettings(registry);
+}
+
 }  // namespace CanHandler

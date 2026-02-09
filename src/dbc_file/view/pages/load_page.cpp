@@ -14,6 +14,7 @@
 #include <QWidget>
 
 #include "core/macro/theme.hpp"
+#include "core/theme/style_event.hpp"
 #include "core/theme/theme_manager.hpp"
 #include "core/widgets/card_widget.hpp"
 #include "core/widgets/tinted_icon_label.hpp"
@@ -52,16 +53,8 @@ void updateDragStyle(QWidget* widget, const QString& state)
  */
 auto createUploadInstruction(QWidget* parent) -> QLabel*
 {
-    const auto& colors = THEME.colors();
-    const auto& spacing = THEME.spacing();
-
     auto* textLabel = new QLabel(parent);
     textLabel->setAlignment(Qt::AlignCenter);
-    QString fontStyle = QString("font-size: %1px; font-weight: %2; color: %3;")
-                            .arg(spacing.fontSizeSm)
-                            .arg(spacing.fontWeightNormal)
-                            .arg(colors.textSecondary.name());
-    textLabel->setStyleSheet(fontStyle);
     textLabel->setText(Constants::LoadPage::CardInstruction);
     return textLabel;
 }
@@ -223,7 +216,6 @@ auto LoadPage::createCardLayout(QVBoxLayout* parentLayout, QWidget* parent) -> Q
 
 void LoadPage::setupUploadZone(QVBoxLayout* layout)
 {
-    const auto& colors = THEME.colors();
     const auto& spacing = THEME.spacing();
 
     // --- Upload-Zone Frame ---
@@ -233,40 +225,6 @@ void LoadPage::setupUploadZone(QVBoxLayout* layout)
     m_uploadBoxFrame->setCursor(Qt::PointingHandCursor);
     m_uploadBoxFrame->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
-    // --- StyleSheet with Drag-States ---
-    QString zoneStyle = QString(
-                            // 1. Default style
-                            "#UploadZone { "
-                            "  background-color: %1;"
-                            "  border: %2px solid %3; "
-                            "  border-radius: %4px; "
-                            "}"
-
-                            // 2. Hover style
-                            "#UploadZone:hover { "
-                            "  background-color: %5;"
-                            "  border-color: %6; "
-                            "}"
-
-                            // 3. Valid drag style
-                            "#UploadZone[dragState=\"valid\"] { "
-                            "  border: %2px solid %7;"
-                            "}"
-
-                            // 4. Invalid drag style
-                            "#UploadZone[dragState=\"invalid\"] { "
-                            "  border: %2px solid %8;"  // %6 = Rot
-                            "}")
-                            .arg(colors.surfaceMain.name(QColor::HexArgb))
-                            .arg(spacing.borderThick)
-                            .arg(colors.borderStrong.name(QColor::HexArgb))
-                            .arg(spacing.radiusSm)
-                            .arg(colors.surfaceHover.name(QColor::HexArgb))
-                            .arg(colors.borderStrong.name(QColor::HexArgb))
-                            .arg(colors.statusSuccess.name(QColor::HexArgb))
-                            .arg(colors.statusError.name(QColor::HexArgb));
-
-    m_uploadBoxFrame->setStyleSheet(zoneStyle);
     layout->addWidget(m_uploadBoxFrame);
 
     // --- Inner Layout ---
@@ -274,10 +232,12 @@ void LoadPage::setupUploadZone(QVBoxLayout* layout)
     zoneLayout->setAlignment(Qt::AlignCenter);
 
     // Upload Icon + Instruction Text
-    auto* iconLabel = new Core::TintedIconLabel(Constants::LoadPage::CardIcon, spacing.IconLg,
-                                                colors.textSecondary, m_uploadBoxFrame);
-    zoneLayout->addWidget(iconLabel);
-    zoneLayout->addWidget(createUploadInstruction(m_uploadBoxFrame));
+    m_iconLabel = new Core::TintedIconLabel(Constants::LoadPage::CardIcon, spacing.IconLg,
+                                            Qt::black, m_uploadBoxFrame);
+    zoneLayout->addWidget(m_iconLabel);
+
+    m_instructionLabel = createUploadInstruction(m_uploadBoxFrame);
+    zoneLayout->addWidget(m_instructionLabel);
 
     // Status label
     m_statusLabel = new QLabel("");
@@ -297,5 +257,65 @@ void LoadPage::setupUi()
 
     auto* cardLayout = createCardLayout(mainLayout);
     setupUploadZone(cardLayout);
+
+    applyStyle();
 }
+
+void LoadPage::applyStyle() const
+{
+    const auto& colors = THEME.colors();
+    const auto& spacing = THEME.spacing();
+
+    const QString zoneStyle = QString(
+                                  "#UploadZone { "
+                                  "  background-color: %1;"
+                                  "  border: %2px solid %3; "
+                                  "  border-radius: %4px; "
+                                  "}"
+                                  "#UploadZone:hover { "
+                                  "  background-color: %5;"
+                                  "  border-color: %6; "
+                                  "}"
+                                  "#UploadZone[dragState=\"valid\"] { "
+                                  "  border: %2px solid %7;"
+                                  "}"
+                                  "#UploadZone[dragState=\"invalid\"] { "
+                                  "  border: %2px solid %8;"
+                                  "}")
+                                  .arg(colors.surfaceMain.name(QColor::HexArgb))
+                                  .arg(spacing.borderThick)
+                                  .arg(colors.borderStrong.name(QColor::HexArgb))
+                                  .arg(spacing.radiusSm)
+                                  .arg(colors.surfaceHover.name(QColor::HexArgb))
+                                  .arg(colors.borderStrong.name(QColor::HexArgb))
+                                  .arg(colors.statusSuccess.name(QColor::HexArgb))
+                                  .arg(colors.statusError.name(QColor::HexArgb));
+
+    m_uploadBoxFrame->setStyleSheet(zoneStyle);
+
+    if (m_instructionLabel)
+    {
+        const QString fontStyle = QString("font-size: %1px; font-weight: %2; color: %3;")
+                                      .arg(spacing.fontSizeSm)
+                                      .arg(spacing.fontWeightNormal)
+                                      .arg(colors.textSecondary.name());
+        m_instructionLabel->setStyleSheet(fontStyle);
+    }
+
+    if (m_iconLabel)
+    {
+        m_iconLabel->setColor(colors.textSecondary);
+    }
+}
+
+bool LoadPage::event(QEvent* event)
+{
+    if (event->type() == Core::StyleEvent::EventType)
+    {
+        applyStyle();
+        return true;
+    }
+    return QWidget::event(event);
+}
+
 }  // namespace DbcFile
