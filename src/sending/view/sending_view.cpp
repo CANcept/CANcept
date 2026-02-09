@@ -3,115 +3,20 @@
 #include <QHBoxLayout>
 #include <QList>
 #include <QRegularExpression>
-#include <QStandardItemModel>
 #include <QVBoxLayout>
 
-#include "core/macro/theme.hpp"
-#include "core/widgets/common/styled_combo_box.hpp"
 #include "sending/constants.hpp"
 
 namespace Sending {
 
 SendingView::SendingView(QWidget* parent)
     : QWidget(parent),
-      m_sidebarList(nullptr),
+      m_sidebar(nullptr),
       m_contentStack(nullptr),
       m_rawView(nullptr),
       m_dbcView(nullptr)
 {
     setupUi();
-}
-
-void SendingView::disableSidebarDeselection()
-{
-    // Get selection model
-    auto* selectionModel = m_sidebarList->selectionModel();
-    connect(selectionModel, &QItemSelectionModel::selectionChanged, this,
-            [selectionModel](const QItemSelection& selected, const QItemSelection& deselected) {
-                if (selected.indexes().isEmpty())
-                {
-                    // Reselect previous selection again
-                    if (!deselected.indexes().isEmpty())
-                    {
-                        selectionModel->select(
-                            deselected, QItemSelectionModel::Select | QItemSelectionModel::Rows);
-                        selectionModel->setCurrentIndex(deselected.indexes().first(),
-                                                        QItemSelectionModel::NoUpdate);
-                    }
-                }
-            });
-}
-
-void SendingView::setupSidebarList()
-{
-    const auto& colors = THEME.colors();
-    const auto& spacing = THEME.spacing();
-
-    m_sidebarList = new QListView(this);
-    m_sidebarList->setSelectionMode(QAbstractItemView::SingleSelection);
-    m_sidebarList->setSelectionBehavior(QAbstractItemView::SelectRows);
-    m_sidebarList->setMaximumWidth(200);
-    m_sidebarList->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    m_sidebarList->setFrameShape(QFrame::NoFrame);
-    m_sidebarList->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    m_sidebarList->setSelectionRectVisible(false);
-    m_sidebarList->setStyleSheet(QString(R"(
-                                                QListView {
-                                                    background-color: %1;
-                                                    border-right: %2px solid %3;
-                                                    color: %4;
-                                                    font-size: %5px;
-                                                    outline: 0;
-                                                }
-
-                                                QListView::item {
-                                                    border-radius: %6px;
-                                                    padding: %7px;
-                                                    margin-right: %8px;
-                                                    margin-left: %8px;
-                                                }
-
-                                                QListView::item:selected {
-                                                    background-color: %9;
-                                                    color: %10;
-                                                }
-                                            )")
-                                     .arg(colors.surfaceMain.name(QColor::HexArgb))
-                                     .arg(spacing.borderThick)
-                                     .arg(colors.borderSubtle.name(QColor::HexArgb))
-                                     .arg(colors.textSecondary.name(QColor::HexArgb))
-                                     .arg(spacing.fontSizeMd)
-                                     .arg(spacing.radiusSm)
-                                     .arg(spacing.spacingXl)
-                                     .arg(spacing.spacingMd)
-                                     .arg(colors.surfacePrimary.name(QColor::HexArgb))
-                                     .arg(colors.textPrimary.name(QColor::HexArgb)));
-}
-
-void SendingView::setSidebarModel()
-{
-    auto* sidebarModel = new QStandardItemModel(this);
-    const QList<SidebarEntry> sidebarEntries = {
-        {.iconPath = Constants::RAW_SENDING_ICON_PATH,
-         .title = Constants::RAW_MODE_BUTTON_TEXT,
-         .enabled = true},
-        {.iconPath = Constants::DBC_SENDING_ICON_PATH,
-         .title = Constants::DBC_MODE_BUTTON_TEXT,
-         .enabled = true},
-    };
-
-    for (const auto& [iconPath, title, enabled] : sidebarEntries)
-    {
-        auto* item = new QStandardItem(QIcon(iconPath), title);
-        item->setEnabled(enabled);
-        item->setSelectable(enabled);
-        sidebarModel->appendRow(item);
-    }
-
-    m_sidebarList->setModel(sidebarModel);
-    disableSidebarDeselection();
-    const QModelIndex firstIndex = sidebarModel->index(0, 0);
-    m_sidebarList->setCurrentIndex(firstIndex);
 }
 
 void SendingView::setupUi()
@@ -120,9 +25,10 @@ void SendingView::setupUi()
     mainLayout->setContentsMargins(0, 0, 0, 0);
     mainLayout->setSpacing(0);
 
-    setupSidebarList();
-    setSidebarModel();
-    mainLayout->addWidget(m_sidebarList);
+    m_sidebar = new Core::Sidebar(this);
+    m_sidebar->addTab(QIcon(Constants::RAW_SENDING_ICON_PATH), Constants::RAW_MODE_BUTTON_TEXT);
+    m_sidebar->addTab(QIcon(Constants::DBC_SENDING_ICON_PATH), Constants::DBC_MODE_BUTTON_TEXT);
+    mainLayout->addWidget(m_sidebar);
 
     m_contentStack = new QStackedWidget(this);
 
@@ -135,34 +41,7 @@ void SendingView::setupUi()
 
     mainLayout->addWidget(m_contentStack, 1);
 
-    connect(m_sidebarList, &QListView::clicked, this, &SendingView::onSidebarSelectionChanged);
-
-    // Connect interface dropdowns to emit signal when opening (for on-the-fly refresh)
-    if (const auto* rawInterfaceCombo =
-            qobject_cast<Core::StyledComboBox*>(m_rawView->interfaceSelector()))
-    {
-        connect(rawInterfaceCombo, &Core::StyledComboBox::aboutToShowPopup, this,
-                &SendingView::interfaceDropdownOpening);
-    }
-    if (const auto* dbcInterfaceCombo =
-            qobject_cast<Core::StyledComboBox*>(m_dbcView->interfaceSelector()))
-    {
-        connect(dbcInterfaceCombo, &Core::StyledComboBox::aboutToShowPopup, this,
-                &SendingView::interfaceDropdownOpening);
-    }
-}
-
-void SendingView::onSidebarSelectionChanged(const QModelIndex& index)
-{
-    if (!index.isValid())
-    {
-        return;
-    }
-    if (!(index.flags() & Qt::ItemIsEnabled))
-    {
-        return;
-    }
-    displayMode(index.row());
+    connect(m_sidebar, &Core::Sidebar::tabSelected, this, &SendingView::displayMode);
 }
 
 void SendingView::displayMode(const int index)
@@ -203,29 +82,6 @@ void SendingView::setModel(SendingModel* model)
     connect(m_dbcView, &DbcSendingSubView::signalValueChanged, model,
             [model](uint16_t messageId, const QString& signalName, const double newValue) {
                 model->setSignalValue(messageId, signalName.toStdString(), newValue);
-            });
-
-    // Interface Selection to Emit Signal
-    connect(m_rawView->interfaceSelector(), QOverload<int>::of(&QComboBox::currentIndexChanged),
-            this, [this](const int index) {
-                m_rawInterfaceSelected = (index >= 0);
-                if (index >= 0)
-                {
-                    emit deviceSelectionChanged(
-                        m_rawView->interfaceSelector()->currentText().toStdString());
-                }
-                updateSendButtonStates();
-            });
-
-    connect(m_dbcView->interfaceSelector(), QOverload<int>::of(&QComboBox::currentIndexChanged),
-            this, [this](const int index) {
-                m_dbcInterfaceSelected = (index >= 0);
-                if (index >= 0)
-                {
-                    emit deviceSelectionChanged(
-                        m_dbcView->interfaceSelector()->currentText().toStdString());
-                }
-                updateSendButtonStates();
             });
 
     // Raw CAN ID input changes to Model
@@ -284,11 +140,6 @@ void SendingView::setModel(SendingModel* model)
 
 void SendingView::updateSendButtonStates() const
 {
-    if (auto* rawSendBtn = m_rawView->sendButton())
-    {
-        rawSendBtn->setEnabled(m_rawInterfaceSelected);
-    }
-
     if (auto* dbcSendBtn = m_dbcView->sendButton())
     {
         bool anySignalSelected = false;
@@ -311,19 +162,7 @@ void SendingView::updateSendButtonStates() const
             }
         }
 
-        dbcSendBtn->setEnabled(m_dbcInterfaceSelected && anySignalSelected);
-    }
-}
-
-void SendingView::setAvailableDevices(const std::vector<std::string>& devices) const
-{
-    if (m_rawView)
-    {
-        m_rawView->setAvailableInterfaces(devices);
-    }
-    if (m_dbcView)
-    {
-        m_dbcView->setAvailableInterfaces(devices);
+        dbcSendBtn->setEnabled(anySignalSelected);
     }
 }
 

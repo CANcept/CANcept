@@ -16,8 +16,8 @@ class StyledCheckBox;  // Forward declaration
  * @brief Generic signal row widget for DBC signals.
  *
  * Supports multiple display modes:
- * - **Full mode** (Sending): Signal name, value editor, unit, range, optional function toggle
- * - **Selection mode** (Logging/Monitoring): Signal name and optional selection checkbox
+ * - Full mode (Sending): Signal name, value editor, unit, range, optional function toggle
+ * - Selection mode (Logging/Monitoring): Signal name and optional selection checkbox
  *
  * The widget automatically adapts its layout based on configuration.
  */
@@ -77,12 +77,16 @@ class DbcSignalRowWidget final : public QWidget
         return m_selectionCheckbox;
     }
 
+   protected:
+    bool event(QEvent* event) override;
+
    private:
     void setupUi(const QString& name, const QString& unit, double min, double max,
                  const Config& config);
     void setupFullMode(const QString& name, const QString& unit, double min, double max,
                        const Config& config);
     void setupSelectionMode(const QString& name, const QString& unit, const Config& config);
+    void applyStyle() const;
     void clampInput() const;
 
     CardWidget* m_cardContainer;

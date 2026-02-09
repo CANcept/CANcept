@@ -32,9 +32,6 @@ inline const QString RAW_SENDING_ICON_PATH = ":/assets/icon/sending/raw_based_se
 /** @brief Icon used for the DBC-based sending sub-tab */
 inline const QString DBC_SENDING_ICON_PATH = ":/assets/icon/sending/dbc_based_send_icon.svg";
 
-/** @brief Icon used for CAN-Bus configuration cards */
-inline const QString CONFIGURATION_ICON_PATH = ":/assets/icon/sending/configuration.svg";
-
 /** @brief Icon used for CAN frame input cards */
 inline const QString CAN_FRAME_ICON_PATH = ":/assets/icon/sending/can_frame.svg";
 
@@ -113,12 +110,6 @@ inline constexpr uint16_t MAX_CAN_ID = 0x7FF;
 inline constexpr int MAX_CAN_ID_HEX_LENGTH = 3;
 
 // NETWORK CONFIGURATION
-
-/** @brief Default list of CAN interfaces to populate in device selectors */
-inline const std::vector<std::string> DEFAULT_CAN_INTERFACES = {"vcan0", "can0", "can1"};
-
-/** @brief Standard CAN bit rates supported by most hardware (in bps) */
-inline const std::vector<uint32_t> STANDARD_BIT_RATES = {125000, 250000, 500000, 1000000};
 
 /** @brief Default cyclic transmission interval in milliseconds */
 inline constexpr int DEFAULT_CYCLE_INTERVAL_MS = 100;
