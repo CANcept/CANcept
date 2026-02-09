@@ -47,26 +47,14 @@ class GraphListView : public QWidget
      * @brief Adds new signal to graph list.
      *
      * If a graph for the given signal already exists, nothing happens, otherwise the signal will
-     * be appended to the listy of plotted signals.
+     * be appended to the list of plotted signals.
      *
      * @param messageId the id of the message the to be plotted signal belongs to
      * @param signalName the name of the to be plotted signal
      */
-    void addGraph(char messageId, const std::string& signalName);
+    void addGraph(const QString& messageId, const QString& signalName);
 
-    /**
-     * @brief Appends new signal data to the corresponding graph.
-     *
-     * If a graph for the given signal already exists, the data is forwarded
-     * to that graph. Otherwise, a new graph is created and initialized.
-     */
-    void appendDataToGraph();
-
-    /**
-     * @brief Deletes all contained graphs.
-     *
-     */
-    void clearAll();
+    void updateViewData();
 
     /**
      * @brief Removes the graph associated with the given signal.
@@ -76,10 +64,12 @@ class GraphListView : public QWidget
      * @param messageId the id of the message the plotted signal belongs to
      * @param signalName the name of the plotted signal
      */
-    void deleteGraph(char messageId, const std::string& signalName);
+    void deleteGraph(const QString& messageId, const QString& signalName);
 
    public slots:
     void signalChecked(bool enabled, const QString& messageId, const QString& signalId);
+
+    void onDbcChange();
 
    private:
     /**
@@ -99,11 +89,6 @@ class GraphListView : public QWidget
      */
     QList<SignalGraph*> m_signal_graphs;
 
-    /**
-     * @brief Creates and inserts a new SignalGraph for the given signal.
-     *
-     * @param signal Reference to the CAN signal used to initialize the graph.
-     */
-    void newGraph(Core::DbcCanSignal& signal);
+    MonitoringModel* m_model;
 };
 }  // namespace Monitoring

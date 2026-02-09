@@ -13,7 +13,6 @@
 
 namespace Monitoring {
 
-// Constructor / destructor
 MonitoringComponent::MonitoringComponent(Core::IEventBroker& broker)
     : Core::ITabComponent(broker, Constants::MODULE_IDENTIFIER, Constants::TAB_TITLE,
                           QIcon(Constants::TAB_ICON_PATH)),
@@ -22,26 +21,16 @@ MonitoringComponent::MonitoringComponent(Core::IEventBroker& broker)
       m_view(std::make_unique<MonitoringView>(m_model.get(), m_delegate.get())),
       m_updateTimer(this)
 {
-    // --- Internal Signal/Slot Connections ---
-
-    // Connect View UI actions to this Component's logic
-    connect(m_view.get(), &MonitoringView::signalChecked, this,
-            &MonitoringComponent::onSignalChecked);
-
-    connect(m_view.get(), &MonitoringView::signalUnchecked, this,
-            &MonitoringComponent::onSignalUnchecked);
-
-    // Forward internal signal to the view to refresh UI (e.g. the TreeView)
     connect(this, &MonitoringComponent::dbcConfigurationChanged, m_model.get(),
             &MonitoringModel::onDbcChange);
     connect(this, &MonitoringComponent::dbcConfigurationChanged, m_view->getSignalListView(),
-            &SignalList::populateDecodedFromModel);
+            &SignalList::onDbcChange);
+    connect(this, &MonitoringComponent::dbcConfigurationChanged, m_view->getGraphListView(),
+            &GraphListView::onDbcChange);
 
-    // Forward dbc decoded frame received signal to the model
     connect(this, &MonitoringComponent::dbcFrameReceived, m_model.get(),
             &MonitoringModel::onIncomingDbcFrame);
 
-    // Device selection changes
     connect(m_view->interfaceSelector(), QOverload<int>::of(&QComboBox::currentIndexChanged), this,
             [this](int index) -> void {
                 m_interfaceSelected = (index >= 0);
@@ -59,7 +48,6 @@ MonitoringComponent::MonitoringComponent(Core::IEventBroker& broker)
 
 MonitoringComponent::~MonitoringComponent() = default;
 
-// Return a QWidget pointer
 auto MonitoringComponent::getView() -> QWidget*
 {
     return m_view.get();
@@ -67,33 +55,24 @@ auto MonitoringComponent::getView() -> QWidget*
 
 void MonitoringComponent::onStart()
 {
-    // Subscribe to incoming raw CAN traffic
-    m_rawFrameReceivedConn = m_eventBroker.subscribe<Core::ReceivedCanRawEvent>(
-        [this](const Core::ReceivedCanRawEvent& event) -> void {
-            // We emit a signal so the View/Delegate can update the UI safely
-            // on the main thread if the broker operates on a background thread.
-            emit rawFrameReceived(event.canMessage);
-        });
-
-    // 2. Subscribe to DBC Parsing successes
+    // subscribe to DBC Parsing successes
     m_parseSuccessConn = m_eventBroker.subscribe<Core::DBCParsedEvent>(
         [this](const Core::DBCParsedEvent& event) -> void {
-            // Logic to update model with new DBC data could go here
             emit dbcConfigurationChanged(event.config);
         });
 
-    // 3. Subscribe to incoming dbc decoded CAN traffic
+    // subscribe to incoming dbc decoded CAN traffic
     m_decodedFrameReceivedConn = m_eventBroker.subscribe<Core::ReceivedCanDbcEvent>(
         [this](const Core::ReceivedCanDbcEvent& event) -> void {
-            // We emit a signal so the View/Delegate can update the UI safely
-            // on the main thread if the broker operates on a background thread.
             emit dbcFrameReceived(event.canMessage);
         });
+
+    m_updateTimer.setInterval(Constants::REFRESH_INTERVAL_MS);
+    m_updateTimer.start();
 }
 
 void MonitoringComponent::onStop()
 {
-    // Disconnect event broker handles to prevent callbacks to a stopped component
     if (m_updateTimer.isActive())
     {
         m_updateTimer.stop();
@@ -106,26 +85,6 @@ void MonitoringComponent::onDeviceChanged(const std::string& deviceName) const
 {
     LOG_INF("MonitoringComponent", "CAN device changed to: {}", deviceName);
     m_eventBroker.publish<Core::CanDriverChangeEvent>(Core::CanDriverChangeEvent(deviceName));
-}
-
-// Slots
-
-void MonitoringComponent::onSignalChecked(char messageId, const std::string& signalName)
-{
-    // Delegate handles the logic of adding the signal to the internal graph list
-    if (m_view)
-    {
-        m_view->getGraphListView()->addGraph(messageId, signalName);
-    }
-}
-
-void MonitoringComponent::onSignalUnchecked(char messageId, const std::string& signalName)
-{
-    // Delegate handles removal and cleanup of the graph
-    if (m_view)
-    {
-        m_view->getGraphListView()->deleteGraph(messageId, signalName);
-    }
 }
 
 }  // namespace Monitoring

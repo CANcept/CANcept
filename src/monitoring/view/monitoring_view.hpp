@@ -53,6 +53,7 @@ class MonitoringView : public QWidget
     {
         return m_signalListView;
     }
+
     GraphListView* getGraphListView() const
     {
         return m_graphListView;
@@ -68,7 +69,7 @@ class MonitoringView : public QWidget
      * @param messageId the id of the message the checked signal belongs to
      * @param signalName the name of the checked signal
      */
-    void signalChecked(char messageId, const std::string& signalName);
+    void signalChecked(const QString* messageId, const QString& signalName);
 
     /**
      * @brief Triggered when a signal is unchecked from plotting
@@ -77,7 +78,7 @@ class MonitoringView : public QWidget
      * @param messageId the id of the message the unchecked signal belongs to
      * @param signalName the name of the unchecked signal
      */
-    void signalUnchecked(char messageId, const std::string& signalName);
+    void signalUnchecked(const QString* messageId, const QString& signalName);
 
     void refreshDataView();
 
@@ -93,10 +94,10 @@ class MonitoringView : public QWidget
      * Enables search, category filtering, and dynamic visibility of signals
      * without modifying the underlying model.
      */
-    QSortFilterProxyModel* m_treeProxy;  // For data filtering
+    QSortFilterProxyModel* m_treeProxy;
 
     SignalList* m_signalListView;
-    QSplitter* m_splitter;  // For Signals and Graphs scalable split view
+    QSplitter* m_splitter;
     GraphListView* m_graphListView;
 
     MonitoringModel* m_model;

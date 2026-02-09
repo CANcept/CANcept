@@ -111,5 +111,3 @@ class MonitoringModel final : public QAbstractItemModel
     std::thread message_check_thread;
 };
 }  // namespace Monitoring
-
-// Q_DECLARE_METATYPE(Monitoring::MessageTimestamp)

@@ -17,16 +17,19 @@ class SignalList final : public QWidget
 
     void setupUi();
 
-    void clearMessages();
-
     void updateViewData();
-
-    void populateDecodedFromModel();
 
    signals:
     void signalMonitoringToggled(bool checked, const QString& messageId, const QString& signalName);
 
+   public slots:
+    void onDbcChange();
+
    private:
+    void populateDecodedFromModel();
+
+    void clearMessages();
+
     /**
      * @brief Scroll area providing vertical scrolling for the graph list.
      */

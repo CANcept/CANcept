@@ -18,6 +18,7 @@ MonitoringView::MonitoringView(MonitoringModel* model, MonitoringDelegate* deleg
     : QWidget(nullptr),
       m_treeProxy(new QSortFilterProxyModel(this)),
       m_signalListView(new SignalList(this, model)),
+      m_graphListView(new GraphListView(model, delegate)),
       m_splitter(new QSplitter(Qt::Horizontal, this))
 {
     m_model = model;
@@ -29,8 +30,6 @@ void MonitoringView::setupUi()
 {
     const auto& spacing = THEME.spacing();
     const auto& colors = THEME.colors();
-
-    m_graphListView = new GraphListView(m_model, m_delegate);
 
     auto* mainLayout = new QVBoxLayout(this);
     mainLayout->setContentsMargins(spacing.spacingLg, spacing.spacingLg, spacing.spacingLg,
@@ -69,6 +68,7 @@ void MonitoringView::setupUi()
 void MonitoringView::onUpdateMessages()
 {
     m_signalListView->updateViewData();
+    m_graphListView->updateViewData();
 }
 
 }  // namespace Monitoring
