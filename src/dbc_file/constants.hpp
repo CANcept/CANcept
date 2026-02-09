@@ -16,6 +16,10 @@ constexpr int OvMsgCount = 3;
 constexpr int OvSigCount = 4;
 constexpr int OvOrphans = 5;
 
+// Ecus
+constexpr int EcuName = 0;
+constexpr int EcuTotalSignals = 1;
+
 // Messages
 constexpr int MsgName = 0;
 constexpr int MsgId = 1;
@@ -84,9 +88,9 @@ static const QString HoverText = "Load DBC file first";
 // Icons
 static const QString IconLoadNew = ":/assets/icon/dbc_file/load_new.svg";
 static const QString IconOverview = ":/assets/icon/dbc_file/overview.svg";
-static const QString IconEcus = ":/assets/icon/core/ecus.svg";
-static const QString IconMessages = ":/assets/icon/core/messages.svg";
-static const QString IconSignals = ":/assets/icon/core/signals.svg";
+static const QString IconEcus = ":/assets/icon/dbc_file/ecus.svg";
+static const QString IconMessages = ":/assets/icon/dbc_file/messages.svg";
+static const QString IconSignals = ":/assets/icon/dbc_file/signals.svg";
 }  // namespace Sidebar
 
 // --- Load Page Specifics ---
@@ -124,17 +128,41 @@ constexpr const char* None = "";
 
 // --- Overview Page Specifics ---
 namespace OverviewPage {
-}
+
+static const QString FileInfoTitle = QStringLiteral("File Information");
+
+static const QString FileInfoSubTitle = QStringLiteral("Basic information about the DBC file");
+
+static const QString FileNameTitle = QStringLiteral("Filename: ");
+
+static const QString FileVersionTitle = QStringLiteral("Version: ");
+
+static const QString LabelDefault = QStringLiteral("-");
+
+static const QString EcuStatTitle = QStringLiteral("ECUs");
+
+static const QString MessagesStatTitle = QStringLiteral("Messages");
+
+static const QString SignalsStatTitle = QStringLiteral("Signals");
+
+static const QString OrphansStatTitle = QStringLiteral("Orphan Messages");
+
+static const QString OverviewSuffix = QStringLiteral(" Overview");
+
+static const QString OverviewDescription = QStringLiteral("All defined %1 in the network");
+}  // namespace OverviewPage
 
 // --- ECUs Page Specifics ---
 namespace EcusPage {
 const QString PageHeaderTitle = "ECU / Control Unit View";
-const QString PageHeaderSubtitle = "Detailed overview of all defined control units and their messages";
+const QString PageHeaderSubtitle =
+    "Detailed overview of all defined control units and their messages";
 const QString SearchbarText = "Search ECU by name...";
 const QString FilterAllText = "All ECUs";
 const QString FilterActive = "Only Sending ECUs";
 const QString FilterPassive = "Only receiving ECUs";
-}
+constexpr int FilterActiveIndex = 1;
+}  // namespace EcusPage
 
 // --- Messages Page Specifics ---
 namespace MessagesPage {

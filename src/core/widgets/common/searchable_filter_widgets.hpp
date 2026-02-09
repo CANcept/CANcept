@@ -9,9 +9,9 @@
 #include <QTreeView>
 
 #include "core/widgets/common/styled_filter_bar.hpp"
+#include "styled_filter_bar.hpp"
 
 namespace Core {
-class StyledFilterBar;
 }
 namespace Core {
 

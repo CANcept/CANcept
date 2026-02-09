@@ -18,7 +18,7 @@ class StyledFilterBar final : public QWidget
 {
     Q_OBJECT
 
-public:
+   public:
     explicit StyledFilterBar(QWidget* parent = nullptr);
 
     [[nodiscard]] auto searchText() const -> QString;
@@ -30,13 +30,11 @@ public:
     void setCurrentFilter(const QString& text) const;
     void setCurrentFilterIndex(int index) const;
 
-
-    signals:
+   signals:
     void searchTextChanged(const QString& text);
-    void filterChanged(const QString& text);
+    void filterIndexChanged(int index);
 
-
-private:
+   private:
     void setupUi();
     void setupStyles() const;
 
