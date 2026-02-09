@@ -2,8 +2,7 @@
 // Created by flori on 05.01.2026.
 //
 
-#ifndef CANBUSMANAGER_DBC_PARSER_HPP
-#define CANBUSMANAGER_DBC_PARSER_HPP
+#pragma once
 #include <memory>
 #include <mutex>
 #include <regex>
@@ -215,4 +214,3 @@ class DbcParser
     const std::regex UINT_REGEX{"\\d+"};
 };
 }  // namespace CanHandler
-#endif  // CANBUSMANAGER_DBC_PARSER_HPP

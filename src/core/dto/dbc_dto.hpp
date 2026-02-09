@@ -2,8 +2,7 @@
 // Created by flori on 29.12.2025.
 //
 
-#ifndef CANBUSMANAGER_DBC_DTO_HPP
-#define CANBUSMANAGER_DBC_DTO_HPP
+#pragma once
 #include <list>
 #include <string>
 namespace Core {
@@ -59,4 +58,3 @@ struct DbcConfig {
     DbcMetaData metaData;
 };
 }  // namespace Core
-#endif  // CANBUSMANAGER_DBC_DTO_HPP

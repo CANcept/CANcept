@@ -2,8 +2,7 @@
 // Created by flori on 29.12.2025.
 //
 
-#ifndef CANBUSMANAGER_CAN_DTO_HPP
-#define CANBUSMANAGER_CAN_DTO_HPP
+#pragma once
 #include <array>
 #include <chrono>
 #include <list>
@@ -26,4 +25,4 @@ struct DbcCanMessage {
     uint16_t messageId;  // CAN ID: 11-bit standard (0x000-0x7FF)
 };
 }  // namespace Core
-#endif  // CANBUSMANAGER_CAN_DTO_HPP
+

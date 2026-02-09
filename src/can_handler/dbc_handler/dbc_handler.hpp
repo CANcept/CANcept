@@ -2,8 +2,7 @@
 // Created by flori on 30.12.2025.
 //
 
-#ifndef CANBUSMANAGER_DBC_HANDLER_HPP
-#define CANBUSMANAGER_DBC_HANDLER_HPP
+#pragma once
 #include "core/event/dbc_event.hpp"
 #include "core/interface/i_lifecycle.hpp"
 #include "dbc_parser.hpp"
@@ -31,4 +30,3 @@ class DbcHandler final : public Core::ILifecycle
     std::unique_ptr<Core::DbcConfig> currentDbc;
 };
 }  // namespace CanHandler
-#endif  // CANBUSMANAGER_DBC_HANDLER_HPP

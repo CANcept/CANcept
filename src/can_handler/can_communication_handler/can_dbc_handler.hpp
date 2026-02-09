@@ -2,8 +2,7 @@
 // Created by flori on 28.12.2025.
 //
 
-#ifndef CANBUSMANAGER_CAN_DBC_HANDLER_HPP
-#define CANBUSMANAGER_CAN_DBC_HANDLER_HPP
+#pragma once
 #include "core/event/can_event.hpp"
 #include "core/event/dbc_event.hpp"
 #include "i_can_parser.hpp"
@@ -93,5 +92,3 @@ class CanDbcHandler final : public ICanParser
     std::mutex dbcMutex;
 };
 }  // namespace CanHandler
-
-#endif  // CANBUSMANAGER_CAN_DBC_HANDLER_HPP

@@ -2,8 +2,7 @@
 // Created by flori on 28.12.2025.
 //
 
-#ifndef CANBUSMANAGER_CAN_EVENT_HPP
-#define CANBUSMANAGER_CAN_EVENT_HPP
+#pragma once
 #include <array>
 #include <ctime>
 #include <string>
@@ -47,4 +46,4 @@ struct SendCanMessageDbcEvent final : public Event {
     explicit SendCanMessageDbcEvent(const DbcCanMessage& canMessage) : canMessage(canMessage){};
 };
 };  // namespace Core
-#endif  // CANBUSMANAGER_CAN_EVENT_HPP
+

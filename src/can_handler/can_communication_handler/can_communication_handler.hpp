@@ -1,9 +1,7 @@
 //
 // Created by flori on 28.12.2025.
 //
-
-#ifndef CANBUSMANAGER_CAN_COMMUNICATION_HANDLER_HPP
-#define CANBUSMANAGER_CAN_COMMUNICATION_HANDLER_HPP
+#pragma once
 #include <list>
 
 #include "can_dbc_handler.hpp"
@@ -81,5 +79,3 @@ class CanCommunicationHandler final : public Core::ILifecycle
     const int MILLISECONDS_BETWEEN_PARSE_ATTEMPTS = 100;
 };
 }  // namespace CanHandler
-
-#endif  // CANBUSMANAGER_CAN_COMMUNICATION_HANDLER_HPP
