@@ -41,15 +41,16 @@ struct SpacingTheme {
     int IconLg = 48;
 
     // Heights
-    int HeightSm = 20;
-    int HeightMd = 40;
+    int HeightXs = 18;
+    int HeightSm = 32;
+    int HeightMd = 48;
     int HeightLg = 120;
     int HeightXl = 350;
 
     // Widths
     int WidthXs = 120;
-    int WidthSm = 200;
-    int WidthMd = 300;
+    int WidthSm = 240;
+    int WidthMd = 480;
     int WidthLg = 600;
 };
 
