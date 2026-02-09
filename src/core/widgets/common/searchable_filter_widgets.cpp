@@ -19,11 +19,13 @@ SearchableFilterTable::SearchableFilterTable(QWidget* parent) : QWidget(parent)
     setupUi();
 }
 
-auto SearchableFilterTable::tableView() const -> QTableView* {
+auto SearchableFilterTable::tableView() const -> QTableView*
+{
     return m_tableView;
 }
 
-auto SearchableFilterTable::filterBar() const -> Core::StyledFilterBar* {
+auto SearchableFilterTable::filterBar() const -> Core::StyledFilterBar*
+{
     return m_filterBar;
 }
 
@@ -48,7 +50,7 @@ void SearchableFilterTable::setupUi()
 
     // --- Main Layout setup ---
     auto* mainLayout = new QVBoxLayout(this);
-    mainLayout->setContentsMargins(0,0,0,0);
+    mainLayout->setContentsMargins(0, 0, 0, 0);
     mainLayout->setSpacing(spacing.spacingLg);
 
     // --- Top bar setup ---
@@ -62,11 +64,11 @@ void SearchableFilterTable::setupUi()
     mainLayout->addWidget(m_tableView);
 
     // Signal forwarding
-    connect(m_filterBar, &Core::StyledFilterBar::searchTextChanged,
-            this, &SearchableFilterTable::filterTextChanged);
+    connect(m_filterBar, &Core::StyledFilterBar::searchTextChanged, this,
+            &SearchableFilterTable::filterTextChanged);
 
-    connect(m_filterBar, &Core::StyledFilterBar::filterIndexChanged,
-            this, &SearchableFilterTable::filterIndexChanged);
+    connect(m_filterBar, &Core::StyledFilterBar::filterIndexChanged, this,
+            &SearchableFilterTable::filterIndexChanged);
 }
 
 // --- SearchableFilterTree ---
@@ -74,11 +76,13 @@ SearchableFilterTree::SearchableFilterTree(QWidget* parent) : QWidget(parent)
 {
     setupUi();
 }
-auto SearchableFilterTree::treeView() const -> QTreeView* {
+auto SearchableFilterTree::treeView() const -> QTreeView*
+{
     return m_treeView;
 }
 
-auto SearchableFilterTree::filterBar() const -> Core::StyledFilterBar* {
+auto SearchableFilterTree::filterBar() const -> Core::StyledFilterBar*
+{
     return m_filterBar;
 }
 
@@ -97,14 +101,13 @@ void SearchableFilterTree::setSearchText(const QString& text) const
     m_filterBar->setSearchText(text);
 }
 
-
 void SearchableFilterTree::setupUi()
 {
     const auto& spacing = THEME.spacing();
 
     // --- Main Layout setup ---
     auto* mainLayout = new QVBoxLayout(this);
-    mainLayout->setContentsMargins(0,0,0,0);
+    mainLayout->setContentsMargins(0, 0, 0, 0);
     mainLayout->setSpacing(spacing.spacingMd);
 
     // --- FilterBar ---
@@ -117,13 +120,11 @@ void SearchableFilterTree::setupUi()
     mainLayout->addWidget(m_treeView);
 
     // Signal forwarding
-    connect(m_filterBar, &Core::StyledFilterBar::searchTextChanged,
-        this, &SearchableFilterTree::filterTextChanged);
+    connect(m_filterBar, &Core::StyledFilterBar::searchTextChanged, this,
+            &SearchableFilterTree::filterTextChanged);
 
-    connect(m_filterBar, &Core::StyledFilterBar::filterIndexChanged,
-            this, &SearchableFilterTree::filterIndexChanged);
-
-
+    connect(m_filterBar, &Core::StyledFilterBar::filterIndexChanged, this,
+            &SearchableFilterTree::filterIndexChanged);
 }
 
-}  // namespace DbcFile
+}  // namespace Core

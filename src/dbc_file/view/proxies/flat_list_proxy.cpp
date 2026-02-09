@@ -106,8 +106,8 @@ void FlatListProxy::scanNode(const QModelIndex& parent)
     {
         // Get current index and type
         QModelIndex currentInd = sourceModel()->index(i, 0, parent);
-        auto type = static_cast<Core::DbcItemType>(
-            sourceModel()->data(currentInd, Role_ItemType).toInt());
+        auto type =
+            static_cast<Core::DbcItemType>(sourceModel()->data(currentInd, Role_ItemType).toInt());
 
         // Item at current index has correct type -> add mapping
         if (type == m_targetType)
@@ -155,4 +155,4 @@ void FlatListProxy::scanNode(const QModelIndex& parent)
         }
     }
 }
-}
+}  // namespace DbcFile

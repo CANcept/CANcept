@@ -129,7 +129,8 @@ auto DbcModel::data(const QModelIndex& index, const int role) const -> QVariant
             break;
     }
 
-    if (item->type() == Core::DbcItemType::Ecu && role == DbcRoles::Role_EcuTotalSignals) {
+    if (item->type() == Core::DbcItemType::Ecu && role == DbcRoles::Role_EcuTotalSignals)
+    {
         return item->data(Constants::Columns::EcuTotalSignals);
     }
 
@@ -252,7 +253,7 @@ auto DbcModel::createEcuItems(const Core::DbcConfig& data) const -> QHash<QStrin
         QList<QVariant> ecuData;
         QString ecuName = QString::fromStdString(ecu);
         ecuData.append(ecuName);
-        ecuData.append(0);         // total ecu signal count
+        ecuData.append(0);  // total ecu signal count
         auto ecuItem = std::make_unique<DbcItem>(ecuData, Core::DbcItemType::Ecu, m_rootItem.get());
         auto* ecuPtr = ecuItem.get();
         ecuMap.insert(ecuName, ecuPtr);
@@ -300,9 +301,10 @@ auto DbcModel::createMessageItems(const Core::DbcConfig& data,
             std::make_unique<DbcItem>(messageData, Core::DbcItemType::Message, parent);
         const int signalCount = static_cast<int>(msg.signalDescriptions.size());
         createSignalItems(msg.signalDescriptions, messageItem.get());
-        if (parent->type() == Core::DbcItemType::Ecu) {
+        if (parent->type() == Core::DbcItemType::Ecu)
+        {
             int current = parent->data(Constants::Columns::EcuTotalSignals).toInt();
-            parent->setData(Constants::Columns::EcuTotalSignals,current + signalCount);
+            parent->setData(Constants::Columns::EcuTotalSignals, current + signalCount);
         }
         parent->appendChild(std::move(messageItem));
     }

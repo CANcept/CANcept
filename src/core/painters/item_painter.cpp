@@ -113,7 +113,7 @@ auto ItemPainter::paintBadge(QPainter* painter, const QRect& rect, const QString
     // --- Badge background ---
     painter->setBrush(colors.surfaceSecondary);
     painter->setPen(Qt::NoPen);
-    painter->drawRoundedRect(badgeRect, spacing.radiusXs/2, spacing.radiusXs/2);
+    painter->drawRoundedRect(badgeRect, spacing.radiusXs / 2, spacing.radiusXs / 2);
 
     // --- Draw content ---
     // 1. Icon

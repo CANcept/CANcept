@@ -21,7 +21,7 @@ namespace DbcFile {
 class EcusPage : public QWidget
 {
     Q_OBJECT
-public:
+   public:
     /**
      * @brief Construct the ECU page.
      * @param parent Optional parent widget
@@ -34,12 +34,12 @@ public:
      */
     void setModel(QAbstractItemModel* model) const;
 
-    signals:
-        /**
-         * @brief Emitted when the search text changes in the filter bar.
-         * @param text Current search string
-         */
-        void filterTextChanged(const QString& text);
+   signals:
+    /**
+     * @brief Emitted when the search text changes in the filter bar.
+     * @param text Current search string
+     */
+    void filterTextChanged(const QString& text);
 
     /**
      * @brief Emitted when the filter category changes.
@@ -47,14 +47,14 @@ public:
      */
     void filterIndexChanged(int index);
 
-private:
+   private:
     /**
      * @brief Setup UI components and layout.
      */
     void setupUi();
 
-private:
-    Core::SearchableFilterTree* m_treeWidget; ///< The searchable/filterable tree
+   private:
+    Core::SearchableFilterTree* m_treeWidget;  ///< The searchable/filterable tree
 };
 
-} // namespace DbcFile
+}  // namespace DbcFile

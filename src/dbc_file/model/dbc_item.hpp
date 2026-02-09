@@ -44,7 +44,6 @@ class DbcItem
      */
     auto setParent(DbcItem* parent) -> void;
 
-
     /**
      * @brief Setter for data of the item at given column
      * @param column Column to insert data at

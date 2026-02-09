@@ -25,7 +25,7 @@ namespace DbcFile {
 class EcuTreeProxy : public QSortFilterProxyModel
 {
     Q_OBJECT
-public:
+   public:
     /**
      * @brief Construct a new EcuTreeProxy.
      * @param parent Optional parent QObject
@@ -44,7 +44,7 @@ public:
      */
     void setFilterCategory(int index);
 
-protected:
+   protected:
     /**
      * @brief Overrides default child handling for Messages.
      * Messages are considered leaf nodes.
@@ -59,11 +59,12 @@ protected:
      * @param sourceParent Parent index in the source model
      * @return true if row matches current filter
      */
-    [[nodiscard]] auto filterAcceptsRow(int sourceRow, const QModelIndex& sourceParent) const -> bool override;
+    [[nodiscard]] auto filterAcceptsRow(int sourceRow,
+                                        const QModelIndex& sourceParent) const -> bool override;
 
-private:
-    QString m_filterText;  ///< Current search text
-    int m_filterCategory{}; ///< Current category filter (0=all, 1=active, 2=passive)
+   private:
+    QString m_filterText;    ///< Current search text
+    int m_filterCategory{};  ///< Current category filter (0=all, 1=active, 2=passive)
 };
 
-} // namespace DbcFile
+}  // namespace DbcFile

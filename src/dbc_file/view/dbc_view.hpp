@@ -10,8 +10,8 @@
 #include "pages/messages_page.hpp"
 #include "pages/overview_page.hpp"
 #include "pages/signals_page.hpp"
-#include "proxies/flat_list_proxy.hpp"
 #include "proxies/ecu_tree_proxy.hpp"
+#include "proxies/flat_list_proxy.hpp"
 
 namespace DbcFile {
 class DbcModel;

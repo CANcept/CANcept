@@ -9,9 +9,9 @@
 #include "core/widgets/sidebar.hpp"
 #include "dbc_file/constants.hpp"
 #include "dbc_file/delegate/ecu_tree_delegate.hpp"
+#include "dbc_file/view/proxies/ecu_tree_proxy.hpp"
 #include "dbc_file/view/proxies/flat_list_proxy.hpp"
 #include "dbc_file/view/proxies/single_message_proxy.hpp"
-#include "dbc_file/view/proxies/ecu_tree_proxy.hpp"
 
 namespace DbcFile {
 DbcView::DbcView(QWidget* parent) : QWidget(parent)

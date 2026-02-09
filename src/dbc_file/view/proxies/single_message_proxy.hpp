@@ -34,7 +34,7 @@ class SingleMessageProxy : public QSortFilterProxyModel
      */
     void setFilterParentIndex(const QModelIndex& parentIndex);
 
-protected:
+   protected:
     /**
      * @brief Decides if a row is included.
      * @caller Qt Internal (QSortFilterProxyModel).
@@ -44,8 +44,8 @@ protected:
     [[nodiscard]] auto filterAcceptsRow(int sourceRow,
                                         const QModelIndex& sourceParent) const -> bool override;
 
-private:
+   private:
     QModelIndex m_parentIndex;
 };
 
-}
+}  // namespace DbcFile

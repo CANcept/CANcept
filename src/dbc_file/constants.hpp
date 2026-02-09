@@ -155,14 +155,15 @@ static const QString OverviewDescription = QStringLiteral("All defined %1 in the
 // --- ECUs Page Specifics ---
 namespace EcusPage {
 const QString PageHeaderTitle = "ECU / Control Unit View";
-const QString PageHeaderSubtitle = "Detailed overview of all defined control units and their messages";
+const QString PageHeaderSubtitle =
+    "Detailed overview of all defined control units and their messages";
 const QString SearchbarText = "Search ECU by name...";
 const QString FilterAllText = "All ECUs";
 const QString FilterActive = "Only Sending ECUs";
 const QString FilterPassive = "Only receiving ECUs";
 constexpr int NoFilterIndex = 0;
 constexpr int FilterActiveIndex = 1;
-}
+}  // namespace EcusPage
 
 // --- Messages Page Specifics ---
 namespace MessagesPage {

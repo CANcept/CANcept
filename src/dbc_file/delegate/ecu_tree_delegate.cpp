@@ -1,10 +1,20 @@
 #include "ecu_tree_delegate.hpp"
 
-#include <QTreeView>
+#include <QAbstractProxyModel>
+#include <QPainter>
+#include <QtMath>  // for ceil/floor
+
+#include "core/constants.hpp"
+#include "core/macro/theme.hpp"
+#include "core/painters/item_painter.hpp"
+#include "dbc_file/constants.hpp"
+#include "dbc_file/model/dbc_model.hpp"
 
 namespace DbcFile {
 EcuTreeDelegate::EcuTreeDelegate(QTreeView* view, QObject* parent)
-    : QStyledItemDelegate(parent), m_treeView(view) {}
+    : QStyledItemDelegate(parent), m_treeView(view)
+{
+}
 
 // =============================================================================
 // 1. LAYOUT ENGINE
@@ -39,12 +49,11 @@ auto EcuTreeDelegate::calculateLayout(const QRect& fullRect, int signalCount) ->
     layout.itemHeight = spacing.HeightMd;
 
     int contentHeight = (rows > 0) ? rows * layout.itemHeight + (rows - 1) * gapV : 0;
-    layout.contentRect = QRect(layout.cardRect.left() + spacing.spacingMd,
-                               contentTop,
-                               availableWidth,
-                               contentHeight);
+    layout.contentRect = QRect(layout.cardRect.left() + spacing.spacingMd, contentTop,
+                               availableWidth, contentHeight);
 
-    layout.totalHeight = (contentTop - layout.cardRect.top()) + contentHeight + spacing.spacingMd + 2 * outerMargin;
+    layout.totalHeight =
+        (contentTop - layout.cardRect.top()) + contentHeight + spacing.spacingMd + 2 * outerMargin;
 
     return layout;
 }
@@ -72,18 +81,19 @@ void EcuTreeDelegate::paint(QPainter* painter, const QStyleOptionViewItem& optio
 }
 
 auto EcuTreeDelegate::sizeHint(const QStyleOptionViewItem& option,
-                                const QModelIndex& index) const -> QSize
+                               const QModelIndex& index) const -> QSize
 {
     if (index.column() > 0) return {0, 0};
 
     const auto type = static_cast<Core::DbcItemType>(index.data(Role_ItemType).toInt());
 
-    if (type == Core::DbcItemType::Ecu)
-        return {option.rect.width(), THEME.spacing().HeightLg / 2};
+    if (type == Core::DbcItemType::Ecu) return {option.rect.width(), THEME.spacing().HeightLg / 2};
 
-    if (type == Core::DbcItemType::Message) {
+    if (type == Core::DbcItemType::Message)
+    {
         int sigCount = index.data(Role_ChildCount).toInt();
-        int width = m_treeView && m_treeView->viewport() ? m_treeView->viewport()->width() : option.rect.width();
+        int width = m_treeView && m_treeView->viewport() ? m_treeView->viewport()->width()
+                                                         : option.rect.width();
         auto layout = calculateLayout(QRect(0, 0, width, 0), sigCount);
         return {width, layout.totalHeight};
     }
@@ -106,7 +116,8 @@ void EcuTreeDelegate::drawMessage(QPainter* painter, const QStyleOptionViewItem&
     // Resolve source model behind proxy
     const QAbstractItemModel* model = index.model();
     QModelIndex sourceParent = index;
-    while (auto* proxy = qobject_cast<const QAbstractProxyModel*>(model)) {
+    while (auto* proxy = qobject_cast<const QAbstractProxyModel*>(model))
+    {
         sourceParent = proxy->mapToSource(sourceParent);
         model = proxy->sourceModel();
     }
@@ -122,7 +133,8 @@ void EcuTreeDelegate::drawMessage(QPainter* painter, const QStyleOptionViewItem&
     drawMessageHeader(painter, layout.headerRect, index);
 
     // Draw signals
-    for (int i = 0; i < signalCount; ++i) {
+    for (int i = 0; i < signalCount; ++i)
+    {
         QModelIndex sigIdx = model->index(i, 0, sourceParent);
         int col = i % layout.columns;
         int row = i / layout.columns;
@@ -139,7 +151,7 @@ void EcuTreeDelegate::drawMessageHeader(QPainter* painter, const QRect& headerRe
                                         const QModelIndex& index)
 {
     const auto& spacing = THEME.spacing();
-    const auto& colors  = THEME.colors();
+    const auto& colors = THEME.colors();
 
     QString name = index.data(Qt::DisplayRole).toString();
     uint msgId = index.data(Role_Id).toUInt();
@@ -188,8 +200,7 @@ void EcuTreeDelegate::drawSignalItem(QPainter* painter, const QRect& rect,
     Core::ItemPainter::paintTitle(painter, rect, title);
 
     int badgeWidth = 0;
-    if (!unit.isEmpty())
-        badgeWidth = Core::ItemPainter::paintBadge(painter, rect, unit, QIcon());
+    if (!unit.isEmpty()) badgeWidth = Core::ItemPainter::paintBadge(painter, rect, unit, QIcon());
 
     if (!rangeText.isEmpty())
         Core::ItemPainter::paintDetailText(painter, rect, rangeText, badgeWidth);
@@ -199,10 +210,10 @@ void EcuTreeDelegate::drawEcu(QPainter* painter, const QStyleOptionViewItem& opt
                               const QModelIndex& index) const
 {
     const auto& spacing = THEME.spacing();
-    const auto& colors  = THEME.colors();
+    const auto& colors = THEME.colors();
 
-    QRect ecuRect = getViewportRowRect(option).adjusted(spacing.spacingXl,
-                                                        spacing.spacingXs, 0, -spacing.spacingXs);
+    QRect ecuRect = getViewportRowRect(option).adjusted(spacing.spacingXl, spacing.spacingXs, 0,
+                                                        -spacing.spacingXs);
 
     painter->setBrush(colors.surfaceMain);
     painter->setPen(QPen(colors.borderSubtle, 1));
@@ -217,17 +228,15 @@ void EcuTreeDelegate::drawEcu(QPainter* painter, const QStyleOptionViewItem& opt
                                                         QIcon(Constants::Sidebar::IconSignals));
     badgeArea.setRight(badgeArea.right() - widthFirstBadge - spacing.spacingSm);
 
-    Core::ItemPainter::paintBadge(painter, badgeArea,
-                                  index.data(Role_ChildCount).toString(),
+    Core::ItemPainter::paintBadge(painter, badgeArea, index.data(Role_ChildCount).toString(),
                                   QIcon(Constants::Sidebar::IconMessages));
 }
 
-void EcuTreeDelegate::drawBadge(QPainter* painter, const QRect& anchorRect,
-                                const QString& text, const QColor& bg, const QColor& fg,
-                                bool border)
+void EcuTreeDelegate::drawBadge(QPainter* painter, const QRect& anchorRect, const QString& text,
+                                const QColor& bg, const QColor& fg, bool border)
 {
     const auto& spacing = THEME.spacing();
-    const auto& colors  = THEME.colors();
+    const auto& colors = THEME.colors();
 
     QFont font = painter->font();
     font.setPointSize(spacing.fontSizeXs);
@@ -255,11 +264,12 @@ void EcuTreeDelegate::drawBadge(QPainter* painter, const QRect& anchorRect,
 auto EcuTreeDelegate::getViewportRowRect(const QStyleOptionViewItem& option) const -> QRect
 {
     QRect rect = option.rect;
-    if (m_treeView && m_treeView->viewport()) {
+    if (m_treeView && m_treeView->viewport())
+    {
         rect.setLeft(0);
         rect.setWidth(m_treeView->viewport()->width());
     }
     return rect;
 }
 
-} // namespace DbcFile
+}  // namespace DbcFile

@@ -102,4 +102,4 @@ class FlatListProxy final : public QAbstractProxyModel
     /** @brief The flattened list of persistent pointers to the source items. */
     QList<QPersistentModelIndex> m_mapping;
 };
-}
+}  // namespace DbcFile

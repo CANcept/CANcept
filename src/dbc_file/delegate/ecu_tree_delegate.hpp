@@ -1,9 +1,9 @@
 #pragma once
 
+#include <QPainter>
+#include <QRect>
 #include <QStyledItemDelegate>
 #include <QTreeView>
-#include <QRect>
-#include <QPainter>
 
 namespace Core {
 enum class DbcItemType;
@@ -42,7 +42,7 @@ struct MessageLayout {
 class EcuTreeDelegate : public QStyledItemDelegate
 {
     Q_OBJECT
-public:
+   public:
     /**
      * @brief Construct a new delegate.
      * @param view The QTreeView this delegate belongs to
@@ -57,10 +57,10 @@ public:
                const QModelIndex& index) const override;
 
     [[nodiscard]] auto sizeHint(const QStyleOptionViewItem& option,
-                   const QModelIndex& index) const -> QSize override;
+                                const QModelIndex& index) const -> QSize override;
 
-private:
-    QTreeView* m_treeView = nullptr; ///< Associated tree view
+   private:
+    QTreeView* m_treeView = nullptr;  ///< Associated tree view
 
     // =============================================================
     // Layout helpers
@@ -85,17 +85,15 @@ private:
                      const QModelIndex& index) const;
 
     static void drawMessageHeader(QPainter* painter, const QRect& headerRect,
-                           const QModelIndex& index);
+                                  const QModelIndex& index);
 
-    static void drawSignalItem(QPainter* painter, const QRect& rect,
-                        const QModelIndex& sigIdx);
+    static void drawSignalItem(QPainter* painter, const QRect& rect, const QModelIndex& sigIdx);
 
     void drawEcu(QPainter* painter, const QStyleOptionViewItem& option,
                  const QModelIndex& index) const;
 
-    static void drawBadge(QPainter* painter, const QRect& anchorRect,
-                   const QString& text, const QColor& bg,
-                   const QColor& fg, bool border = true);
+    static void drawBadge(QPainter* painter, const QRect& anchorRect, const QString& text,
+                          const QColor& bg, const QColor& fg, bool border = true);
 };
 
-} // namespace DbcFile
+}  // namespace DbcFile

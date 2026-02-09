@@ -155,6 +155,6 @@ class MessagesPage : public QWidget
 
     QSplitter* m_splitter;
     Core::SearchableFilterTable* m_messagesTable;  // Master (Top)
-    MessageDetailView* m_detailView;         // Detail (Bottom)
+    MessageDetailView* m_detailView;               // Detail (Bottom)
 };
 }  // namespace DbcFile

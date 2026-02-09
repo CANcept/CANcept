@@ -4,17 +4,20 @@
 //
 
 #include "ecu_tree_proxy.hpp"
+
+#include <QDebug>
+
 #include "core/enum/dbc_itemtype.hpp"
 #include "dbc_file/constants.hpp"
 #include "dbc_file/model/dbc_roles.hpp"
-#include <QDebug>
 
-namespace Core { enum class DbcItemType; }
+namespace Core {
+enum class DbcItemType;
+}
 
 namespace DbcFile {
 
-EcuTreeProxy::EcuTreeProxy(QObject* parent)
-    : QSortFilterProxyModel(parent)
+EcuTreeProxy::EcuTreeProxy(QObject* parent) : QSortFilterProxyModel(parent)
 {
     setDynamicSortFilter(true);
 }
@@ -33,9 +36,11 @@ void EcuTreeProxy::setFilterCategory(int index)
 
 auto EcuTreeProxy::hasChildren(const QModelIndex& parent) const -> bool
 {
-    if (parent.isValid()) {
+    if (parent.isValid())
+    {
         auto type = static_cast<Core::DbcItemType>(parent.data(Role_ItemType).toInt());
-        if (type == Core::DbcItemType::Message) {
+        if (type == Core::DbcItemType::Message)
+        {
             // Messages are leaf nodes
             return false;
         }
@@ -55,17 +60,17 @@ auto EcuTreeProxy::filterAcceptsRow(int sourceRow, const QModelIndex& sourcePare
         return false;
 
     // Apply category filter
-    if (m_filterCategory == Constants::EcusPage::FilterActiveIndex) {
+    if (m_filterCategory == Constants::EcusPage::FilterActiveIndex)
+    {
         if (type == Core::DbcItemType::Ecu && index.data(Role_ChildCount).toInt() == 0)
             return false;
     }
 
     // Apply text search filter (contains, case insensitive)
     const QString name = sourceModel()->data(index, Qt::DisplayRole).toString();
-    if (name.contains(m_filterText, Qt::CaseInsensitive))
-        return true;
+    if (name.contains(m_filterText, Qt::CaseInsensitive)) return true;
 
     return false;
 }
 
-} // namespace DbcFile
+}  // namespace DbcFile
