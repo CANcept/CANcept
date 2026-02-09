@@ -42,4 +42,3 @@ class CanRawHandler final : public ICanParser
     Core::Connection rawSendEventConnection;
 };
 }  // namespace CanHandler
-

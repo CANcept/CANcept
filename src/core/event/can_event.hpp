@@ -42,4 +42,3 @@ struct SendCanMessageDbcEvent final : public Event {
     explicit SendCanMessageDbcEvent(const DbcCanMessage& canMessage) : canMessage(canMessage){};
 };
 };  // namespace Core
-
