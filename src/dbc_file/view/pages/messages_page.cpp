@@ -18,7 +18,7 @@ void MessagesPage::onSelectionChanged(const QModelIndex& current, const QModelIn
 void MessagesPage::setupUi()
 {
     m_splitter = new QSplitter(this);
-    m_messagesTable = new SearchableFilterTable(this);
+    m_messagesTable = new Core::SearchableFilterTable(this);
     m_detailView = new MessageDetailView(this);
 }
 

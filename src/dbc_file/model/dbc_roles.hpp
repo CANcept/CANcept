@@ -60,6 +60,8 @@ enum DbcRoles {
 
     /** @brief The total number of signals in this message or messages of this ECU.*/
     Role_ChildCount = Qt::UserRole + 13,
+    /** @brief Total number of signals sent by this ECU (sum over all its messages). @return int */
+    Role_EcuTotalSignals = Qt::UserRole + 14,
 
     // --- Signal Specific Attributes ---
 

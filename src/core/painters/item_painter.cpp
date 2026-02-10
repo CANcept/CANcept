@@ -97,9 +97,9 @@ auto ItemPainter::paintBadge(QPainter* painter, const QRect& rect, const QString
     painter->setRenderHint(QPainter::Antialiasing);
 
     // --- Calculate badge size ---
-    constexpr int badgeHeight = 18;
+    const int badgeHeight = spacing.HeightXs;
 
-    constexpr int badgePadding = 5;
+    const int badgePadding = spacing.spacingXs;
     const int iconWidth = icon.isNull() ? 0 : spacing.IconXs;
     const int maxTextWidth = rect.width() / 2;
     const auto elidedText = painter->fontMetrics().elidedText(text, Qt::ElideRight, maxTextWidth);
@@ -113,7 +113,7 @@ auto ItemPainter::paintBadge(QPainter* painter, const QRect& rect, const QString
     // --- Badge background ---
     painter->setBrush(colors.surfaceSecondary);
     painter->setPen(Qt::NoPen);
-    painter->drawRoundedRect(badgeRect, spacing.radiusXs, spacing.radiusXs);
+    painter->drawRoundedRect(badgeRect, spacing.radiusXs / 2, spacing.radiusXs / 2);
 
     // --- Draw content ---
     // 1. Icon

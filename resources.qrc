@@ -12,6 +12,9 @@
         <file>assets/icon/dbc_file/load_new.svg</file>
         <file>assets/icon/dbc_file/dbc_file_tab.svg</file>
         <file>assets/icon/core/arrow_down.svg</file>
+        <file>assets/icon/core/arrow_left.svg</file>
+        <file>assets/icon/core/arrow_right.svg</file>
+        <file>assets/icon/core/search.svg</file>
         <file>assets/icon/sending/sending.svg</file>
         <file>assets/icon/sending/raw_based_send_icon.svg</file>
         <file>assets/icon/sending/dbc_based_send_icon.svg</file>
