@@ -1,6 +1,3 @@
-//
-// Created by Adrian Rupp on 30.12.25.
-//
 #pragma once
 
 #include <QAbstractProxyModel>

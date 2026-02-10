@@ -1,6 +1,3 @@
-//
-// Created by Florian on 14.01.2026.
-//
 #include "can_dbc_handler.hpp"
 
 #include "core/macro/console_logging.hpp"

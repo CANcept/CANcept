@@ -1,6 +1,3 @@
-//
-// Created by Adrian Rupp on 04.02.26.
-//
 #include "signal_table_delegate.hpp"
 namespace DbcFile {
 SignalTableDelegate::SignalTableDelegate(QObject* parent) {}

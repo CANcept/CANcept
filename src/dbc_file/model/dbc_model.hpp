@@ -1,6 +1,3 @@
-//
-// Created by Adrian Rupp on 25.12.25.
-//
 #pragma once
 
 #include <QAbstractItemModel>

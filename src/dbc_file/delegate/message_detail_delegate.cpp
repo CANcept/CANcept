@@ -1,6 +1,3 @@
-//
-// Created by Adrian Rupp on 04.02.26.
-//
 #include "message_detail_delegate.hpp"
 namespace DbcFile {
 MessagesDetailDelegate::MessagesDetailDelegate(QObject* parent) {}

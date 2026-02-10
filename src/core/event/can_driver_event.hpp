@@ -1,9 +1,4 @@
-//
-// Created by flori on 02.01.2026.
-//
-
-#ifndef CANBUSMANAGER_CAN_DRIVER_EVENT_HPP
-#define CANBUSMANAGER_CAN_DRIVER_EVENT_HPP
+#pragma once
 #include <string>
 #include <utility>
 
@@ -29,4 +24,3 @@ struct GetAvailableCanDriversEvent final : public SelectProviderOptionEvent {
         : SelectProviderOptionEvent(options){};
 };
 }  // namespace Core
-#endif  // CANBUSMANAGER_CAN_DRIVER_EVENT_HPP
