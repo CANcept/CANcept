@@ -1,6 +1,3 @@
-//
-// Created by Adrian Rupp on 13.01.26.
-//
 #include "dbc_item.hpp"
 
 namespace DbcFile {

@@ -1,9 +1,4 @@
-//
-// Created by flori on 29.12.2025.
-//
-
-#ifndef CANBUSMANAGER_DBC_EVENT_HPP
-#define CANBUSMANAGER_DBC_EVENT_HPP
+#pragma once
 
 #include "core/dto/dbc_dto.hpp"
 #include "event.hpp"
@@ -41,4 +36,3 @@ struct ParseDBCRequestEvent final : Event {
     explicit ParseDBCRequestEvent(std::string filePath) : filePath(std::move(filePath)){};
 };
 }  // namespace Core
-#endif  // CANBUSMANAGER_DBC_EVENT_HPP

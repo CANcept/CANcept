@@ -1,9 +1,4 @@
-//
-// Created by flori on 05.01.2026.
-//
-
-#ifndef CANBUSMANAGER_FILE_PARSER_HPP
-#define CANBUSMANAGER_FILE_PARSER_HPP
+#pragma once
 #include <string>
 namespace CanHandler {
 class FileParser
@@ -12,4 +7,3 @@ class FileParser
     static auto parseFile(const std::string &filePath) -> std::string *;
 };
 }  // namespace CanHandler
-#endif  // CANBUSMANAGER_FILE_PARSER_HPP

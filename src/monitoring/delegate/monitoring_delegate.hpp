@@ -1,5 +1,4 @@
-#ifndef CANBUSMANAGER_MONITORING_DELEGATE_HPP
-#define CANBUSMANAGER_MONITORING_DELEGATE_HPP
+#pragma once
 
 #include <QStyledItemDelegate>
 
@@ -70,5 +69,3 @@ class MonitoringDelegate : QStyledItemDelegate
     QSize sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const override;
 };
 }  // namespace Monitoring
-
-#endif  // CANBUSMANAGER_MONITORING_DELEGATE_HPP

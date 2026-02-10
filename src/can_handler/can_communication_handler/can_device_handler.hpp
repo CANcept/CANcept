@@ -1,9 +1,4 @@
-//
-// Created by flori on 03.01.2026.
-//
-
-#ifndef CANBUSMANAGER_CAN_DEVICE_HANDLER_H
-#define CANBUSMANAGER_CAN_DEVICE_HANDLER_H
+#pragma once
 #include <ifaddrs.h>
 
 #include <CanDriver.hpp>
@@ -77,4 +72,3 @@ class CanDeviceHandler
     Core::Connection getAvailableCanDevicesEventConnection;
 };
 }  // namespace CanHandler
-#endif  // CANBUSMANAGER_CAN_DEVICE_HANDLER_H

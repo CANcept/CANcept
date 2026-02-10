@@ -1,6 +1,3 @@
-//
-// Created by Adrian Rupp on 20.01.26.
-//
 #include "proxies.hpp"
 
 #include <qopenglcontext_platform.h>
