@@ -1,63 +1,99 @@
 #pragma once
+
+#include <QPainter>
+#include <QRect>
 #include <QStyledItemDelegate>
 #include <QTreeView>
-namespace DbcFile {
+
+namespace Core {
+enum class DbcItemType;
+}
+
 /**
- * @class EcuTreeDelegate
- * @brief Renders the ECU Hierarchy content as cards.
+ * @brief Namespace for DBC-related UI components
+ */
+namespace DbcFile {
+
+/**
+ * @brief Layout information for a message card.
  *
- * @details
- * Used in the QTreeView on the ECU Page.
- * - **Expansion:** Relies on the standard QTreeView expansion (arrow on the left).
- * - **Visualization:** Draws custom "Cards" next to the standard arrow/indentation.
- * - **Structure:** Differentiates visuals based on `Role_ItemType` (ECU, Message, Signal).
+ * Contains the rectangles and sizing info for the card, header, content,
+ * and signal grid, as well as total height for proper sizeHint calculation.
+ */
+struct MessageLayout {
+    QRect cardRect;       ///< Full card background rect
+    QRect headerRect;     ///< Header area (name + badge)
+    QRect contentRect;    ///< Area for signals
+    int itemWidth = 0;    ///< Width of a single signal item
+    int itemHeight = 0;   ///< Height of a single signal item
+    int columns = 1;      ///< Number of columns in signal grid
+    int totalHeight = 0;  ///< Total height including padding and margins
+};
+
+/**
+ * @brief Delegate for rendering ECUs and Messages with signals in a QTreeView.
+ *
+ * Handles painting of:
+ * - ECU items (with badges)
+ * - Message items (card style, header, badges, signal grid)
+ *
+ * Also calculates layout and provides sizeHint for proper row height.
  */
 class EcuTreeDelegate : public QStyledItemDelegate
 {
     Q_OBJECT
-
    public:
     /**
-     * @brief Constructs the delegate.
-     * @param view Reference to the TreeView (useful for checking indentation logic if needed).
+     * @brief Construct a new delegate.
+     * @param view The QTreeView this delegate belongs to
+     * @param parent Optional parent object
      */
     explicit EcuTreeDelegate(QTreeView* view, QObject* parent = nullptr);
-    ~EcuTreeDelegate() override = default;
 
-    /**
-     * @brief Renders the item content based on its DbcItemType.
-     *
-     * @caller Qt View (QTreeView) during paint events.
-     *
-     * @details
-     * - **ECU:** Draws a large card frame, bold name, and Message Count Badge.
-     * - **Message:** Draws a header-like row with an ID Badge.
-     * - **Signal:** Draws a detail row with value range [min, max] and Unit Badge.
-     */
+    // -------------------------------------------------------------
+    // Standard QStyledItemDelegate overrides
+    // -------------------------------------------------------------
     void paint(QPainter* painter, const QStyleOptionViewItem& option,
                const QModelIndex& index) const override;
 
-    /**
-     * @brief Calculates height based on Item Type.
-     *
-     * @caller Qt View layout system.
-     * @return Larger height for ECUs (Header), smaller height for Signals (Detail).
-     */
-    QSize sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const override;
+    [[nodiscard]] auto sizeHint(const QStyleOptionViewItem& option,
+                                const QModelIndex& index) const -> QSize override;
 
    private:
-    // --- Painting Helpers ---
-    void paintEcuCard(QPainter* painter, const QStyleOptionViewItem& option,
-                      const QModelIndex& index);
-    void paintMessageRow(QPainter* painter, const QStyleOptionViewItem& option,
-                         const QModelIndex& index) const;
-    void paintSignalRow(QPainter* painter, const QStyleOptionViewItem& option,
-                        const QModelIndex& index) const;
+    QTreeView* m_treeView = nullptr;  ///< Associated tree view
 
-    /** @brief Helper to draw a rounded gray badge with text. */
-    void drawBadge(QPainter* painter, const QRect& rect, const QString& text, const QColor& bg,
-                   const QColor& fg) const;
+    // =============================================================
+    // Layout helpers
+    // =============================================================
+    /**
+     * @brief Calculates the layout for a message card.
+     * @param fullRect Full row rect from QTreeView
+     * @param signalCount Number of signals in this message
+     * @return MessageLayout Calculated layout including header, content, and total height
+     */
+    static auto calculateLayout(const QRect& fullRect, int signalCount) -> MessageLayout;
 
-    QTreeView* m_treeView;
+    /**
+     * @brief Gets the full row rect aligned to the tree viewport width
+     */
+    [[nodiscard]] auto getViewportRowRect(const QStyleOptionViewItem& option) const -> QRect;
+
+    // =============================================================
+    // Drawing helpers
+    // =============================================================
+    void drawMessage(QPainter* painter, const QStyleOptionViewItem& option,
+                     const QModelIndex& index) const;
+
+    static void drawMessageHeader(QPainter* painter, const QRect& headerRect,
+                                  const QModelIndex& index);
+
+    static void drawSignalItem(QPainter* painter, const QRect& rect, const QModelIndex& sigIdx);
+
+    void drawEcu(QPainter* painter, const QStyleOptionViewItem& option,
+                 const QModelIndex& index) const;
+
+    static void drawBadge(QPainter* painter, const QRect& anchorRect, const QString& text,
+                          const QColor& bg, const QColor& fg, bool border = true);
 };
+
 }  // namespace DbcFile

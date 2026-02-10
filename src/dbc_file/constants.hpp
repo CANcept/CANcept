@@ -16,6 +16,10 @@ constexpr int OvMsgCount = 3;
 constexpr int OvSigCount = 4;
 constexpr int OvOrphans = 5;
 
+// Ecus
+constexpr int EcuName = 0;
+constexpr int EcuTotalSignals = 1;
+
 // Messages
 constexpr int MsgName = 0;
 constexpr int MsgId = 1;
@@ -150,7 +154,15 @@ static const QString OverviewDescription = QStringLiteral("All defined %1 in the
 
 // --- ECUs Page Specifics ---
 namespace EcusPage {
-}
+const QString PageHeaderTitle = "ECU / Control Unit View";
+const QString PageHeaderSubtitle =
+    "Detailed overview of all defined control units and their messages";
+const QString SearchbarText = "Search ECU by name...";
+const QString FilterAllText = "All ECUs";
+const QString FilterActive = "Only Sending ECUs";
+const QString FilterPassive = "Only receiving ECUs";
+constexpr int FilterActiveIndex = 1;
+}  // namespace EcusPage
 
 // --- Messages Page Specifics ---
 namespace MessagesPage {

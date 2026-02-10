@@ -10,7 +10,8 @@
 #include "pages/messages_page.hpp"
 #include "pages/overview_page.hpp"
 #include "pages/signals_page.hpp"
-#include "proxies.hpp"
+#include "proxies/ecu_tree_proxy.hpp"
+#include "proxies/flat_list_proxy.hpp"
 
 namespace DbcFile {
 class DbcModel;
@@ -107,13 +108,13 @@ class DbcView : public QWidget
      * @brief Updates the tree proxy search filter.
      * @caller EcusPage (search bar).
      */
-    void onEcuFilterTextChanged(const QString& text);
+    void onEcuFilterTextChanged(const QString& text) const;
 
     /**
      * @brief Updates the tree proxy category filter.
      * @caller EcusPage (combo box).
      */
-    void onEcuFilterTypeChanged(int index);
+    void onEcuFilterIndexChanged(int index) const;
 
     // --- MESSAGES PAGE INTERACTION ---
 
@@ -127,7 +128,7 @@ class DbcView : public QWidget
      * @brief Updates the messages flat list proxy category filter.
      * @caller MessagesPage (master combo box).
      */
-    void onMessageFilterTypeChanged(int index);
+    void onMessageFilterIndexChanged(int index);
 
     /**
      * @brief Master-Detail Logic for Messages Page.
@@ -154,7 +155,7 @@ class DbcView : public QWidget
      * @brief Updates the all-signals proxy category filter (e.g. Unit).
      * @caller SignalsPage (combo box).
      */
-    void onSignalFilterTypeChanged(int index);
+    void onSignalFilterIndexChanged(int index);
     /**
      * @brief Adds a page to the content stack and sidebar.
      *
@@ -202,11 +203,11 @@ class DbcView : public QWidget
 
     // --- Data Proxies (Owned by the View) ---
 
-    // /**
-    //  * @brief Hierarchy filter for the ECU Page.
-    //  * Maintains tree structure (Root->ECU->Message->Signal).
-    //  */
-    // std::unique_ptr<TreeFilterProxy> m_ecuTreeProxy;
+    /**
+     * @brief Hierarchy filter for the ECU Page.
+     * Maintains tree structure (Root->ECU->Message->Signal).
+     */
+    std::unique_ptr<EcuTreeProxy> m_ecuTreeProxy;
     /**
      * @brief Flat list of ECUs for the Overview Page (Tiles).
      * Flattens the tree to just show ECU nodes.
