@@ -4,7 +4,11 @@
 #include <QSplitter>
 #include <QWidget>
 
-#include "../../../core/widgets/common/searchable_filter_widgets.hpp"
+#include "core/widgets/common/searchable_filter_widgets.hpp"
+
+class QComboBox;
+namespace Core {
+}
 namespace DbcFile {
 // ==============================================================================
 // Message Detail View (Bottom Pane)

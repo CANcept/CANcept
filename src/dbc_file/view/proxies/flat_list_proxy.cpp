@@ -1,6 +1,9 @@
-#include "proxies.hpp"
+#include "flat_list_proxy.hpp"
 
 #include <qopenglcontext_platform.h>
+
+#include "core/enum/dbc_itemtype.hpp"
+#include "dbc_file/model/dbc_roles.hpp"
 
 namespace DbcFile {
 FlatListProxy::FlatListProxy(const Core::DbcItemType targetType, QObject* parent)

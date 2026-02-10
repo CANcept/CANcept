@@ -1,6 +1,3 @@
-//
-// Created by Adrian Rupp on 09.02.26.
-//
 #include "single_message_proxy.hpp"
 namespace DbcFile {
 SingleMessageProxy::SingleMessageProxy(QObject* parent) : QSortFilterProxyModel(parent) {}

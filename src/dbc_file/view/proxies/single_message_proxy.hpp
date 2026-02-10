@@ -1,6 +1,3 @@
-//
-// Created by Adrian Rupp on 09.02.26.
-//
 #pragma once
 #include <QSortFilterProxyModel>
 namespace DbcFile {
@@ -9,11 +6,11 @@ namespace DbcFile {
  * @brief A proxy that isolates the children of a specific parent node.
  *
  * @details
- * **USE CASE:**
+ * USE CASE:
  * Used for the "Message Detail View" (Bottom Pane of Messages Tab).
  * It displays ALL signals belonging to the currently selected Message.
  *
- * **LOGIC:**
+ * LOGIC:
  * It filters out everything except the direct children (Signals) of the
  * configured parent index.
  */

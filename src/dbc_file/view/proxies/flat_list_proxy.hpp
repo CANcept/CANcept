@@ -1,11 +1,9 @@
 #pragma once
 #include <QAbstractProxyModel>
+
+#include "core/enum/dbc_itemtype.hpp"
 namespace Core {
-enum class DbcItemType;
 }
-//
-// Created by Adrian Rupp on 09.02.26.
-//
 namespace DbcFile {
 /**
  * @class FlatListProxy

@@ -1,12 +1,4 @@
-//
-// Created by Adrian Rupp on 09.02.26.
-// Filterable proxy model for ECU tree, integer category
-//
-
 #include "ecu_tree_proxy.hpp"
-
-#include <QDebug>
-
 #include "core/enum/dbc_itemtype.hpp"
 #include "dbc_file/constants.hpp"
 #include "dbc_file/model/dbc_roles.hpp"

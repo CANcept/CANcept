@@ -1,7 +1,3 @@
-//
-// Created by Adrian Rupp on 20.01.26.
-//
-
 #pragma once
 #include <QComboBox>
 #include <QLineEdit>

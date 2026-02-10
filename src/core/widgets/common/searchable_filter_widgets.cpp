@@ -1,7 +1,3 @@
-//
-// Created by Adrian Rupp on 20.01.26.
-//
-
 #include "searchable_filter_widgets.hpp"
 
 #include <QVBoxLayout>

@@ -1,8 +1,3 @@
-//
-// Created by Adrian Rupp on 09.02.26.
-// Filterable proxy model for ECU tree, using integer category
-//
-
 #pragma once
 
 #include <QSortFilterProxyModel>

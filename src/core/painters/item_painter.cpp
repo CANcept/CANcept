@@ -99,7 +99,7 @@ auto ItemPainter::paintBadge(QPainter* painter, const QRect& rect, const QString
     // --- Calculate badge size ---
     const int badgeHeight = spacing.HeightXs;
 
-    constexpr int badgePadding = 5;
+    const int badgePadding = spacing.spacingXs;
     const int iconWidth = icon.isNull() ? 0 : spacing.IconXs;
     const int maxTextWidth = rect.width() / 2;
     const auto elidedText = painter->fontMetrics().elidedText(text, Qt::ElideRight, maxTextWidth);
