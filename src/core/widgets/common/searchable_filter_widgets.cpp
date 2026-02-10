@@ -1,3 +1,7 @@
+//
+// Created by Adrian Rupp on 20.01.26.
+//
+
 #include "searchable_filter_widgets.hpp"
 
 #include <QVBoxLayout>
@@ -43,6 +47,7 @@ void SearchableFilterTable::setSearchText(const QString& text) const
 void SearchableFilterTable::setupUi()
 {
     const auto& spacing = THEME.spacing();
+    const auto& colors = THEME.colors();
 
     // --- Main Layout setup ---
     auto* mainLayout = new QVBoxLayout(this);
@@ -53,12 +58,30 @@ void SearchableFilterTable::setupUi()
     m_filterBar = new Core::StyledFilterBar(this);
 
     // --- Table View ---
-    m_tableView = new QTableView(this);
+    // --- Table View ---
+    auto* borderFrame = new QFrame(this);
+    borderFrame->setObjectName("tableFrame");
+
+    borderFrame->setStyleSheet(QString(
+        "QFrame#tableFrame {"
+        "background: transparent;"
+        "border: %1px solid %2;"
+        "border-radius: %3px;"
+        "}")
+        .arg(spacing.borderThin)
+        .arg(colors.borderSubtle.name(QColor::HexArgb))
+        .arg(spacing.radiusSm)
+    );
+
+    m_tableView = new QTableView(borderFrame);
     m_tableView->setFrameStyle(QFrame::NoFrame);
 
-    mainLayout->addWidget(m_filterBar);
-    mainLayout->addWidget(m_tableView);
+    auto* borderLayout = new QVBoxLayout(borderFrame);
+    borderLayout->setContentsMargins(4, 4, 4, 4); // 👈 wichtig für sichtbaren Rand
+    borderLayout->addWidget(m_tableView);
 
+    mainLayout->addWidget(m_filterBar);
+    mainLayout->addWidget(borderFrame);
     // Signal forwarding
     connect(m_filterBar, &Core::StyledFilterBar::searchTextChanged, this,
             &SearchableFilterTable::filterTextChanged);

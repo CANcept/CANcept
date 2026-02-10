@@ -20,41 +20,48 @@ constexpr int OvOrphans = 5;
 constexpr int EcuName = 0;
 constexpr int EcuTotalSignals = 1;
 
-// Messages
-constexpr int MsgName = 0;
-constexpr int MsgId = 1;
-constexpr int MsgDlc = 2;
-constexpr int MsgSender = 3;
+// --- Message Table Columns (for Messages Page) ---
+constexpr int MsgName       = 0;
+constexpr int MsgId         = 1;
+constexpr int MsgDlc        = 2;
+constexpr int MsgSender     = 3;
 
-// Signals (Detailed View)
-constexpr int SigName = 0;
-constexpr int SigStartBit = 1;
-constexpr int SigLength = 2;
-constexpr int SigFactor = 3;
-constexpr int SigOffset = 4;
-constexpr int SigMin = 5;
-constexpr int SigMax = 6;
-constexpr int SigUnit = 7;
-constexpr int SigByteOrder = 8;
-constexpr int SigValueType = 9;
-constexpr int SigReceivers = 10;
+// --- Signal Table Columns (for Signals Page) ---
+constexpr int SigName       = 0;
+constexpr int SigMessage    = 1;
+constexpr int SigStartBit   = 2;
+constexpr int SigUnit       = 3;
+constexpr int SigLength     = 4;
+constexpr int SigMin        = 5;
+constexpr int SigMax        = 6;
+constexpr int SigFactor     = 7;
+constexpr int SigOffset     = 8;
+constexpr int SigByteOrder  = 9;
+constexpr int SigValueType  = 10;
+constexpr int SigReceivers  = 11;
 
 // Helper
-constexpr int TotalCount = 11;
+constexpr int TotalCount = 12;
 }  // namespace Columns
 
 namespace Headers {
-static const QString Name = "Name";
-static const QString IdStartBit = "ID / StartBit";
-static const QString DlcLength = "DLC / Length [Bit]";
-static const QString SenderFactor = "Sender / Factor";
-static const QString Offset = "Offset";
-static const QString Min = "Min";
-static const QString Max = "Max";
-static const QString Unit = "Unit";
-static const QString ByteOrder = "Byte Order";
-static const QString Type = "Type";
-static const QString Receivers = "Receiver";
+// Signals Page Header
+static const QString SigName = "Signal Name";
+static const QString SigMessage = "Message";
+static const QString SigStartBit = "Start Bit";
+static const QString SigUnit = "Unit";
+static const QString SigLength = "Length";
+static const QString SigRange = "Range";
+static const QString SigFactor = "Factor";
+static const QString SigOffset = "Offset";
+static const QString SigByteOrder = "Byte Order";
+static const QString SigType = "Signed";
+
+static const QString MsgId = "ID";
+static const QString MsgName = "Name";
+static const QString MsgSender = "Sender";
+static const QString MsgDlc = "DLC";
+static const QString MsgSigCount = "Signals";
 }  // namespace Headers
 
 // =========================================================================
@@ -170,5 +177,16 @@ namespace MessagesPage {
 
 // --- Signals Page Specifics ---
 namespace SignalsPage {
+static const QString PageHeaderTitle = "Signal View";
+static const QString PageHeaderSubtitle = "All signals from all messages";
+static const QString SearchbarText = "Search signal by name";
+static const QString FilterAllText = "All units";
+
+static const QString BigEndIndicator = "Big Endian";
+static const QString LittleEndIndicator = "Little Endian";
+static const QString UnsignedIndicator = "X";
+static const QString SignedIndicator = "✓";
+static const QString LengthUnit = "bit";
+static const QString DefaultUnit = "/";
 }
 }  // namespace DbcFile::Constants

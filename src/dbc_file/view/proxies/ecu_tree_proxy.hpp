@@ -39,7 +39,7 @@ class EcuTreeProxy : public QSortFilterProxyModel
      */
     void setFilterCategory(int index);
 
-   protected:
+protected:
     /**
      * @brief Overrides default child handling for Messages.
      * Messages are considered leaf nodes.
@@ -57,7 +57,7 @@ class EcuTreeProxy : public QSortFilterProxyModel
     [[nodiscard]] auto filterAcceptsRow(int sourceRow,
                                         const QModelIndex& sourceParent) const -> bool override;
 
-   private:
+private:
     QString m_filterText;    ///< Current search text
     int m_filterCategory{};  ///< Current category filter (0=all, 1=active, 2=passive)
 };

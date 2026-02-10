@@ -5,6 +5,7 @@
 #include "core/enum/dbc_itemtype.hpp"
 #include "dbc_file/model/dbc_roles.hpp"
 
+#include "dbc_file/constants.hpp"
 namespace DbcFile {
 FlatListProxy::FlatListProxy(const Core::DbcItemType targetType, QObject* parent)
     : QAbstractProxyModel(parent), m_targetType(targetType)
@@ -21,6 +22,49 @@ void FlatListProxy::setFilterCategory(const int index)
     if (m_filterCategory == index) return;
     m_filterCategory = index;
     rebuildMapping();
+}
+void FlatListProxy::setFilterUnit(const QString& unit)
+{
+    if (m_filterUnit == unit) return;
+    m_filterUnit = unit;
+    rebuildMapping();
+}
+auto FlatListProxy::headerData(const int section, const Qt::Orientation orientation, const int role) const -> QVariant
+{
+    if (orientation != Qt::Horizontal || role != Qt::DisplayRole)
+        return QAbstractProxyModel::headerData(section, orientation, role);
+
+    // 1. Case: messages table
+    if (m_targetType == Core::DbcItemType::Message)
+    {
+        switch (section) {
+            case Constants::Columns::MsgId:       return Constants::Headers::MsgId;
+            case Constants::Columns::MsgName:     return Constants::Headers::MsgName;
+            case Constants::Columns::MsgSender:   return Constants::Headers::MsgSender;
+            case Constants::Columns::MsgDlc:      return Constants::Headers::MsgDlc;
+            // case Constants::Columns::MsgSigCount: return Constants::Headers::MsgSigCount;
+            default: return "";
+        }
+    }
+
+    // 2. Case: Signals table
+    if (m_targetType == Core::DbcItemType::Signal)
+    {
+        switch (section) {
+            case Constants::Columns::SigName:      return Constants::Headers::SigName;
+            case Constants::Columns::SigMessage:   return Constants::Headers::SigMessage;
+            case Constants::Columns::SigStartBit:  return Constants::Headers::SigStartBit;
+            case Constants::Columns::SigUnit:      return Constants::Headers::SigUnit;
+            case Constants::Columns::SigLength:    return Constants::Headers::SigLength;
+            case Constants::Columns::SigMin:       return Constants::Headers::SigRange;
+            case Constants::Columns::SigFactor:    return Constants::Headers::SigFactor;
+            case Constants::Columns::SigOffset:    return Constants::Headers::SigOffset;
+            case Constants::Columns::SigByteOrder: return Constants::Headers::SigByteOrder;
+            case Constants::Columns::SigValueType: return Constants::Headers::SigType;
+            default: return "";
+        }
+    }
+    return {};
 }
 void FlatListProxy::rebuildMapping()
 {
@@ -109,8 +153,8 @@ void FlatListProxy::scanNode(const QModelIndex& parent)
     {
         // Get current index and type
         QModelIndex currentInd = sourceModel()->index(i, 0, parent);
-        auto type =
-            static_cast<Core::DbcItemType>(sourceModel()->data(currentInd, Role_ItemType).toInt());
+        auto type = static_cast<Core::DbcItemType>(
+            sourceModel()->data(currentInd, Role_ItemType).toInt());
 
         // Item at current index has correct type -> add mapping
         if (type == m_targetType)
@@ -123,6 +167,15 @@ void FlatListProxy::scanNode(const QModelIndex& parent)
                 if (QString itemName = sourceModel()->data(currentInd, Qt::DisplayRole).toString();
                     !itemName.contains(m_filterText, Qt::CaseInsensitive))
                 {
+                    accept = false;
+                }
+            }
+
+            // Filter for units (only for signals)
+            if (accept && !m_filterUnit.isEmpty() && m_targetType == Core::DbcItemType::Signal)
+            {
+                QString unit = sourceModel()->data(currentInd, Role_Unit).toString();
+                if (unit != m_filterUnit) {
                     accept = false;
                 }
             }
@@ -158,4 +211,4 @@ void FlatListProxy::scanNode(const QModelIndex& parent)
         }
     }
 }
-}  // namespace DbcFile
+}

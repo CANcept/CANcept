@@ -6,5 +6,4 @@ bool SingleMessageProxy::filterAcceptsRow(int sourceRow, const QModelIndex& sour
 {
     return true;
 }
-
-}  // namespace DbcFile
+}

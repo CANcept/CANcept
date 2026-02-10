@@ -4,11 +4,7 @@
 #include <QSplitter>
 #include <QWidget>
 
-#include "core/widgets/common/searchable_filter_widgets.hpp"
-
-class QComboBox;
-namespace Core {
-}
+#include "../../../core/widgets/common/searchable_filter_widgets.hpp"
 namespace DbcFile {
 // ==============================================================================
 // Message Detail View (Bottom Pane)
@@ -139,7 +135,7 @@ class MessagesPage : public QWidget
      * @brief Emitted when the filter dropdown changes.
      * @caller Internal SearchableFilterTable signal forwarding.
      */
-    void masterFilterIndexChanged(int index);
+    void masterFilterTypeChanged(int index);
 
    private slots:
     /**
@@ -159,6 +155,6 @@ class MessagesPage : public QWidget
 
     QSplitter* m_splitter;
     Core::SearchableFilterTable* m_messagesTable;  // Master (Top)
-    MessageDetailView* m_detailView;               // Detail (Bottom)
+    MessageDetailView* m_detailView;         // Detail (Bottom)
 };
 }  // namespace DbcFile

@@ -2,6 +2,7 @@
 
 #include <QIcon>
 
+#include "core/macro/console_logging.hpp"
 #include "dbc_file/constants.hpp"
 namespace DbcFile {
 
@@ -70,22 +71,22 @@ auto DbcModel::rowCount(const QModelIndex& parent) const -> int
 }
 auto DbcModel::columnCount(const QModelIndex& parent) const -> int
 {
-    if (parent.isValid())  // case: parent not root item
+    if (parent.isValid())
     {
         const auto* parentItem = static_cast<DbcItem*>(parent.internalPointer());
+
+        if (parentItem->type() == Core::DbcItemType::Message) {
+            return Constants::Columns::TotalCount;
+        }
+
         return parentItem->columnCount();
     }
-    return m_rootItem->columnCount();  // case: parent refers to root item
+    return Constants::Columns::TotalCount;
 }
 auto DbcModel::data(const QModelIndex& index, const int role) const -> QVariant
 {
-    // Validation
-    if (!index.isValid())
-    {
-        return {};
-    }
+    if (!index.isValid()) return {};
 
-    // retrieve pointer to item stored in given index that was created earlier
     const auto* item = static_cast<DbcItem*>(index.internalPointer());
     const auto type = item->type();
 
@@ -93,124 +94,67 @@ auto DbcModel::data(const QModelIndex& index, const int role) const -> QVariant
     {
         case Role_ItemType:
             return QVariant::fromValue(type);
-        case Role_IsHex:
-            if (type == Core::DbcItemType::Message && index.column() == Constants::Columns::MsgId)
-            {
-                return true;
-            }
-            return false;
-        case Role_Unit:
-            if (type == Core::DbcItemType::Signal)
-            {
-                return item->data(Constants::Columns::SigUnit);
-            }
-            return {};
+
         case Role_ChildCount:
-            if (type == Core::DbcItemType::Ecu || type == Core::DbcItemType::Message)
-            {
-                return item->childCount();
-            }
+            return item->childCount();
+
         case Qt::DisplayRole:
             return item->data(index.column());
+
         case Qt::DecorationRole:
-            if (type == Core::DbcItemType::Ecu)
-            {
-                return QIcon(Constants::Sidebar::IconEcus);
-            }
-            if (type == Core::DbcItemType::Message)
-            {
-                return QIcon(Constants::Sidebar::IconMessages);
-            }
-            if (type == Core::DbcItemType::Signal)
-            {
-                return QIcon(Constants::Sidebar::IconSignals);
-            }
-        default:
+            if (type == Core::DbcItemType::Ecu) return QIcon(Constants::Sidebar::IconEcus);
+            if (type == Core::DbcItemType::Message) return QIcon(Constants::Sidebar::IconMessages);
+            if (type == Core::DbcItemType::Signal) return QIcon(Constants::Sidebar::IconSignals);
             break;
+        default:;
     }
 
-    if (item->type() == Core::DbcItemType::Ecu && role == DbcRoles::Role_EcuTotalSignals)
-    {
-        return item->data(Constants::Columns::EcuTotalSignals);
-    }
-
-    if (type == Core::DbcItemType::Message)
-    {
-        switch (role)
-        {
-            case DbcRoles::Role_Id:
-                return item->data(Constants::Columns::MsgId);
-            case DbcRoles::Role_Dlc:
-                return item->data(Constants::Columns::MsgDlc);
-            case DbcRoles::Role_Sender:
-                return item->data(Constants::Columns::MsgSender);
-            default:
-                break;
-        }
-    }
+    // --- SIGNALE ---
     if (type == Core::DbcItemType::Signal)
     {
+        if (role == Role_Unit) {
+            return item->data(Constants::Columns::SigUnit);
+        }
+
+        if (role == DbcRoles::Role_Id) {
+            if (auto parent = item->parent()) {
+                return parent->data(Constants::Columns::MsgId);
+            }
+            return 0; // Fallback
+        }
+
         switch (role)
         {
-            case DbcRoles::Role_StartBit:
-                return item->data(Constants::Columns::SigStartBit);
-            case DbcRoles::Role_BitLength:
-                return item->data(Constants::Columns::SigLength);
-            case DbcRoles::Role_Factor:
-                return item->data(Constants::Columns::SigFactor);
-            case DbcRoles::Role_Offset:
-                return item->data(Constants::Columns::SigOffset);
-            case DbcRoles::Role_Min:
-                return item->data(Constants::Columns::SigMin);
-            case DbcRoles::Role_Max:
-                return item->data(Constants::Columns::SigMax);
-            case DbcRoles::Role_ByteOrder:
-                return item->data(Constants::Columns::SigByteOrder);
-            case DbcRoles::Role_ValueType:
-                return item->data(Constants::Columns::SigValueType);
-            case DbcRoles::Role_Receivers:
-                return item->data(Constants::Columns::SigReceivers);
-            default:
-                break;
+            case DbcRoles::Role_StartBit:   return item->data(Constants::Columns::SigStartBit);
+            case DbcRoles::Role_BitLength:  return item->data(Constants::Columns::SigLength);
+            case DbcRoles::Role_Factor:     return item->data(Constants::Columns::SigFactor);
+            case DbcRoles::Role_Offset:     return item->data(Constants::Columns::SigOffset);
+            case DbcRoles::Role_Min:        return item->data(Constants::Columns::SigMin);
+            case DbcRoles::Role_Max:        return item->data(Constants::Columns::SigMax);
+            case DbcRoles::Role_ByteOrder:  return item->data(Constants::Columns::SigByteOrder);
+            case DbcRoles::Role_ValueType:  return item->data(Constants::Columns::SigValueType);
+            case DbcRoles::Role_Receivers:  return item->data(Constants::Columns::SigReceivers);
+            default: break;
         }
     }
+
+    // --- MESSAGES ---
+    if (type == Core::DbcItemType::Message)
+    {
+        if (role == Role_IsHex && index.column() == Constants::Columns::MsgId) {
+            return true;
+        }
+
+        switch (role)
+        {
+            case DbcRoles::Role_Id:     return item->data(Constants::Columns::MsgId);
+            case DbcRoles::Role_Dlc:    return item->data(Constants::Columns::MsgDlc);
+            case DbcRoles::Role_Sender: return item->data(Constants::Columns::MsgSender);
+            default: break;
+        }
+    }
+
     return {};
-}
-auto DbcModel::headerData(int section, Qt::Orientation orientation, int role) const -> QVariant
-{
-    if (orientation != Qt::Horizontal || role != Qt::DisplayRole)
-    {
-        return {};
-    }
-    switch (section)
-    {
-        case Constants::Columns::MsgName:
-            return Constants::Headers::Name;  // Col 0
-        case Constants::Columns::MsgId:
-            return Constants::Headers::IdStartBit;  // Col 1
-        case Constants::Columns::MsgDlc:
-            return Constants::Headers::DlcLength;  // Col 2
-        case Constants::Columns::MsgSender:
-            return Constants::Headers::SenderFactor;  // Col 3
-
-        case Constants::Columns::SigOffset:
-            return Constants::Headers::Offset;  // Col 4
-        case Constants::Columns::SigMin:
-            return Constants::Headers::Min;  // Col 5
-        case Constants::Columns::SigMax:
-            return Constants::Headers::Max;  // Col 6
-        case Constants::Columns::SigUnit:
-            return Constants::Headers::Unit;  // Col 7
-        case Constants::Columns::SigByteOrder:
-            return Constants::Headers::ByteOrder;  // Col 8
-        case Constants::Columns::SigValueType:
-            return Constants::Headers::Type;  // Col 9
-        case Constants::Columns::SigReceivers:
-            return Constants::Headers::Receivers;  // Col 10
-
-        default:
-            return {};
-    }
 }
 void DbcModel::onDbcParsed(const Core::DBCParsedEvent& event)
 {
@@ -300,7 +244,7 @@ auto DbcModel::createMessageItems(const Core::DbcConfig& data,
         auto messageItem =
             std::make_unique<DbcItem>(messageData, Core::DbcItemType::Message, parent);
         const int signalCount = static_cast<int>(msg.signalDescriptions.size());
-        createSignalItems(msg.signalDescriptions, messageItem.get());
+        createSignalItems(msg.signalDescriptions, messageItem.get(), msg);
         if (parent->type() == Core::DbcItemType::Ecu)
         {
             int current = parent->data(Constants::Columns::EcuTotalSignals).toInt();
@@ -314,31 +258,34 @@ auto DbcModel::createMessageItems(const Core::DbcConfig& data,
     }
     return orphanCount;
 }
-auto DbcModel::createSignalItems(const std::list<Core::DbcSignalDescription>& signalDescriptions,
-                                 DbcItem* messageItem) -> void
+void DbcModel::createSignalItems(const std::list<Core::DbcSignalDescription>& signalDescriptions,
+                                 DbcItem* messageItem,
+                                 const Core::DbcMessageDescription& msgDesc) // Neu: msgDesc Parameter
 {
-    for (const Core::DbcSignalDescription sig : signalDescriptions)
+    for (const Core::DbcSignalDescription& sig : signalDescriptions)
     {
         QList<QVariant> signalData;
-        signalData.append(QString::fromStdString(sig.signalName));
-        signalData.append(sig.startBit);
-        signalData.append(sig.signalSize);
-        signalData.append(sig.factor);
-        signalData.append(sig.offset);
-        signalData.append(sig.minimum);
-        signalData.append(sig.maximum);
-        signalData.append(QString::fromStdString(sig.unit));
-        signalData.append(sig.byteOrder);
-        signalData.append(sig.valueType);
+        for(int i=0; i<Constants::Columns::TotalCount; ++i) signalData.append(QVariant());
+
+        signalData[Constants::Columns::SigName] = QString::fromStdString(sig.signalName);
+        signalData[Constants::Columns::SigMessage] = QString::fromStdString(msgDesc.messageName);
+        signalData[Constants::Columns::SigStartBit] = sig.startBit;
+        signalData[Constants::Columns::SigUnit] = QString::fromStdString(sig.unit);
+        signalData[Constants::Columns::SigLength] = sig.signalSize;
+        signalData[Constants::Columns::SigMin] = sig.minimum;
+        signalData[Constants::Columns::SigMax] = sig.maximum;
+        signalData[Constants::Columns::SigFactor]    = QString::number(sig.factor, 'g', 12);
+        signalData[Constants::Columns::SigOffset]    = QString::number(sig.offset, 'g', 12);
+        signalData[Constants::Columns::SigByteOrder] = sig.byteOrder ? Constants::SignalsPage::BigEndIndicator : Constants::SignalsPage::LittleEndIndicator;
+        signalData[Constants::Columns::SigValueType] = sig.valueType ? Constants::SignalsPage::SignedIndicator : Constants::SignalsPage::UnsignedIndicator;
         QStringList receiverNames;
-        for (const std::string& receiverName : sig.receivers)
-        {
+        for (const std::string& receiverName : sig.receivers) {
             receiverNames.append(QString::fromStdString(receiverName));
         }
-        signalData.append(receiverNames.join(", "));
+        signalData[Constants::Columns::SigReceivers] = receiverNames.join(", ");
 
-        auto signalItem =
-            std::make_unique<DbcItem>(signalData, Core::DbcItemType::Signal, messageItem);
+        auto signalItem = std::make_unique<DbcItem>(signalData, Core::DbcItemType::Signal, messageItem);
+
         messageItem->appendChild(std::move(signalItem));
     }
 }

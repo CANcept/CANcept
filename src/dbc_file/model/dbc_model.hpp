@@ -78,12 +78,12 @@ class DbcModel : public QAbstractItemModel
      */
     [[nodiscard]] auto data(const QModelIndex& index, int role) const -> QVariant override;
 
-    /**
-     * @brief Returns the header labels for the columns.
-     * @caller Qt HeaderViews (horizontal/vertical headers).
-     */
-    [[nodiscard]] auto headerData(int section, Qt::Orientation orientation,
-                                  int role = Qt::DisplayRole) const -> QVariant override;
+    // /**
+    //  * @brief Returns the header labels for the columns.
+    //  * @caller Qt HeaderViews (horizontal/vertical headers).
+    //  */
+    // [[nodiscard]] auto headerData(int section, Qt::Orientation orientation,
+    //                               int role = Qt::DisplayRole) const -> QVariant override;
 
     // --- Helper Methods ---
 
@@ -178,6 +178,7 @@ class DbcModel : public QAbstractItemModel
      *
      * @param signalDescriptions List of signals from the Message DTO.
      * @param messageItem Pointer to the parent Message Item.
+     * @param msgDesc
      *
      * @details
      * Static helper to keep `setupData` clean. It loops over the signal list, converts attributes
@@ -185,7 +186,8 @@ class DbcModel : public QAbstractItemModel
      * new `Signal` items to the `messageItem`.
      */
     static auto createSignalItems(const std::list<Core::DbcSignalDescription>& signalDescriptions,
-                                  DbcItem* messageItem) -> void;
+                                  DbcItem* messageItem, const Core::DbcMessageDescription& msgDesc)
+        -> void;
     /**
      * @brief Rebuilds the internal DbcItem tree structure from the DTO.
      * @caller Internal (onDbcParsed).

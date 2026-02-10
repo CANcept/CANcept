@@ -4,14 +4,9 @@
 #include <QVBoxLayout>
 
 #include "core/constants.hpp"
-#include "core/enum/dbc_itemtype.hpp"
 #include "core/theme/theme_manager.hpp"
 #include "core/widgets/sidebar.hpp"
 #include "dbc_file/constants.hpp"
-#include "dbc_file/delegate/ecu_tree_delegate.hpp"
-#include "dbc_file/view/proxies/ecu_tree_proxy.hpp"
-#include "dbc_file/view/proxies/flat_list_proxy.hpp"
-#include "dbc_file/view/proxies/single_message_proxy.hpp"
 
 namespace DbcFile {
 DbcView::DbcView(QWidget* parent) : QWidget(parent)
@@ -29,28 +24,31 @@ void DbcView::setSourceModel(QAbstractItemModel* model)
 
     m_model = model;
 
+    // Update Labels in m_overviewPage at model reset
+    connect(model, &QAbstractItemModel::modelReset, this,
+        [this, model]() { m_overviewPage->updateLabels(model); });
+
     // Create proxies + connect to source model
     m_ecuOverviewProxy = std::make_unique<FlatListProxy>(Core::DbcItemType::Ecu, this);
     m_ecuOverviewProxy->setSourceModel(model);
     m_ecuOverviewProxy->rebuildMapping();
-
-    m_messagesProxy = std::make_unique<FlatListProxy>(Core::DbcItemType::Message, this);
-    m_messagesProxy->setSourceModel(model);
-    m_messagesProxy->rebuildMapping();
-
-    // Pass proxies to overview page lists
     m_overviewPage->getEcuList()->setModel(m_ecuOverviewProxy.get());
-    m_overviewPage->getMessageList()->setModel(m_messagesProxy.get());
 
     m_ecuTreeProxy = std::make_unique<EcuTreeProxy>(this);
     m_ecuTreeProxy->setSourceModel(model);
     m_ecuPage->setModel(m_ecuTreeProxy.get());
 
-    // Update Labels in m_overviewPage at model reset
-    connect(model, &QAbstractItemModel::modelReset, this,
-            [this, model]() { m_overviewPage->updateLabels(model); });
+    m_messagesProxy = std::make_unique<FlatListProxy>(Core::DbcItemType::Message, this);
+    m_messagesProxy->setSourceModel(model);
+    m_messagesProxy->rebuildMapping();
+    m_overviewPage->getMessageList()->setModel(m_messagesProxy.get());
+
+    m_allSignalsProxy = std::make_unique<FlatListProxy>(Core::DbcItemType::Signal, this);
+    m_allSignalsProxy->setSourceModel(model);
+    m_allSignalsProxy->rebuildMapping();
+    m_signalsPage->setModel(m_allSignalsProxy.get());
+
 }
-void DbcView::setDataItemDelegate(QAbstractItemDelegate* delegate) {}
 void DbcView::setNavigationEnabled(const bool enabled) const
 {
     m_sidebar->setNavigationEnabled(enabled);
@@ -87,8 +85,20 @@ void DbcView::onEcuFilterIndexChanged(int index) const
 void DbcView::onMessageFilterTextChanged(const QString& text) {}
 void DbcView::onMessageFilterIndexChanged(int index) {}
 void DbcView::onMessageSelected(const QModelIndex& proxyIndex) {}
-void DbcView::onSignalFilterTextChanged(const QString& text) {}
-void DbcView::onSignalFilterIndexChanged(int index) {}
+
+void DbcView::onSignalFilterTextChanged(const QString& text)
+{
+    if (m_allSignalsProxy) {
+        m_allSignalsProxy->setSearchFilter(text);
+    }
+}
+void DbcView::onSignalUnitChanged(const QString& unit)
+{
+    if(m_allSignalsProxy)
+    {
+        m_allSignalsProxy->setFilterUnit(unit);
+    }
+}
 
 void DbcView::addPage(QWidget* page, const QString& title, const QString& iconPath,
                       const bool enabled) const
@@ -150,5 +160,10 @@ void DbcView::setupConnections()
 
     connect(m_ecuPage, &EcusPage::filterTextChanged, this, &DbcView::onEcuFilterTextChanged);
     connect(m_ecuPage, &EcusPage::filterIndexChanged, this, &DbcView::onEcuFilterIndexChanged);
+
+    connect(m_signalsPage, &SignalsPage::filterTextChanged,
+        this, &DbcView::onSignalFilterTextChanged);
+    connect(m_signalsPage, &SignalsPage::filterUnitChanged,this, &DbcView::onSignalUnitChanged);
+
 }
 }  // namespace DbcFile

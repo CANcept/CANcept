@@ -1,4 +1,10 @@
 #include "messages_page.hpp"
+
+#include <QVBoxLayout>
+
+#include "core/macro/theme.hpp"
+#include "core/widgets/card_widget.hpp"
+#include "dbc_file/constants.hpp"
 namespace DbcFile {
 // --- MessagesPage Dummy ---
 MessagesPage::MessagesPage(QWidget* parent) : QWidget(parent)
@@ -17,9 +23,20 @@ void MessagesPage::setDetailTitle(const QString& title) {}
 void MessagesPage::onSelectionChanged(const QModelIndex& current, const QModelIndex& previous) {}
 void MessagesPage::setupUi()
 {
-    m_splitter = new QSplitter(this);
-    m_messagesTable = new Core::SearchableFilterTable(this);
-    m_detailView = new MessageDetailView(this);
+    const auto& spacing = THEME.spacing();
+    // --- Main Layout ---
+    auto* mainLayout = new QVBoxLayout(this);
+    mainLayout->setContentsMargins(spacing.spacingMd, spacing.spacingMd, spacing.spacingMd,
+                                   spacing.spacingMd);
+    mainLayout->setSpacing(spacing.spacingMd);
+
+    // --- Header Card ---
+    auto* card = new Core::CardWidget(Constants::SignalsPage::PageHeaderTitle,
+                                      Constants::SignalsPage::PageHeaderSubtitle, "", this);
+    mainLayout->addWidget(card);
+    auto* cardLayout = card->layout();
+
+
 }
 
 // --- MessageDetailView Dummy ---

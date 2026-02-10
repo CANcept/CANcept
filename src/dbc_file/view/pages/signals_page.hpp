@@ -19,19 +19,20 @@ class SignalsPage : public QWidget
 
    public:
     explicit SignalsPage(QWidget* parent = nullptr);
+    void populateUnitFilter(const QAbstractItemModel* model) const;
     ~SignalsPage() override = default;
 
     /**
      * @brief Sets the model for the table view.
      * @caller DbcView::setSourceModel().
      */
-    void setModel(QAbstractItemModel* model);
+    void setModel(QAbstractItemModel* model) const;
 
-    /**
-     * @brief Access to the filter combo to populate unit filters (e.g. "rpm", "km/h").
-     * @caller DbcView::createSubViews().
-     */
-    [[nodiscard]] auto getFilterCombo() const -> QComboBox*;
+    // /**
+    //  * @brief Access to the filter combo to populate unit filters (e.g. "rpm", "km/h").
+    //  * @caller DbcView::createSubViews().
+    //  */
+    // [[nodiscard]] auto getFilterCombo() const -> QComboBox*;
 
    signals:
     /**
@@ -44,7 +45,7 @@ class SignalsPage : public QWidget
      * @brief Emitted when the user changes the Unit filter dropdown.
      * @caller Internal SearchableFilterTable signal forwarding.
      */
-    void filterTypeChanged(int index);
+    void filterUnitChanged(const QString& unit);
 
    private:
     /**

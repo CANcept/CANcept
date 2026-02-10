@@ -150,12 +150,8 @@ class DbcView : public QWidget
      * @caller SignalsPage (search bar).
      */
     void onSignalFilterTextChanged(const QString& text);
+    void onSignalUnitChanged(const QString& unit);
 
-    /**
-     * @brief Updates the all-signals proxy category filter (e.g. Unit).
-     * @caller SignalsPage (combo box).
-     */
-    void onSignalFilterIndexChanged(int index);
     /**
      * @brief Adds a page to the content stack and sidebar.
      *
@@ -228,11 +224,11 @@ class DbcView : public QWidget
     //  */
     // std::unique_ptr<SingleMessageProxy> m_messageDetailProxy;
     //
-    // /**
-    //  * @brief Flat list of ALL Signals in the system.
-    //  * Used for the Signals Page table.
-    //  */
-    // std::unique_ptr<FlatListProxy> m_allSignalsProxy;
+    /**
+     * @brief Flat list of ALL Signals in the system.
+     * Used for the Signals Page table.
+     */
+    std::unique_ptr<FlatListProxy> m_allSignalsProxy;
 };
 
 }  // namespace DbcFile

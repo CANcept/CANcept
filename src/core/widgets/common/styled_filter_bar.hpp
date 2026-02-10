@@ -1,6 +1,10 @@
+//
+// Created by Adrian Rupp on 20.01.26.
+//
+
 #pragma once
-#include <QComboBox>
 #include <QLineEdit>
+#include <QComboBox>
 
 namespace Core {
 
@@ -19,7 +23,7 @@ class StyledFilterBar : public QWidget
 {
     Q_OBJECT
 
-   public:
+public:
     /**
      * @brief Constructor.
      * @param parent Parent widget
@@ -27,10 +31,10 @@ class StyledFilterBar : public QWidget
     explicit StyledFilterBar(QWidget* parent = nullptr);
 
     /// @brief Returns the current text in the search field.
-    [[nodiscard]] auto searchText() const -> QString;
+    [[nodiscard]] QString searchText() const;
 
     /// @brief Returns the currently selected filter text.
-    [[nodiscard]] auto currentFilter() const -> QString;
+    [[nodiscard]] QString currentFilter() const;
 
     /// @brief Sets the placeholder text for the search field.
     void setPlaceholderText(const QString& text);
@@ -47,22 +51,25 @@ class StyledFilterBar : public QWidget
     /// @brief Sets the current filter by index.
     void setCurrentFilterIndex(int index);
 
-   signals:
+signals:
     /// @brief Emitted whenever the search text changes.
     void searchTextChanged(const QString& text);
 
     /// @brief Emitted whenever the filter index changes.
     void filterIndexChanged(int index);
 
-   private:
+    /// @brief Emitted whenever the filter text changes.
+    void filterOptionChanged(const QString& text);
+
+private:
     /// @brief Sets up the UI elements (QLineEdit, QComboBox, layouts).
     void setupUi();
 
     /// @brief Applies THEME-based styles to the search field and combo box.
     void setupStyles();
 
-    QLineEdit* m_searchBar = nullptr;  ///< Internal search field
-    QComboBox* m_filterBox = nullptr;  ///< Internal filter combo box
+    QLineEdit* m_searchBar = nullptr; ///< Internal search field
+    QComboBox* m_filterBox = nullptr; ///< Internal filter combo box
 };
 
-}  // namespace Core
+} // namespace Core

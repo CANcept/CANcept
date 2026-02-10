@@ -34,12 +34,12 @@ class EcusPage : public QWidget
      */
     void setModel(QAbstractItemModel* model) const;
 
-   signals:
-    /**
-     * @brief Emitted when the search text changes in the filter bar.
-     * @param text Current search string
-     */
-    void filterTextChanged(const QString& text);
+    signals:
+     /**
+      * @brief Emitted when the search text changes in the filter bar.
+      * @param text Current search string
+      */
+     void filterTextChanged(const QString& text);
 
     /**
      * @brief Emitted when the filter category changes.
@@ -47,13 +47,13 @@ class EcusPage : public QWidget
      */
     void filterIndexChanged(int index);
 
-   private:
+private:
     /**
      * @brief Setup UI components and layout.
      */
     void setupUi();
 
-   private:
+private:
     Core::SearchableFilterTree* m_treeWidget;  ///< The searchable/filterable tree
 };
 

@@ -2,8 +2,6 @@
 #include <QAbstractProxyModel>
 
 #include "core/enum/dbc_itemtype.hpp"
-namespace Core {
-}
 namespace DbcFile {
 /**
  * @class FlatListProxy
@@ -17,7 +15,7 @@ namespace DbcFile {
  * It does NOT use QSortFilterProxyModel because it structurally transforms the data
  * (Tree -> List). It performs a manual recursive scan to find all items of `m_targetType`.
  */
-class FlatListProxy final : public QAbstractProxyModel
+class FlatListProxy : public QAbstractProxyModel
 {
     Q_OBJECT
 
@@ -49,8 +47,11 @@ class FlatListProxy final : public QAbstractProxyModel
      */
     void setFilterCategory(int index);
 
+    void setFilterUnit(const QString& unit);
+
     // --- QAbstractProxyModel Interface Implementation ---
 
+    [[nodiscard]] auto headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const -> QVariant override;
     /**
      * @brief Maps Source Index (Tree) -> Proxy Index (List).
      * @caller Qt Views (selection handling) and Delegates.
@@ -96,8 +97,9 @@ class FlatListProxy final : public QAbstractProxyModel
     Core::DbcItemType m_targetType;
     QString m_filterText;
     int m_filterCategory = -1;
+    QString m_filterUnit;
 
     /** @brief The flattened list of persistent pointers to the source items. */
     QList<QPersistentModelIndex> m_mapping;
 };
-}  // namespace DbcFile
+}
