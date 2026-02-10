@@ -135,7 +135,7 @@ class MessagesPage : public QWidget
      * @brief Emitted when the filter dropdown changes.
      * @caller Internal SearchableFilterTable signal forwarding.
      */
-    void masterFilterTypeChanged(int index);
+    void masterFilterIndexChanged(int index);
 
    private slots:
     /**

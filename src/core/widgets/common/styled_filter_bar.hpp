@@ -3,8 +3,8 @@
 //
 
 #pragma once
-#include <QLineEdit>
 #include <QComboBox>
+#include <QLineEdit>
 
 namespace Core {
 
@@ -23,7 +23,7 @@ class StyledFilterBar : public QWidget
 {
     Q_OBJECT
 
-public:
+   public:
     /**
      * @brief Constructor.
      * @param parent Parent widget
@@ -31,10 +31,10 @@ public:
     explicit StyledFilterBar(QWidget* parent = nullptr);
 
     /// @brief Returns the current text in the search field.
-    QString searchText() const;
+    [[nodiscard]] auto searchText() const -> QString;
 
     /// @brief Returns the currently selected filter text.
-    QString currentFilter() const;
+    [[nodiscard]] auto currentFilter() const -> QString;
 
     /// @brief Sets the placeholder text for the search field.
     void setPlaceholderText(const QString& text);
@@ -51,22 +51,22 @@ public:
     /// @brief Sets the current filter by index.
     void setCurrentFilterIndex(int index);
 
-signals:
+   signals:
     /// @brief Emitted whenever the search text changes.
     void searchTextChanged(const QString& text);
 
     /// @brief Emitted whenever the filter index changes.
     void filterIndexChanged(int index);
 
-private:
+   private:
     /// @brief Sets up the UI elements (QLineEdit, QComboBox, layouts).
     void setupUi();
 
     /// @brief Applies THEME-based styles to the search field and combo box.
     void setupStyles();
 
-    QLineEdit* m_searchBar = nullptr; ///< Internal search field
-    QComboBox* m_filterBox = nullptr; ///< Internal filter combo box
+    QLineEdit* m_searchBar = nullptr;  ///< Internal search field
+    QComboBox* m_filterBox = nullptr;  ///< Internal filter combo box
 };
 
-} // namespace Core
+}  // namespace Core

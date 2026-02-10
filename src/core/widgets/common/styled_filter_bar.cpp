@@ -9,8 +9,7 @@
 
 namespace Core {
 
-StyledFilterBar::StyledFilterBar(QWidget* parent)
-    : QWidget(parent)
+StyledFilterBar::StyledFilterBar(QWidget* parent) : QWidget(parent)
 {
     setupUi();
     setupStyles();
@@ -18,12 +17,12 @@ StyledFilterBar::StyledFilterBar(QWidget* parent)
 
 // --- Getter ---
 
-QString StyledFilterBar::searchText() const
+auto StyledFilterBar::searchText() const -> QString
 {
     return m_searchBar->text();
 }
 
-QString StyledFilterBar::currentFilter() const
+auto StyledFilterBar::currentFilter() const -> QString
 {
     return m_filterBox->currentText();
 }
@@ -89,11 +88,10 @@ void StyledFilterBar::setupUi()
     layout->addWidget(m_filterBox, 1);
 
     // --- Signals --------------------------------------------------------------
-    connect(m_searchBar, &QLineEdit::textChanged,
-            this, &StyledFilterBar::searchTextChanged);
+    connect(m_searchBar, &QLineEdit::textChanged, this, &StyledFilterBar::searchTextChanged);
 
-    connect(m_filterBox, QOverload<int>::of(&QComboBox::currentIndexChanged),
-            this, &StyledFilterBar::filterIndexChanged);
+    connect(m_filterBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
+            &StyledFilterBar::filterIndexChanged);
 }
 
 // -----------------------------------------------------------------------------
@@ -103,7 +101,7 @@ void StyledFilterBar::setupUi()
 void StyledFilterBar::setupStyles()
 {
     const auto& spacing = THEME.spacing();
-    const auto& colors  = THEME.colors();
+    const auto& colors = THEME.colors();
 
     // --- Search ---------------------------------------------------------------
     const QString searchStyle = QString(R"(
@@ -124,14 +122,14 @@ QLineEdit#SearchField::placeholder {
     color: %8;
 }
 )")
-        .arg(colors.surfacePrimary.name())
-        .arg(spacing.radiusMd)
-        .arg(spacing.HeightSm)
-        .arg(spacing.spacingLg)
-        .arg(spacing.spacingMd)
-        .arg(colors.textPrimary.name())
-        .arg(spacing.fontSizeSm)
-        .arg(colors.textSecondary.name());
+                                    .arg(colors.surfacePrimary.name())
+                                    .arg(spacing.radiusMd)
+                                    .arg(spacing.HeightSm)
+                                    .arg(spacing.spacingLg)
+                                    .arg(spacing.spacingMd)
+                                    .arg(colors.textPrimary.name())
+                                    .arg(spacing.fontSizeSm)
+                                    .arg(colors.textSecondary.name());
 
     m_searchBar->setStyleSheet(searchStyle);
 
@@ -192,19 +190,19 @@ QComboBox#FilterCombo QAbstractItemView::item:selected {
     color: %2;
 }
 )")
-        .arg(colors.surfacePrimary.name())
-        .arg(colors.textSecondary.name())
-        .arg(spacing.radiusMd)
-        .arg(spacing.HeightSm)
-        .arg(spacing.spacingLg)
-        .arg(spacing.spacingXl * 2)
-        .arg(spacing.fontSizeSm)
-        .arg(Constants::ARROW_DOWN_ICON)
-        .arg(spacing.spacingSm)
-        .arg(spacing.radiusSm)
-        .arg(colors.surfaceMain.name());
+                                   .arg(colors.surfacePrimary.name())
+                                   .arg(colors.textSecondary.name())
+                                   .arg(spacing.radiusMd)
+                                   .arg(spacing.HeightSm)
+                                   .arg(spacing.spacingLg)
+                                   .arg(spacing.spacingXl * 2)
+                                   .arg(spacing.fontSizeSm)
+                                   .arg(Constants::ARROW_DOWN_ICON)
+                                   .arg(spacing.spacingSm)
+                                   .arg(spacing.radiusSm)
+                                   .arg(colors.surfaceMain.name());
 
     m_filterBox->setStyleSheet(comboStyle);
 }
 
-} // namespace Core
+}  // namespace Core

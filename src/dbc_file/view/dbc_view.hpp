@@ -128,7 +128,7 @@ class DbcView : public QWidget
      * @brief Updates the messages flat list proxy category filter.
      * @caller MessagesPage (master combo box).
      */
-    void onMessageFilterTypeChanged(int index);
+    void onMessageFilterIndexChanged(int index);
 
     /**
      * @brief Master-Detail Logic for Messages Page.
@@ -155,7 +155,7 @@ class DbcView : public QWidget
      * @brief Updates the all-signals proxy category filter (e.g. Unit).
      * @caller SignalsPage (combo box).
      */
-    void onSignalFilterTypeChanged(int index);
+    void onSignalFilterIndexChanged(int index);
     /**
      * @brief Adds a page to the content stack and sidebar.
      *

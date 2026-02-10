@@ -85,10 +85,10 @@ void DbcView::onEcuFilterIndexChanged(int index) const
     m_ecuTreeProxy->setFilterCategory(index);
 }
 void DbcView::onMessageFilterTextChanged(const QString& text) {}
-void DbcView::onMessageFilterTypeChanged(int index) {}
+void DbcView::onMessageFilterIndexChanged(int index) {}
 void DbcView::onMessageSelected(const QModelIndex& proxyIndex) {}
 void DbcView::onSignalFilterTextChanged(const QString& text) {}
-void DbcView::onSignalFilterTypeChanged(int index) {}
+void DbcView::onSignalFilterIndexChanged(int index) {}
 
 void DbcView::addPage(QWidget* page, const QString& title, const QString& iconPath,
                       const bool enabled) const
