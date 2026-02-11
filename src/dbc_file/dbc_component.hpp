@@ -70,6 +70,7 @@ class DbcComponent : public Core::ITabComponent
      * @brief Called when the application stops/module is deactivated.
      */
     void onStop() override;
+    static QStringList extractSignalUnits(const Core::DBCParsedEvent& event);
 
    private slots:
     /**
@@ -84,15 +85,7 @@ class DbcComponent : public Core::ITabComponent
     void onFileLoadRequested(const QString& filePath) const;
 
    private:
-    /**
-     * @brief Handles successful DBC parsing.
-     *
-     * @details
-     * Updates the view to indicate success and enables navigation
-     * to the remaining pages of the DBC view.
-     *
-     * @param event Event containing the parsed DBC result.
-     */
+
     void onDbcParsed(const Core::DBCParsedEvent& event) const;
 
     /**

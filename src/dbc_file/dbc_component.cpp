@@ -25,16 +25,35 @@ void DbcComponent::onStop()
     m_parseSuccessConn.release();
     m_parseErrorConn.release();
 }
+
+auto DbcComponent::extractSignalUnits(const Core::DBCParsedEvent& event) -> QStringList
+{
+    QSet<QString> uniqueUnits;
+
+    for (const auto& msg : event.config.messageDefinitions) {
+        for (const auto& sig : msg.signalDescriptions) {
+            if (!sig.unit.empty()) {
+                uniqueUnits.insert(QString::fromStdString(sig.unit));
+            }
+        }
+    }
+
+    QStringList sortedUnits = uniqueUnits.values();
+    sortedUnits.sort(Qt::CaseInsensitive);
+    return sortedUnits;
+}
 void DbcComponent::onFileLoadRequested(const QString& filePath) const
 {
     Core::ParseDBCRequestEvent event(filePath.toStdString());
-    event.filePath = filePath.toStdString();
     m_eventBroker.publish(event);
 }
 void DbcComponent::onDbcParsed(const Core::DBCParsedEvent& event) const
 {
     m_view->getLoadPage().showStatusMessage(Constants::Status::ParseSuccess, false);
     m_view->setNavigationEnabled(true);
+
+    const QStringList units = extractSignalUnits(event);
+    m_view->setSignalUnits(units);
 }
 void DbcComponent::onDbcParseError(const Core::DBCParseErrorEvent& event) const
 {
