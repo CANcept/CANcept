@@ -9,7 +9,6 @@
 #include "core/constants.hpp"
 #include "core/macro/theme.hpp"
 #include "core/widgets/common/styled_filter_bar.hpp"
-#include "dbc_file/constants.hpp"
 
 namespace Core {
 
@@ -77,7 +76,6 @@ void SearchableFilterTable::setupUi()
     m_tableView->setFrameStyle(QFrame::NoFrame);
 
     auto* borderLayout = new QVBoxLayout(borderFrame);
-    borderLayout->setContentsMargins(4, 4, 4, 4); // 👈 wichtig für sichtbaren Rand
     borderLayout->addWidget(m_tableView);
 
     mainLayout->addWidget(m_filterBar);
