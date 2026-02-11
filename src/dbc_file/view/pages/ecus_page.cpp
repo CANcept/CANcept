@@ -11,93 +11,129 @@
 
 namespace DbcFile {
 
-EcusPage::EcusPage(QWidget* parent) : QWidget(parent)
+EcusPage::EcusPage(QWidget* parent)
+    : QWidget(parent)
 {
     setupUi();
 }
 
 void EcusPage::setModel(QAbstractItemModel* model) const
 {
-    if (m_treeWidget && model)
+    if (!m_treeWidget || !model)
+        return;
+
+    if (auto* view = m_treeWidget->treeView())
     {
-        m_treeWidget->treeView()->setModel(model);
-        m_treeWidget->treeView()->expandAll();
+        view->setModel(model);
+        view->expandAll();
     }
 }
 
-void EcusPage::setupUi()
+void EcusPage::createLayout()
 {
     const auto& spacing = THEME.spacing();
 
-    // --- Main Layout ---
     auto* mainLayout = new QVBoxLayout(this);
-    mainLayout->setContentsMargins(spacing.spacingMd, spacing.spacingMd, spacing.spacingMd,
+    mainLayout->setContentsMargins(spacing.spacingMd,
+                                   spacing.spacingMd,
+                                   spacing.spacingMd,
                                    spacing.spacingMd);
     mainLayout->setSpacing(spacing.spacingMd);
 
-    // --- Header Card ---
-    auto* card = new Core::CardWidget(Constants::EcusPage::PageHeaderTitle,
-                                      Constants::EcusPage::PageHeaderSubtitle, "", this);
-    mainLayout->addWidget(card);
-    auto* cardLayout = card->layout();
+    setLayout(mainLayout);
+}
+void EcusPage::createHeaderCard()
+{
+    auto* mainLayout = qobject_cast<QVBoxLayout*>(layout());
+    if (!mainLayout)
+        return;
 
-    // --- Search & Filter Tree ---
+    auto* card = new Core::CardWidget(
+        Constants::EcusPage::PageHeaderTitle,
+        Constants::EcusPage::PageHeaderSubtitle,
+        QString(),
+        this);
+
+    mainLayout->addWidget(card);
+
+    m_cardLayout = card->layout();
+}
+void EcusPage::createTreeSection()
+{
     m_treeWidget = new Core::SearchableFilterTree(this);
 
-    // Configure search bar
     m_treeWidget->setSearchPlaceholder(Constants::EcusPage::SearchbarText);
+    m_treeWidget->setFilterOptions(
+        {Constants::EcusPage::FilterAllText, Constants::EcusPage::FilterActive});
 
-    // Configure filter options
-    QStringList options = {Constants::EcusPage::FilterAllText, Constants::EcusPage::FilterActive};
-    m_treeWidget->setFilterOptions(options);
+    if (m_cardLayout) m_cardLayout->addWidget(m_treeWidget);
 
-    // --- TreeView setup ---
+    configureTreeView();
+}
+void EcusPage::configureTreeView()
+{
+    if (!m_treeWidget)
+        return;
+
     QTreeView* view = m_treeWidget->treeView();
-    if (view)
-    {
-        // Assign custom delegate
-        auto* delegate = new EcuTreeDelegate(view, this);
-        view->setItemDelegate(delegate);
+    if (!view)
+        return;
 
-        // Visual setup for card/tree style
-        view->setHeaderHidden(true);
-        view->setAnimated(true);
-        view->setSelectionMode(QAbstractItemView::NoSelection);
-        view->setSelectionBehavior(QAbstractItemView::SelectRows);
-        view->header()->setSectionsClickable(false);
-        view->setExpandsOnDoubleClick(false);
-        view->setItemsExpandable(true);
+    view->setItemDelegate(new EcuTreeDelegate(view, this));
 
-        // Custom branch icons & style
-        QString style =
-            QString(R"(
-            QTreeView {
-                background: transparent;
-                border: none;
-                outline: none;
-            }
-            QTreeView::item { border: none; }
-            QTreeView::branch { width: 18px; height: 18px; }
-            QTreeView::branch:closed:has-children { image: url(%1); }
-            QTreeView::branch:open:has-children { image: url(%2); }
-        )")
-                .arg(Core::Constants::ARROW_RIGHT_ICON, Core::Constants::ARROW_DOWN_ICON);
+    view->setHeaderHidden(true);
+    view->setAnimated(true);
+    view->setSelectionMode(QAbstractItemView::NoSelection);
+    view->setSelectionBehavior(QAbstractItemView::SelectRows);
+    view->setExpandsOnDoubleClick(false);
+    view->setItemsExpandable(true);
+    view->header()->setSectionsClickable(false);
 
-        view->setRootIsDecorated(true);
-        view->setStyleSheet(style);
-        view->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-        view->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    }
+    applyTreeStyle(view);
 
-    // Add tree widget to card layout
-    cardLayout->addWidget(m_treeWidget);
+    view->setRootIsDecorated(true);
+    view->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    view->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+}
+void EcusPage::applyTreeStyle(QTreeView* view)
+{
+    const QString style = QString(R"(
+        QTreeView {
+            background: transparent;
+            border: none;
+            outline: none;
+        }
+        QTreeView::item { border: none; }
+        QTreeView::branch { width: 18px; height: 18px; }
+        QTreeView::branch:closed:has-children { image: url(%1); }
+        QTreeView::branch:open:has-children { image: url(%2); }
+    )")
+        .arg(Core::Constants::ARROW_RIGHT_ICON,
+             Core::Constants::ARROW_DOWN_ICON);
 
-    // --- Connect signals for forwarding ---
-    connect(m_treeWidget, &Core::SearchableFilterTree::filterTextChanged, this,
+    view->setStyleSheet(style);
+}
+void EcusPage::connectSignals()
+{
+    if (!m_treeWidget)
+        return;
+
+    connect(m_treeWidget,
+            &Core::SearchableFilterTree::filterTextChanged,
+            this,
             &EcusPage::filterTextChanged);
 
-    connect(m_treeWidget, &Core::SearchableFilterTree::filterIndexChanged, this,
+    connect(m_treeWidget,
+            &Core::SearchableFilterTree::filterIndexChanged,
+            this,
             &EcusPage::filterIndexChanged);
 }
+void EcusPage::setupUi()
+{
+    createLayout();
+    createHeaderCard();
+    createTreeSection();
+    connectSignals();
+}
 
-}  // namespace DbcFile
+} // namespace DbcFile
