@@ -1,81 +1,98 @@
 #pragma once
+#include <QPainter>
+#include <QIcon>
 
-class QString;
-class QIcon;
-class QRect;
-class QPainter;
 namespace Core {
+
+
 /**
- * @class ItemPainter
- * @brief A static helper class for consistent rendering of custom UI items.
+ * @brief Utility class for painting UI items such as cards, badges, icons, and text.
  *
- * @details
- * This class centralizes the painting logic for "Card" style list items used throughout
- * the application (e.g., in DBC Overview, Logging List, etc.).
- * It ensures that borders, colors, icons, and badges look identical everywhere.
+ * This class provides standardized methods for rendering visual elements in the GUI
+ * with proper spacing, colors, and theming. It is designed to work with QPainter.
  */
 class ItemPainter
 {
-   public:
-    ItemPainter() = delete;
+public:
 
     /**
-     * @brief Paints the background of a Card item.
-     *
-     * Draws a rounded rectangle with color depending on selection state.
-     * @param painter QPainter used for drawing.
-     * @param rect The rectangle area of the card.
-     * @param selected True if the card is selected, false otherwise.
-     */
-    static void paintCardBackground(QPainter* painter, const QRect& rect, bool selected);
+* @brief Style for rendering a badge.
+*/
+    struct BadgeStyle {
+        QColor background; ///< Background color of the badge.
+        QColor text;       ///< Text and icon color.
+        QColor border;       ///< Optional border pen.
+    };
 
     /**
-     * @brief Paints an icon inside the Card item.
-     * @param painter QPainter used for drawing.
-     * @param rect Rectangle representing the card area.
-     * @param icon Icon to draw.
-     * @param selected Whether the icon should be drawn in selected state.
-     *
-     * The icon is vertically centered and tinted depending on selection state.
+     * @brief Paints a rounded card rectangle.
+     * @param painter The QPainter to draw with.
+     * @param rect The rectangle representing the card area.
+     * @param selected True if the card is selected; applies highlight style.
      */
+    static void paintCard(QPainter* painter, const QRect& rect, bool selected);
+
+
+    /**
+* @brief Measures the size of a badge based on text and optional icon.
+* @param text Text displayed inside the badge.
+* @param icon Optional icon displayed inside the badge.
+* @return QSize representing the width and height required to render the badge.
+*/
+    static auto measureBadge(const QString& text, const QIcon& icon = QIcon()) -> QSize;
+
+    /**
+ * @brief Paints a badge with text and optional icon.
+ * @param painter The QPainter used for drawing.
+ * @param rect Rectangle specifying the badge position and size.
+ * @param text Text to display inside the badge.
+ * @param icon Optional icon to display inside the badge.
+ * @param style Optional custom style. If nullptr, a default style is applied.
+ */
+    static void paintBadge(QPainter* painter, const QRect& rect,
+                           const QString& text, const QIcon& icon = QIcon(),
+                           const BadgeStyle* style = nullptr);
+
+    /**
+ * @brief Paints an icon centered in the given rectangle.
+ * @param painter The QPainter used for drawing.
+ * @param rect Rectangle in which the icon should be centered.
+ * @param icon The icon to render.
+ * @param selected True if the item is selected; can affect color.
+ */
     static void paintIcon(QPainter* painter, const QRect& rect, const QIcon& icon, bool selected);
 
     /**
-     * @brief Paints the title text of a Card item.
-     * @param painter QPainter used for drawing.
-     * @param rect Rectangle representing the card area.
-     * @param text The title text to display.
-     * @param bold Whether the title should be drawn in bold.
-     *
-     * Text is truncated with "..." if it does not fit.
-     */
-    static void paintTitle(QPainter* painter, const QRect& rect, const QString& text,
-                           bool bold = false);
+ * @brief Paints text inside a rectangle with optional bold style and color.
+ * @param painter The QPainter used for drawing.
+ * @param rect Rectangle specifying the text area.
+ * @param text Text to display.
+ * @param bold True to draw the text bold.
+ * @param color Optional color for the text; uses theme primary text if invalid.
+ * @param align Alignment of the text inside the rectangle.
+ * @param elide True to elide text if it exceeds the width of the rectangle.
+ */
+    static void paintText(QPainter* painter, const QRect& rect, const QString& text,
+                          bool bold = false,
+                          const QColor& color = QColor(), // <--- NEU
+                          Qt::Alignment align = Qt::AlignLeft | Qt::AlignVCenter,
+                          bool elide = true);
+
 
     /**
-     * @brief Paints a badge with optional icon and text inside the Card item.
-     * @param painter QPainter used for drawing.
-     * @param rect Rectangle representing the card area.
-     * @param text Badge text.
-     * @param icon Optional badge icon.
-     * @return Width of the painted badge in pixels.
-     *
-     * Badge is drawn with a background, optional icon, and text.
-     * Returns the badge width for layout adjustments (e.g., detail text positioning).
+     * @brief Paints a row background with subtle border line at the bottom.
+     * @param painter The QPainter used for drawing.
+     * @param rect Rectangle representing the row area.
+     * @param alternate Optional parameter to indicate alternating row colors (unused).
      */
-    static auto paintBadge(QPainter* painter, const QRect& rect, const QString& text,
-                           const QIcon& icon) -> int;
+    static void paintRow(QPainter* painter, const QRect& rect, bool alternate);
 
+
+private:
     /**
-     * @brief Paints detail text to the right of the Card item.
-     * @param painter QPainter used for drawing.
-     * @param rect Rectangle representing the card area.
-     * @param text The detail text.
-     * @param badgeWidth Width of the badge to avoid overlapping it.
-     *
-     * Ensures that the detail text does not overlap with the badge.
+     * @brief Returns a default badge style using theme colors.
+     * @return BadgeStyle with default background, text, and border colors.
      */
-    static void paintDetailText(QPainter* painter, const QRect& rect, const QString& text,
-                                int badgeWidth);
+    static auto defaultBadgeStyle() -> BadgeStyle;
 };
-}  // namespace Core
+} // namespace Core

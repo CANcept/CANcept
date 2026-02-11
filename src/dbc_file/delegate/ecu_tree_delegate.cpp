@@ -1,99 +1,114 @@
 #include "ecu_tree_delegate.hpp"
 
 #include <QAbstractProxyModel>
-#include <QPainter>
-#include <QtMath>  // for ceil/floor
+#include <algorithm>
 
-#include "core/constants.hpp"
+#include "core/enum/dbc_itemtype.hpp"
 #include "core/macro/theme.hpp"
 #include "core/painters/item_painter.hpp"
 #include "dbc_file/constants.hpp"
-#include "dbc_file/model/dbc_model.hpp"
+#include "dbc_file/model/dbc_roles.hpp"
 
+namespace Core {
+enum class DbcItemType;
+}
 namespace DbcFile {
+
 EcuTreeDelegate::EcuTreeDelegate(QTreeView* view, QObject* parent)
     : QStyledItemDelegate(parent), m_treeView(view)
 {
 }
 
 // =============================================================================
-// 1. LAYOUT ENGINE
+// 1. LAYOUT LOGIK
 // =============================================================================
 
+auto EcuTreeDelegate::getCardRect(const QStyleOptionViewItem& option,
+                                   int indentLevel) const -> QRect
+{
+    const auto& spacing = THEME.spacing();
+
+    QRect rect = getViewportRowRect(option);
+
+    // left indent (Tree Level)
+    rect.setLeft(rect.left() + spacing.spacingXl * indentLevel);
+
+    // right margin (identical for all cards)
+    rect.setRight(rect.right() - spacing.spacingXl);
+
+    return rect;
+}
 auto EcuTreeDelegate::calculateLayout(const QRect& fullRect, int signalCount) -> MessageLayout
 {
     const auto& spacing = THEME.spacing();
     MessageLayout layout;
 
-    // Outer margin
+    // Outer margins
     int outerMargin = spacing.spacingSm / 2;
-    layout.cardRect = fullRect.adjusted(outerMargin, outerMargin, -outerMargin, -outerMargin);
+    layout.cardRect = fullRect.adjusted(0, outerMargin, 0, -outerMargin);
 
-    // Header
+    // Header height
     layout.headerRect = layout.cardRect;
     layout.headerRect.setHeight(spacing.HeightMd);
 
-    // Content start
-    const int contentTop = layout.headerRect.bottom() + spacing.spacingXs;
+    // Content Start (below header)
+    int contentTop = layout.headerRect.bottom();
 
-    // Grid calculation
-    int availableWidth = layout.cardRect.width() - 2 * spacing.spacingMd;
+    // Grid Calculation
+    // Available width mins padding left/right within card
+    int availableWidth = layout.cardRect.width() - (2 * spacing.spacingMd);
+
+    // Minimum width per signal item
     int minItemWidth = spacing.WidthSm;
-    int gapH = spacing.spacingXs;
-    int gapV = spacing.spacingXs;
+    int gap = spacing.spacingSm;
 
-    layout.columns = (availableWidth > 0) ? std::max(1, availableWidth / (minItemWidth + gapH)) : 1;
+    // Calculate how items fit in available width
+    layout.columns = (availableWidth > 0) ? std::max(1, availableWidth / (minItemWidth + gap)) : 1;
+
+    // Calculate how many rows of items ar needed
     int rows = (signalCount == 0) ? 0 : (signalCount + layout.columns - 1) / layout.columns;
 
-    layout.itemWidth = (availableWidth - (layout.columns - 1) * gapH) / layout.columns;
-    layout.itemHeight = spacing.HeightMd;
+    // Calculate exact width per item (with stretch)
+    layout.itemWidth = (availableWidth - (layout.columns - 1) * gap) / layout.columns;
+    layout.itemHeight = spacing.HeightSm; // Fixed height for signal items
 
-    int contentHeight = (rows > 0) ? rows * layout.itemHeight + (rows - 1) * gapV : 0;
-    layout.contentRect = QRect(layout.cardRect.left() + spacing.spacingMd, contentTop,
-                               availableWidth, contentHeight);
+    // Total content height
+    int contentHeight = (rows > 0) ? rows * layout.itemHeight + (rows - 1) * gap : 0;
 
-    layout.totalHeight =
-        (contentTop - layout.cardRect.top()) + contentHeight + spacing.spacingMd + 2 * outerMargin;
+    layout.contentRect = QRect(layout.cardRect.left() + spacing.spacingMd,
+                               contentTop,
+                               availableWidth,
+                               contentHeight);
+
+    // Total message card height
+    int bottomPadding = (rows > 0) ? spacing.spacingMd : 0;
+    layout.totalHeight = (contentTop - layout.cardRect.top()) + contentHeight + bottomPadding + (2 * outerMargin);
 
     return layout;
 }
 
 // =============================================================================
-// 2. OVERRIDES
+// 2. STANDARD OVERRIDES
 // =============================================================================
 
-void EcuTreeDelegate::paint(QPainter* painter, const QStyleOptionViewItem& option,
-                            const QModelIndex& index) const
+auto EcuTreeDelegate::sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const -> QSize
 {
-    if (index.column() > 0) return;
+    const auto& spacing = THEME.spacing();
+    if (index.column() > 0) return {0,0};
 
-    painter->save();
-    painter->setRenderHint(QPainter::Antialiasing);
+    auto type = static_cast<Core::DbcItemType>(index.data(DbcRoles::Role_ItemType).toInt());
 
-    const auto type = static_cast<Core::DbcItemType>(index.data(DbcRoles::Role_ItemType).toInt());
+    if (type == Core::DbcItemType::Ecu) {
+        return {option.rect.width(), spacing.HeightMd};
+    }
 
-    if (type == Core::DbcItemType::Ecu)
-        drawEcu(painter, option, index);
-    else if (type == Core::DbcItemType::Message)
-        drawMessage(painter, option, index);
-
-    painter->restore();
-}
-
-auto EcuTreeDelegate::sizeHint(const QStyleOptionViewItem& option,
-                               const QModelIndex& index) const -> QSize
-{
-    if (index.column() > 0) return {0, 0};
-
-    const auto type = static_cast<Core::DbcItemType>(index.data(Role_ItemType).toInt());
-
-    if (type == Core::DbcItemType::Ecu) return {option.rect.width(), THEME.spacing().HeightLg / 2};
-
-    if (type == Core::DbcItemType::Message)
-    {
+    if (type == Core::DbcItemType::Message) {
         int sigCount = index.data(Role_ChildCount).toInt();
-        int width = m_treeView && m_treeView->viewport() ? m_treeView->viewport()->width()
-                                                         : option.rect.width();
+        int width = (m_treeView && m_treeView->viewport())
+                    ? m_treeView->viewport()->width()
+                    : option.rect.width();
+
+        // Dummy Rect for calculation
         auto layout = calculateLayout(QRect(0, 0, width, 0), sigCount);
         return {width, layout.totalHeight};
     }
@@ -101,49 +116,135 @@ auto EcuTreeDelegate::sizeHint(const QStyleOptionViewItem& option,
     return QStyledItemDelegate::sizeHint(option, index);
 }
 
+void EcuTreeDelegate::paint(QPainter* painter, const QStyleOptionViewItem& option,
+                            const QModelIndex& index) const
+{
+    if (index.column() > 0) return;
+
+    painter->save();
+
+    auto type = static_cast<Core::DbcItemType>(index.data(Role_ItemType).toInt());
+
+    if (type == Core::DbcItemType::Ecu) {
+        drawEcu(painter, option, index);
+    } else if (type == Core::DbcItemType::Message) {
+        drawMessage(painter, option, index);
+    } else {
+        // Fallback
+        QStyledItemDelegate::paint(painter, option, index);
+    }
+
+    painter->restore();
+}
+
 // =============================================================================
-// 3. DRAW HELPERS
+// 3. DRAWING LOGIK
 // =============================================================================
+
+void EcuTreeDelegate::drawEcu(QPainter* painter, const QStyleOptionViewItem& option,
+                              const QModelIndex& index) const
+{
+    const auto& spacing = THEME.spacing();
+    bool selected = option.state & QStyle::State_Selected;
+
+    // 1. Calculate rect with indentation for arrow
+    QRect cardRect = getCardRect(option, 1);
+    cardRect.adjust(0,spacing.spacingXs/2, 0, -spacing.spacingXs/2);
+
+    // 2. Background/Card
+    Core::ItemPainter::paintCard(painter, cardRect, selected);
+
+    // 3. Icon + Title
+    int commonPadding = spacing.spacingMd;
+    int iconSize = spacing.IconSm;
+
+    // A) Calculate Icon position
+    QRect iconRect(
+        cardRect.left() + commonPadding,
+        cardRect.center().y() - iconSize / 2 + 1,
+        iconSize,
+        iconSize
+    );
+    Core::ItemPainter::paintIcon(painter, iconRect, QIcon(Constants::Sidebar::IconEcus), selected);
+
+    // B) Calculate title position
+    int titleStartX = iconRect.right() + commonPadding;
+
+    // Define title rect (leave space for badges)
+    QRect titleRect = cardRect;
+    titleRect.setLeft(titleStartX);
+    titleRect.setRight(cardRect.right() - spacing.WidthSm);
+
+    QString title = index.data(Qt::DisplayRole).toString();
+    Core::ItemPainter::paintText(painter, titleRect, title, false);
+
+    // 4. Badges (right)
+    int cursorRight = cardRect.right() - spacing.spacingMd; // starting point inner right
+    int centerY = cardRect.center().y();
+
+    // Preload icons
+    QIcon sigIcon(Constants::Sidebar::IconSignals);
+    QIcon msgIcon(Constants::Sidebar::IconMessages);
+
+    // A) Signal Count
+    QString sigCount = index.data(Role_EcuTotalSignals).toString();
+    QSize sigBadgeSize = Core::ItemPainter::measureBadge(sigCount, sigIcon);
+    QRect sigBadgeRect(cursorRight - sigBadgeSize.width(), centerY - sigBadgeSize.height()/2 + 1, sigBadgeSize.width(), sigBadgeSize.height());
+
+    Core::ItemPainter::paintBadge(painter, sigBadgeRect, sigCount, sigIcon);
+
+    cursorRight -= (sigBadgeSize.width() + spacing.spacingSm); // move cursor to the left
+
+    // B) Message Count
+    QString msgCount = index.data(DbcRoles::Role_ChildCount).toString();
+    QSize msgBadgeSize = Core::ItemPainter::measureBadge(msgCount, msgIcon);
+    QRect msgBadgeRect(cursorRight - msgBadgeSize.width(), centerY - msgBadgeSize.height()/2 + 1, msgBadgeSize.width(), msgBadgeSize.height());
+
+    Core::ItemPainter::paintBadge(painter, msgBadgeRect, msgCount,msgIcon);
+}
 
 void EcuTreeDelegate::drawMessage(QPainter* painter, const QStyleOptionViewItem& option,
                                   const QModelIndex& index) const
 {
     const auto& spacing = THEME.spacing();
+    bool selected = option.state & QStyle::State_Selected;
 
-    QRect fullRect = getViewportRowRect(option);
-    fullRect.setLeft(fullRect.left() + spacing.spacingXl);
-
-    // Resolve source model behind proxy
+    // Count child elements for grid calculation
+    // trace index back to source model index to get access to signals
     const QAbstractItemModel* model = index.model();
     QModelIndex sourceParent = index;
-    while (auto* proxy = qobject_cast<const QAbstractProxyModel*>(model))
-    {
+    while (auto* proxy = qobject_cast<const QAbstractProxyModel*>(model)) {
         sourceParent = proxy->mapToSource(sourceParent);
         model = proxy->sourceModel();
     }
     int signalCount = model->rowCount(sourceParent);
 
-    // Calculate layout
-    MessageLayout layout = calculateLayout(fullRect, signalCount);
+    // Calculate Layout
+    QRect rowRect = getCardRect(option, 2);
+    MessageLayout layout = calculateLayout(rowRect, signalCount);
 
-    // Draw card background
-    Core::ItemPainter::paintCardBackground(painter, layout.cardRect, false);
+    // Paint card background
+    Core::ItemPainter::paintCard(painter, layout.cardRect, selected);
 
-    // Draw header
+    // Paint header
     drawMessageHeader(painter, layout.headerRect, index);
 
-    // Draw signals
+    // Paint signals (grid loop)
     for (int i = 0; i < signalCount; ++i)
     {
-        QModelIndex sigIdx = model->index(i, 0, sourceParent);
+        // Position in grid
         int col = i % layout.columns;
         int row = i / layout.columns;
 
         int x = layout.contentRect.left() + col * (layout.itemWidth + spacing.spacingXs);
         int y = layout.contentRect.top() + row * (layout.itemHeight + spacing.spacingXs);
 
-        QRect sigRect(x, y, layout.itemWidth, layout.itemHeight);
-        drawSignalItem(painter, sigRect, sigIdx);
+        QRect signalRect(x, y, layout.itemWidth, layout.itemHeight);
+
+        // Get index of signal
+        QModelIndex sigIdx = model->index(i, 0, sourceParent);
+
+        drawSignalItem(painter, signalRect, sigIdx);
     }
 }
 
@@ -153,112 +254,168 @@ void EcuTreeDelegate::drawMessageHeader(QPainter* painter, const QRect& headerRe
     const auto& spacing = THEME.spacing();
     const auto& colors = THEME.colors();
 
+    int commonPadding = spacing.spacingMd;
+    int iconSize = spacing.IconSm;
+
+    // Header content area
+    QRect content = headerRect;
+    int centerY = content.center().y();
+    // Cursor X: start on the left and shift to right for each element
+    int cursorX = content.left() + commonPadding;
+
+    // -------------------------------------------------------------------------
+    // 1. ICON (Links, vor dem Namen) -> NEU
+    // -------------------------------------------------------------------------
+    auto icon = index.data(Qt::DecorationRole).value<QIcon>();
+
+    if (!icon.isNull())
+    {
+        QRect iconRect(cursorX, centerY - iconSize/2 + 2, iconSize, iconSize);
+
+        Core::ItemPainter::paintIcon(painter, iconRect, icon, false);
+
+        // Move cursor
+        cursorX += iconSize + commonPadding;
+    }
+
+     // -------------------------------------------------------------------------
+    // 2. MESSAGE NAME
+    // -------------------------------------------------------------------------
     QString name = index.data(Qt::DisplayRole).toString();
-    uint msgId = index.data(Role_Id).toUInt();
-    QString idStr = QString("0x%1").arg(msgId, 0, 16).toUpper();
 
-    // Font setup
+    // Measure text width manually to move cursor correctly
+    painter->save();
     QFont font = painter->font();
-    font.setPointSize(spacing.fontSizeXs);
+    font.setBold(false);
+    font.setPixelSize(spacing.fontSizeMd);
     painter->setFont(font);
-    painter->setPen(colors.textPrimary);
-
-    // Draw name vertically centered
-    QRect textRect = headerRect;
-    textRect.setLeft(textRect.left() + spacing.spacingXl);
-    painter->drawText(textRect, Qt::AlignVCenter | Qt::AlignLeft, name);
-
-    // Draw badge next to name
     QFontMetrics fm(font);
-    int textWidth = fm.horizontalAdvance(name);
-    QRect badgeAnchor = textRect;
-    badgeAnchor.setLeft(textRect.left() + textWidth + spacing.spacingMd);
-    drawBadge(painter, badgeAnchor, idStr, colors.surfaceMain, colors.textSecondary, true);
+    int nameWidth = fm.horizontalAdvance(name);
+    painter->restore();
+
+    QRect nameRect(cursorX, content.top(), nameWidth, content.height());
+    Core::ItemPainter::paintText(painter, nameRect, name, false);
+
+    // Shift cursor
+    cursorX += nameWidth + spacing.spacingMd;
+
+    // -------------------------------------------------------------------------
+    // 3. ID BADGE
+    // -------------------------------------------------------------------------
+    uint msgId = index.data(DbcRoles::Role_Id).toUInt();
+    QString idString = QString("0x%1").arg(msgId, 0, 16).toUpper();
+
+    // Custom Style for ID badge
+    Core::ItemPainter::BadgeStyle idStyle;
+    idStyle.background = colors.surfaceMain;
+    idStyle.text       = colors.textPrimary;
+    idStyle.border     = colors.borderSubtle;
+
+    QSize idSize = Core::ItemPainter::measureBadge(idString);
+    QRect idRect(cursorX, centerY - idSize.height()/2, idSize.width(), idSize.height());
+
+    Core::ItemPainter::paintBadge(painter, idRect, idString, QIcon(), &idStyle);
+
+    // move cursor
+    cursorX += idSize.width() + spacing.spacingSm;
+
+    // -------------------------------------------------------------------------
+    // 4. SIGNAL COUNT BADGE
+    // -------------------------------------------------------------------------
+    int childCount = index.data(DbcRoles::Role_ChildCount).toInt();
+    QString countStr = QString::number(childCount);
+    QIcon sigIcon(Constants::Sidebar::IconSignals);
+
+    QSize countSize = Core::ItemPainter::measureBadge(countStr, sigIcon);
+    QRect countRect(cursorX, centerY - countSize.height()/2, countSize.width(), countSize.height());
+
+    // Standard Style
+    Core::ItemPainter::paintBadge(painter, countRect, countStr, sigIcon);
 }
 
 void EcuTreeDelegate::drawSignalItem(QPainter* painter, const QRect& rect,
                                      const QModelIndex& sigIdx)
 {
-    Core::ItemPainter::paintCardBackground(painter, rect, false);
-
-    auto icon = sigIdx.data(Qt::DecorationRole).value<QIcon>();
-    QString title = sigIdx.data(Qt::DisplayRole).toString() + ":";
-    QString unit = sigIdx.data(Role_Unit).toString();
-
-    double min = sigIdx.data(Role_Min).toDouble();
-    double max = sigIdx.data(Role_Max).toDouble();
-    auto formatNum = [](double v) {
-        QString s = QString::number(v, 'f', 2);
-        while (s.endsWith('0')) s.chop(1);
-        if (s.endsWith('.')) s.chop(1);
-        return s;
-    };
-    QString rangeText = QString("[%1, %2]").arg(formatNum(min), formatNum(max));
-
-    // Draw content
-    Core::ItemPainter::paintIcon(painter, rect, icon, false);
-    Core::ItemPainter::paintTitle(painter, rect, title);
-
-    int badgeWidth = 0;
-    if (!unit.isEmpty()) badgeWidth = Core::ItemPainter::paintBadge(painter, rect, unit, QIcon());
-
-    if (!rangeText.isEmpty())
-        Core::ItemPainter::paintDetailText(painter, rect, rangeText, badgeWidth);
-}
-
-void EcuTreeDelegate::drawEcu(QPainter* painter, const QStyleOptionViewItem& option,
-                              const QModelIndex& index) const
-{
     const auto& spacing = THEME.spacing();
     const auto& colors = THEME.colors();
 
-    QRect ecuRect = getViewportRowRect(option).adjusted(spacing.spacingXl, spacing.spacingXs, 0,
-                                                        -spacing.spacingXs);
+    // Background: mini card
+    Core::ItemPainter::paintCard(painter, rect, false);
 
-    painter->setBrush(colors.surfaceMain);
-    painter->setPen(QPen(colors.borderSubtle, 1));
-    painter->drawRoundedRect(ecuRect, spacing.radiusSm, spacing.radiusSm);
+    // Padding within mini card
+    int padding = spacing.spacingSm;
+    int centerY = rect.center().y();
 
-    Core::ItemPainter::paintIcon(painter, ecuRect, QIcon(Constants::Sidebar::IconEcus), false);
-    Core::ItemPainter::paintTitle(painter, ecuRect, index.data(Qt::DisplayRole).toString(), false);
+    // Get data
+    const QString name = sigIdx.data(Qt::DisplayRole).toString();
+    const QString unit = sigIdx.data(Role_Unit).toString();
+    const double min = sigIdx.data(Role_Min).toDouble();
+    const double max = sigIdx.data(Role_Max).toDouble();
 
-    QRect badgeArea = ecuRect;
-    int widthFirstBadge = Core::ItemPainter::paintBadge(painter, badgeArea,
-                                                        index.data(Role_EcuTotalSignals).toString(),
-                                                        QIcon(Constants::Sidebar::IconSignals));
-    badgeArea.setRight(badgeArea.right() - widthFirstBadge - spacing.spacingSm);
+    // Format Range text: [min, max]
+    // Strip unnecessary zeros
+    QString rangeText = QString("[%1, %2]")
+                            .arg(QString::number(min, 'g', 12), QString::number(max, 'g', 12));
 
-    Core::ItemPainter::paintBadge(painter, badgeArea, index.data(Role_ChildCount).toString(),
-                                  QIcon(Constants::Sidebar::IconMessages));
-}
+    // -------------------------------------------------------------------------
+    // BUILD LAYOUT RIGHT TO LEFT
+    // -------------------------------------------------------------------------
 
-void EcuTreeDelegate::drawBadge(QPainter* painter, const QRect& anchorRect, const QString& text,
-                                const QColor& bg, const QColor& fg, bool border)
-{
-    const auto& spacing = THEME.spacing();
-    const auto& colors = THEME.colors();
+    // Start-Cursor right -
+    int cursorX = rect.right() - padding;
 
-    QFont font = painter->font();
-    font.setPointSize(spacing.fontSizeXs);
-    painter->setFont(font);
+    // 1. UNIT BADGE
+    if (!unit.isEmpty())
+    {
+        QSize badgeSize = Core::ItemPainter::measureBadge(unit);
 
-    QFontMetrics fm(font);
-    int badgeWidth = fm.horizontalAdvance(text) + 2 * spacing.spacingXs;
-    int badgeHeight = spacing.HeightXs;
+        // vertically centered
+        QRect badgeRect(cursorX - badgeSize.width(),
+                        centerY - badgeSize.height()/2 + 1,
+                        badgeSize.width(),
+                        badgeSize.height());
 
-    // Vertical center
-    int yPos = anchorRect.center().y() - (badgeHeight / 2);
-    if (anchorRect.height() % 2 != badgeHeight % 2) yPos++;
+        Core::ItemPainter::paintBadge(painter, badgeRect, unit);
 
-    QRect badgeRect(anchorRect.left(), yPos, badgeWidth, badgeHeight);
+        // Leftshift cursor
+        cursorX -= (badgeSize.width() + spacing.spacingSm);
+    }
 
+    // 2. RANGE TEXT
+    // Measure text width
     painter->save();
-    painter->setBrush(bg);
-    painter->setPen(border ? QPen(colors.borderSubtle) : Qt::NoPen);
-    painter->drawRoundedRect(badgeRect, spacing.radiusXs / 2.0, spacing.radiusXs / 2.0);
-    painter->setPen(fg);
-    painter->drawText(badgeRect, Qt::AlignCenter, text);
+    QFont font = painter->font();
+    font.setPixelSize(spacing.fontSizeSm);
+    painter->setFont(font);
+    QFontMetrics fm(font);
+    int puffer = spacing.spacingXs;
+    int rangeWidth = fm.horizontalAdvance(rangeText) + puffer;
     painter->restore();
+
+    QRect rangeRect(cursorX - rangeWidth, rect.top(), rangeWidth, rect.height());
+
+    // Paint range text
+    Core::ItemPainter::paintText(painter, rangeRect, rangeText, false,
+                                 colors.textPrimary,
+                                 Qt::AlignRight | Qt::AlignVCenter);
+
+    // Leftshift cursor
+    cursorX -= (rangeWidth + spacing.spacingMd);
+
+
+    // 3. SIGNAL NAME
+    // starts left and can only go to cursorX
+    int nameStartX = rect.left() + padding;
+    int maxNameWidth = cursorX - nameStartX;
+
+    if (maxNameWidth > 0)
+    {
+        QRect nameRect(nameStartX, rect.top(), maxNameWidth, rect.height());
+        QString displayName = name + ":";
+        Core::ItemPainter::paintText(painter, nameRect, displayName, false,
+                                     colors.textPrimary,
+                                     Qt::AlignLeft | Qt::AlignVCenter);
+    }
 }
 
 auto EcuTreeDelegate::getViewportRowRect(const QStyleOptionViewItem& option) const -> QRect
@@ -272,4 +429,4 @@ auto EcuTreeDelegate::getViewportRowRect(const QStyleOptionViewItem& option) con
     return rect;
 }
 
-}  // namespace DbcFile
+} // namespace DbcFile
