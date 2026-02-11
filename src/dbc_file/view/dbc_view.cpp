@@ -18,6 +18,10 @@ auto DbcView::getLoadPage() const -> LoadPage&
 {
     return *m_loadPage;
 }
+void DbcView::setSignalUnits(const QStringList& units) const
+{
+    if (m_signalsPage) m_signalsPage->setAvailableUnits(units);
+}
 void DbcView::setSourceModel(QAbstractItemModel* model)
 {
     if (!model) return;
@@ -76,11 +80,11 @@ void DbcView::onSidebarSelectionChanged(int index) const
 
 void DbcView::onEcuFilterTextChanged(const QString& text) const
 {
-    m_ecuTreeProxy->setSearchText(text);
+   if (m_ecuTreeProxy) m_ecuTreeProxy->setSearchText(text);
 }
 void DbcView::onEcuFilterIndexChanged(int index) const
 {
-    m_ecuTreeProxy->setFilterCategory(index);
+   if (m_ecuTreeProxy) m_ecuTreeProxy->setFilterCategory(index);
 }
 void DbcView::onMessageFilterTextChanged(const QString& text) {}
 void DbcView::onMessageFilterIndexChanged(int index) {}
@@ -92,12 +96,9 @@ void DbcView::onSignalFilterTextChanged(const QString& text)
         m_allSignalsProxy->setSearchFilter(text);
     }
 }
-void DbcView::onSignalUnitChanged(const QString& unit)
+void DbcView::onSignalUnitChanged(const QString& unit) const
 {
-    if(m_allSignalsProxy)
-    {
-        m_allSignalsProxy->setFilterUnit(unit);
-    }
+    if(m_allSignalsProxy) m_allSignalsProxy->setSignalFilterUnit(unit);
 }
 
 void DbcView::addPage(QWidget* page, const QString& title, const QString& iconPath,

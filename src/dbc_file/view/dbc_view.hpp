@@ -49,6 +49,7 @@ class DbcView : public QWidget
      * @return Pointer to m_loadPage
      */
     [[nodiscard]] auto getLoadPage() const -> LoadPage&;
+    void setSignalUnits(const QStringList& units) const;
 
     /**
      * @brief Initializes the view with the source data.
@@ -150,7 +151,7 @@ class DbcView : public QWidget
      * @caller SignalsPage (search bar).
      */
     void onSignalFilterTextChanged(const QString& text);
-    void onSignalUnitChanged(const QString& unit);
+    void onSignalUnitChanged(const QString& unit) const;
 
     /**
      * @brief Adds a page to the content stack and sidebar.
