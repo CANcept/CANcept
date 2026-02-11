@@ -1,8 +1,8 @@
 #include "signal_table_delegate.hpp"
 #include "dbc_file/constants.hpp"
 #include "dbc_file/model/dbc_roles.hpp"
+#include "core/painters/item_painter.hpp"
 #include "core/macro/theme.hpp"
-#include <QPainter>
 
 namespace DbcFile {
 
@@ -11,113 +11,80 @@ SignalTableDelegate::SignalTableDelegate(QObject* parent) : QStyledItemDelegate(
 void SignalTableDelegate::paint(QPainter* painter, const QStyleOptionViewItem& option,
                                 const QModelIndex& index) const
 {
-    painter->save();
-    painter->setRenderHint(QPainter::Antialiasing);
-
-    const auto& colors = THEME.colors();
     const auto& spacing = THEME.spacing();
+    const auto& colors = THEME.colors();
 
-    // Paint background
-    QStyleOptionViewItem opt = option;
-    initStyleOption(&opt, index);
+    // Paint row background and separation line
+    Core::ItemPainter::paintRow(painter, option.rect, false);
 
-    painter->fillRect(opt.rect, colors.surfaceMain);
+    // Padding Rect for content
+    const int padding = spacing.spacingSm;
+    QRect rowRect = option.rect.adjusted(padding, 0, -padding, 0);
 
-    // Grid line
-    painter->setPen(QPen(QColor(colors.borderSubtle.name(QColor::HexArgb)), 0));
-    painter->drawLine(opt.rect.bottomLeft(), opt.rect.bottomRight());
+    // --- Column Logic ---
 
-    // Font
-    painter->setPen(colors.textPrimary);
-    QFont font = opt.font;
-    font.setPixelSize(spacing.fontSizeSm);
-    painter->setFont(font);
-
-    // Padding Rect
-    QRect paddedRect = opt.rect.adjusted(spacing.spacingSm, 0, -spacing.spacingSm, 0);
-
-    // --- COLUMN LOGIC ---
-
-    // Signal Name
-    if (index.column() == Constants::Columns::SigName)
+    // 1. Message Column (Badge + Text)
+    if (index.column() == Constants::Columns::SigMessage)
     {
-        painter->setFont(font);
-        painter->drawText(paddedRect, Qt::AlignVCenter | Qt::AlignCenter, opt.text);
-    }
-    // Message ID Badge + Name
-    else if (index.column() == Constants::Columns::SigMessage)
-    {
-        // get ID From model
         uint msgId = index.data(DbcRoles::Role_Id).toUInt();
         QString idText = QString("0x%1").arg(msgId, 3, 16, QChar('0')).toUpper();
         QString msgName = index.data(Qt::DisplayRole).toString();
 
-        // draw badge
-        QFont badgeFont = font;
-        badgeFont.setPixelSize(spacing.fontSizeXs);
-        QFontMetrics fm(badgeFont);
-        int badgeWidth = fm.horizontalAdvance(idText) + 12;
-        int badgeHeight = 18;
+        QSize badgeSize = Core::ItemPainter::measureBadge(idText);
+        QRect badgeRect(rowRect.left(), rowRect.center().y() - badgeSize.height()/2 + 1,
+                        badgeSize.width(), badgeSize.height());
 
-        QRect badgeRect(paddedRect.left(), paddedRect.center().y() - badgeHeight / 2, badgeWidth, badgeHeight);
+        // Custom ID badge style
+        Core::ItemPainter::BadgeStyle badgeStyle;
+        badgeStyle.background = Qt::transparent;
+        badgeStyle.text = colors.textSecondary;
+        badgeStyle.border = colors.borderSubtle;
+        Core::ItemPainter::paintBadge(painter, badgeRect, idText ,QIcon(), &badgeStyle);
 
-        // Badge Background
-        painter->setBrush(colors.surfaceMain);
-        painter->setPen(QPen(colors.borderSubtle, 1));
-        painter->drawRoundedRect(badgeRect, spacing.radiusSm / 2, spacing.radiusSm / 2);
+        // Paint text next to badge
+        int textOffset = badgeSize.width() + padding;
+        QRect textRect = rowRect.adjusted(textOffset, 0, 0, 0);
 
-        // Badge Text
-        painter->setPen(colors.textSecondary);
-        painter->setFont(badgeFont);
-        painter->drawText(badgeRect, Qt::AlignCenter, idText);
-
-        // Name
-        painter->setFont(font); // Reset
-        painter->setPen(colors.textPrimary);
-        QRect textRect = paddedRect.adjusted(badgeWidth + 10, 0, 0, 0);
-        painter->drawText(textRect, Qt::AlignVCenter | Qt::AlignCenter, msgName);
+        Core::ItemPainter::paintText(painter, textRect, msgName);
     }
-    // Range: [min, max]
+    // 2. Range Column
     else if (index.column() == Constants::Columns::SigMin)
     {
         double min = index.data(Qt::DisplayRole).toDouble();
         double max = index.sibling(index.row(), Constants::Columns::SigMax).data().toDouble();
         QString text = QString("[%1, %2]").arg(min).arg(max);
-        painter->drawText(paddedRect, Qt::AlignVCenter | Qt::AlignCenter, text);
+
+        Core::ItemPainter::paintText(painter, rowRect, text,false, QColor(),Qt::AlignCenter);
     }
-    // Length: Value + "Bit"
+    // 3. Length Column
     else if (index.column() == Constants::Columns::SigLength)
     {
         QString val = index.data(Qt::DisplayRole).toString();
         if (!val.isEmpty()) val += Constants::SignalsPage::LengthUnit;
-        painter->drawText(paddedRect, Qt::AlignVCenter | Qt::AlignCenter, val);
+        Core::ItemPainter::paintText(painter, rowRect, val,false, QColor(),Qt::AlignCenter);
     }
+    // 4. Unit Column
     else if (index.column() == Constants::Columns::SigUnit)
     {
         QString val = Constants::SignalsPage::DefaultUnit;
-        if (!index.data(Role_Unit).toString().isEmpty())
-        {
-            val = index.data(Role_Unit).toString();
-        }
-        painter->drawText(paddedRect, Qt::AlignVCenter, val);
+        if (!index.data(Role_Unit).toString().isEmpty()) val = index.data(Role_Unit).toString();
+        Core::ItemPainter::paintText(painter, rowRect, val, false, QColor(),Qt::AlignCenter);
     }
-    // Standard Columns (Factor, Offset, ByteOrder, Type, StartBit)
+    // 5. Standard columns
     else
     {
-        QString text = opt.text;
-        if (text.isEmpty()) {
-            text = index.data(Qt::DisplayRole).toString();
-        }
-        painter->drawText(paddedRect, Qt::AlignVCenter | Qt::AlignCenter, text);
-    }
+        QString text = index.data(Qt::DisplayRole).toString();
+        bool isBold = (index.column() == Constants::Columns::SigName);
 
-    painter->restore();
+        Core::ItemPainter::paintText(painter, rowRect, text, isBold, QColor(),Qt::AlignCenter);
+    }
 }
 
 auto SignalTableDelegate::sizeHint(const QStyleOptionViewItem& option,
                                    const QModelIndex& index) const -> QSize
 {
-    return {option.rect.width(), THEME.spacing().HeightSm};
+    const auto& spacing = THEME.spacing();
+    return {option.rect.width(), spacing.HeightSm};
 }
 
 } // namespace DbcFile
