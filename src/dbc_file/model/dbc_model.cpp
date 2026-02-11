@@ -154,6 +154,11 @@ auto DbcModel::data(const QModelIndex& index, const int role) const -> QVariant
         }
     }
 
+    if (item->type() == Core::DbcItemType::Ecu && role == DbcRoles::Role_EcuTotalSignals)
+    {
+        return item->data(Constants::Columns::EcuTotalSignals);
+    }
+
     return {};
 }
 void DbcModel::onDbcParsed(const Core::DBCParsedEvent& event)
