@@ -28,6 +28,18 @@ class CardWidget final : public QFrame
      */
     explicit CardWidget(const QString& title = QString(), const QString& subtitle = QString(),
                         const QString& iconPath = QString(), QWidget* parent = nullptr);
+
+    /**
+     * @brief Setter for the title.
+     * @param title
+     */
+    void setTitle(const QString& title);
+
+    /**
+     * Setter for the subtitle
+     * @param subtitle
+     */
+    void setSubtitle(const QString& subtitle);
     ~CardWidget() override = default;
 
     /**
