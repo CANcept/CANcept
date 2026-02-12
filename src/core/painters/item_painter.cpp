@@ -167,10 +167,19 @@ void ItemPainter::paintText(QPainter* painter, const QRect& rect, const QString&
 
     painter->restore();
 }
-void ItemPainter::paintRow(QPainter* painter, const QRect& rect, bool /*alternate*/)
+void ItemPainter::paintRow(QPainter* painter, const QRect& rect, bool selected, bool hovered)
 {
     const auto& c = THEME.colors();
-    painter->fillRect(rect, c.surfaceMain);
+    QColor bgColor = c.surfaceMain;
+
+    if (selected) {
+        bgColor = c.surfaceSelected;
+    } else if (hovered) {
+        bgColor = c.surfaceHover;
+    }
+
+    painter->fillRect(rect, bgColor);
+
     painter->setPen(QPen(c.borderSubtle, 0));
     painter->drawLine(rect.bottomLeft(), rect.bottomRight());
 }

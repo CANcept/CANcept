@@ -83,9 +83,10 @@ public:
      * @brief Paints a row background with subtle border line at the bottom.
      * @param painter The QPainter used for drawing.
      * @param rect Rectangle representing the row area.
-     * @param alternate Optional parameter to indicate alternating row colors (unused).
+     * @param selected Indicates if item is selected.
+     * @param hovered Indicates if item is hovered.
      */
-    static void paintRow(QPainter* painter, const QRect& rect, bool alternate);
+    static void paintRow(QPainter* painter, const QRect& rect, bool selected, bool hovered);
 
 
 private:
