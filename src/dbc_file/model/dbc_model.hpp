@@ -53,8 +53,8 @@ class DbcModel : public QAbstractItemModel
      * @param parent Parent model index.
      * @return A valid QModelIndex if the child exists; otherwise an invalid index.
      */
-    [[nodiscard]] auto index(int row, int column,
-                             const QModelIndex& parent) const -> QModelIndex override;
+    [[nodiscard]] auto index(int row, int column, const QModelIndex& parent) const
+        -> QModelIndex override;
 
     /**
      * @brief Returns the parent index for a given child index.

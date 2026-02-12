@@ -1,8 +1,8 @@
 #include "event_broker.hpp"
 namespace EventBroker {
 
-auto EventBroker::_subscribe(const std::type_index type,
-                             std::function<void(const void*)> callback) -> Core::Connection
+auto EventBroker::_subscribe(const std::type_index type, std::function<void(const void*)> callback)
+    -> Core::Connection
 {
     auto& channel = getChannel(type);
 

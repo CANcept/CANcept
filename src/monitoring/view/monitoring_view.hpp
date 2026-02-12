@@ -28,15 +28,6 @@ class MonitoringView : public QWidget
     ~MonitoringView() override = default;
 
     /**
-     * @name Configuration Accessors
-     * @{
-     */
-    [[nodiscard]] auto interfaceSelector() const -> QComboBox*
-    {
-        return m_configCard ? m_configCard->interfaceSelector() : nullptr;
-    }
-
-    /**
      * Sets a model for the view.
      * @param model contains the model to be added
      */
@@ -49,12 +40,12 @@ class MonitoringView : public QWidget
     void setDelegate(MonitoringDelegate* model);
 
     // Accessors for the Delegate to wire up signals/slots
-    SignalList* getSignalListView() const
+    [[nodiscard]] auto getSignalListView() const -> SignalList*
     {
         return m_signalListView;
     }
 
-    GraphListView* getGraphListView() const
+    [[nodiscard]] auto getGraphListView() const -> GraphListView*
     {
         return m_graphListView;
     }
@@ -102,8 +93,6 @@ class MonitoringView : public QWidget
 
     MonitoringModel* m_model;
     MonitoringDelegate* m_delegate;
-
-    CanBusConfigCard* m_configCard;
 
     Core::DbcConfig m_dbcConfig;
 };

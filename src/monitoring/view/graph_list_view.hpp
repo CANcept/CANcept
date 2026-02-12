@@ -71,7 +71,18 @@ class GraphListView : public QWidget
 
     void onDbcChange();
 
+   protected:
+    /**
+     * @brief Handles the rerender of the AppRootView.
+     * @param event The received event.
+     */
+    auto event(QEvent* event) -> bool override;
+
    private:
+    void setupUi();
+
+    void applyStyle();
+    QVBoxLayout* m_mainLayout;
     /**
      * @brief Layout arranging SignalGraph widgets vertically.
      */
@@ -81,6 +92,8 @@ class GraphListView : public QWidget
      * @brief Scroll area providing vertical scrolling for the graph list.
      */
     QScrollArea* m_scrollArea;
+
+    QWidget* m_scrollContent;
 
     /**
      * @brief Collection of active SignalGraph widgets.

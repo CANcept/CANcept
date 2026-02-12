@@ -42,8 +42,8 @@ class CardListDelegate : public QStyledItemDelegate
      *
      * The height is taken from THEME spacing (HeightMd).
      */
-    [[nodiscard]] auto sizeHint(const QStyleOptionViewItem& option,
-                                const QModelIndex& index) const -> QSize override;
+    [[nodiscard]] auto sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const
+        -> QSize override;
 
     /**
      * @brief Paints an item as a card with icon, title, badge, and detail text.

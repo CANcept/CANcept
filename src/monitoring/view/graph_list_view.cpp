@@ -4,6 +4,8 @@
 #include <QVBoxLayout>
 
 #include "core/macro/console_logging.hpp"
+#include "core/macro/theme.hpp"
+#include "core/theme/style_event.hpp"
 #include "core/widgets/card_widget.hpp"
 #include "monitoring/constants.hpp"
 #include "signal_graph.hpp"
@@ -11,26 +13,59 @@
 namespace Monitoring {
 
 GraphListView::GraphListView(MonitoringModel* model, MonitoringDelegate* delegate)
-    : QWidget(nullptr), m_layout(new QVBoxLayout()), m_model(model)
+    : QWidget(nullptr),
+      m_layout(new QVBoxLayout()),
+      m_scrollArea(new QScrollArea(this)),
+      m_model(model)
 {
-    // Scroll Area
+    setupUi();
+}
+
+void GraphListView::setupUi()
+{
+    m_mainLayout = new QVBoxLayout(this);
     m_scrollArea = new QScrollArea(this);
+    m_scrollContent = new QWidget(m_scrollArea);
+    m_layout = new QVBoxLayout(m_scrollContent);
+
+    m_scrollArea->setWidget(m_scrollContent);
+    m_mainLayout->addWidget(m_scrollArea);
+
+    applyStyle();
+}
+
+void GraphListView::applyStyle()
+{
+    const auto& spacing = THEME.spacing();
+    const auto& colors = THEME.colors();
+
+    if (!m_scrollContent) return;
+    m_scrollContent->setStyleSheet(QString("background: %1;").arg(colors.surfaceMain.name()));
+
+    if (!m_mainLayout) return;
+    m_mainLayout->setContentsMargins(0, 0, 0, 0);
+
+    if (!m_scrollArea) return;
+    m_scrollArea->setStyleSheet(QString("background-color: %1;").arg(colors.surfaceMain.name()));
     m_scrollArea->setWidgetResizable(true);
+    m_scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     m_scrollArea->setFrameShape(QFrame::NoFrame);
 
-    // widget to hold the layout
-    auto* container = new QWidget();
-    m_layout->setContentsMargins(5, 5, 5, 5);
-    m_layout->setSpacing(10);
-    m_layout->setAlignment(Qt::AlignTop);  // Keep graphs at the top
-    container->setLayout(m_layout);
+    if (!m_layout) return;
+    m_layout->setContentsMargins(0, 0, 0, 0);
+    m_layout->setSpacing(spacing.spacingSm);
+    m_layout->addStretch();
+}
 
-    m_scrollArea->setWidget(container);
-
-    // main layout for this widget
-    auto* mainLayout = new QVBoxLayout(this);
-    mainLayout->setContentsMargins(0, 0, 0, 0);
-    mainLayout->addWidget(m_scrollArea);
+auto GraphListView::event(QEvent* event) -> bool
+{
+    if (event->type() == Core::StyleEvent::EventType)
+    {
+        applyStyle();
+        updateViewData();
+        return true;
+    }
+    return QWidget::event(event);
 }
 
 void GraphListView::addGraph(const QString& messageId, const QString& signalName)
@@ -45,7 +80,7 @@ void GraphListView::addGraph(const QString& messageId, const QString& signalName
 
     LOG_INF("MonitoringComponent", "GraphList graph added for signal");
 
-    SignalGraph* graph = new SignalGraph(messageId, signalName, nullptr);
+    auto* graph = new SignalGraph(messageId, signalName, nullptr);
     graph->setContainer(new Core::CardWidget(QString("0x%1:  %2").arg(messageId, signalName),
                                              QString(), Constants::SIGNAL_GRAPH_ICON_PATH, this));
     graph->getContainer()->contentLayout()->addWidget(graph);
@@ -100,8 +135,7 @@ void GraphListView::onDbcChange()
 {
     for (SignalGraph* graph : m_signal_graphs)
     {
-        m_layout->removeWidget(graph->getContainer());
-        graph->deleteLater();
+        deleteGraph(graph->getMessageId(), graph->getSignalName());
     }
     m_signal_graphs.clear();
 }
@@ -118,6 +152,7 @@ void GraphListView::updateViewData()
         QString targetMsgId = graph->getMessageId();
         QString targetSignalName = graph->getSignalName();
         QModelIndex messageIndex;
+        graph->applyStyle();
 
         bool found = false;
         for (int i = 0; i < m_model->rowCount(QModelIndex()); ++i)

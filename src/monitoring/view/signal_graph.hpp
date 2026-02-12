@@ -83,6 +83,8 @@ class SignalGraph : public QWidget
         m_container = container;
     }
 
+    void applyStyle();
+
    private:
     void setupPlot();
 

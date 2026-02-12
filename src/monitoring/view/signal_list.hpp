@@ -25,7 +25,15 @@ class SignalList final : public QWidget
    public slots:
     void onDbcChange();
 
+   protected:
+    /**
+     * @brief Handles the rerender of the AppRootView.
+     * @param event The received event.
+     */
+    auto event(QEvent* event) -> bool override;
+
    private:
+    void applyStyle();
     void populateDecodedFromModel();
 
     void clearMessages();
@@ -33,6 +41,7 @@ class SignalList final : public QWidget
     /**
      * @brief Scroll area providing vertical scrolling for the graph list.
      */
+    QVBoxLayout* m_mainLayout;
     QScrollArea* m_scrollArea;
     QVBoxLayout* m_cardsLayout;
     QWidget* m_scrollContent;
