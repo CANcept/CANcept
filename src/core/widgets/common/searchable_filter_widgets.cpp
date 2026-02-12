@@ -5,9 +5,9 @@
 #include "searchable_filter_widgets.hpp"
 
 #include <QHeaderView>
-#include <QVBoxLayout>
 #include <QTableView>
 #include <QTreeView>
+#include <QVBoxLayout>
 
 #include "core/constants.hpp"
 #include "core/macro/theme.hpp"

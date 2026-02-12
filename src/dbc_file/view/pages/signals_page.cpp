@@ -6,10 +6,10 @@
 #include "core/macro/theme.hpp"
 #include "core/widgets/card_widget.hpp"
 #include "core/widgets/common/searchable_filter_widgets.hpp"
+#include "core/widgets/common/styled_filter_bar.hpp"
 #include "dbc_file/constants.hpp"
 #include "dbc_file/delegate/signal_table_delegate.hpp"
 #include "dbc_file/model/dbc_roles.hpp"
-#include "core/widgets/common/styled_filter_bar.hpp"
 
 namespace DbcFile {
 
