@@ -1,182 +1,189 @@
-//
-// Created by Adrian Rupp on 30.12.25.
-//
+/**
+ * @file searchable_filter_widgets.hpp
+ * @brief Composite widgets combining a filter bar with a table or tree view.
+ *
+ * Provides reusable UI components that integrate:
+ * - A StyledFilterBar (search field + optional combo filter)
+ * - A QTableView or QTreeView
+ *
+ * The widgets forward filter signals to allow higher-level pages
+ * to connect proxy models or filtering logic.
+ */
+
 #pragma once
 
-#include <QComboBox>
-#include <QLineEdit>
-#include <QTableView>
-#include <QTreeView>
+#include <QWidget>
 
-#include "core/widgets/common/styled_filter_bar.hpp"
-#include "styled_filter_bar.hpp"
+class QTableView;
+class QTreeView;
 
 namespace Core {
-}
-namespace Core {
 
-// ==============================================================================
-// 1. Searchable Filter Table
-// ==============================================================================
+class StyledFilterBar;
+
+// ============================================================================
+// SearchableFilterTable
+// ============================================================================
 
 /**
  * @class SearchableFilterTable
- * @brief A reusable compound widget containing a Search Bar (top), Filter Combo (top), and Table
- * (bottom).
+ * @brief Composite widget combining a StyledFilterBar and a QTableView.
  *
- * @details
- * Layout:
- * [ Search Bar ......... ] [ Filter Combo ]
- * [ Table View                            ]
+ * Structure:
+ *  - Top: StyledFilterBar (search + optional filter combo)
+ *  - Bottom: QTableView wrapped in a styled frame
  *
- * Used for lists that require flat data representation (Messages, Signals).
+ * Responsibilities:
+ *  - Forwards filter signals (search text, filter index)
+ *  - Applies consistent theme-based styling to the table and header
+ *  - Provides access to the internal QTableView for model assignment
  */
-class SearchableFilterTable final : public QWidget
+class SearchableFilterTable : public QWidget
 {
     Q_OBJECT
 
-   public:
+public:
     /**
-     * @brief Constructor
-     * @param parent Parent widget
+     * @brief Constructs the composite table widget.
+     * @param parent Optional parent widget.
      */
     explicit SearchableFilterTable(QWidget* parent = nullptr);
-    ~SearchableFilterTable() override = default;
 
     /**
-     * @brief Returns the internal table view.
-     * @caller Parent Page (to set models/delegates).
+     * @brief Returns the internal QTableView.
      */
     [[nodiscard]] auto tableView() const -> QTableView*;
 
     /**
-     * @brief Returns the internal filter bar widget.
-     * @return Pointer to StyledFilterBar
+     * @brief Returns the internal StyledFilterBar.
      */
-    [[nodiscard]] auto filterBar() const -> Core::StyledFilterBar*;
+    [[nodiscard]] auto filterBar() const -> StyledFilterBar*;
 
     /**
-     * @brief Sets the placeholder text displayed in the search bar.
-     * @param text Placeholder string
+     * @brief Sets the placeholder text of the search field.
      */
     void setSearchPlaceholder(const QString& text) const;
 
     /**
-     * @brief Sets the available filter options in the filter bar.
-     * @param options List of filter option strings
+     * @brief Sets the filter combo box options.
      */
     void setFilterOptions(const QStringList& options) const;
 
     /**
-     * @brief Sets the search text programmatically.
-     * @param text Search string
+     * @brief Sets the current search text.
      */
     void setSearchText(const QString& text) const;
 
-   signals:
+    /**
+     * @brief Applies themed styling to the horizontal header.
+     */
+    void configureHeaderStyle();
+
+    /**
+     * @brief Applies themed styling to the table view.
+     */
+    void applyTableStyle();
+
+    /**
+     * @brief Configures base table behavior (scrollbars, grid, headers).
+     */
+    void configureTableBasics();
+
+signals:
     /**
      * @brief Emitted when the search text changes.
-     * @param text Current search string
      */
     void filterTextChanged(const QString& text);
 
     /**
-     * @brief Emitted when the selected filter index changes.
-     * @param index Current filter index
+     * @brief Emitted when the filter combo index changes.
      */
-    void filterIndexChanged(const int index);
+    void filterIndexChanged(int index);
 
-   private:
+private:
     /**
-     * @brief Initializes layout and connections.
-     * @caller Constructor.
+     * @brief Builds the widget layout and connects filter signals.
      */
     void setupUi();
 
-    QTableView* m_tableView = nullptr;             ///< Internal table view
-    Core::StyledFilterBar* m_filterBar = nullptr;  ///< Filter bar
+private:
+    StyledFilterBar* m_filterBar = nullptr;
+    QTableView* m_tableView = nullptr;
 };
 
-// ==============================================================================
-// 2. Searchable Filter Tree
-// ==============================================================================
+
+// ============================================================================
+// SearchableFilterTree
+// ============================================================================
 
 /**
  * @class SearchableFilterTree
- * @brief A reusable compound widget containing a Search Bar (top), Filter Combo (top), and Tree
- * (bottom).
+ * @brief Composite widget combining a StyledFilterBar and a QTreeView.
  *
- * @details
- * **Layout:**
- * [ Search Bar ......... ] [ Filter Combo ]
- * [ Tree View                             ]
+ * Structure:
+ *  - Top: StyledFilterBar (search + optional filter combo)
+ *  - Bottom: QTreeView
  *
- * Used for hierarchical data representation (ECUs).
+ * Responsibilities:
+ *  - Forwards filter signals
+ *  - Provides access to the internal QTreeView for model assignment
  */
 class SearchableFilterTree : public QWidget
 {
     Q_OBJECT
 
-   public:
+public:
     /**
-     * @brief Constructor
-     * @param parent Parent widget
+     * @brief Constructs the composite tree widget.
+     * @param parent Optional parent widget.
      */
     explicit SearchableFilterTree(QWidget* parent = nullptr);
-    ~SearchableFilterTree() override = default;
 
     /**
-     * @brief Returns the internal tree view.
-     * @return Pointer to QTreeView
+     * @brief Returns the internal QTreeView.
      */
     [[nodiscard]] auto treeView() const -> QTreeView*;
 
     /**
-     * @brief Returns the internal filter bar widget.
-     * @return Pointer to StyledFilterBar
+     * @brief Returns the internal StyledFilterBar.
      */
-    [[nodiscard]] auto filterBar() const -> Core::StyledFilterBar*;
+    [[nodiscard]] auto filterBar() const -> StyledFilterBar*;
 
     /**
-     * @brief Sets the placeholder text displayed in the search bar.
-     * @param text Placeholder string
+     * @brief Sets the placeholder text of the search field.
      */
     void setSearchPlaceholder(const QString& text) const;
 
     /**
-     * @brief Sets the available filter options in the filter bar.
-     * @param options List of filter option strings
+     * @brief Sets the filter combo box options.
      */
     void setFilterOptions(const QStringList& options) const;
 
     /**
-     * @brief Sets the search text programmatically.
-     * @param text Search string
+     * @brief Sets the current search text.
      */
     void setSearchText(const QString& text) const;
 
-   signals:
+signals:
     /**
      * @brief Emitted when the search text changes.
-     * @param text Current search string
      */
     void filterTextChanged(const QString& text);
 
     /**
-     * @brief Emitted when the selected filter index changes.
-     * @param index Current filter index
+     * @brief Emitted when the filter combo index changes.
      */
     void filterIndexChanged(int index);
 
-   private:
+private:
     /**
-     * @brief Initializes layout and connections.
-     * @caller Constructor.
+     * @brief Builds the widget layout and connects filter signals.
      */
     void setupUi();
 
-    QTreeView* m_treeView = nullptr;               ///< Internal tree view
-    Core::StyledFilterBar* m_filterBar = nullptr;  ///< Filter bar
+private:
+    StyledFilterBar* m_filterBar = nullptr;
+    QTreeView* m_treeView = nullptr;
 };
 
-}  // namespace Core
+} // namespace Core

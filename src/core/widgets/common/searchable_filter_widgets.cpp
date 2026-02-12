@@ -4,6 +4,7 @@
 
 #include "searchable_filter_widgets.hpp"
 
+#include <QHeaderView>
 #include <QVBoxLayout>
 
 #include "core/constants.hpp"
@@ -42,6 +43,60 @@ void SearchableFilterTable::setSearchText(const QString& text) const
 {
     m_filterBar->setSearchText(text);
 }
+void SearchableFilterTable::configureHeaderStyle()
+{
+    const auto& spacing = THEME.spacing();
+    const auto& colors  = THEME.colors();
+
+    auto* header = m_tableView->horizontalHeader();
+    if (!header) return;
+
+    header->setSectionResizeMode(QHeaderView::Interactive);
+    header->setStretchLastSection(false);
+
+    header->setStyleSheet(QString(
+        "QHeaderView::section {"
+        "   background-color: %1;"
+        "   border: none;"
+        "   border-bottom: %2px solid %3;"
+        "   padding: %4px;"
+        "   font-weight: bold;"
+        "   color: %5;"
+        "}")
+        .arg(colors.surfaceMain.name())
+        .arg(spacing.borderThick)
+        .arg(colors.borderSubtle.name(QColor::HexArgb))
+        .arg(spacing.spacingXs)
+        .arg(colors.textPrimary.name())
+    );
+}
+void SearchableFilterTable::applyTableStyle()
+{
+    const auto& spacing = THEME.spacing();
+    const auto& colors  = THEME.colors();
+
+    m_tableView->setStyleSheet(QString(
+        "QTableView {"
+        "   border: none;"
+        "   border-radius: %1px;"
+        "   background-color: %2;"
+        "}")
+        .arg(spacing.radiusSm)
+        .arg(colors.surfaceMain.name())
+    );
+}
+void SearchableFilterTable::configureTableBasics()
+{
+    m_tableView->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    m_tableView->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+
+    m_tableView->setShowGrid(false);
+    m_tableView->setAlternatingRowColors(false);
+
+    if (m_tableView->verticalHeader())
+        m_tableView->verticalHeader()->hide();
+}
+
 
 void SearchableFilterTable::setupUi()
 {
@@ -56,7 +111,6 @@ void SearchableFilterTable::setupUi()
     // --- Top bar setup ---
     m_filterBar = new Core::StyledFilterBar(this);
 
-    // --- Table View ---
     // --- Table View ---
     auto* borderFrame = new QFrame(this);
     borderFrame->setObjectName("tableFrame");
