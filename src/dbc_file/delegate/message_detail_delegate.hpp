@@ -1,47 +1,86 @@
+/**
+ * @file message_detail_delegate.hpp
+ * @brief Custom item delegate that renders a signal detail "card" in the messages detail view.
+ *
+ * The delegate draws a card-like layout consisting of:
+ * - Header: signal name and optional unit badge
+ * - Grid: two rows of attribute/value pairs (start bit, length, byte order, type, factor, offset, min, max)
+ * - Footer: receiver list (if available)
+ *
+ * Data is retrieved using Qt standard roles (DisplayRole) and custom DBC roles
+ * defined in dbc_roles.hpp.
+ */
+
 #pragma once
+
 #include <QStyledItemDelegate>
+
+class QPainter;
+class QStyleOptionViewItem;
+class QModelIndex;
+class QSize;
+class QRect;
+class QString;
+
 namespace DbcFile {
+
 /**
  * @class MessagesDetailDelegate
- * @brief Renders detailed Signal cards in the bottom pane of the Messages Page.
+ * @brief Paints a card-style detail row for a selected message/signal.
  *
- * @details
- * Used in the Detail View (QListView) when a message is selected.
- * Displays all technical signal attributes (StartBit, Length, Factor, etc.) in a grid layout.
+ * The delegate is intended for detail panes where a richer, multi-line representation
+ * is needed. It uses the current theme for spacing and colors and relies on
+ * Core::ItemPainter utilities for consistent UI rendering.
  */
-class MessagesDetailDelegate : public QStyledItemDelegate
+class MessagesDetailDelegate final : public QStyledItemDelegate
 {
     Q_OBJECT
-   public:
+
+public:
+    /**
+     * @brief Constructs the delegate.
+     * @param parent Optional QObject parent.
+     */
     explicit MessagesDetailDelegate(QObject* parent = nullptr);
-    ~MessagesDetailDelegate() override = default;
 
     /**
-     * @brief Paints a complex grid layout for technical signal attributes.
-     *
-     * @caller Qt View (QListView) during paint events.
-     *
-     * @details
-     * Retrieves specific data using Custom Roles (`Role_StartBit`, `Role_Factor`, etc.)
-     * regardless of column indices.
-     * 1. Draws a card border.
-     * 2. Header: Name + Unit.
-     * 3. Grid: Draws labels ("Start Bit") and values ("0") in a structured layout.
+     * @brief Returns the size hint for a single card item.
+     * @param option Style options.
+     * @param index Model index (unused for sizing).
+     * @return Size hint with a fixed height and view-defined width.
      */
-    void paint(QPainter* painter, const QStyleOptionViewItem& option,
+    [[nodiscard]] QSize sizeHint(const QStyleOptionViewItem& option,
+                                 const QModelIndex& index) const override;
+
+    /**
+     * @brief Paints the card layout for the given model index.
+     * @param painter Painter used by the view.
+     * @param option Style options (rect, state).
+     * @param index Model index providing the data to display.
+     */
+    void paint(QPainter* painter,
+               const QStyleOptionViewItem& option,
                const QModelIndex& index) const override;
 
-    /**
-     * @brief Returns a large fixed height.
-     * @caller Qt View layout system.
-     * @return Height sufficient to fit the header, grid, and footer (~120px).
-     */
-    auto sizeHint(const QStyleOptionViewItem& option,
-                  const QModelIndex& index) const -> QSize override;
+private:
+    /** @brief Draws the header (name + optional unit badge). */
+ static void drawHeader(QPainter* painter, const QRect& rect, const QModelIndex& index);
 
-   private:
-    void drawGridItem(QPainter* painter, const QRect& rect, const QString& label,
-                      const QString& value) const;
-    void drawBadge(QPainter* painter, const QRect& rect, const QString& text) const;
+    /** @brief Draws the attribute grid (two rows, four columns). */
+    void drawGrid(QPainter* painter, const QRect& rect, const QModelIndex& index) const;
+
+    /**
+     * @brief Draws a single label/value pair within a grid cell.
+     * @param painter Painter used by the view.
+     * @param rect Cell rectangle.
+     * @param label Attribute label.
+     * @param value Attribute value.
+     */
+    static void drawAttributePair(QPainter* painter, const QRect& rect,
+                                  const QString& label, const QString& value);
+
+    /** @brief Draws the footer (receiver list) if available. */
+    void drawFooter(QPainter* painter, const QRect& rect, const QModelIndex& index) const;
 };
-}  // namespace DbcFile
+
+} // namespace DbcFile
