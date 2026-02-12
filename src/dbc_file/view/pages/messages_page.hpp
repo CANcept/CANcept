@@ -1,8 +1,8 @@
 #pragma once
 
+#include <QComboBox>
 #include <QListView>
 #include <QSplitter>
-#include <QComboBox>
 
 // Forward declarations
 class QTableView;
@@ -12,7 +12,7 @@ class QModelIndex;
 namespace Core {
 class CardWidget;
 class SearchableFilterTable;
-}
+}  // namespace Core
 
 namespace DbcFile {
 
@@ -36,7 +36,7 @@ class MessageDetailView : public QWidget
 {
     Q_OBJECT
 
-public:
+   public:
     /**
      * @brief Constructs the detail view UI.
      * @param parent Optional parent widget.
@@ -67,14 +67,13 @@ public:
      * @param sender Sender ECU name.
      * @param dlc    Data length code.
      */
-    void updateHeaderInfo(const QString& name, uint id,
-                          const QString& sender, int dlc);
+    void updateHeaderInfo(const QString& name, uint id, const QString& sender, int dlc);
 
-private:
+   private:
     /** @brief Builds the widget layout. */
     void setupUi();
 
-private:
+   private:
     Core::CardWidget* m_card = nullptr;
     QListView* m_signalList = nullptr;
 };
@@ -102,7 +101,7 @@ class MessagesPage : public QWidget
 {
     Q_OBJECT
 
-public:
+   public:
     /**
      * @brief Constructs the Messages page UI.
      * @param parent Optional parent widget.
@@ -127,8 +126,7 @@ public:
     /**
      * @brief Configures column visibility and resize behavior of the master table.
      */
-    void configureMasterColumns(QTableView* table,
-                                const QAbstractItemModel* model);
+    void configureMasterColumns(QTableView* table, const QAbstractItemModel* model);
 
     /**
      * @brief Sets the model for the detail view (bottom section).
@@ -142,7 +140,7 @@ public:
      */
     auto setAvailableSenders(const QStringList& senders) -> void;
 
-signals:
+   signals:
     /**
      * @brief Emitted when the user selects a message in the master table.
      */
@@ -158,29 +156,28 @@ signals:
      */
     void filterSenderChanged(const QString& sender);
 
-private slots:
+   private slots:
     /**
      * @brief Handles selection changes in the master table.
      */
-    void onSelectionChanged(const QModelIndex& current,
-                            const QModelIndex& previous);
+    void onSelectionChanged(const QModelIndex& current, const QModelIndex& previous);
 
     /**
      * @brief Handles changes in the sender filter combo box.
      */
     void onFilterIndexChanged(int index);
 
-private:
+   private:
     /** @brief Builds the page layout. */
     void setupUi();
 
     /** @brief Applies base configuration to the master table. */
     void configureMasterTable();
 
-private:
+   private:
     QSplitter* m_splitter = nullptr;
     Core::SearchableFilterTable* m_messagesTable = nullptr;
     MessageDetailView* m_detailView = nullptr;
 };
 
-} // namespace DbcFile
+}  // namespace DbcFile

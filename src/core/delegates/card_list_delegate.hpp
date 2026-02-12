@@ -1,10 +1,10 @@
 #pragma once
 
-#include <QStyledItemDelegate>
 #include <QIcon>
+#include <QStyledItemDelegate>
 
-#include "core/painters/item_painter.hpp"
 #include "core/macro/theme.hpp"
+#include "core/painters/item_painter.hpp"
 
 namespace Core {
 
@@ -23,7 +23,7 @@ class CardListDelegate : public QStyledItemDelegate
 {
     Q_OBJECT
 
-public:
+   public:
     /**
      * @brief Constructs a CardListDelegate.
      * @param badgeRole The model role used for the badge text. Set to -1 if unused.
@@ -31,8 +31,8 @@ public:
      * @param detailRole The model role used for the detail text. Set to -1 if unused.
      * @param parent Optional parent QObject.
      */
-    explicit CardListDelegate(int badgeRole = -1, QIcon badgeIcon = QIcon(),
-                              int detailRole = -1, QObject* parent = nullptr);
+    explicit CardListDelegate(int badgeRole = -1, QIcon badgeIcon = QIcon(), int detailRole = -1,
+                              QObject* parent = nullptr);
 
     /**
      * @brief Returns the preferred size of an item (row height).
@@ -43,7 +43,7 @@ public:
      * The height is taken from THEME spacing (HeightMd).
      */
     [[nodiscard]] auto sizeHint(const QStyleOptionViewItem& option,
-                   const QModelIndex& index) const -> QSize override;
+                                const QModelIndex& index) const -> QSize override;
 
     /**
      * @brief Paints an item as a card with icon, title, badge, and detail text.
@@ -61,10 +61,10 @@ public:
     void paint(QPainter* painter, const QStyleOptionViewItem& option,
                const QModelIndex& index) const override;
 
-private:
-    int m_badgeRole;       ///< Model role for the badge text
-    int m_detailRole;      ///< Model role for the detail text
-    QIcon m_badgeIcon;     ///< Optional icon displayed in the badge
+   private:
+    int m_badgeRole;    ///< Model role for the badge text
+    int m_detailRole;   ///< Model role for the detail text
+    QIcon m_badgeIcon;  ///< Optional icon displayed in the badge
 };
 
-} // namespace Core
+}  // namespace Core

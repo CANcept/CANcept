@@ -3,6 +3,7 @@
 #include <QHeaderView>
 #include <QItemSelectionModel>
 #include <QVariant>
+#include <QTableView>
 
 // Project Includes
 #include "core/macro/theme.hpp"
@@ -12,6 +13,7 @@
 #include "dbc_file/delegate/message_detail_delegate.hpp"
 #include "dbc_file/delegate/message_table_delegate.hpp"
 #include "dbc_file/model/dbc_roles.hpp"
+#include "core/widgets/common/styled_filter_bar.hpp"
 
 namespace DbcFile {
 
@@ -28,14 +30,13 @@ inline auto formatMessageIdHex(uint id) -> QString
     return QStringLiteral("0x%1").arg(id, 0, 16).toUpper();
 }
 
-} // namespace
+}  // namespace
 
 // =============================================================================
 // MessageDetailView
 // =============================================================================
 
-MessageDetailView::MessageDetailView(QWidget* parent)
-    : QWidget(parent)
+MessageDetailView::MessageDetailView(QWidget* parent) : QWidget(parent)
 {
     setupUi();
 }
@@ -51,14 +52,13 @@ void MessageDetailView::setRootIndex(const QModelIndex& index)
     m_signalList->setRootIndex(index);
 }
 
-void MessageDetailView::updateHeaderInfo(const QString& name,
-                                        uint id,
-                                        const QString& sender,
-                                        int dlc)
+void MessageDetailView::updateHeaderInfo(const QString& name, uint id, const QString& sender,
+                                         int dlc)
 {
     if (!m_card) return;
 
-    if (name.isEmpty()) {
+    if (name.isEmpty())
+    {
         m_card->setTitle(Constants::MessagesPage::DetailTitlePlaceholder);
         m_card->setSubtitle(Constants::MessagesPage::DetailSubtitlePlaceholder);
         return;
@@ -76,10 +76,9 @@ void MessageDetailView::setupUi()
     auto* layout = new QVBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
 
-    m_card = new Core::CardWidget(Constants::MessagesPage::DetailTitlePlaceholder,
-                                  Constants::MessagesPage::DetailSubtitlePlaceholder,
-                                  QString(),
-                                  this);
+    m_card =
+        new Core::CardWidget(Constants::MessagesPage::DetailTitlePlaceholder,
+                             Constants::MessagesPage::DetailSubtitlePlaceholder, QString(), this);
 
     auto* cardContent = m_card->contentLayout();
 
@@ -100,8 +99,7 @@ void MessageDetailView::setupUi()
 // MessagesPage
 // =============================================================================
 
-MessagesPage::MessagesPage(QWidget* parent)
-    : QWidget(parent)
+MessagesPage::MessagesPage(QWidget* parent) : QWidget(parent)
 {
     setupUi();
 }
@@ -119,21 +117,20 @@ void MessagesPage::setupUi()
     m_splitter->setHandleWidth(padding);
 
     // --- Master: Table card ---
-    auto* messageTableCard = new Core::CardWidget(Constants::MessagesPage::PageHeaderTitle,
-                                                  Constants::MessagesPage::PageHeaderSubtitle,
-                                                  QString(),
-                                                  this);
+    auto* messageTableCard =
+        new Core::CardWidget(Constants::MessagesPage::PageHeaderTitle,
+                             Constants::MessagesPage::PageHeaderSubtitle, QString(), this);
 
     m_messagesTable = new Core::SearchableFilterTable(this);
     configureMasterTable();
     messageTableCard->layout()->addWidget(m_messagesTable);
 
     // Table filter signals.
-    connect(m_messagesTable, &Core::SearchableFilterTable::filterTextChanged,
-            this, &MessagesPage::masterFilterTextChanged);
+    connect(m_messagesTable, &Core::SearchableFilterTable::filterTextChanged, this,
+            &MessagesPage::masterFilterTextChanged);
 
-    connect(m_messagesTable, &Core::SearchableFilterTable::filterIndexChanged,
-            this, &MessagesPage::onFilterIndexChanged);
+    connect(m_messagesTable, &Core::SearchableFilterTable::filterIndexChanged, this,
+            &MessagesPage::onFilterIndexChanged);
 
     m_splitter->addWidget(messageTableCard);
 
@@ -171,10 +168,11 @@ void MessagesPage::setMasterModel(QAbstractItemModel* model)
     configureMasterColumns(table, model);
 
     // Re-wire selection model (it changes whenever the model is replaced).
-    if (table->selectionModel()) {
+    if (table->selectionModel())
+    {
         disconnect(table->selectionModel(), nullptr, this, nullptr);
-        connect(table->selectionModel(), &QItemSelectionModel::currentRowChanged,
-                this, &MessagesPage::onSelectionChanged);
+        connect(table->selectionModel(), &QItemSelectionModel::currentRowChanged, this,
+                &MessagesPage::onSelectionChanged);
     }
 }
 
@@ -185,7 +183,8 @@ void MessagesPage::configureMasterColumns(QTableView* table, const QAbstractItem
     const auto& spacing = THEME.spacing();
 
     // Show only the message columns.
-    for (int i = 0; i < model->columnCount(); ++i) {
+    for (int i = 0; i < model->columnCount(); ++i)
+    {
         table->setColumnHidden(i, i >= Constants::Columns::MsgColumnCount);
     }
 
@@ -212,7 +211,8 @@ void MessagesPage::setDetailModel(QAbstractItemModel* model)
 {
     if (!m_detailView) return;
 
-    if (auto* list = m_detailView->getSignalList()) {
+    if (auto* list = m_detailView->getSignalList())
+    {
         list->setModel(model);
     }
 }
@@ -221,15 +221,16 @@ void MessagesPage::selectMessageIndex(const QModelIndex& index)
 {
     if (!m_detailView || !index.isValid()) return;
 
-    const QModelIndex nameIdx   = siblingAtColumnQt5(index, Constants::Columns::MsgName);
-    const QModelIndex idIdx     = siblingAtColumnQt5(index, Constants::Columns::MsgId);
+    const QModelIndex nameIdx = siblingAtColumnQt5(index, Constants::Columns::MsgName);
+    const QModelIndex idIdx = siblingAtColumnQt5(index, Constants::Columns::MsgId);
     const QModelIndex senderIdx = siblingAtColumnQt5(index, Constants::Columns::MsgSender);
-    const QModelIndex dlcIdx    = siblingAtColumnQt5(index, Constants::Columns::MsgDlc);
+    const QModelIndex dlcIdx = siblingAtColumnQt5(index, Constants::Columns::MsgDlc);
 
     const QString name = nameIdx.data(Qt::DisplayRole).toString();
 
     uint id = idIdx.data(DbcRoles::Role_Id).toUInt();
-    if (id == 0) {
+    if (id == 0)
+    {
         id = idIdx.data(Qt::DisplayRole).toUInt();
     }
 
@@ -242,12 +243,14 @@ void MessagesPage::selectMessageIndex(const QModelIndex& index)
 
 void MessagesPage::onSelectionChanged(const QModelIndex& current, const QModelIndex&)
 {
-    if (!current.isValid()) {
+    if (!current.isValid())
+    {
         m_detailView->setVisible(false);
         return;
     }
 
-    if (m_detailView->isHidden()) {
+    if (m_detailView->isHidden())
+    {
         m_detailView->setVisible(true);
         m_splitter->setSizes(QList<int>{500, 500});
         m_splitter->setStretchFactor(0, 1);
@@ -278,7 +281,8 @@ auto MessagesPage::setAvailableSenders(const QStringList& senders) -> void
     bar->clearFilterOptions();
     bar->addFilterOption(Constants::MessagesPage::FilterAllText, QString());
 
-    for (const auto& sender : senders) {
+    for (const auto& sender : senders)
+    {
         bar->addFilterOption(sender, sender);
     }
 
@@ -286,4 +290,4 @@ auto MessagesPage::setAvailableSenders(const QStringList& senders) -> void
     bar->blockSignals(wasBlocked);
 }
 
-} // namespace DbcFile
+}  // namespace DbcFile

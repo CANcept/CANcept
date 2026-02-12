@@ -1,6 +1,7 @@
 #include "card_list_delegate.hpp"
-#include "core/painters/item_painter.hpp"
+
 #include "core/macro/theme.hpp"
+#include "core/painters/item_painter.hpp"
 
 namespace Core {
 
@@ -12,7 +13,8 @@ CardListDelegate::CardListDelegate(int badgeRole, QIcon badgeIcon, int detailRol
 {
 }
 
-auto CardListDelegate::sizeHint(const QStyleOptionViewItem& option, const QModelIndex& /*index*/) const -> QSize
+auto CardListDelegate::sizeHint(const QStyleOptionViewItem& option,
+                                const QModelIndex& /*index*/) const -> QSize
 {
     return {option.rect.width(), THEME.spacing().HeightMd};
 }
@@ -44,13 +46,13 @@ void CardListDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
     // -------------------------------------------------------------------------
     // 4. ICON (left)
     // -------------------------------------------------------------------------
-    int contentLeft = cardRect.left() + spacing.spacingMd; // Start position for content
+    int contentLeft = cardRect.left() + spacing.spacingMd;  // Start position for content
 
     if (!icon.isNull())
     {
         int iconSize = spacing.IconSm;
         // Vertically centered
-        QRect iconRect(contentLeft, cardRect.center().y() - iconSize/2 + 1, iconSize, iconSize);
+        QRect iconRect(contentLeft, cardRect.center().y() - iconSize / 2 + 1, iconSize, iconSize);
 
         ItemPainter::paintIcon(painter, iconRect, icon, selected);
 
@@ -70,8 +72,7 @@ void CardListDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
 
         // calculate badge rect
         QRect badgeRect(contentRight - badgeSize.width(),
-                        cardRect.center().y() - badgeSize.height()/2 + 1,
-                        badgeSize.width(),
+                        cardRect.center().y() - badgeSize.height() / 2 + 1, badgeSize.width(),
                         badgeSize.height());
 
         // Paint
@@ -86,8 +87,9 @@ void CardListDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
     // -------------------------------------------------------------------------
     if (!detailText.isEmpty())
     {
-        int availableWidth = spacing.WidthSm; // max width for detail text
-        QRect detailRect(contentRight - availableWidth, cardRect.top(), availableWidth, cardRect.height());
+        int availableWidth = spacing.WidthSm;  // max width for detail text
+        QRect detailRect(contentRight - availableWidth, cardRect.top(), availableWidth,
+                         cardRect.height());
 
         painter->save();
         painter->setPen(THEME.colors().textPrimary);
@@ -110,4 +112,4 @@ void CardListDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
     }
 }
 
-} // namespace Core
+}  // namespace Core

@@ -60,16 +60,11 @@ inline auto footerHeightPx() -> int
  */
 inline auto totalHeightPx() -> int
 {
-    return cardPaddingPx()
-         + headerHeightPx()
-         + sectionGapPx()
-         + (2 * gridRowHeightPx())
-         + sectionGapPx()
-         + footerHeightPx()
-         + cardPaddingPx();
+    return cardPaddingPx() + headerHeightPx() + sectionGapPx() + (2 * gridRowHeightPx()) +
+           sectionGapPx() + footerHeightPx() + cardPaddingPx();
 }
 
-} // namespace Layout
+}  // namespace Layout
 
 namespace {
 
@@ -81,12 +76,9 @@ inline auto formatNumber(double value) -> QString
     return QString::number(value, 'g', 12);
 }
 
-} // namespace
+}  // namespace
 
-MessagesDetailDelegate::MessagesDetailDelegate(QObject* parent)
-    : QStyledItemDelegate(parent)
-{
-}
+MessagesDetailDelegate::MessagesDetailDelegate(QObject* parent) : QStyledItemDelegate(parent) {}
 
 auto MessagesDetailDelegate::sizeHint(const QStyleOptionViewItem& option,
                                       const QModelIndex&) const -> QSize
@@ -94,13 +86,11 @@ auto MessagesDetailDelegate::sizeHint(const QStyleOptionViewItem& option,
     return {option.rect.width(), Layout::totalHeightPx()};
 }
 
-void MessagesDetailDelegate::paint(QPainter* painter,
-                                   const QStyleOptionViewItem& option,
+void MessagesDetailDelegate::paint(QPainter* painter, const QStyleOptionViewItem& option,
                                    const QModelIndex& index) const
 {
     // Compute card rectangle (slightly reduced to visually separate items).
-    const QRect cardRect = option.rect.adjusted(
-        0, 0, 0, -Layout::outerMarginPx());
+    const QRect cardRect = option.rect.adjusted(0, 0, 0, -Layout::outerMarginPx());
 
     // Paint card background.
     Core::ItemPainter::paintCard(painter, cardRect, false);
@@ -128,9 +118,8 @@ void MessagesDetailDelegate::paint(QPainter* painter,
     drawFooter(painter, footerRect, index);
 }
 
-void MessagesDetailDelegate::drawHeader(QPainter* painter,
-                                       const QRect& rect,
-                                       const QModelIndex& index)
+void MessagesDetailDelegate::drawHeader(QPainter* painter, const QRect& rect,
+                                        const QModelIndex& index)
 {
     const QString name = index.data(Qt::DisplayRole).toString();
     const QString unit = index.data(DbcRoles::Role_Unit).toString();
@@ -138,13 +127,12 @@ void MessagesDetailDelegate::drawHeader(QPainter* painter,
     int rightCursor = rect.right();
 
     // Unit badge (right-aligned).
-    if (!unit.isEmpty()) {
+    if (!unit.isEmpty())
+    {
         const QSize badgeSize = Core::ItemPainter::measureBadge(unit);
-        const QRect badgeRect(
-            rightCursor - badgeSize.width(),
-            rect.center().y() - badgeSize.height() / 2,
-            badgeSize.width(),
-            badgeSize.height());
+        const QRect badgeRect(rightCursor - badgeSize.width(),
+                              rect.center().y() - badgeSize.height() / 2, badgeSize.width(),
+                              badgeSize.height());
 
         Core::ItemPainter::paintBadge(painter, badgeRect, unit);
         rightCursor -= (badgeSize.width() + Layout::cardPaddingPx());
@@ -160,23 +148,22 @@ void MessagesDetailDelegate::drawHeader(QPainter* painter,
     painter->setFont(font);
     painter->setPen(THEME.colors().textPrimary);
 
-    const QString elided = painter->fontMetrics().elidedText(
-        name, Qt::ElideRight, nameRect.width());
+    const QString elided =
+        painter->fontMetrics().elidedText(name, Qt::ElideRight, nameRect.width());
 
     painter->drawText(nameRect, Qt::AlignLeft | Qt::AlignVCenter, elided);
     painter->restore();
 }
 
-void MessagesDetailDelegate::drawGrid(QPainter* painter,
-                                     const QRect& rect,
-                                     const QModelIndex& index) const
+void MessagesDetailDelegate::drawGrid(QPainter* painter, const QRect& rect,
+                                      const QModelIndex& index) const
 {
     const int colWidth = rect.width() / 4;
 
     // Row 0
     const QString startBit = index.data(Role_StartBit).toString();
-    const QString length   = index.data(Role_BitLength).toString()
-                           + Constants::SignalsPage::LengthUnit;
+    const QString length =
+        index.data(Role_BitLength).toString() + Constants::SignalsPage::LengthUnit;
     const QString byteOrder = index.data(Role_ByteOrder).toString();
     const QString valueType = index.data(Role_ValueType).toString();
 
@@ -211,10 +198,8 @@ void MessagesDetailDelegate::drawGrid(QPainter* painter,
                       Constants::Headers::SigMax, maxVal);
 }
 
-void MessagesDetailDelegate::drawAttributePair(QPainter* painter,
-                                              const QRect& rect,
-                                              const QString& label,
-                                              const QString& value)
+void MessagesDetailDelegate::drawAttributePair(QPainter* painter, const QRect& rect,
+                                               const QString& label, const QString& value)
 {
     const auto& colors = THEME.colors();
     const auto& spacing = THEME.spacing();
@@ -242,9 +227,8 @@ void MessagesDetailDelegate::drawAttributePair(QPainter* painter,
     Core::ItemPainter::paintText(painter, valueRect, value);
 }
 
-void MessagesDetailDelegate::drawFooter(QPainter* painter,
-                                       const QRect& rect,
-                                       const QModelIndex& index) const
+void MessagesDetailDelegate::drawFooter(QPainter* painter, const QRect& rect,
+                                        const QModelIndex& index) const
 {
     const QString receivers = index.data(DbcRoles::Role_Receivers).toString();
     if (receivers.isEmpty()) return;
@@ -272,4 +256,4 @@ void MessagesDetailDelegate::drawFooter(QPainter* painter,
     painter->restore();
 }
 
-} // namespace DbcFile
+}  // namespace DbcFile

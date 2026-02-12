@@ -43,9 +43,12 @@ auto FlatListProxy::columnCount(const QModelIndex& parent) const -> int
 {
     if (parent.isValid()) return 0;
 
-    switch (m_targetType) {
-        case Core::DbcItemType::Signal:  return Constants::Columns::SignalColumnCount;
-        case Core::DbcItemType::Message: return Constants::Columns::MsgColumnCount;
+    switch (m_targetType)
+    {
+        case Core::DbcItemType::Signal:
+            return Constants::Columns::SignalColumnCount;
+        case Core::DbcItemType::Message:
+            return Constants::Columns::MsgColumnCount;
         default:
             // Fallback (e.g. ECU): mirror the source model if available.
             return sourceModel() ? sourceModel()->columnCount() : 0;
@@ -54,34 +57,56 @@ auto FlatListProxy::columnCount(const QModelIndex& parent) const -> int
 
 auto FlatListProxy::headerData(int section, Qt::Orientation orientation, int role) const -> QVariant
 {
-    if (orientation != Qt::Horizontal || role != Qt::DisplayRole) {
+    if (orientation != Qt::Horizontal || role != Qt::DisplayRole)
+    {
         return QAbstractProxyModel::headerData(section, orientation, role);
     }
 
-    if (m_targetType == Core::DbcItemType::Message) {
-        switch (section) {
-            case Constants::Columns::MsgId:       return Constants::Headers::MsgId;
-            case Constants::Columns::MsgName:     return Constants::Headers::MsgName;
-            case Constants::Columns::MsgSender:   return Constants::Headers::MsgSender;
-            case Constants::Columns::MsgDlc:      return Constants::Headers::MsgDlc;
-            case Constants::Columns::MsgSigCount: return Constants::Headers::MsgSigCount;
-            default: return {};
+    if (m_targetType == Core::DbcItemType::Message)
+    {
+        switch (section)
+        {
+            case Constants::Columns::MsgId:
+                return Constants::Headers::MsgId;
+            case Constants::Columns::MsgName:
+                return Constants::Headers::MsgName;
+            case Constants::Columns::MsgSender:
+                return Constants::Headers::MsgSender;
+            case Constants::Columns::MsgDlc:
+                return Constants::Headers::MsgDlc;
+            case Constants::Columns::MsgSigCount:
+                return Constants::Headers::MsgSigCount;
+            default:
+                return {};
         }
     }
 
-    if (m_targetType == Core::DbcItemType::Signal) {
-        switch (section) {
-            case Constants::Columns::SigName:      return Constants::Headers::SigName;
-            case Constants::Columns::SigMessage:   return Constants::Headers::SigMessage;
-            case Constants::Columns::SigStartBit:  return Constants::Headers::SigStartBit;
-            case Constants::Columns::SigUnit:      return Constants::Headers::SigUnit;
-            case Constants::Columns::SigLength:    return Constants::Headers::SigLength;
-            case Constants::Columns::SigMin:       return Constants::Headers::SigRange; // (your current mapping)
-            case Constants::Columns::SigFactor:    return Constants::Headers::SigFactor;
-            case Constants::Columns::SigOffset:    return Constants::Headers::SigOffset;
-            case Constants::Columns::SigByteOrder: return Constants::Headers::SigByteOrder;
-            case Constants::Columns::SigValueType: return Constants::Headers::SigType;
-            default: return {};
+    if (m_targetType == Core::DbcItemType::Signal)
+    {
+        switch (section)
+        {
+            case Constants::Columns::SigName:
+                return Constants::Headers::SigName;
+            case Constants::Columns::SigMessage:
+                return Constants::Headers::SigMessage;
+            case Constants::Columns::SigStartBit:
+                return Constants::Headers::SigStartBit;
+            case Constants::Columns::SigUnit:
+                return Constants::Headers::SigUnit;
+            case Constants::Columns::SigLength:
+                return Constants::Headers::SigLength;
+            case Constants::Columns::SigMin:
+                return Constants::Headers::SigRange;  // (your current mapping)
+            case Constants::Columns::SigFactor:
+                return Constants::Headers::SigFactor;
+            case Constants::Columns::SigOffset:
+                return Constants::Headers::SigOffset;
+            case Constants::Columns::SigByteOrder:
+                return Constants::Headers::SigByteOrder;
+            case Constants::Columns::SigValueType:
+                return Constants::Headers::SigType;
+            default:
+                return {};
         }
     }
 
@@ -90,15 +115,16 @@ auto FlatListProxy::headerData(int section, Qt::Orientation orientation, int rol
 
 void FlatListProxy::setSourceModel(QAbstractItemModel* sourceModel)
 {
-    if (this->sourceModel()) {
+    if (this->sourceModel())
+    {
         disconnect(this->sourceModel(), nullptr, this, nullptr);
     }
 
     QAbstractProxyModel::setSourceModel(sourceModel);
 
-    if (sourceModel) {
-        connect(sourceModel, &QAbstractItemModel::modelReset,
-                this, &FlatListProxy::rebuildMapping);
+    if (sourceModel)
+    {
+        connect(sourceModel, &QAbstractItemModel::modelReset, this, &FlatListProxy::rebuildMapping);
     }
 
     rebuildMapping();
@@ -116,7 +142,8 @@ void FlatListProxy::rebuildMapping()
     scanNode(QModelIndex{});
 
     // Build lookup table for O(1) mapFromSource.
-    for (int row = 0; row < m_mapping.size(); ++row) {
+    for (int row = 0; row < m_mapping.size(); ++row)
+    {
         m_indexLookup[m_mapping[row]] = row;
     }
 
@@ -127,7 +154,8 @@ auto FlatListProxy::mapFromSource(const QModelIndex& sourceIndex) const -> QMode
 {
     if (!sourceIndex.isValid()) return {};
 
-    if (auto it = m_indexLookup.find(sourceIndex); it != m_indexLookup.end()) {
+    if (auto it = m_indexLookup.find(sourceIndex); it != m_indexLookup.end())
+    {
         return index(it.value(), sourceIndex.column(), QModelIndex{});
     }
     return {};
@@ -152,7 +180,7 @@ auto FlatListProxy::index(int row, int column, const QModelIndex& parent) const 
 
 auto FlatListProxy::parent(const QModelIndex&) const -> QModelIndex
 {
-    return {}; // Flat list: no parents.
+    return {};  // Flat list: no parents.
 }
 
 auto FlatListProxy::rowCount(const QModelIndex& parent) const -> int
@@ -175,17 +203,19 @@ void FlatListProxy::scanNode(const QModelIndex& parent)
         const auto type = static_cast<Core::DbcItemType>(
             sourceModel()->data(currentIndex, Role_ItemType).toInt());
 
-        if (type == m_targetType && passesFilters(currentIndex)) {
+        if (type == m_targetType && passesFilters(currentIndex))
+        {
             m_mapping.append(QPersistentModelIndex(currentIndex));
         }
 
         // Stop recursion once we reached the target type level (or overview).
         const bool stopHere =
             type == Core::DbcItemType::Overview ||
-            (m_targetType == Core::DbcItemType::Ecu     && type == Core::DbcItemType::Ecu) ||
+            (m_targetType == Core::DbcItemType::Ecu && type == Core::DbcItemType::Ecu) ||
             (m_targetType == Core::DbcItemType::Message && type == Core::DbcItemType::Message);
 
-        if (!stopHere && sourceModel()->hasChildren(currentIndex)) {
+        if (!stopHere && sourceModel()->hasChildren(currentIndex))
+        {
             scanNode(currentIndex);
         }
     }
@@ -202,7 +232,8 @@ auto FlatListProxy::passesFilters(const QModelIndex& idx) const -> bool
 
 auto FlatListProxy::passesUnitFilter(const QModelIndex& idx) const -> bool
 {
-    if (m_targetType != Core::DbcItemType::Signal || m_filterSignalUnit.isEmpty()) {
+    if (m_targetType != Core::DbcItemType::Signal || m_filterSignalUnit.isEmpty())
+    {
         return true;
     }
 
@@ -212,7 +243,8 @@ auto FlatListProxy::passesUnitFilter(const QModelIndex& idx) const -> bool
 
 auto FlatListProxy::passesSenderFilter(const QModelIndex& idx) const -> bool
 {
-    if (m_targetType != Core::DbcItemType::Message || m_filterMessageSender.isEmpty()) {
+    if (m_targetType != Core::DbcItemType::Message || m_filterMessageSender.isEmpty())
+    {
         return true;
     }
 
@@ -228,4 +260,4 @@ auto FlatListProxy::passesTextFilter(const QModelIndex& idx) const -> bool
     return name.contains(m_filterText, Qt::CaseInsensitive);
 }
 
-} // namespace DbcFile
+}  // namespace DbcFile

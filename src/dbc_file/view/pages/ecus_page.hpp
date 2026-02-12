@@ -1,6 +1,6 @@
 #pragma once
 
-
+#include <QAbstractItemModel>
 #include <QVBoxLayout>
 
 #include "core/widgets/common/searchable_filter_widgets.hpp"
@@ -18,7 +18,7 @@ class EcusPage : public QWidget
 {
     Q_OBJECT
 
-public:
+   public:
     /**
      * @brief Constructs an EcusPage.
      * @param parent Optional parent widget.
@@ -31,7 +31,7 @@ public:
      */
     void setModel(QAbstractItemModel* model) const;
 
-signals:
+   signals:
     /**
      * @brief Emitted when the search text in the filter bar changes.
      * @param text Current search string.
@@ -44,7 +44,7 @@ signals:
      */
     void filterIndexChanged(int index);
 
-protected:
+   protected:
     /**
      * @brief Sets up the UI elements.
      *
@@ -53,7 +53,7 @@ protected:
      */
     void setupUi();
 
-private:
+   private:
     // --- Modular UI setup helpers ---
 
     /**
@@ -96,9 +96,9 @@ private:
      */
     void connectSignals();
 
-private:
-    QLayout* m_cardLayout { nullptr };              ///< Layout of the card widget for tree placement
-    Core::SearchableFilterTree* m_treeWidget { nullptr }; ///< Searchable and filterable tree widget
+   private:
+    QLayout* m_cardLayout{nullptr};  ///< Layout of the card widget for tree placement
+    Core::SearchableFilterTree* m_treeWidget{nullptr};  ///< Searchable and filterable tree widget
 };
 
-} // namespace DbcFile
+}  // namespace DbcFile

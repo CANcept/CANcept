@@ -11,8 +11,8 @@ namespace {
 constexpr int kLoadPageIndex = 0;
 
 // Creates, configures and rebuilds a flat proxy for a given item type.
-auto makeFlatProxy(Core::DbcItemType type, QObject* parent, QAbstractItemModel* source)
-    -> std::unique_ptr<FlatListProxy>
+auto makeFlatProxy(Core::DbcItemType type, QObject* parent,
+                   QAbstractItemModel* source) -> std::unique_ptr<FlatListProxy>
 {
     auto proxy = std::make_unique<FlatListProxy>(type, parent);
     proxy->setSourceModel(source);
@@ -20,7 +20,7 @@ auto makeFlatProxy(Core::DbcItemType type, QObject* parent, QAbstractItemModel* 
     return proxy;
 }
 
-} // namespace
+}  // namespace
 
 DbcView::DbcView(QWidget* parent) : QWidget(parent)
 {
@@ -87,7 +87,8 @@ void DbcView::onSidebarSelectionChanged(int index) const
     if (m_contentStack->currentIndex() == index) return;
 
     // Reset load page UI state when leaving the load page.
-    if (m_contentStack->currentIndex() == kLoadPageIndex && index != kLoadPageIndex) {
+    if (m_contentStack->currentIndex() == kLoadPageIndex && index != kLoadPageIndex)
+    {
         m_loadPage->resetStatus();
     }
 
@@ -135,8 +136,8 @@ void DbcView::onSignalUnitChanged(const QString& unit) const
     if (m_signalsProxy) m_signalsProxy->setSignalFilterUnit(unit);
 }
 
-void DbcView::addPage(QWidget* page, const QString& title,
-                      const QString& iconPath, bool enabled) const
+void DbcView::addPage(QWidget* page, const QString& title, const QString& iconPath,
+                      bool enabled) const
 {
     m_contentStack->addWidget(page);
     m_sidebar->addTab(QIcon(iconPath), title, enabled);
@@ -149,16 +150,19 @@ void DbcView::setupSidebarTabs()
     addPage(m_loadPage, Constants::Sidebar::TitleLoadNew, Constants::Sidebar::IconLoadNew, true);
 
     m_overviewPage = new OverviewPage(this);
-    addPage(m_overviewPage, Constants::Sidebar::TitleOverview, Constants::Sidebar::IconOverview, false);
+    addPage(m_overviewPage, Constants::Sidebar::TitleOverview, Constants::Sidebar::IconOverview,
+            false);
 
     m_ecuPage = new EcusPage(this);
     addPage(m_ecuPage, Constants::Sidebar::TitleEcus, Constants::Sidebar::IconEcus, false);
 
     m_messagesPage = new MessagesPage(this);
-    addPage(m_messagesPage, Constants::Sidebar::TitleMessages, Constants::Sidebar::IconMessages, false);
+    addPage(m_messagesPage, Constants::Sidebar::TitleMessages, Constants::Sidebar::IconMessages,
+            false);
 
     m_signalsPage = new SignalsPage(this);
-    addPage(m_signalsPage, Constants::Sidebar::TitleSignals, Constants::Sidebar::IconSignals, false);
+    addPage(m_signalsPage, Constants::Sidebar::TitleSignals, Constants::Sidebar::IconSignals,
+            false);
 }
 
 void DbcView::setupUi()
@@ -185,14 +189,18 @@ void DbcView::setupConnections()
     connect(m_loadPage, &LoadPage::fileSelected, this,
             [this](const QString& path) { emit fileLoadRequested(path); });
 
-    connect(m_ecuPage, &EcusPage::filterTextChanged,  this, &DbcView::onEcuFilterTextChanged);
+    connect(m_ecuPage, &EcusPage::filterTextChanged, this, &DbcView::onEcuFilterTextChanged);
     connect(m_ecuPage, &EcusPage::filterIndexChanged, this, &DbcView::onEcuFilterIndexChanged);
 
-    connect(m_messagesPage, &MessagesPage::messageSelectionChanged, this, &DbcView::onMessageSelected);
-    connect(m_messagesPage, &MessagesPage::masterFilterTextChanged, this, &DbcView::onMessageFilterTextChanged);
-    connect(m_messagesPage, &MessagesPage::filterSenderChanged,     this, &DbcView::onMessageSenderChanged);
+    connect(m_messagesPage, &MessagesPage::messageSelectionChanged, this,
+            &DbcView::onMessageSelected);
+    connect(m_messagesPage, &MessagesPage::masterFilterTextChanged, this,
+            &DbcView::onMessageFilterTextChanged);
+    connect(m_messagesPage, &MessagesPage::filterSenderChanged, this,
+            &DbcView::onMessageSenderChanged);
 
-    connect(m_signalsPage, &SignalsPage::filterTextChanged, this, &DbcView::onSignalFilterTextChanged);
+    connect(m_signalsPage, &SignalsPage::filterTextChanged, this,
+            &DbcView::onSignalFilterTextChanged);
     connect(m_signalsPage, &SignalsPage::filterUnitChanged, this, &DbcView::onSignalUnitChanged);
 }
 

@@ -33,7 +33,7 @@ class DbcView final : public QWidget
 {
     Q_OBJECT
 
-public:
+   public:
     /**
      * @brief Constructs the view and builds the UI.
      * @param parent Optional parent widget.
@@ -81,14 +81,14 @@ public:
      */
     void setNavigationEnabled(bool enabled) const;
 
-signals:
+   signals:
     /**
      * @brief Emitted when the user requests loading a DBC file.
      * @param filePath Absolute path to the selected file.
      */
     void fileLoadRequested(const QString& filePath);
 
-private slots:
+   private slots:
     /**
      * @brief Handles sidebar tab changes and switches the stacked page.
      * @param index Selected tab/page index.
@@ -150,8 +150,7 @@ private slots:
      * @param iconPath Resource path to the tab icon.
      * @param enabled Initial enabled state for the tab.
      */
-    void addPage(QWidget* page, const QString& title,
-                 const QString& iconPath, bool enabled) const;
+    void addPage(QWidget* page, const QString& title, const QString& iconPath, bool enabled) const;
 
     /**
      * @brief Creates and registers all pages and sidebar tabs.
@@ -160,7 +159,7 @@ private slots:
      */
     void setupSidebarTabs();
 
-private:
+   private:
     /**
      * @brief Builds the main layout (sidebar + stacked content) and creates pages.
      */
@@ -171,7 +170,7 @@ private:
      */
     void setupConnections();
 
-private:
+   private:
     /** @brief Source model backing the DBC hierarchy. Not owned by this view. */
     QAbstractItemModel* m_model = nullptr;
 

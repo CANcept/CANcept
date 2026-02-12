@@ -1,7 +1,7 @@
 #pragma once
 
-#include <QWidget>
 #include <QStringList>
+#include <QWidget>
 
 class QAbstractItemModel;
 class QTableView;
@@ -27,7 +27,7 @@ class SignalsPage : public QWidget
 {
     Q_OBJECT
 
-public:
+   public:
     /**
      * @brief Constructs the SignalsPage.
      *
@@ -57,7 +57,7 @@ public:
      */
     void setAvailableUnits(const QStringList& units) const;
 
-signals:
+   signals:
     /**
      * @brief Emitted when the search text changes.
      *
@@ -75,7 +75,7 @@ signals:
      */
     void filterUnitChanged(const QString& unit);
 
-private slots:
+   private slots:
     /**
      * @brief Internal slot handling filter index changes.
      *
@@ -86,7 +86,7 @@ private slots:
      */
     void onFilterIndexChanged(int index);
 
-private:
+   private:
     // =========================================================================
     // UI Setup
     // =========================================================================
@@ -135,12 +135,11 @@ private:
      * @param table Target table view.
      * @param model Active model.
      */
-    static void configureColumns(QTableView* table,
-                          const QAbstractItemModel* model);
+    static void configureColumns(QTableView* table, const QAbstractItemModel* model);
 
-private:
+   private:
     /// Searchable and filterable table widget
-    Core::SearchableFilterTable* m_tableWidget { nullptr };
+    Core::SearchableFilterTable* m_tableWidget{nullptr};
 };
 
-} // namespace DbcFile
+}  // namespace DbcFile

@@ -1,8 +1,9 @@
 #include "signal_table_delegate.hpp"
+
+#include "core/macro/theme.hpp"
+#include "core/painters/item_painter.hpp"
 #include "dbc_file/constants.hpp"
 #include "dbc_file/model/dbc_roles.hpp"
-#include "core/painters/item_painter.hpp"
-#include "core/macro/theme.hpp"
 
 namespace DbcFile {
 
@@ -31,7 +32,7 @@ void SignalTableDelegate::paint(QPainter* painter, const QStyleOptionViewItem& o
         QString msgName = index.data(Qt::DisplayRole).toString();
 
         QSize badgeSize = Core::ItemPainter::measureBadge(idText);
-        QRect badgeRect(cellRect.left(), cellRect.center().y() - badgeSize.height()/2 + 1,
+        QRect badgeRect(cellRect.left(), cellRect.center().y() - badgeSize.height() / 2 + 1,
                         badgeSize.width(), badgeSize.height());
 
         // Custom ID badge style
@@ -39,7 +40,7 @@ void SignalTableDelegate::paint(QPainter* painter, const QStyleOptionViewItem& o
         badgeStyle.background = Qt::transparent;
         badgeStyle.text = colors.textSecondary;
         badgeStyle.border = colors.borderSubtle;
-        Core::ItemPainter::paintBadge(painter, badgeRect, idText ,QIcon(), &badgeStyle);
+        Core::ItemPainter::paintBadge(painter, badgeRect, idText, QIcon(), &badgeStyle);
 
         // Paint text next to badge
         int textOffset = badgeSize.width() + padding;
@@ -54,21 +55,21 @@ void SignalTableDelegate::paint(QPainter* painter, const QStyleOptionViewItem& o
         double max = index.sibling(index.row(), Constants::Columns::SigMax).data().toDouble();
         QString text = QString("[%1, %2]").arg(min).arg(max);
 
-        Core::ItemPainter::paintText(painter, cellRect, text,false, QColor(),Qt::AlignCenter);
+        Core::ItemPainter::paintText(painter, cellRect, text, false, QColor(), Qt::AlignCenter);
     }
     // 3. Length Column
     else if (index.column() == Constants::Columns::SigLength)
     {
         QString val = index.data(Qt::DisplayRole).toString();
         if (!val.isEmpty()) val += Constants::SignalsPage::LengthUnit;
-        Core::ItemPainter::paintText(painter, cellRect, val,false, QColor(),Qt::AlignCenter);
+        Core::ItemPainter::paintText(painter, cellRect, val, false, QColor(), Qt::AlignCenter);
     }
     // 4. Unit Column
     else if (index.column() == Constants::Columns::SigUnit)
     {
         QString val = Constants::SignalsPage::DefaultUnit;
         if (!index.data(Role_Unit).toString().isEmpty()) val = index.data(Role_Unit).toString();
-        Core::ItemPainter::paintText(painter, cellRect, val, false, QColor(),Qt::AlignCenter);
+        Core::ItemPainter::paintText(painter, cellRect, val, false, QColor(), Qt::AlignCenter);
     }
     // 5. Standard columns
     else
@@ -76,7 +77,7 @@ void SignalTableDelegate::paint(QPainter* painter, const QStyleOptionViewItem& o
         QString text = index.data(Qt::DisplayRole).toString();
         bool isBold = (index.column() == Constants::Columns::SigName);
 
-        Core::ItemPainter::paintText(painter, cellRect, text, isBold, QColor(),Qt::AlignCenter);
+        Core::ItemPainter::paintText(painter, cellRect, text, isBold, QColor(), Qt::AlignCenter);
     }
 }
 
@@ -87,4 +88,4 @@ auto SignalTableDelegate::sizeHint(const QStyleOptionViewItem& option,
     return {option.rect.width(), spacing.HeightSm};
 }
 
-} // namespace DbcFile
+}  // namespace DbcFile

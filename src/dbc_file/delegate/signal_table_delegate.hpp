@@ -1,8 +1,8 @@
 #pragma once
 
-#include <QStyledItemDelegate>
-#include <QPainter>
 #include <QModelIndex>
+#include <QPainter>
+#include <QStyledItemDelegate>
 
 namespace DbcFile {
 
@@ -23,7 +23,7 @@ class SignalTableDelegate : public QStyledItemDelegate
 {
     Q_OBJECT
 
-public:
+   public:
     /**
      * @brief Constructs a SignalTableDelegate.
      * @param parent Optional parent QObject.
@@ -57,7 +57,7 @@ public:
      * Height is fixed using the application's theme spacing (HeightSm).
      */
     [[nodiscard]] auto sizeHint(const QStyleOptionViewItem& option,
-                   const QModelIndex& index) const -> QSize override;
+                                const QModelIndex& index) const -> QSize override;
 };
 
-} // namespace DbcFile
+}  // namespace DbcFile

@@ -38,7 +38,7 @@ auto parentItemFromIndex(const QModelIndex& parent, DbcItem* root) -> DbcItem*
     return parent.isValid() ? itemFromIndex(parent) : root;
 }
 
-} // namespace
+}  // namespace
 
 DbcModel::DbcModel(Core::IEventBroker& broker, QObject* parent)
     : QAbstractItemModel(parent), m_broker(broker)
@@ -49,18 +49,19 @@ DbcModel::DbcModel(Core::IEventBroker& broker, QObject* parent)
         [this](const Core::DBCParsedEvent& event) { onDbcParsed(event); });
 }
 
-
 auto DbcModel::index(int row, int column, const QModelIndex& parent) const -> QModelIndex
 {
     // Return an invalid index if the requested index is outside model bounds.
-    if (!hasIndex(row, column, parent)) {
+    if (!hasIndex(row, column, parent))
+    {
         return {};
     }
 
     auto* parentItem = parentItemFromIndex(parent, m_rootItem.get());
     if (!parentItem) return {};
 
-    if (DbcItem* childItem = parentItem->child(row)) {
+    if (DbcItem* childItem = parentItem->child(row))
+    {
         return createIndex(row, column, childItem);
     }
     return {};
@@ -76,7 +77,8 @@ auto DbcModel::parent(const QModelIndex& child) const -> QModelIndex
     const DbcItem* parentItem = childItem->parent();
 
     // Root has no parent in the model.
-    if (!parentItem || parentItem == m_rootItem.get()) {
+    if (!parentItem || parentItem == m_rootItem.get())
+    {
         return {};
     }
 
@@ -97,11 +99,13 @@ auto DbcModel::rowCount(const QModelIndex& parent) const -> int
 auto DbcModel::columnCount(const QModelIndex& parent) const -> int
 {
     // When called for a specific parent item, decide column count based on item type.
-    if (parent.isValid()) {
+    if (parent.isValid())
+    {
         const auto* parentItem = itemFromIndex(parent);
         if (!parentItem) return 0;
 
-        switch (parentItem->type()) {
+        switch (parentItem->type())
+        {
             case Core::DbcItemType::Message:
                 // Signals are children of a message.
                 return Constants::Columns::SignalColumnCount;
@@ -130,72 +134,99 @@ auto DbcModel::data(const QModelIndex& index, int role) const -> QVariant
     // -------------------------------------------------------------------------
     // Message-specific roles and display
     // -------------------------------------------------------------------------
-    if (type == Core::DbcItemType::Message) {
+    if (type == Core::DbcItemType::Message)
+    {
         if (index.column() >= Constants::Columns::MsgColumnCount) return {};
 
-        if (role == Qt::DisplayRole) {
+        if (role == Qt::DisplayRole)
+        {
             // Signal count is derived from the number of child signal items.
-            if (index.column() == Constants::Columns::MsgSigCount) {
+            if (index.column() == Constants::Columns::MsgSigCount)
+            {
                 return item->childCount();
             }
             return item->data(index.column());
         }
 
         // Hint for a delegate: display message ID as hex.
-        if (role == Role_IsHex && index.column() == Constants::Columns::MsgId) {
+        if (role == Role_IsHex && index.column() == Constants::Columns::MsgId)
+        {
             return true;
         }
 
-        switch (role) {
-            case Role_Id:         return item->data(Constants::Columns::MsgId);
-            case Role_Dlc:        return item->data(Constants::Columns::MsgDlc);
-            case Role_Sender:     return item->data(Constants::Columns::MsgSender);
-            case Role_ChildCount: return item->childCount();
-            default: break;
+        switch (role)
+        {
+            case Role_Id:
+                return item->data(Constants::Columns::MsgId);
+            case Role_Dlc:
+                return item->data(Constants::Columns::MsgDlc);
+            case Role_Sender:
+                return item->data(Constants::Columns::MsgSender);
+            case Role_ChildCount:
+                return item->childCount();
+            default:
+                break;
         }
     }
 
     // -------------------------------------------------------------------------
     // Signal-specific roles
     // -------------------------------------------------------------------------
-    if (type == Core::DbcItemType::Signal) {
-        if (role == Role_Unit) {
+    if (type == Core::DbcItemType::Signal)
+    {
+        if (role == Role_Unit)
+        {
             return item->data(Constants::Columns::SigUnit);
         }
 
         // Signals do not have an ID; retrieve the ID from the parent message.
-        if (role == DbcRoles::Role_Id) {
-            if (auto* parent = item->parent()) {
+        if (role == DbcRoles::Role_Id)
+        {
+            if (auto* parent = item->parent())
+            {
                 return parent->data(Constants::Columns::MsgId);
             }
-            return 0; // Fallback if the hierarchy is unexpected.
+            return 0;  // Fallback if the hierarchy is unexpected.
         }
 
-        switch (role) {
-            case Role_StartBit:   return item->data(Constants::Columns::SigStartBit);
-            case Role_BitLength:  return item->data(Constants::Columns::SigLength);
-            case Role_Factor:     return item->data(Constants::Columns::SigFactor);
-            case Role_Offset:     return item->data(Constants::Columns::SigOffset);
-            case Role_Min:        return item->data(Constants::Columns::SigMin);
-            case Role_Max:        return item->data(Constants::Columns::SigMax);
-            case Role_ByteOrder:  return item->data(Constants::Columns::SigByteOrder);
-            case Role_ValueType:  return item->data(Constants::Columns::SigValueType);
-            case Role_Receivers:  return item->data(Constants::Columns::SigReceivers);
-            default: break;
+        switch (role)
+        {
+            case Role_StartBit:
+                return item->data(Constants::Columns::SigStartBit);
+            case Role_BitLength:
+                return item->data(Constants::Columns::SigLength);
+            case Role_Factor:
+                return item->data(Constants::Columns::SigFactor);
+            case Role_Offset:
+                return item->data(Constants::Columns::SigOffset);
+            case Role_Min:
+                return item->data(Constants::Columns::SigMin);
+            case Role_Max:
+                return item->data(Constants::Columns::SigMax);
+            case Role_ByteOrder:
+                return item->data(Constants::Columns::SigByteOrder);
+            case Role_ValueType:
+                return item->data(Constants::Columns::SigValueType);
+            case Role_Receivers:
+                return item->data(Constants::Columns::SigReceivers);
+            default:
+                break;
         }
     }
 
     // -------------------------------------------------------------------------
     // ECU-specific roles (kept small and explicit)
     // -------------------------------------------------------------------------
-    if (type == Core::DbcItemType::Ecu && role == DbcRoles::Role_EcuTotalSignals) {
+    if (type == Core::DbcItemType::Ecu && role == DbcRoles::Role_EcuTotalSignals)
+    {
         return item->data(Constants::Columns::EcuTotalSignals);
     }
 
     // -------------------------------------------------------------------------
     // Global fallbacks (applies to all types)
     // -------------------------------------------------------------------------
-    switch (role) {
+    switch (role)
+    {
         case Role_ItemType:
             return QVariant::fromValue(type);
 
@@ -206,9 +237,9 @@ auto DbcModel::data(const QModelIndex& index, int role) const -> QVariant
             return item->data(index.column());
 
         case Qt::DecorationRole:
-            if (type == Core::DbcItemType::Ecu)     return QIcon(Constants::Sidebar::IconEcus);
+            if (type == Core::DbcItemType::Ecu) return QIcon(Constants::Sidebar::IconEcus);
             if (type == Core::DbcItemType::Message) return QIcon(Constants::Sidebar::IconMessages);
-            if (type == Core::DbcItemType::Signal)  return QIcon(Constants::Sidebar::IconSignals);
+            if (type == Core::DbcItemType::Signal) return QIcon(Constants::Sidebar::IconSignals);
             break;
 
         default:
@@ -230,7 +261,8 @@ void DbcModel::setupRoot()
     // Initialize the root row with enough columns to satisfy any view/proxy usage.
     QList<QVariant> rootColumns;
     rootColumns.reserve(Constants::Columns::SignalColumnCount);
-    for (int i = 0; i < Constants::Columns::SignalColumnCount; ++i) {
+    for (int i = 0; i < Constants::Columns::SignalColumnCount; ++i)
+    {
         rootColumns << QVariant{};
     }
 
@@ -261,13 +293,14 @@ auto DbcModel::createEcuItems(const Core::DbcConfig& data) const -> QHash<QStrin
 {
     QHash<QString, DbcItem*> ecuMap;
 
-    for (const std::string& ecu : data.nodeDefinitions) {
+    for (const std::string& ecu : data.nodeDefinitions)
+    {
         const QString ecuName = QString::fromStdString(ecu);
 
         QList<QVariant> ecuData;
         ecuData.reserve(2);
         ecuData.append(ecuName);
-        ecuData.append(0); // total ECU signal count
+        ecuData.append(0);  // total ECU signal count
 
         auto ecuItem = std::make_unique<DbcItem>(ecuData, Core::DbcItemType::Ecu, m_rootItem.get());
         auto* ecuPtr = ecuItem.get();
@@ -282,36 +315,38 @@ auto DbcModel::createEcuItems(const Core::DbcConfig& data) const -> QHash<QStrin
 auto DbcModel::countTotalSignals(const Core::DbcConfig& data) -> size_t
 {
     size_t count = 0;
-    for (const auto& msg : data.messageDefinitions) {
+    for (const auto& msg : data.messageDefinitions)
+    {
         count += msg.signalDescriptions.size();
     }
     return count;
 }
 
 auto DbcModel::createMessageItems(const Core::DbcConfig& data,
-                                 const QHash<QString, DbcItem*>& ecuMap) const -> int
+                                  const QHash<QString, DbcItem*>& ecuMap) const -> int
 {
     int orphanCount = 0;
 
     // Container node for messages whose sender ECU is missing/unknown.
     QList<QVariant> orphanData;
     orphanData.append(QStringLiteral("Orphan Messages"));
-    auto orphanHolder = std::make_unique<DbcItem>(
-        orphanData, Core::DbcItemType::OrphanHolder, m_rootItem.get());
+    auto orphanHolder =
+        std::make_unique<DbcItem>(orphanData, Core::DbcItemType::OrphanHolder, m_rootItem.get());
 
     for (const Core::DbcMessageDescription& msg : data.messageDefinitions)
     {
         // Pre-fill all columns to guarantee stable column access by index.
         QList<QVariant> messageData;
         messageData.reserve(Constants::Columns::MsgColumnCount);
-        for (int i = 0; i < Constants::Columns::MsgColumnCount; ++i) {
+        for (int i = 0; i < Constants::Columns::MsgColumnCount; ++i)
+        {
             messageData.append(QVariant{});
         }
 
         // Write fields into fixed column positions.
-        messageData[Constants::Columns::MsgName]   = QString::fromStdString(msg.messageName);
-        messageData[Constants::Columns::MsgId]     = msg.messageId;
-        messageData[Constants::Columns::MsgDlc]    = msg.messageSize;
+        messageData[Constants::Columns::MsgName] = QString::fromStdString(msg.messageName);
+        messageData[Constants::Columns::MsgId] = msg.messageId;
+        messageData[Constants::Columns::MsgDlc] = msg.messageSize;
         messageData[Constants::Columns::MsgSender] = QString::fromStdString(msg.transmitterName);
         // MsgSigCount is intentionally not stored; it is derived from childCount().
 
@@ -319,9 +354,11 @@ auto DbcModel::createMessageItems(const Core::DbcConfig& data,
         DbcItem* parent = nullptr;
         const QString transmitterName = QString::fromStdString(msg.transmitterName);
 
-        if (ecuMap.contains(transmitterName)) {
+        if (ecuMap.contains(transmitterName))
+        {
             parent = ecuMap.value(transmitterName);
-        } else {
+        } else
+        {
             parent = orphanHolder.get();
             ++orphanCount;
         }
@@ -333,7 +370,8 @@ auto DbcModel::createMessageItems(const Core::DbcConfig& data,
         createSignalItems(msg.signalDescriptions, messageItem.get(), msg);
 
         // Update ECU aggregate counter.
-        if (parent->type() == Core::DbcItemType::Ecu) {
+        if (parent->type() == Core::DbcItemType::Ecu)
+        {
             const int current = parent->data(Constants::Columns::EcuTotalSignals).toInt();
             parent->setData(Constants::Columns::EcuTotalSignals,
                             current + static_cast<int>(msg.signalDescriptions.size()));
@@ -343,7 +381,8 @@ auto DbcModel::createMessageItems(const Core::DbcConfig& data,
     }
 
     // Only add the orphan holder if it actually contains orphans.
-    if (orphanCount > 0) {
+    if (orphanCount > 0)
+    {
         m_rootItem->appendChild(std::move(orphanHolder));
     }
 
@@ -351,24 +390,24 @@ auto DbcModel::createMessageItems(const Core::DbcConfig& data,
 }
 
 void DbcModel::createSignalItems(const std::list<Core::DbcSignalDescription>& signalDescriptions,
-                                 DbcItem* messageItem,
-                                 const Core::DbcMessageDescription& msgDesc)
+                                 DbcItem* messageItem, const Core::DbcMessageDescription& msgDesc)
 {
     for (const Core::DbcSignalDescription& sig : signalDescriptions)
     {
         QList<QVariant> signalData;
         signalData.reserve(Constants::Columns::SignalColumnCount);
-        for (int i = 0; i < Constants::Columns::SignalColumnCount; ++i) {
+        for (int i = 0; i < Constants::Columns::SignalColumnCount; ++i)
+        {
             signalData.append(QVariant{});
         }
 
-        signalData[Constants::Columns::SigName]     = QString::fromStdString(sig.signalName);
-        signalData[Constants::Columns::SigMessage]  = QString::fromStdString(msgDesc.messageName);
+        signalData[Constants::Columns::SigName] = QString::fromStdString(sig.signalName);
+        signalData[Constants::Columns::SigMessage] = QString::fromStdString(msgDesc.messageName);
         signalData[Constants::Columns::SigStartBit] = sig.startBit;
-        signalData[Constants::Columns::SigUnit]     = QString::fromStdString(sig.unit);
-        signalData[Constants::Columns::SigLength]   = sig.signalSize;
-        signalData[Constants::Columns::SigMin]      = sig.minimum;
-        signalData[Constants::Columns::SigMax]      = sig.maximum;
+        signalData[Constants::Columns::SigUnit] = QString::fromStdString(sig.unit);
+        signalData[Constants::Columns::SigLength] = sig.signalSize;
+        signalData[Constants::Columns::SigMin] = sig.minimum;
+        signalData[Constants::Columns::SigMax] = sig.maximum;
 
         // Keep numeric formatting stable and readable.
         signalData[Constants::Columns::SigFactor] = QString::number(sig.factor, 'g', 12);
@@ -383,7 +422,8 @@ void DbcModel::createSignalItems(const std::list<Core::DbcSignalDescription>& si
                           : Constants::SignalsPage::UnsignedIndicator;
 
         QStringList receiverNames;
-        for (const std::string& receiverName : sig.receivers) {
+        for (const std::string& receiverName : sig.receivers)
+        {
             receiverNames.append(QString::fromStdString(receiverName));
         }
         signalData[Constants::Columns::SigReceivers] = receiverNames.join(QStringLiteral(", "));

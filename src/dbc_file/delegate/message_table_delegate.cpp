@@ -28,41 +28,34 @@ QString formatMessageIdHex(uint id)
     return QStringLiteral("0x%1").arg(id, 3, 16, QChar('0')).toUpper();
 }
 
-} // namespace
+}  // namespace
 
-MessageTableDelegate::MessageTableDelegate(QObject* parent)
-    : QStyledItemDelegate(parent)
-{
-}
+MessageTableDelegate::MessageTableDelegate(QObject* parent) : QStyledItemDelegate(parent) {}
 
-void MessageTableDelegate::paint(QPainter* painter,
-                                 const QStyleOptionViewItem& option,
+void MessageTableDelegate::paint(QPainter* painter, const QStyleOptionViewItem& option,
                                  const QModelIndex& index) const
 {
     // Paint row background and separators.
     const bool selected = option.state & QStyle::State_Selected;
-    const bool hovered  = option.state & QStyle::State_MouseOver;
+    const bool hovered = option.state & QStyle::State_MouseOver;
     Core::ItemPainter::paintRow(painter, option.rect, selected, hovered);
 
     const auto& spacing = THEME.spacing();
-    const auto& colors  = THEME.colors();
+    const auto& colors = THEME.colors();
 
     const int padding = spacing.spacingSm;
     const QRect cellRect = option.rect.adjusted(padding, 0, -padding, 0);
 
     switch (index.column())
     {
-        case Constants::Columns::MsgName:
-        {
+        case Constants::Columns::MsgName: {
             const QString text = index.data(Qt::DisplayRole).toString();
-            Core::ItemPainter::paintText(painter, cellRect, text,
-                                         true, QColor(),
+            Core::ItemPainter::paintText(painter, cellRect, text, true, QColor(),
                                          Qt::AlignHCenter | Qt::AlignVCenter);
             return;
         }
 
-        case Constants::Columns::MsgId:
-        {
+        case Constants::Columns::MsgId: {
             const uint id = index.data(DbcRoles::Role_Id).toUInt();
             const QString text = formatMessageIdHex(id);
 
@@ -75,36 +68,33 @@ void MessageTableDelegate::paint(QPainter* painter,
 
             Core::ItemPainter::BadgeStyle style;
             style.background = Qt::transparent;
-            style.text       = colors.textSecondary;
-            style.border     = colors.borderSubtle;
+            style.text = colors.textSecondary;
+            style.border = colors.borderSubtle;
 
             Core::ItemPainter::paintBadge(painter, badgeRect, text, QIcon(), &style);
             return;
         }
 
-        case Constants::Columns::MsgDlc:
-        {
-            const QString text = textOrDefault(index, Role_Dlc, Constants::MessagesPage::DefaultValue);
-            Core::ItemPainter::paintText(painter, cellRect, text,
-                                         false, QColor(),
+        case Constants::Columns::MsgDlc: {
+            const QString text =
+                textOrDefault(index, Role_Dlc, Constants::MessagesPage::DefaultValue);
+            Core::ItemPainter::paintText(painter, cellRect, text, false, QColor(),
                                          Qt::AlignHCenter | Qt::AlignVCenter);
             return;
         }
 
-        case Constants::Columns::MsgSender:
-        {
-            const QString text = textOrDefault(index, Role_Sender, Constants::MessagesPage::DefaultValue);
-            Core::ItemPainter::paintText(painter, cellRect, text,
-                                         false, QColor(),
+        case Constants::Columns::MsgSender: {
+            const QString text =
+                textOrDefault(index, Role_Sender, Constants::MessagesPage::DefaultValue);
+            Core::ItemPainter::paintText(painter, cellRect, text, false, QColor(),
                                          Qt::AlignHCenter | Qt::AlignVCenter);
             return;
         }
 
-        case Constants::Columns::MsgSigCount:
-        {
-            const QString text = textOrDefault(index, Role_ChildCount, Constants::MessagesPage::DefaultValue);
-            Core::ItemPainter::paintText(painter, cellRect, text,
-                                         false, QColor(),
+        case Constants::Columns::MsgSigCount: {
+            const QString text =
+                textOrDefault(index, Role_ChildCount, Constants::MessagesPage::DefaultValue);
+            Core::ItemPainter::paintText(painter, cellRect, text, false, QColor(),
                                          Qt::AlignHCenter | Qt::AlignVCenter);
             return;
         }
@@ -116,9 +106,9 @@ void MessageTableDelegate::paint(QPainter* painter,
 }
 
 auto MessageTableDelegate::sizeHint(const QStyleOptionViewItem& option,
-                                   const QModelIndex&) const -> QSize
+                                    const QModelIndex&) const -> QSize
 {
     return {option.rect.width(), THEME.spacing().HeightSm};
 }
 
-} // namespace DbcFile
+}  // namespace DbcFile

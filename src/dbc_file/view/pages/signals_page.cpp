@@ -1,5 +1,7 @@
 #include "signals_page.hpp"
+
 #include <QHeaderView>
+#include <QTableView>
 
 #include "core/macro/theme.hpp"
 #include "core/widgets/card_widget.hpp"
@@ -7,6 +9,7 @@
 #include "dbc_file/constants.hpp"
 #include "dbc_file/delegate/signal_table_delegate.hpp"
 #include "dbc_file/model/dbc_roles.hpp"
+#include "core/widgets/common/styled_filter_bar.hpp"
 
 namespace DbcFile {
 
@@ -14,8 +17,7 @@ namespace DbcFile {
 // Constructor
 // ============================================================================
 
-SignalsPage::SignalsPage(QWidget* parent)
-    : QWidget(parent)
+SignalsPage::SignalsPage(QWidget* parent) : QWidget(parent)
 {
     setupUi();
 }
@@ -49,8 +51,7 @@ void SignalsPage::setAvailableUnits(const QStringList& units) const
     bar->clearFilterOptions();
     bar->addFilterOption(Constants::SignalsPage::FilterAllText, QString());
 
-    for (const auto& unit : units)
-        bar->addFilterOption(unit, unit);
+    for (const auto& unit : units) bar->addFilterOption(unit, unit);
 
     bar->setCurrentFilterText(currentSelection);
     bar->blockSignals(wasBlocked);
@@ -65,17 +66,14 @@ void SignalsPage::setupUi()
     const auto& spacing = THEME.spacing();
 
     auto* mainLayout = new QVBoxLayout(this);
-    mainLayout->setContentsMargins(spacing.spacingMd,
-                                   spacing.spacingMd,
-                                   spacing.spacingMd,
+    mainLayout->setContentsMargins(spacing.spacingMd, spacing.spacingMd, spacing.spacingMd,
                                    spacing.spacingMd);
     mainLayout->setSpacing(spacing.spacingMd);
 
     // --- Header Card ---------------------------------------------------------
 
     auto* card = new Core::CardWidget(Constants::SignalsPage::PageHeaderTitle,
-                                      Constants::SignalsPage::PageHeaderSubtitle,
-                                      "", this);
+                                      Constants::SignalsPage::PageHeaderSubtitle, "", this);
 
     mainLayout->addWidget(card);
 
@@ -96,14 +94,13 @@ void SignalsPage::setupUi()
     table->setSelectionMode(QAbstractItemView::NoSelection);
     table->setFocusPolicy(Qt::NoFocus);
 
-
     // --- Signal Forwarding ---------------------------------------------------
 
-    connect(m_tableWidget, &Core::SearchableFilterTable::filterTextChanged,
-            this, &SignalsPage::filterTextChanged);
+    connect(m_tableWidget, &Core::SearchableFilterTable::filterTextChanged, this,
+            &SignalsPage::filterTextChanged);
 
-    connect(m_tableWidget, &Core::SearchableFilterTable::filterIndexChanged,
-            this, &SignalsPage::onFilterIndexChanged);
+    connect(m_tableWidget, &Core::SearchableFilterTable::filterIndexChanged, this,
+            &SignalsPage::onFilterIndexChanged);
 }
 
 // ============================================================================
@@ -173,19 +170,16 @@ void SignalsPage::setupUi()
 // Model-dependent Column Configuration
 // ============================================================================
 
-void SignalsPage::configureColumns(QTableView* table,
-                                   const QAbstractItemModel* model)
+void SignalsPage::configureColumns(QTableView* table, const QAbstractItemModel* model)
 {
-    if (!model || model->columnCount() == 0)
-        return;
+    if (!model || model->columnCount() == 0) return;
 
     const auto& spacing = THEME.spacing();
     auto* header = table->horizontalHeader();
 
     // Hide columns safely
     auto hideIfExists = [&](int column) {
-        if (model->columnCount() > column)
-            table->setColumnHidden(column, true);
+        if (model->columnCount() > column) table->setColumnHidden(column, true);
     };
 
     hideIfExists(Constants::Columns::SigMax);
@@ -194,11 +188,11 @@ void SignalsPage::configureColumns(QTableView* table,
 
     // Column widths
     table->setColumnWidth(Constants::Columns::SigStartBit, spacing.WidthXs / 2);
-    table->setColumnWidth(Constants::Columns::SigUnit,     spacing.WidthXs / 2);
-    table->setColumnWidth(Constants::Columns::SigLength,   spacing.WidthXs / 2);
-    table->setColumnWidth(Constants::Columns::SigMin,      spacing.WidthXs);
-    table->setColumnWidth(Constants::Columns::SigFactor,   spacing.WidthXs / 2);
-    table->setColumnWidth(Constants::Columns::SigOffset,   spacing.WidthXs / 2);
+    table->setColumnWidth(Constants::Columns::SigUnit, spacing.WidthXs / 2);
+    table->setColumnWidth(Constants::Columns::SigLength, spacing.WidthXs / 2);
+    table->setColumnWidth(Constants::Columns::SigMin, spacing.WidthXs);
+    table->setColumnWidth(Constants::Columns::SigFactor, spacing.WidthXs / 2);
+    table->setColumnWidth(Constants::Columns::SigOffset, spacing.WidthXs / 2);
     table->setColumnWidth(Constants::Columns::SigByteOrder, spacing.WidthXs);
     table->setColumnWidth(Constants::Columns::SigValueType, spacing.WidthXs / 2);
 
@@ -213,10 +207,9 @@ void SignalsPage::configureColumns(QTableView* table,
 
 void SignalsPage::onFilterIndexChanged(int)
 {
-    const QString unit =
-        m_tableWidget->filterBar()->currentFilterData().toString();
+    const QString unit = m_tableWidget->filterBar()->currentFilterData().toString();
 
     emit filterUnitChanged(unit);
 }
 
-} // namespace DbcFile
+}  // namespace DbcFile

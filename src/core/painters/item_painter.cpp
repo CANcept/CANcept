@@ -1,4 +1,5 @@
 #include "item_painter.hpp"
+
 #include "core/macro/theme.hpp"
 
 namespace Core {
@@ -11,10 +12,12 @@ void ItemPainter::paintCard(QPainter* painter, const QRect& rect, bool selected)
     const auto& colors = THEME.colors();
     const auto& spacing = THEME.spacing();
 
-    if (selected) {
+    if (selected)
+    {
         painter->setBrush(colors.surfaceSelected);
         painter->setPen(QPen(colors.colorPrimary, 1));
-    } else {
+    } else
+    {
         painter->setBrush(colors.surfaceMain);
         painter->setPen(QPen(colors.borderSubtle, 1));
     }
@@ -30,20 +33,22 @@ auto ItemPainter::measureBadge(const QString& text, const QIcon& icon) -> QSize
     // Constants for badge layout
     const int paddingX = spacing.spacingXs;
     const int iconSize = spacing.IconSm;
-    const int gap =  spacing.spacingXs;
+    const int gap = spacing.spacingXs;
     const int height = spacing.HeightXs;
     int width = paddingX * 2;
 
     // Measure width
-    if (!text.isEmpty()) {
+    if (!text.isEmpty())
+    {
         QFont font;
-        font.setPixelSize(spacing.fontSizeXs); // Badge Font Size
+        font.setPixelSize(spacing.fontSizeXs);  // Badge Font Size
         QFontMetrics fm(font);
         width += fm.horizontalAdvance(text);
     }
 
     // Possibly add icon width
-    if (!icon.isNull()) {
+    if (!icon.isNull())
+    {
         width += iconSize;
         if (!text.isEmpty()) width += gap;
     }
@@ -51,9 +56,8 @@ auto ItemPainter::measureBadge(const QString& text, const QIcon& icon) -> QSize
     return {width, height};
 }
 
-void ItemPainter::paintBadge(QPainter* painter, const QRect& rect,
-                             const QString& text, const QIcon& icon,
-                             const BadgeStyle* style)
+void ItemPainter::paintBadge(QPainter* painter, const QRect& rect, const QString& text,
+                             const QIcon& icon, const BadgeStyle* style)
 {
     const auto& spacing = THEME.spacing();
 
@@ -70,15 +74,15 @@ void ItemPainter::paintBadge(QPainter* painter, const QRect& rect,
     int gap = (!icon.isNull() && !text.isEmpty()) ? spacing.spacingXs : 0;
 
     QFontMetrics fm(painter->font());
-    int textWidth = (!text.isEmpty())
-        ? fm.horizontalAdvance(text)
-        : 0;
+    int textWidth = (!text.isEmpty()) ? fm.horizontalAdvance(text) : 0;
     int contentWidth = iconSize + gap + textWidth;
 
     // 1. Background
     painter->setBrush(badgeStyle.background);
-    if (badgeStyle.border.isValid()) painter->setPen(badgeStyle.border);
-    else painter->setPen(Qt::NoPen);
+    if (badgeStyle.border.isValid())
+        painter->setPen(badgeStyle.border);
+    else
+        painter->setPen(Qt::NoPen);
 
     // Round edges
     painter->drawRoundedRect(rect, spacing.radiusXs / 2, spacing.radiusXs / 2);
@@ -91,13 +95,14 @@ void ItemPainter::paintBadge(QPainter* painter, const QRect& rect,
     int centerY = rect.center().y();
 
     // 2. Icon
-    if (!icon.isNull()) {
-        QRect iconRect(x, centerY - iconSize/2 + 1, iconSize, iconSize);
+    if (!icon.isNull())
+    {
+        QRect iconRect(x, centerY - iconSize / 2 + 1, iconSize, iconSize);
 
         QPixmap pix = icon.pixmap(iconSize, iconSize);
         QPainter p(&pix);
         p.setCompositionMode(QPainter::CompositionMode_SourceIn);
-        p.fillRect(pix.rect(), badgeStyle.text); // Icon in text color
+        p.fillRect(pix.rect(), badgeStyle.text);  // Icon in text color
         p.end();
 
         painter->drawPixmap(iconRect, pix);
@@ -105,7 +110,8 @@ void ItemPainter::paintBadge(QPainter* painter, const QRect& rect,
     }
 
     // 3. Text
-    if (!text.isEmpty()) {
+    if (!text.isEmpty())
+    {
         painter->setPen(badgeStyle.text);
         painter->setFont(badgeFont);
 
@@ -123,7 +129,7 @@ void ItemPainter::paintIcon(QPainter* painter, const QRect& rect, const QIcon& i
 
     QSize iconSize(THEME.spacing().IconSm, THEME.spacing().IconSm);
     // scale if rect smaller than icon
-    if(rect.width() < iconSize.width()) iconSize = rect.size();
+    if (rect.width() < iconSize.width()) iconSize = rect.size();
 
     QPixmap pix = icon.pixmap(iconSize);
     QPainter p(&pix);
@@ -138,8 +144,8 @@ void ItemPainter::paintIcon(QPainter* painter, const QRect& rect, const QIcon& i
     painter->drawPixmap(x, y, pix);
 }
 
-void ItemPainter::paintText(QPainter* painter, const QRect& rect, const QString& text,
-                            bool bold, const QColor& color, Qt::Alignment align, bool elide)
+void ItemPainter::paintText(QPainter* painter, const QRect& rect, const QString& text, bool bold,
+                            const QColor& color, Qt::Alignment align, bool elide)
 {
     if (text.isEmpty()) return;
 
@@ -147,9 +153,11 @@ void ItemPainter::paintText(QPainter* painter, const QRect& rect, const QString&
     const auto& c = THEME.colors();
     const auto& s = THEME.spacing();
 
-    if (color.isValid()) {
+    if (color.isValid())
+    {
         painter->setPen(color);
-    } else {
+    } else
+    {
         painter->setPen(c.textPrimary);
     }
 
@@ -158,10 +166,12 @@ void ItemPainter::paintText(QPainter* painter, const QRect& rect, const QString&
     f.setBold(bold);
     painter->setFont(f);
 
-    if (elide) {
+    if (elide)
+    {
         QString elided = painter->fontMetrics().elidedText(text, Qt::ElideRight, rect.width());
         painter->drawText(rect, align, elided);
-    } else {
+    } else
+    {
         painter->drawText(rect, align, text);
     }
 
@@ -172,9 +182,11 @@ void ItemPainter::paintRow(QPainter* painter, const QRect& rect, bool selected, 
     const auto& c = THEME.colors();
     QColor bgColor = c.surfaceMain;
 
-    if (selected) {
+    if (selected)
+    {
         bgColor = c.surfaceSelected;
-    } else if (hovered) {
+    } else if (hovered)
+    {
         bgColor = c.surfaceHover;
     }
 
@@ -185,10 +197,8 @@ void ItemPainter::paintRow(QPainter* painter, const QRect& rect, bool selected, 
 }
 auto ItemPainter::defaultBadgeStyle() -> ItemPainter::BadgeStyle
 {
-    return {
-        .background = THEME.colors().surfaceSecondary,
-        .text       = THEME.colors().textPrimary,
-        .border     = Qt::transparent
-    };
+    return {.background = THEME.colors().surfaceSecondary,
+            .text = THEME.colors().textPrimary,
+            .border = Qt::transparent};
 }
-} // namespace
+}  // namespace Core

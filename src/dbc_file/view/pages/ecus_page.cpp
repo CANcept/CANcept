@@ -11,16 +11,14 @@
 
 namespace DbcFile {
 
-EcusPage::EcusPage(QWidget* parent)
-    : QWidget(parent)
+EcusPage::EcusPage(QWidget* parent) : QWidget(parent)
 {
     setupUi();
 }
 
 void EcusPage::setModel(QAbstractItemModel* model) const
 {
-    if (!m_treeWidget || !model)
-        return;
+    if (!m_treeWidget || !model) return;
 
     if (auto* view = m_treeWidget->treeView())
     {
@@ -34,9 +32,7 @@ void EcusPage::createLayout()
     const auto& spacing = THEME.spacing();
 
     auto* mainLayout = new QVBoxLayout(this);
-    mainLayout->setContentsMargins(spacing.spacingMd,
-                                   spacing.spacingMd,
-                                   spacing.spacingMd,
+    mainLayout->setContentsMargins(spacing.spacingMd, spacing.spacingMd, spacing.spacingMd,
                                    spacing.spacingMd);
     mainLayout->setSpacing(spacing.spacingMd);
 
@@ -45,14 +41,10 @@ void EcusPage::createLayout()
 void EcusPage::createHeaderCard()
 {
     auto* mainLayout = qobject_cast<QVBoxLayout*>(layout());
-    if (!mainLayout)
-        return;
+    if (!mainLayout) return;
 
-    auto* card = new Core::CardWidget(
-        Constants::EcusPage::PageHeaderTitle,
-        Constants::EcusPage::PageHeaderSubtitle,
-        QString(),
-        this);
+    auto* card = new Core::CardWidget(Constants::EcusPage::PageHeaderTitle,
+                                      Constants::EcusPage::PageHeaderSubtitle, QString(), this);
 
     mainLayout->addWidget(card);
 
@@ -72,12 +64,10 @@ void EcusPage::createTreeSection()
 }
 void EcusPage::configureTreeView()
 {
-    if (!m_treeWidget)
-        return;
+    if (!m_treeWidget) return;
 
     QTreeView* view = m_treeWidget->treeView();
-    if (!view)
-        return;
+    if (!view) return;
 
     view->setItemDelegate(new EcuTreeDelegate(view, this));
 
@@ -97,7 +87,8 @@ void EcusPage::configureTreeView()
 }
 void EcusPage::applyTreeStyle(QTreeView* view)
 {
-    const QString style = QString(R"(
+    const QString style =
+        QString(R"(
         QTreeView {
             background: transparent;
             border: none;
@@ -108,24 +99,18 @@ void EcusPage::applyTreeStyle(QTreeView* view)
         QTreeView::branch:closed:has-children { image: url(%1); }
         QTreeView::branch:open:has-children { image: url(%2); }
     )")
-        .arg(Core::Constants::ARROW_RIGHT_ICON,
-             Core::Constants::ARROW_DOWN_ICON);
+            .arg(Core::Constants::ARROW_RIGHT_ICON, Core::Constants::ARROW_DOWN_ICON);
 
     view->setStyleSheet(style);
 }
 void EcusPage::connectSignals()
 {
-    if (!m_treeWidget)
-        return;
+    if (!m_treeWidget) return;
 
-    connect(m_treeWidget,
-            &Core::SearchableFilterTree::filterTextChanged,
-            this,
+    connect(m_treeWidget, &Core::SearchableFilterTree::filterTextChanged, this,
             &EcusPage::filterTextChanged);
 
-    connect(m_treeWidget,
-            &Core::SearchableFilterTree::filterIndexChanged,
-            this,
+    connect(m_treeWidget, &Core::SearchableFilterTree::filterIndexChanged, this,
             &EcusPage::filterIndexChanged);
 }
 void EcusPage::setupUi()
@@ -136,4 +121,4 @@ void EcusPage::setupUi()
     connectSignals();
 }
 
-} // namespace DbcFile
+}  // namespace DbcFile

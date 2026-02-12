@@ -32,7 +32,7 @@ namespace DbcFile {
  *   to the view for filtering purposes
  *
  * The component follows a lifecycle-based design via onStart() and onStop(),
-* ensuring that event subscriptions are properly managed.
+ * ensuring that event subscriptions are properly managed.
  */
 class DbcComponent : public Core::ITabComponent
 {
@@ -79,35 +79,37 @@ class DbcComponent : public Core::ITabComponent
     void onStart() override;
 
     /**
- * @brief Called when the component is deactivated.
- *
- * Releases event subscriptions to avoid dangling callbacks
- * and ensures proper lifecycle cleanup.
- */
+     * @brief Called when the component is deactivated.
+     *
+     * Releases event subscriptions to avoid dangling callbacks
+     * and ensures proper lifecycle cleanup.
+     */
     void onStop() override;
 
     /**
- * @brief Extracts all unique signal units from a parsed DBC file to provide filtering options for signals.
- *
- * Iterates over all message definitions and their signals,
- * collects unique unit strings, and returns them sorted
- * alphabetically (case-insensitive).
- *
- * @param event The parsed DBC event containing configuration data.
- * @return A sorted list of unique signal units.
- */
+     * @brief Extracts all unique signal units from a parsed DBC file to provide filtering options
+     * for signals.
+     *
+     * Iterates over all message definitions and their signals,
+     * collects unique unit strings, and returns them sorted
+     * alphabetically (case-insensitive).
+     *
+     * @param event The parsed DBC event containing configuration data.
+     * @return A sorted list of unique signal units.
+     */
     static auto extractSignalUnits(const Core::DBCParsedEvent& event) -> QStringList;
 
     /**
- * @brief Extracts all unique message senders from a parsed DBC event to provide filtering options for messages.
- *
- * Iterates over all message definitions and collects unique
- * transmitter names. The result is sorted alphabetically
- * (case-insensitive).
- *
- * @param event The parsed DBC event containing configuration data.
- * @return A sorted list of unique message sender names.
- */
+     * @brief Extracts all unique message senders from a parsed DBC event to provide filtering
+     * options for messages.
+     *
+     * Iterates over all message definitions and collects unique
+     * transmitter names. The result is sorted alphabetically
+     * (case-insensitive).
+     *
+     * @param event The parsed DBC event containing configuration data.
+     * @return A sorted list of unique message sender names.
+     */
     static auto extractSenders(const Core::DBCParsedEvent& event) -> QStringList;
 
    private slots:
@@ -123,16 +125,15 @@ class DbcComponent : public Core::ITabComponent
     void onFileLoadRequested(const QString& filePath);
 
    private:
-
     /**
- * @brief Handles successful DBC parsing events.
- *
- * Updates the view state to reflect successful parsing,
- * enables navigation, and provides extracted metadata
- * (signal units and message senders) for filtering.
- *
- * @param event The parsed DBC event containing configuration data.
- */
+     * @brief Handles successful DBC parsing events.
+     *
+     * Updates the view state to reflect successful parsing,
+     * enables navigation, and provides extracted metadata
+     * (signal units and message senders) for filtering.
+     *
+     * @param event The parsed DBC event containing configuration data.
+     */
     void onDbcParsed(const Core::DBCParsedEvent& event);
 
     /**

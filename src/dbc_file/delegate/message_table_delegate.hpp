@@ -1,5 +1,5 @@
 /**
-* @file message_table_delegate.hpp
+ * @file message_table_delegate.hpp
  * @brief Delegate for rendering rows in the messages table view.
  *
  * MessageTableDelegate customizes the appearance of message rows:
@@ -29,7 +29,7 @@ class MessageTableDelegate final : public QStyledItemDelegate
 {
     Q_OBJECT
 
-public:
+   public:
     /**
      * @brief Constructs the delegate.
      * @param parent Optional QObject parent.
@@ -45,8 +45,7 @@ public:
      * The delegate draws the row background and then paints the column-specific content.
      * The message ID column is rendered as a badge; other columns are centered text.
      */
-    void paint(QPainter* painter,
-               const QStyleOptionViewItem& option,
+    void paint(QPainter* painter, const QStyleOptionViewItem& option,
                const QModelIndex& index) const override;
 
     /**
@@ -56,7 +55,7 @@ public:
      * @return Size hint with themed row height.
      */
     [[nodiscard]] auto sizeHint(const QStyleOptionViewItem& option,
-                                 const QModelIndex& index) const -> QSize override;
+                                const QModelIndex& index) const -> QSize override;
 };
 
-} // namespace DbcFile
+}  // namespace DbcFile

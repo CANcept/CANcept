@@ -42,7 +42,7 @@ class SearchableFilterTable : public QWidget
 {
     Q_OBJECT
 
-public:
+   public:
     /**
      * @brief Constructs the composite table widget.
      * @param parent Optional parent widget.
@@ -89,7 +89,7 @@ public:
      */
     void configureTableBasics();
 
-signals:
+   signals:
     /**
      * @brief Emitted when the search text changes.
      */
@@ -100,17 +100,16 @@ signals:
      */
     void filterIndexChanged(int index);
 
-private:
+   private:
     /**
      * @brief Builds the widget layout and connects filter signals.
      */
     void setupUi();
 
-private:
+   private:
     StyledFilterBar* m_filterBar = nullptr;
     QTableView* m_tableView = nullptr;
 };
-
 
 // ============================================================================
 // SearchableFilterTree
@@ -132,7 +131,7 @@ class SearchableFilterTree : public QWidget
 {
     Q_OBJECT
 
-public:
+   public:
     /**
      * @brief Constructs the composite tree widget.
      * @param parent Optional parent widget.
@@ -164,7 +163,7 @@ public:
      */
     void setSearchText(const QString& text) const;
 
-signals:
+   signals:
     /**
      * @brief Emitted when the search text changes.
      */
@@ -175,15 +174,15 @@ signals:
      */
     void filterIndexChanged(int index);
 
-private:
+   private:
     /**
      * @brief Builds the widget layout and connects filter signals.
      */
     void setupUi();
 
-private:
+   private:
     StyledFilterBar* m_filterBar = nullptr;
     QTreeView* m_treeView = nullptr;
 };
 
-} // namespace Core
+}  // namespace Core

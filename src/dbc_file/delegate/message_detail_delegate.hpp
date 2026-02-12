@@ -4,7 +4,8 @@
  *
  * The delegate draws a card-like layout consisting of:
  * - Header: signal name and optional unit badge
- * - Grid: two rows of attribute/value pairs (start bit, length, byte order, type, factor, offset, min, max)
+ * - Grid: two rows of attribute/value pairs (start bit, length, byte order, type, factor, offset,
+ * min, max)
  * - Footer: receiver list (if available)
  *
  * Data is retrieved using Qt standard roles (DisplayRole) and custom DBC roles
@@ -36,7 +37,7 @@ class MessagesDetailDelegate final : public QStyledItemDelegate
 {
     Q_OBJECT
 
-public:
+   public:
     /**
      * @brief Constructs the delegate.
      * @param parent Optional QObject parent.
@@ -58,13 +59,12 @@ public:
      * @param option Style options (rect, state).
      * @param index Model index providing the data to display.
      */
-    void paint(QPainter* painter,
-               const QStyleOptionViewItem& option,
+    void paint(QPainter* painter, const QStyleOptionViewItem& option,
                const QModelIndex& index) const override;
 
-private:
+   private:
     /** @brief Draws the header (name + optional unit badge). */
- static void drawHeader(QPainter* painter, const QRect& rect, const QModelIndex& index);
+    static void drawHeader(QPainter* painter, const QRect& rect, const QModelIndex& index);
 
     /** @brief Draws the attribute grid (two rows, four columns). */
     void drawGrid(QPainter* painter, const QRect& rect, const QModelIndex& index) const;
@@ -76,11 +76,11 @@ private:
      * @param label Attribute label.
      * @param value Attribute value.
      */
-    static void drawAttributePair(QPainter* painter, const QRect& rect,
-                                  const QString& label, const QString& value);
+    static void drawAttributePair(QPainter* painter, const QRect& rect, const QString& label,
+                                  const QString& value);
 
     /** @brief Draws the footer (receiver list) if available. */
     void drawFooter(QPainter* painter, const QRect& rect, const QModelIndex& index) const;
 };
 
-} // namespace DbcFile
+}  // namespace DbcFile

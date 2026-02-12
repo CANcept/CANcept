@@ -1,7 +1,7 @@
 #pragma once
 
-#include <QWidget>
 #include <QVariant>
+#include <QWidget>
 
 class QLineEdit;
 class QComboBox;
@@ -22,7 +22,7 @@ class StyledFilterBar : public QWidget
 {
     Q_OBJECT
 
-public:
+   public:
     /**
      * @brief Constructs a StyledFilterBar.
      * @param parent Optional parent widget.
@@ -102,7 +102,7 @@ public:
      */
     void setCurrentFilterIndex(int index);
 
-signals:
+   signals:
     /**
      * @brief Emitted when the search text changes.
      * @param text Updated search string.
@@ -115,7 +115,7 @@ signals:
      */
     void filterIndexChanged(int index);
 
-private:
+   private:
     /**
      * @brief Initializes UI elements and layout.
      *
@@ -131,9 +131,9 @@ private:
      */
     void setupStyles() const;
 
-private:
+   private:
     QLineEdit* m_searchBar = nullptr;  ///< Search input field
     QComboBox* m_filterBox = nullptr;  ///< Filter dropdown box
 };
 
-} // namespace Core
+}  // namespace Core

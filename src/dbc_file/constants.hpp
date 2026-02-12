@@ -23,25 +23,25 @@ constexpr int EcuName = 0;
 constexpr int EcuTotalSignals = 1;
 
 // --- Message Table Columns (for Messages Page) ---
-constexpr int MsgName       = 0;
-constexpr int MsgId         = 1;
-constexpr int MsgDlc        = 2;
-constexpr int MsgSender     = 3;
-constexpr int MsgSigCount   = 4;
+constexpr int MsgName = 0;
+constexpr int MsgId = 1;
+constexpr int MsgDlc = 2;
+constexpr int MsgSender = 3;
+constexpr int MsgSigCount = 4;
 
 // --- Signal Table Columns (for Signals Page) ---
-constexpr int SigName       = 0;
-constexpr int SigMessage    = 1;
-constexpr int SigStartBit   = 2;
-constexpr int SigUnit       = 3;
-constexpr int SigLength     = 4;
-constexpr int SigMin        = 5;
-constexpr int SigMax        = 6;
-constexpr int SigFactor     = 7;
-constexpr int SigOffset     = 8;
-constexpr int SigByteOrder  = 9;
-constexpr int SigValueType  = 10;
-constexpr int SigReceivers  = 11;
+constexpr int SigName = 0;
+constexpr int SigMessage = 1;
+constexpr int SigStartBit = 2;
+constexpr int SigUnit = 3;
+constexpr int SigLength = 4;
+constexpr int SigMin = 5;
+constexpr int SigMax = 6;
+constexpr int SigFactor = 7;
+constexpr int SigOffset = 8;
+constexpr int SigByteOrder = 9;
+constexpr int SigValueType = 10;
+constexpr int SigReceivers = 11;
 
 // Helper
 constexpr int MsgColumnCount = 5;
@@ -187,9 +187,10 @@ static const QString FilterAllText = "All Senders";
 static const QString DetailTitle = "Message Details: %1";
 static const QString DetailSubtitle = "ID: %1    Sender: %2    DLC: %3 bytes";
 static const QString DetailTitlePlaceholder = "No Message Selected";
-static const QString DetailSubtitlePlaceholder = "Select a message from the list above to view signals.";
+static const QString DetailSubtitlePlaceholder =
+    "Select a message from the list above to view signals.";
 static const QString DefaultValue = "/";
-}
+}  // namespace MessagesPage
 
 // --- Signals Page Specifics ---
 namespace SignalsPage {
@@ -204,5 +205,5 @@ static const QString UnsignedIndicator = "X";
 static const QString SignedIndicator = "✓";
 static const QString LengthUnit = "bit";
 static const QString DefaultUnit = "/";
-}
+}  // namespace SignalsPage
 }  // namespace DbcFile::Constants

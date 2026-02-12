@@ -29,9 +29,12 @@ auto DbcComponent::extractSignalUnits(const Core::DBCParsedEvent& event) -> QStr
 {
     QSet<QString> uniqueUnits;
 
-    for (const auto& msg : event.config.messageDefinitions) {
-        for (const auto& sig : msg.signalDescriptions) {
-            if (!sig.unit.empty()) {
+    for (const auto& msg : event.config.messageDefinitions)
+    {
+        for (const auto& sig : msg.signalDescriptions)
+        {
+            if (!sig.unit.empty())
+            {
                 uniqueUnits.insert(QString::fromStdString(sig.unit));
             }
         }
@@ -45,8 +48,10 @@ auto DbcComponent::extractSignalUnits(const Core::DBCParsedEvent& event) -> QStr
 auto DbcComponent::extractSenders(const Core::DBCParsedEvent& event) -> QStringList
 {
     QSet<QString> uniqueSenders;
-    for (const auto& msg : event.config.messageDefinitions) {
-        if (!msg.transmitterName.empty()) {
+    for (const auto& msg : event.config.messageDefinitions)
+    {
+        if (!msg.transmitterName.empty())
+        {
             uniqueSenders.insert(QString::fromStdString(msg.transmitterName));
         }
     }

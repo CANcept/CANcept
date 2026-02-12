@@ -38,10 +38,10 @@ class DbcModel : public QAbstractItemModel
      */
     explicit DbcModel(Core::IEventBroker& broker, QObject* parent = nullptr);
     /**
-  * @brief Destroys the model.
-  *
-  * The event subscription connection is released automatically with the model.
-  */
+     * @brief Destroys the model.
+     *
+     * The event subscription connection is released automatically with the model.
+     */
     ~DbcModel() override = default;
 
     // --- QAbstractItemModel Interface Implementation ---
@@ -203,16 +203,16 @@ class DbcModel : public QAbstractItemModel
      * new `Signal` items to the `messageItem`.
      */
     static auto createSignalItems(const std::list<Core::DbcSignalDescription>& signalDescriptions,
-                                  DbcItem* messageItem, const Core::DbcMessageDescription& msgDesc)
-        -> void;
+                                  DbcItem* messageItem,
+                                  const Core::DbcMessageDescription& msgDesc) -> void;
 
     /**
- * @brief Populates the model from a DBC configuration.
- * @param data Parsed DBC configuration.
- *
- * This creates ECU items, message items (including orphans), signal items,
- * and an overview metadata item.
- */
+     * @brief Populates the model from a DBC configuration.
+     * @param data Parsed DBC configuration.
+     *
+     * This creates ECU items, message items (including orphans), signal items,
+     * and an overview metadata item.
+     */
     void setupData(const Core::DbcConfig& data);
 
     // --- Members ---
