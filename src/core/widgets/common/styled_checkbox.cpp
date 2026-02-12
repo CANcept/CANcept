@@ -59,8 +59,6 @@ void StyledCheckBox::applyStyle()
                             .arg(colors.colorPrimary.name(), colors.colorPrimaryHover.name());
 
     this->setStyleSheet(qss);
-    updateGeometry();
-    update();
 }
 
 bool StyledCheckBox::event(QEvent* event)

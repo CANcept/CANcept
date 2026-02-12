@@ -52,34 +52,6 @@ void ThemeManager::refreshApplication()
     {
         QApplication::postEvent(widget, new StyleEvent());
     }
-
-    QApplication::processEvents();
-    for (QWidget* widget : QApplication::allWidgets())
-    {
-        widget->style()->unpolish(widget);
-        widget->setStyleSheet(widget->styleSheet());
-    }
-
-    for (QWidget* widget : QApplication::allWidgets())
-    {
-        if (widget->layout())
-        {
-            widget->layout()->invalidate();
-            widget->layout()->activate();
-        }
-        widget->updateGeometry();
-    }
-
-    for (QWidget* widget : QApplication::allWidgets())
-    {
-        widget->style()->polish(widget);
-        widget->update();
-    }
-
-    for (QWidget* topLevel : QApplication::topLevelWidgets())
-    {
-        topLevel->repaint();
-    }
 }
 
 }  // namespace Core

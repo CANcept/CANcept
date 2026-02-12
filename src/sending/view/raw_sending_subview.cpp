@@ -23,6 +23,7 @@ RawSendingSubView::RawSendingSubView(QWidget* parent)
       m_messageDataFormatter(nullptr),
       m_canIdLabel(nullptr),
       m_messageDataLabel(nullptr),
+      m_repeatedSendingCard(nullptr),
       m_sendButton(nullptr)
 {
     setupUi();
@@ -73,6 +74,11 @@ void RawSendingSubView::setupUi()
     setupCanIdInput();
     setupMessageDataInput();
     contentLayout->addWidget(m_frameCard);
+
+    // Repeated Sending Card
+    m_repeatedSendingCard = new RepeatedSendingCard(this);
+    contentLayout->addWidget(m_repeatedSendingCard);
+
     contentLayout->addStretch();
 
     // Send Message button in the bottom right corner
