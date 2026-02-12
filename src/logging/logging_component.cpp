@@ -3,35 +3,35 @@
 #include <QFile>
 #include <QFileDialog>
 #include <QMessageBox>
+#include <QProgressDialog>
 #include <QTextStream>
 #include <core/event/dbc_event.hpp>
+#include <core/macro/console_logging.hpp>
+#include <core/macro/theme.hpp>
+#include <set>
+
+#include "constants.hpp"
 
 namespace Logging {
 
 // Constructs the logging component and wires up all connections
 LoggingComponent::LoggingComponent(Core::IEventBroker& broker)
-    : Core::ITabComponent(broker,
-                          "logging",                          // unique internal ID
-                          "Logging",                          // tab title
-                          QIcon(":/assets/icon/logging.svg")  // tab icon
-                          ),
+    : Core::ITabComponent(broker, "logging", "Logging", QIcon(Constants::LOGGING_ICON_PATH)),
       m_model(std::make_unique<LoggingModel>()),
       m_view(std::make_unique<LoggingView>())
 {
-    // Initialize the spdlog logger
-    Logger::instance().initialize("logs/logging_module.log");
-    LOG_INFO("LoggingComponent initialized");
     // Bind model to view
     m_view->setModel(m_model.get());
 
-    // Setup timer for elapsed time tracking with 10ms precision
+    // Setup timer for elapsed time tracking (100ms for smooth display)
     m_timer = new QTimer(this);
-    m_timer->setInterval(10);  // Update every 10ms for centisecond precision
+    m_timer->setInterval(100);  // Update every 100ms for smooth timer
     connect(m_timer, &QTimer::timeout, this, [this]() {
         qint64 elapsedMs = m_elapsedTimer.elapsed();
         m_view->updateTimer(elapsedMs);
-        // Update model duration every second
-        if (elapsedMs % 1000 < 10)
+
+        // Update model duration only every second to avoid excessive repaints
+        if (elapsedMs % 1000 < 100)
         {
             m_model->updateActiveDuration();
         }
@@ -77,11 +77,7 @@ LoggingComponent::LoggingComponent(Core::IEventBroker& broker)
         }
     });
 
-    // Component → Model bridges
-    connect(this, &LoggingComponent::receiveRawFrame, m_model.get(),
-            &LoggingModel::onRawFrameReceived);
-    connect(this, &LoggingComponent::receiveDbcSignals, m_model.get(),
-            &LoggingModel::onDbcSignalsReceived);
+    // Component → Model bridge (DBC config updates only)
     connect(this, &LoggingComponent::dbcConfigurationChanged, m_model.get(),
             &LoggingModel::updateDbcConfig);
 }
@@ -98,12 +94,9 @@ auto LoggingComponent::getView() -> QWidget*
 // Called when tab becomes active - subscribes to DBC events
 void LoggingComponent::onStart()
 {
-    LOG_INFO("Starting LoggingComponent");
-
     // Listen for successful DBC parsing
     m_parseSuccessConn =
         m_eventBroker.subscribe<Core::DBCParsedEvent>([this](const Core::DBCParsedEvent& event) {
-            LOG_DEBUG("Received DBC configuration update");
             emit dbcConfigurationChanged(event.config);
 
             // Update the message selection dialog with the new DBC config
@@ -113,18 +106,16 @@ void LoggingComponent::onStart()
     // Listen for DBC parse errors
     m_parseErrorConn = m_eventBroker.subscribe<Core::DBCParseErrorEvent>(
         [](const Core::DBCParseErrorEvent& event) {
-            LOG_ERROR("DBC parse error occurred: {}", event.errorMessage);
+            // Error already logged by DBC handler
         });
 }
 
 // Called when tab becomes inactive - cleans up resources
 void LoggingComponent::onStop()
 {
-    LOG_INFO("Stopping LoggingComponent");
     stopLogging();
     m_parseSuccessConn.release();
     m_parseErrorConn.release();
-    Logger::instance().flush();
 }
 
 // Initiates a new logging session with user-selected signals
@@ -132,56 +123,165 @@ void LoggingComponent::startLogging()
 {
     if (m_model->isRecording())
     {
-        LOG_WARN("Attempted to start logging while already recording");
         return;
     }
 
-    LOG_INFO("Initializing logging session");
-
     // Show message selection dialog
-    m_selectionDialog->setAvailableDevices({"vcan0", "can0", "can1"});
-
     if (m_selectionDialog->exec() != QDialog::Accepted)
     {
-        LOG_DEBUG("User cancelled logging session");
         return;  // User cancelled
     }
 
-    const QString selectedDevice = m_selectionDialog->getSelectedDevice();
     std::map<uint32_t, QStringList> selectedSignals = m_selectionDialog->getSelectedSignals();
 
-    LOG_INFO("Starting new logging session on device: {}", selectedDevice.toStdString());
-    LOG_INFO("Selected signals for {} messages", selectedSignals.size());
-
-    // Log details of selected signals
-    for (const auto& [messageId, signalList] : selectedSignals)
+    // Populate thread-safe caches (for CAN thread access)
     {
-        LOG_DEBUG("Message 0x{:X}: {} signals selected", messageId, signalList.size());
+        std::lock_guard<std::mutex> lock(m_cacheMutex);
+        m_selectedSignalsCache.clear();
+        m_messageNamesCache.clear();
+        m_signalUnitsCache.clear();
+
+        for (const auto& [msgId, signalList] : selectedSignals)
+        {
+            // Convert QStringList to std::vector<std::string>
+            std::vector<std::string> signalNames;
+            signalNames.reserve(signalList.size());
+            for (const QString& sig : signalList)
+            {
+                signalNames.push_back(sig.toStdString());
+            }
+            m_selectedSignalsCache[msgId] = std::move(signalNames);
+
+            // Cache message name
+            m_messageNamesCache[msgId] = m_model->getMessageName(msgId).toStdString();
+
+            // Cache signal units
+            for (const QString& sig : signalList)
+            {
+                QString unit = m_model->getSignalUnit(msgId, sig);
+                uint64_t hash = (static_cast<uint64_t>(msgId) << 32) |
+                                std::hash<std::string>{}(sig.toStdString());
+                m_signalUnitsCache[hash] = unit.toStdString();
+            }
+        }
     }
 
-    m_model->startNewSession(selectedDevice, selectedSignals);
+    // Start new session in model (no device name needed)
+    m_model->startNewSession(QString(), selectedSignals);
+
+    // Get session ID and create session logger
+    m_currentSessionId = m_model->getCurrentSessionId().toStdString();
+    m_sessionLogger =
+        Core::LogService::getInstance().getLogger(Core::LogContext::CanLogging, m_currentSessionId);
+
+    // Log session start marker
+    m_sessionLogger->info("SESSION_START,{}", selectedSignals.size());
+
+    // Set recording flag (thread-safe atomic)
+    m_isRecording.store(true, std::memory_order_release);
 
     // Start timer and elapsed time tracking
     m_elapsedTimer.start();
     m_view->updateTimer(0);
-    m_timer->start();  // Starts with 10ms interval set in constructor
+    m_timer->start();  // Starts with 100ms interval set in constructor
 
+    // Subscribe to raw CAN frames (for messages without DBC definitions)
     m_rawMsgConn = m_eventBroker.subscribe<Core::ReceivedCanRawEvent>(
         [this](const Core::ReceivedCanRawEvent& event) {
-            LOG_TRACE("Received raw CAN frame - ID: 0x{:X}",
-                      static_cast<uint8_t>(event.canMessage.messageId));
-            emit receiveRawFrame(event.canMessage);
+            // Fast path: early return if not recording (thread-safe atomic)
+            if (!m_isRecording.load(std::memory_order_acquire) || !m_sessionLogger) [[unlikely]]
+            {
+                return;
+            }
+
+            const auto& msg = event.canMessage;
+
+            // Check if this message has a DBC definition (thread-safe cache lookup)
+            std::string messageName;
+            {
+                std::lock_guard<std::mutex> lock(m_cacheMutex);
+                auto it = m_messageNamesCache.find(msg.messageId);
+                if (it != m_messageNamesCache.end())
+                {
+                    messageName = it->second;
+                } else
+                {
+                    messageName = "UNKNOWN_0x" + fmt::format("{:03X}", msg.messageId);
+                }
+            }
+
+            // Only log raw if no DBC definition exists
+            if (messageName.find("UNKNOWN_") == 0)
+            {
+                // Optimized hex formatting - pre-allocate space
+                std::string hexData;
+                hexData.reserve(msg.dlc * 3);
+                for (int i = 0; i < msg.dlc; ++i)
+                {
+                    hexData += fmt::format("{:02X}", static_cast<unsigned char>(msg.data[i]));
+                    if (i < msg.dlc - 1) hexData += " ";
+                }
+
+                // Async log (non-blocking, thread-safe)
+                m_sessionLogger->info("0x{:03X},{},RAW_DATA,{},hex", msg.messageId, messageName,
+                                      hexData);
+            }
         });
 
+    // Subscribe to decoded DBC messages
     m_dbcMsgConn = m_eventBroker.subscribe<Core::ReceivedCanDbcEvent>(
         [this](const Core::ReceivedCanDbcEvent& event) {
-            LOG_TRACE("Received DBC CAN message - ID: 0x{:X}",
-                      static_cast<uint8_t>(event.canMessage.messageId));
-            emit receiveDbcSignals(event.canMessage);
+            // Fast path: early return if not recording (thread-safe atomic)
+            if (!m_isRecording.load(std::memory_order_acquire) || !m_sessionLogger) [[unlikely]]
+            {
+                return;
+            }
+
+            const auto& msg = event.canMessage;
+
+            // Get selected signals (thread-safe cache)
+            std::vector<std::string> selectedSignals;
+            std::string messageName;
+            {
+                std::lock_guard<std::mutex> lock(m_cacheMutex);
+
+                auto it = m_selectedSignalsCache.find(msg.messageId);
+                if (it == m_selectedSignalsCache.end())
+                {
+                    return;  // No signals selected for this message ID
+                }
+                selectedSignals = it->second;
+
+                // Get message name
+                auto nameIt = m_messageNamesCache.find(msg.messageId);
+                messageName = (nameIt != m_messageNamesCache.end()) ? nameIt->second : "UNKNOWN";
+            }
+
+            // Iterate through signal values and log selected ones (no Qt objects, thread-safe!)
+            for (const auto& signal : msg.signalValues)
+            {
+                // Check if signal is in selected list
+                auto it = std::find(selectedSignals.begin(), selectedSignals.end(), signal.name);
+                if (it != selectedSignals.end())
+                {
+                    // Get signal unit from cache
+                    uint64_t hash = (static_cast<uint64_t>(msg.messageId) << 32) |
+                                    std::hash<std::string>{}(signal.name);
+                    std::string unit;
+                    {
+                        std::lock_guard<std::mutex> lock(m_cacheMutex);
+                        auto unitIt = m_signalUnitsCache.find(hash);
+                        unit = (unitIt != m_signalUnitsCache.end()) ? unitIt->second : "";
+                    }
+
+                    // Async log (non-blocking, thread-safe)
+                    m_sessionLogger->info("0x{:03X},{},{},{:.6f},{}", msg.messageId, messageName,
+                                          signal.name, signal.value, unit);
+                }
+            }
         });
 
     m_view->setRecordingState(true);
-    LOG_INFO("Logging session started successfully");
 }
 
 // Stops the active logging session and releases event subscriptions
@@ -189,38 +289,49 @@ void LoggingComponent::stopLogging()
 {
     if (!m_model->isRecording())
     {
-        LOG_WARN("Attempted to stop logging while not recording");
         return;
     }
 
-    LOG_INFO("Stopping logging session");
+    // Clear recording flag first (thread-safe atomic)
+    m_isRecording.store(false, std::memory_order_release);
+
     m_timer->stop();
 
+    // Release event subscriptions (only CAN message subscriptions, NOT parse connections)
     m_rawMsgConn.release();
     m_dbcMsgConn.release();
-    m_parseErrorConn.release();
-    m_parseSuccessConn.release();
+
+    // Clear thread-safe caches
+    {
+        std::lock_guard<std::mutex> lock(m_cacheMutex);
+        m_selectedSignalsCache.clear();
+        m_messageNamesCache.clear();
+        m_signalUnitsCache.clear();
+    }
+
+    // Log session end marker
+    if (m_sessionLogger)
+    {
+        m_sessionLogger->info("SESSION_END,{}", m_elapsedTimer.elapsed());
+        m_sessionLogger->flush();
+
+        // Close session logger
+        Core::LogService::getInstance().closeLogger(Core::LogContext::CanLogging,
+                                                    m_currentSessionId);
+        m_sessionLogger = nullptr;
+    }
 
     m_model->stopActiveSession();
     m_view->setRecordingState(false);
-    LOG_INFO("Logging session stopped successfully. Duration: {} ms", m_elapsedTimer.elapsed());
 }
 
 // Exports a logging session to CSV file
 void LoggingComponent::exportLogSession(const QString& sessionId, const QString& filePath)
 {
-    LOG_INFO("Exporting session {} to {}", sessionId.toStdString(), filePath.toStdString());
-
     if (!writeToCsv(sessionId, filePath))
     {
-        LOG_ERROR("Failed to export session {} to {}", sessionId.toStdString(),
-                  filePath.toStdString());
         QMessageBox::critical(m_view.get(), "Export Failed",
                               "Could not write to the specified file.");
-    } else
-    {
-        LOG_INFO("Successfully exported session {} to {}", sessionId.toStdString(),
-                 filePath.toStdString());
     }
 }
 
@@ -239,27 +350,98 @@ void LoggingComponent::onDetailRequested(const QModelIndex& index)
     m_view->showDetailView(detailWidget);
 }
 
-// Writes session metadata to CSV file
+// Writes session data from log file to CSV with progress dialog
 bool LoggingComponent::writeToCsv(const QString& sessionId, const QString& filePath)
 {
-    QFile file(filePath);
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
+    // Input log file path
+    QString logFilePath = QString("logs/session_%1_CanLogging.log").arg(sessionId);
+
+    QFile logFile(logFilePath);
+    if (!logFile.open(QIODevice::ReadOnly | QIODevice::Text))
     {
-        LOG_ERROR("Failed to open file for writing: {}", filePath.toStdString());
         return false;
     }
 
-    const LogSession* session = m_model->getSession(sessionId);
-    if (!session)
+    // Output CSV file
+    QFile csvFile(filePath);
+    if (!csvFile.open(QIODevice::WriteOnly | QIODevice::Text))
     {
-        LOG_ERROR("Session not found: {}", sessionId.toStdString());
         return false;
     }
 
-    QTextStream out(&file);
-    out << "Session ID,Start Time,Duration,Entry Count\n";
-    out << session->id << "," << session->startDateTime.toString(Qt::ISODate) << ","
-        << session->duration << "," << session->entryCount << "\n";
+    // Count total lines for progress
+    QTextStream counter(&logFile);
+    int totalLines = 0;
+    while (!counter.atEnd())
+    {
+        counter.readLine();
+        totalLines++;
+    }
+    logFile.seek(0);  // Reset to beginning
+
+    // Create progress dialog
+    QProgressDialog progress("Exporting to CSV...", "Cancel", 0, totalLines, m_view.get());
+    progress.setWindowModality(Qt::WindowModal);
+    progress.setMinimumDuration(500);  // Show after 500ms
+
+    QTextStream in(&logFile);
+    QTextStream out(&csvFile);
+
+    // Write CSV header
+    out << "Timestamp,Log Level,Message ID,Message Name,Signal Name,Value,Unit\n";
+
+    int lineCount = 0;
+    bool hadErrors = false;
+
+    // Parse each log line
+    while (!in.atEnd())
+    {
+        QString line = in.readLine();
+        lineCount++;
+
+        // Update progress every 100 lines
+        if (lineCount % 100 == 0)
+        {
+            progress.setValue(lineCount);
+            if (progress.wasCanceled())
+            {
+                return false;
+            }
+        }
+
+        // Skip empty lines
+        if (line.trimmed().isEmpty())
+        {
+            continue;
+        }
+
+        // Parse format: "2024-01-15 14:23:01.123|info|0x123,EngineSpeed,RPM,2500.123,rpm"
+        QStringList parts = line.split('|');
+        if (parts.size() >= 3)
+        {
+            QString timestamp = parts[0];
+            QString level = parts[1];
+            QString data = parts[2];
+
+            // Special handling for session markers
+            if (data.startsWith("SESSION_START") || data.startsWith("SESSION_END"))
+            {
+                out << timestamp << "," << level << "," << data << ",,,\n";
+            } else
+            {
+                // Write as CSV (data already in correct format)
+                out << timestamp << "," << level << "," << data << "\n";
+            }
+        } else
+        {
+            hadErrors = true;
+        }
+    }
+
+    progress.setValue(totalLines);
+
+    logFile.close();
+    csvFile.close();
 
     return true;
 }
@@ -267,72 +449,77 @@ bool LoggingComponent::writeToCsv(const QString& sessionId, const QString& fileP
 // Creates a detail view widget for displaying session information
 QWidget* LoggingComponent::createDetailWidget(const LogSession* session)
 {
+    const auto& colors = THEME.colors();
+    const auto& spacing = THEME.spacing();
+
     auto* detailView = new QWidget(m_view.get());
     auto* layout = new QVBoxLayout(detailView);
-    layout->setContentsMargins(20, 20, 20, 20);
-    layout->setSpacing(16);
+    layout->setContentsMargins(spacing.spacingLg, spacing.spacingLg, spacing.spacingLg,
+                               spacing.spacingLg);
+    layout->setSpacing(spacing.spacingMd);
 
     // ===== Title Section =====
     auto* title = new QLabel(QString("Session Details: %1").arg(session->id), detailView);
-    title->setStyleSheet(
-        "QLabel {"
-        "   font-family: 'Roboto';"
-        "   font-size: 24px;"
-        "   font-weight: 500;"
-        "   color: black;"
-        "}");
+    const QString titleStyle = QString(
+                                   "QLabel {"
+                                   "   font-family: 'Roboto';"
+                                   "   font-size: 24px;"
+                                   "   font-weight: %1;"
+                                   "   color: %2;"
+                                   "}")
+                                   .arg(spacing.fontWeightMedium)
+                                   .arg(colors.textPrimary.name());
+    title->setStyleSheet(titleStyle);
 
     layout->addWidget(title);
 
     // ===== Session Information Card =====
     auto* infoCard = new QWidget(detailView);
-    infoCard->setStyleSheet(
-        "QWidget {"
-        "   border: 1px solid rgba(0, 0, 0, 0.1);"
-        "   border-radius: 10px;"
-        "   background-color: white;"
-        "   padding: 20px;"
-        "}");
+    const QString cardStyle = QString(
+                                  "QWidget {"
+                                  "   border: %1px solid %2;"
+                                  "   border-radius: %3px;"
+                                  "   background-color: %4;"
+                                  "   padding: %5px;"
+                                  "}")
+                                  .arg(spacing.borderThin)
+                                  .arg(colors.borderSubtle.name())
+                                  .arg(spacing.radiusMd)
+                                  .arg(colors.surfaceMain.name())
+                                  .arg(spacing.spacingLg);
+    infoCard->setStyleSheet(cardStyle);
 
     auto* infoLayout = new QVBoxLayout(infoCard);
-    infoLayout->setContentsMargins(20, 20, 20, 20);
-    infoLayout->setSpacing(10);
+    infoLayout->setContentsMargins(spacing.spacingLg, spacing.spacingLg, spacing.spacingLg,
+                                   spacing.spacingLg);
+    infoLayout->setSpacing(spacing.spacingSm);
+
+    const QString labelStyle = QString(
+                                   "QLabel {"
+                                   "   font-family: 'Roboto';"
+                                   "   font-size: 16px;"
+                                   "   color: %1;"
+                                   "   border: none;"
+                                   "}")
+                                   .arg(colors.textPrimary.name());
 
     auto* capturedLabel =
         new QLabel(QString("<b>Captured on:</b> %1")
                        .arg(session->startDateTime.toString("dd.MM.yyyy HH:mm:ss")),
                    infoCard);
-    capturedLabel->setStyleSheet(
-        "QLabel {"
-        "   font-family: 'Roboto';"
-        "   font-size: 16px;"
-        "   color: black;"
-        "   border: none;"
-        "}");
-
-    auto* messagesLabel =
-        new QLabel(QString("<b>Total Messages:</b> %1").arg(session->entryCount), infoCard);
-    messagesLabel->setStyleSheet(
-        "QLabel {"
-        "   font-family: 'Roboto';"
-        "   font-size: 16px;"
-        "   color: black;"
-        "   border: none;"
-        "}");
+    capturedLabel->setStyleSheet(labelStyle);
 
     auto* durationLabel =
         new QLabel(QString("<b>Duration:</b> %1").arg(session->duration), infoCard);
-    durationLabel->setStyleSheet(
-        "QLabel {"
-        "   font-family: 'Roboto';"
-        "   font-size: 16px;"
-        "   color: black;"
-        "   border: none;"
-        "}");
+    durationLabel->setStyleSheet(labelStyle);
+
+    auto* logFileLabel = new QLabel(
+        QString("<b>Log File:</b> logs/session_%1_CanLogging.log").arg(session->id), infoCard);
+    logFileLabel->setStyleSheet(labelStyle);
 
     infoLayout->addWidget(capturedLabel);
-    infoLayout->addWidget(messagesLabel);
     infoLayout->addWidget(durationLabel);
+    infoLayout->addWidget(logFileLabel);
 
     layout->addWidget(infoCard);
     layout->addStretch();
@@ -340,22 +527,28 @@ QWidget* LoggingComponent::createDetailWidget(const LogSession* session)
     // ===== Back Button =====
     auto* backBtn = new QPushButton("Back to History", detailView);
     backBtn->setFixedSize(200, 50);
-    backBtn->setStyleSheet(
-        "QPushButton {"
-        "   background-color: #f3f3f5;"
-        "   border: none;"
-        "   border-radius: 25px;"
-        "   color: black;"
-        "   font-family: 'Roboto';"
-        "   font-size: 18px;"
-        "   font-weight: 500;"
-        "}"
-        "QPushButton:hover {"
-        "   background-color: #e8e8ea;"
-        "}"
-        "QPushButton:pressed {"
-        "   background-color: #d8d8da;"
-        "}");
+    const QString btnStyle = QString(
+                                 "QPushButton {"
+                                 "   background-color: %1;"
+                                 "   border: none;"
+                                 "   border-radius: 25px;"
+                                 "   color: %2;"
+                                 "   font-family: 'Roboto';"
+                                 "   font-size: %3px;"
+                                 "   font-weight: %4;"
+                                 "}"
+                                 "QPushButton:hover {"
+                                 "   background-color: %5;"
+                                 "}"
+                                 "QPushButton:pressed {"
+                                 "   background-color: %5;"
+                                 "}")
+                                 .arg(colors.surfacePrimary.name())
+                                 .arg(colors.textPrimary.name())
+                                 .arg(spacing.fontSizeLg)
+                                 .arg(spacing.fontWeightMedium)
+                                 .arg(colors.surfaceHover.name());
+    backBtn->setStyleSheet(btnStyle);
     connect(backBtn, &QPushButton::clicked, m_view.get(), &LoggingView::hideDetailView);
 
     auto* buttonLayout = new QHBoxLayout();

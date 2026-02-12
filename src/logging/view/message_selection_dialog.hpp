@@ -39,18 +39,6 @@ class MessageSelectionDialog final : public QDialog
     ~MessageSelectionDialog() override = default;
 
     /**
-     * @brief Populates the hardware interface dropdown.
-     * @param devices List of available CAN channels (e.g., "can0", "vcan1").
-     */
-    void setAvailableDevices(const QStringList& devices);
-
-    /**
-     * @brief Retrieves the user-selected hardware interface.
-     * @return The string identifier of the selected device.
-     */
-    auto getSelectedDevice() const -> QString;
-
-    /**
      * @brief Injects a DBC message card into the scrollable selection list.
      * @param card Pointer to a DbcMessageCard configured in 'Selection' mode.
      */
@@ -78,8 +66,6 @@ class MessageSelectionDialog final : public QDialog
     void setupUi();
 
     QWidget* m_headerWidget;
-    QComboBox* m_deviceSelector;
-    QDialogButtonBox* m_buttonBox;
 
     Core::CardWidget* m_messagesCard;
     QScrollArea* m_scrollArea;

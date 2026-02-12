@@ -1,17 +1,22 @@
 #pragma once
 
+#include <spdlog/spdlog.h>
+
 #include <QElapsedTimer>
 #include <QTimer>
 #include <QWidget>
+#include <atomic>
 #include <memory>
+#include <mutex>
+#include <unordered_map>
 
 #include "core/dto/can_dto.hpp"
 #include "core/dto/dbc_dto.hpp"
 #include "core/event/can_event.hpp"
 #include "core/interface/i_event_broker.hpp"
 #include "core/interface/i_tab_component.hpp"
+#include "core/util/log_service.hpp"
 #include "logging/delegate/logging_delegate.hpp"
-#include "logging/logger.hpp"
 #include "logging/model/logging_model.hpp"
 #include "logging/view/logging_view.hpp"
 #include "logging/view/message_selection_dialog.hpp"
@@ -47,12 +52,6 @@ class LoggingComponent final : public Core::ITabComponent
      */
     void dbcConfigurationChanged(const Core::DbcConfig& config);
 
-    /** @brief Bridge signal to forward raw CAN frames to the model */
-    void receiveRawFrame(const Core::RawCanMessage& message);
-
-    /** @brief Bridge signal to forward decoded DBC messages to the model */
-    void receiveDbcSignals(const Core::DbcCanMessage& message);
-
    private slots:
     void startLogging();
     void stopLogging();
@@ -77,6 +76,19 @@ class LoggingComponent final : public Core::ITabComponent
 
     QTimer* m_timer;
     QElapsedTimer m_elapsedTimer;
+
+    /** @brief Session-specific logger for CAN data */
+    std::shared_ptr<spdlog::logger> m_sessionLogger;
+    std::string m_currentSessionId;
+
+    /** @brief Thread-safe caches for event handlers (accessed from CAN thread) */
+    std::atomic<bool> m_isRecording{false};
+    std::map<uint32_t, std::vector<std::string>>
+        m_selectedSignalsCache;                                     // messageId -> signal names
+    std::unordered_map<uint32_t, std::string> m_messageNamesCache;  // messageId -> message name
+    std::unordered_map<uint64_t, std::string>
+        m_signalUnitsCache;   // hash(messageId,signalName) -> unit
+    std::mutex m_cacheMutex;  // Protects caches during session start/stop
 
     /** @brief RAII handles for broker subscriptions */
     Core::Connection m_rawMsgConn;
