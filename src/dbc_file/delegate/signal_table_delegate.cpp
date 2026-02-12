@@ -15,11 +15,11 @@ void SignalTableDelegate::paint(QPainter* painter, const QStyleOptionViewItem& o
     const auto& colors = THEME.colors();
 
     // Paint row background and separation line
-    Core::ItemPainter::paintRow(painter, option.rect, false);
+    Core::ItemPainter::paintRow(painter, option.rect, false, false);
 
     // Padding Rect for content
     const int padding = spacing.spacingSm;
-    QRect rowRect = option.rect.adjusted(padding, 0, -padding, 0);
+    QRect cellRect = option.rect.adjusted(padding, 0, -padding, 0);
 
     // --- Column Logic ---
 
@@ -31,7 +31,7 @@ void SignalTableDelegate::paint(QPainter* painter, const QStyleOptionViewItem& o
         QString msgName = index.data(Qt::DisplayRole).toString();
 
         QSize badgeSize = Core::ItemPainter::measureBadge(idText);
-        QRect badgeRect(rowRect.left(), rowRect.center().y() - badgeSize.height()/2 + 1,
+        QRect badgeRect(cellRect.left(), cellRect.center().y() - badgeSize.height()/2 + 1,
                         badgeSize.width(), badgeSize.height());
 
         // Custom ID badge style
@@ -43,7 +43,7 @@ void SignalTableDelegate::paint(QPainter* painter, const QStyleOptionViewItem& o
 
         // Paint text next to badge
         int textOffset = badgeSize.width() + padding;
-        QRect textRect = rowRect.adjusted(textOffset, 0, 0, 0);
+        QRect textRect = cellRect.adjusted(textOffset, 0, 0, 0);
 
         Core::ItemPainter::paintText(painter, textRect, msgName);
     }
@@ -54,21 +54,21 @@ void SignalTableDelegate::paint(QPainter* painter, const QStyleOptionViewItem& o
         double max = index.sibling(index.row(), Constants::Columns::SigMax).data().toDouble();
         QString text = QString("[%1, %2]").arg(min).arg(max);
 
-        Core::ItemPainter::paintText(painter, rowRect, text,false, QColor(),Qt::AlignCenter);
+        Core::ItemPainter::paintText(painter, cellRect, text,false, QColor(),Qt::AlignCenter);
     }
     // 3. Length Column
     else if (index.column() == Constants::Columns::SigLength)
     {
         QString val = index.data(Qt::DisplayRole).toString();
         if (!val.isEmpty()) val += Constants::SignalsPage::LengthUnit;
-        Core::ItemPainter::paintText(painter, rowRect, val,false, QColor(),Qt::AlignCenter);
+        Core::ItemPainter::paintText(painter, cellRect, val,false, QColor(),Qt::AlignCenter);
     }
     // 4. Unit Column
     else if (index.column() == Constants::Columns::SigUnit)
     {
         QString val = Constants::SignalsPage::DefaultUnit;
         if (!index.data(Role_Unit).toString().isEmpty()) val = index.data(Role_Unit).toString();
-        Core::ItemPainter::paintText(painter, rowRect, val, false, QColor(),Qt::AlignCenter);
+        Core::ItemPainter::paintText(painter, cellRect, val, false, QColor(),Qt::AlignCenter);
     }
     // 5. Standard columns
     else
@@ -76,7 +76,7 @@ void SignalTableDelegate::paint(QPainter* painter, const QStyleOptionViewItem& o
         QString text = index.data(Qt::DisplayRole).toString();
         bool isBold = (index.column() == Constants::Columns::SigName);
 
-        Core::ItemPainter::paintText(painter, rowRect, text, isBold, QColor(),Qt::AlignCenter);
+        Core::ItemPainter::paintText(painter, cellRect, text, isBold, QColor(),Qt::AlignCenter);
     }
 }
 

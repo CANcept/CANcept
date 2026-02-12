@@ -188,6 +188,7 @@ static const QString DetailTitle = "Message Details: %1";
 static const QString DetailSubtitle = "ID: %1    Sender: %2    DLC: %3 bytes";
 static const QString DetailTitlePlaceholder = "No Message Selected";
 static const QString DetailSubtitlePlaceholder = "Select a message from the list above to view signals.";
+static const QString DefaultValue = "/";
 }
 
 // --- Signals Page Specifics ---
