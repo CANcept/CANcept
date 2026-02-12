@@ -13,17 +13,18 @@
 namespace Logging {
 
 /** * @struct LogSession
- * @brief Represents a complete recording period with metadata and captured data.
+ * @brief Represents a complete recording period with metadata.
+ *
+ * Note: Entry counts and message lists are NOT tracked in memory.
+ * They are read from the log file (logs/session_{id}_CanLogging.log) when needed.
  */
 struct LogSession {
-    QString id;
-    QDateTime startDateTime;
-    QString duration;
-    bool isRecording = false;
-    QString deviceName;
-    uint64_t entryCount = 0;
-    QStringList messageSignals;  // List of message signals recorded in this session
+    QString id;                // Session ID (timestamp) - used to locate log file
+    QDateTime startDateTime;   // When session started
+    QString duration;          // Session duration (HH:MM:SS)
+    bool isRecording = false;  // Whether session is currently active
     std::map<uint32_t, QStringList> selectedSignals;  // Map of message ID to selected signal names
+                                                      // (for filtering during logging)
 };
 
 /**
@@ -75,18 +76,41 @@ class LoggingModel final : public QAbstractTableModel
      */
     [[nodiscard]] bool isRecording() const;
 
+    /**
+     * @brief Returns the session ID of the currently active session.
+     * @return Session ID or empty string if no active session.
+     */
+    QString getCurrentSessionId() const;
+
+    /**
+     * @brief Looks up message name from DBC config.
+     * @param messageId CAN message ID.
+     * @return Message name or "UNKNOWN" if not found.
+     */
+    QString getMessageName(uint16_t messageId) const;
+
+    /**
+     * @brief Looks up signal unit from DBC config.
+     * @param messageId CAN message ID.
+     * @param signalName Signal name.
+     * @return Signal unit or empty string if not found.
+     */
+    QString getSignalUnit(uint16_t messageId, const QString& signalName) const;
+
+    /**
+     * @brief Gets the list of selected signals for a specific message.
+     * @param messageId CAN message ID.
+     * @return List of selected signal names (empty if no selection).
+     */
+    QStringList getSelectedSignalsForMessage(uint16_t messageId) const;
+
     void updateDbcConfig(const Core::DbcConfig& config);
 
    public slots:
-    /** @brief Triggered by Component's bridge signal */
-    void onRawFrameReceived(const Core::RawCanMessage& msg);
-
-    /** @brief Triggered by Component's bridge signal */
-    void onDbcSignalsReceived(const Core::DbcCanMessage& msg);
-
     /**
      * @brief Creates a new session and sets it as the active target for data.
-     * @param deviceName The hardware interface used for this session.
+     * @param deviceName The hardware interface used for this session (unused, kept for
+     * compatibility).
      * @param selectedSignals Map of message IDs to selected signal names for logging.
      */
     void startNewSession(const QString& deviceName,

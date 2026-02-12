@@ -1,7 +1,6 @@
 #include "logging_model.hpp"
 
 #include "core/util/log_service.hpp"
-#include "logging/logger.hpp"
 
 namespace Logging {
 // Initialize base class and members
@@ -65,10 +64,12 @@ QVariant LoggingModel::data(const QModelIndex& index, int role) const
         return session.isRecording;
     } else if (role == EntryCountRole)
     {
-        return static_cast<qulonglong>(session.entryCount);
+        // Entry count not tracked in memory - read from log file if needed
+        return static_cast<qulonglong>(0);
     } else if (role == SignalsListRole)
     {
-        return session.messageSignals;
+        // Message signals not tracked in memory - read from log file if needed
+        return QStringList();
     }
     return QVariant();
 }
@@ -126,6 +127,79 @@ QString LoggingModel::sessionIdAt(const QModelIndex& index) const
     return m_activeSessionIndex != -1;
 }
 
+// Returns the session ID of the currently active session
+QString LoggingModel::getCurrentSessionId() const
+{
+    if (m_activeSessionIndex >= 0 && m_activeSessionIndex < static_cast<int>(m_sessions.size()))
+    {
+        return m_sessions[m_activeSessionIndex].id;
+    }
+    return QString();
+}
+
+// Looks up message name from DBC config
+QString LoggingModel::getMessageName(uint16_t messageId) const
+{
+    if (!m_currentDbc.has_value())
+    {
+        return QString("0x%1").arg(messageId, 3, 16, QChar('0')).toUpper();
+    }
+
+    for (const auto& msgDef : m_currentDbc->messageDefinitions)
+    {
+        if (msgDef.messageId == messageId)
+        {
+            return QString::fromStdString(msgDef.messageName);
+        }
+    }
+
+    return QString("UNKNOWN_0x%1").arg(messageId, 3, 16, QChar('0')).toUpper();
+}
+
+// Looks up signal unit from DBC config
+QString LoggingModel::getSignalUnit(uint16_t messageId, const QString& signalName) const
+{
+    if (!m_currentDbc.has_value())
+    {
+        return QString();
+    }
+
+    for (const auto& msgDef : m_currentDbc->messageDefinitions)
+    {
+        if (msgDef.messageId == messageId)
+        {
+            for (const auto& sigDef : msgDef.signalDescriptions)
+            {
+                if (QString::fromStdString(sigDef.signalName) == signalName)
+                {
+                    return QString::fromStdString(sigDef.unit);
+                }
+            }
+        }
+    }
+
+    return QString();
+}
+
+// Gets the list of selected signals for a specific message
+QStringList LoggingModel::getSelectedSignalsForMessage(uint16_t messageId) const
+{
+    if (m_activeSessionIndex < 0)
+    {
+        return QStringList();
+    }
+
+    const auto& activeSession = m_sessions[m_activeSessionIndex];
+    auto it = activeSession.selectedSignals.find(static_cast<uint32_t>(messageId));
+
+    if (it != activeSession.selectedSignals.end())
+    {
+        return it->second;
+    }
+
+    return QStringList();
+}
+
 // Updates the stored DBC configuration reference HIER
 void LoggingModel::updateDbcConfig(const Core::DbcConfig& config)
 {
@@ -136,9 +210,10 @@ void LoggingModel::updateDbcConfig(const Core::DbcConfig& config)
 void LoggingModel::startNewSession(const QString& deviceName,
                                    const std::map<uint32_t, QStringList>& selectedSignals)
 {
+    Q_UNUSED(deviceName);  // Not used, kept for compatibility
+
     if (isRecording())
     {
-        LOG_WARN("Stopping previous session before starting new one");
         stopActiveSession();
     }
     beginInsertRows(QModelIndex(), rowCount(), rowCount());
@@ -147,28 +222,12 @@ void LoggingModel::startNewSession(const QString& deviceName,
     newSession.id = QString::number(QDateTime::currentMSecsSinceEpoch());
     newSession.startDateTime = QDateTime::currentDateTime();
     newSession.duration = "00:00:00";
-    newSession.deviceName = deviceName;
     newSession.isRecording = true;
-    newSession.entryCount = 0;
     newSession.selectedSignals = selectedSignals;
-
-    // Build initial message signals list from selected signals
-    for (const auto& [messageId, signalList] : selectedSignals)
-    {
-        if (!signalList.isEmpty())
-        {
-            QString messageIdStr = QString("0x%1").arg(messageId, 3, 16, QChar('0')).toUpper();
-            newSession.messageSignals.append(messageIdStr);
-        }
-    }
 
     m_sessions.push_back(newSession);
     m_activeSessionIndex = static_cast<int>(m_sessions.size()) - 1;
     endInsertRows();
-
-    LOG_INFO("New logging session started - ID: {}, Device: {}, Messages with signals: {}",
-             newSession.id.toStdString(), deviceName.toStdString(),
-             static_cast<int>(selectedSignals.size()));
 }
 
 // Stops the currently active logging session
@@ -179,19 +238,12 @@ void LoggingModel::stopActiveSession()
         return;
     }
 
-    const QString sessionId = m_sessions[m_activeSessionIndex].id;
-    const uint64_t entryCount = m_sessions[m_activeSessionIndex].entryCount;
-    const QString duration = m_sessions[m_activeSessionIndex].duration;
-
     m_sessions[m_activeSessionIndex].isRecording = false;
     updateActiveDuration();
 
     m_activeSessionIndex = -1;
 
     emit dataChanged(index(0, 0), index(rowCount() - 1, columnCount() - 1));
-
-    LOG_INFO("Session stopped - ID: {}, Duration: {}, Total messages: {}", sessionId.toStdString(),
-             duration.toStdString(), entryCount);
 }
 
 // Updates the elapsed duration of the active logging session
@@ -215,62 +267,4 @@ void LoggingModel::updateActiveDuration()
     emit dataChanged(durationIndex, durationIndex);
 }
 
-// slots
-// Handles incoming raw CAN frames and updates entry count
-void LoggingModel::onRawFrameReceived(const Core::RawCanMessage& msg)
-{
-    if (!isRecording())
-    {
-        return;
-    }
-    m_sessions[m_activeSessionIndex].entryCount++;
-
-    // Add message ID to signals list if not already present
-    QString messageId =
-        QString("0x%1").arg(static_cast<uint8_t>(msg.messageId), 3, 16, QChar('0')).toUpper();
-    if (!m_sessions[m_activeSessionIndex].messageSignals.contains(messageId))
-    {
-        m_sessions[m_activeSessionIndex].messageSignals.append(messageId);
-        LOG_DEBUG("New message ID logged: {}", messageId.toStdString());
-        emit dataChanged(index(m_activeSessionIndex, Col_Signals),
-                         index(m_activeSessionIndex, Col_Signals));
-    }
-}
-
-// Handles incoming DBC decoded messages with signal filtering
-void LoggingModel::onDbcSignalsReceived(const Core::DbcCanMessage& msg)
-{
-    if (!isRecording() || !m_currentDbc.has_value())
-    {
-        return;
-    }
-
-    LogSession& activeSession = m_sessions[m_activeSessionIndex];
-    uint32_t messageId = static_cast<uint32_t>(msg.messageId);
-
-    // Check if this message has selected signals
-    auto it = activeSession.selectedSignals.find(messageId);
-    if (it == activeSession.selectedSignals.end() || it->second.isEmpty())
-    {
-        // No signals selected for this message, skip logging
-        return;
-    }
-
-    activeSession.entryCount++;
-
-    // Add message ID to signals list if not already present
-    QString signalName =
-        QString("0x%1").arg(static_cast<uint8_t>(msg.messageId), 3, 16, QChar('0')).toUpper();
-    if (!activeSession.messageSignals.contains(signalName))
-    {
-        activeSession.messageSignals.append(signalName);
-        LOG_DEBUG("New DBC signal logged: {}", signalName.toStdString());
-        emit dataChanged(index(m_activeSessionIndex, Col_Signals),
-                         index(m_activeSessionIndex, Col_Signals));
-    }
-
-    // TODO: Filter and store only the selected signals from the message
-    // The actual signal values would need to be extracted and stored based on
-    // the selected signal names in it->second (QStringList of signal names)
-}
 }  // namespace Logging

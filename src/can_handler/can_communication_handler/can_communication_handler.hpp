@@ -73,6 +73,6 @@ class CanCommunicationHandler final : public Core::ILifecycle
 
     std::thread message_check_thread;
 
-    const int MILLISECONDS_BETWEEN_PARSE_ATTEMPTS = 100;
+    const int MILLISECONDS_BETWEEN_PARSE_ATTEMPTS = 5;
 };
 }  // namespace CanHandler

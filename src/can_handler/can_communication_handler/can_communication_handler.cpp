@@ -1,4 +1,7 @@
 #include "can_communication_handler.hpp"
+
+#include "core/macro/console_logging.hpp"
+
 namespace CanHandler {
 void CanCommunicationHandler::checkCanDeviceForMessages() const
 {
@@ -13,7 +16,9 @@ void CanCommunicationHandler::checkCanDeviceForMessages() const
 }
 void CanCommunicationHandler::onStart()
 {
-    // Create a thread that checks on the messages every 100 ms
+    LOG_INF("CanCommunicationHandler", "Starting CAN message polling thread");
+
+    // Create a thread that checks on the messages every 5ms
     _execute = true;
     message_check_thread = std::thread([this]() {
         long long lastExecution = 0;
