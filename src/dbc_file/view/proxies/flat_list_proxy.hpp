@@ -40,6 +40,9 @@ public:
     /** Set the filter for signal units (only affects Signal items) */
     void setSignalFilterUnit(const QString& unit);
 
+    /** Set the filter for signal units (only affects message items) */
+    void setFilterMessageSender(const QString& sender);
+
     /** Rebuilds the mapping from source model to proxy and updates the lookup hash */
     void rebuildMapping();
 
@@ -63,6 +66,9 @@ private:
     /** Checks if the index passes the signal unit filter */
     [[nodiscard]] auto passesUnitFilter(const QModelIndex& idx) const -> bool;
 
+    /** Checks if the index passes the message sender filter */
+    [[nodiscard]] auto passesSenderFilter(const QModelIndex& idx) const -> bool;
+
     /** Checks if the index passes the text filter */
     [[nodiscard]] auto passesTextFilter(const QModelIndex& idx) const -> bool;
 
@@ -71,6 +77,7 @@ private:
     Core::DbcItemType m_targetType;                        ///< Target DBC item type for this proxy
     QString m_filterText;                                  ///< Current search/filter text
     QString m_filterSignalUnit;                             ///< Current signal unit filter
+    QString m_filterMessageSender;                          ///< Current message sender filter
     QList<QPersistentModelIndex> m_mapping;               ///< Flattened mapping of source indices
     QHash<QPersistentModelIndex, int> m_indexLookup;      ///< Lookup hash for fast mapFromSource
 };

@@ -65,7 +65,7 @@ auto EcuTreeDelegate::calculateLayout(const QRect& fullRect, int signalCount) ->
     // Calculate how items fit in available width
     layout.columns = (availableWidth > 0) ? std::max(1, availableWidth / (minItemWidth + gap)) : 1;
 
-    // Calculate how many rows of items ar needed
+    // Calculate how many rows of items are needed
     int rows = (signalCount == 0) ? 0 : (signalCount + layout.columns - 1) / layout.columns;
 
     // Calculate exact width per item (with stretch)
