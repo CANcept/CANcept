@@ -2,6 +2,8 @@
 
 #include <QString>
 
+#include "core/macro/theme.hpp"
+
 namespace DbcFile::Constants {
 
 // =========================================================================
@@ -25,6 +27,7 @@ constexpr int MsgName       = 0;
 constexpr int MsgId         = 1;
 constexpr int MsgDlc        = 2;
 constexpr int MsgSender     = 3;
+constexpr int MsgSigCount   = 4;
 
 // --- Signal Table Columns (for Signals Page) ---
 constexpr int SigName       = 0;
@@ -41,7 +44,8 @@ constexpr int SigValueType  = 10;
 constexpr int SigReceivers  = 11;
 
 // Helper
-constexpr int TotalCount = 12;
+constexpr int MsgColumnCount = 5;
+constexpr int SignalColumnCount = 12;
 }  // namespace Columns
 
 namespace Headers {
@@ -56,6 +60,9 @@ static const QString SigFactor = "Factor";
 static const QString SigOffset = "Offset";
 static const QString SigByteOrder = "Byte Order";
 static const QString SigType = "Signed";
+static const QString SigReceivers = "Receivers: ";
+static const QString SigMin = "Min";
+static const QString SigMax = "Max";
 
 static const QString MsgId = "ID";
 static const QString MsgName = "Name";
@@ -173,6 +180,14 @@ constexpr int FilterActiveIndex = 1;
 
 // --- Messages Page Specifics ---
 namespace MessagesPage {
+static const QString PageHeaderTitle = "Message View";
+static const QString PageHeaderSubtitle = "All CAN Messages with detailed information";
+static const QString SearchbarText = "Search Message (Name or ID)";
+static const QString FilterAllText = "All Senders";
+static const QString DetailTitle = "Message Details: %1";
+static const QString DetailSubtitle = "ID: %1    Sender: %2    DLC: %3 bytes";
+static const QString DetailTitlePlaceholder = "No Message Selected";
+static const QString DetailSubtitlePlaceholder = "Select a message from the list above to view signals.";
 }
 
 // --- Signals Page Specifics ---
