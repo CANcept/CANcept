@@ -11,7 +11,6 @@ DbcComponent::DbcComponent(Core::IEventBroker& broker)
     m_view = std::make_unique<DbcView>();
     m_view->setSourceModel(m_model.get());
 }
-DbcComponent::~DbcComponent() = default;
 auto DbcComponent::getView() -> QWidget*
 {
     return m_view.get();
@@ -42,20 +41,40 @@ auto DbcComponent::extractSignalUnits(const Core::DBCParsedEvent& event) -> QStr
     sortedUnits.sort(Qt::CaseInsensitive);
     return sortedUnits;
 }
-void DbcComponent::onFileLoadRequested(const QString& filePath) const
+
+auto DbcComponent::extractSenders(const Core::DBCParsedEvent& event) -> QStringList
+{
+    QSet<QString> uniqueSenders;
+    for (const auto& msg : event.config.messageDefinitions) {
+        if (!msg.transmitterName.empty()) {
+            uniqueSenders.insert(QString::fromStdString(msg.transmitterName));
+        }
+    }
+
+    QStringList sortedSenders = uniqueSenders.values();
+    sortedSenders.sort(Qt::CaseInsensitive);
+    return sortedSenders;
+}
+
+void DbcComponent::onFileLoadRequested(const QString& filePath)
 {
     Core::ParseDBCRequestEvent event(filePath.toStdString());
     m_eventBroker.publish(event);
 }
-void DbcComponent::onDbcParsed(const Core::DBCParsedEvent& event) const
+void DbcComponent::onDbcParsed(const Core::DBCParsedEvent& event)
 {
     m_view->getLoadPage().showStatusMessage(Constants::Status::ParseSuccess, false);
     m_view->setNavigationEnabled(true);
 
+    // Units for signals page filtering
     const QStringList units = extractSignalUnits(event);
     m_view->setSignalUnits(units);
+
+    // Senders for messages page filtering
+    const QStringList senders = extractSenders(event);
+    m_view->setAvailableSenders(senders);
 }
-void DbcComponent::onDbcParseError(const Core::DBCParseErrorEvent& event) const
+void DbcComponent::onDbcParseError(const Core::DBCParseErrorEvent& event)
 {
     QString errorMsg = Constants::Status::ErrorPrefix + QString::fromStdString(event.errorMessage);
     m_view->getLoadPage().showStatusMessage(errorMsg, true);
