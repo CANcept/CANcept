@@ -86,11 +86,15 @@ void CardWidget::applyStyle()
                           "  background-color: %1;"
                           "  border: %2px solid %3;"
                           "  border-radius: %4px;"
+                          "}"
+                          "QLabel {"
+                          "  color: %5;"
                           "}")
                       .arg(colors.surfaceMain.name(QColor::HexArgb))
                       .arg(spacing.borderThin)
                       .arg(colors.borderSubtle.name(QColor::HexArgb))
-                      .arg(spacing.radiusSm));
+                      .arg(spacing.radiusSm)
+                      .arg(colors.textPrimary.name()));
 
     if (m_iconLabel && !m_iconPath.isEmpty())
     {

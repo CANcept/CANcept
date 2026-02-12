@@ -29,24 +29,11 @@ MonitoringView::MonitoringView(MonitoringModel* model, MonitoringDelegate* deleg
 void MonitoringView::setupUi()
 {
     const auto& spacing = THEME.spacing();
-    const auto& colors = THEME.colors();
 
     auto* mainLayout = new QVBoxLayout(this);
     mainLayout->setContentsMargins(spacing.spacingLg, spacing.spacingLg, spacing.spacingLg,
                                    spacing.spacingLg);
     mainLayout->setSpacing(spacing.spacingLg);
-
-    m_configCard = new CanBusConfigCard(this);
-
-    // If Core::CardWidget already has a layout, reuse it instead of adding a new one.
-    if (m_configCard->layout() == nullptr)
-    {
-        auto* cardLayout = new QVBoxLayout(m_configCard);
-        cardLayout->setContentsMargins(0, 0, 0, 0);
-        cardLayout->setSpacing(spacing.spacingMd);
-        m_configCard->setLayout(cardLayout);
-    }
-    // else: CanBusConfigCard/Core::CardWidget already created/set its own layout.
 
     // Configure Splitter
     m_splitter->addWidget(m_signalListView);
@@ -57,8 +44,7 @@ void MonitoringView::setupUi()
     m_splitter->setStretchFactor(1, 2);
 
     // --- Add to Main Layout ---
-    mainLayout->addWidget(m_configCard, 1);
-    mainLayout->addWidget(m_splitter, 5);
+    mainLayout->addWidget(m_splitter);
 
     // Connect checkboxes in signalListview to graphlistview
     connect(m_signalListView, &SignalList::signalMonitoringToggled, m_graphListView,

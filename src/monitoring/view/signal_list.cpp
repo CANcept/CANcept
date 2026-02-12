@@ -8,6 +8,7 @@
 #include "core/constants.hpp"
 #include "core/macro/console_logging.hpp"
 #include "core/macro/theme.hpp"
+#include "core/theme/style_event.hpp"
 #include "core/widgets/card_widget.hpp"
 #include "core/widgets/common/styled_checkbox.hpp"
 #include "core/widgets/common/styled_line_edit.hpp"
@@ -16,7 +17,6 @@
 #include "monitoring/model/monitoring_model.hpp"
 
 namespace Monitoring {
-
 SignalList::SignalList(QWidget* parent, MonitoringModel* model)
     : QWidget(parent),
       m_model(model),
@@ -31,35 +31,53 @@ SignalList::SignalList(QWidget* parent, MonitoringModel* model)
 
 void SignalList::setupUi()
 {
+    m_mainLayout = new QVBoxLayout(this);
+    m_scrollArea = new QScrollArea(this);
+    m_scrollContent = new QWidget(m_scrollArea);
+    m_cardsLayout = new QVBoxLayout(m_scrollContent);
+
+    m_scrollArea->setWidget(m_scrollContent);
+    m_mainLayout->addWidget(m_scrollArea);
+
+    applyStyle();
+}
+
+void SignalList::applyStyle()
+{
     const auto& spacing = THEME.spacing();
     const auto& colors = THEME.colors();
 
-    auto* mainLayout = new QVBoxLayout(this);
-    mainLayout->setContentsMargins(0, 0, 0, 0);
+    if (!m_scrollContent) return;
+    m_scrollContent->setStyleSheet(QString("background: %1;").arg(colors.surfaceMain.name()));
 
-    // Create scroll area for message cards
-    m_scrollArea = new QScrollArea(this);
+    if (!m_mainLayout) return;
+    m_mainLayout->setContentsMargins(0, 0, 0, 0);
+
+    if (!m_scrollArea) return;
+    m_scrollArea->setStyleSheet(QString("background-color: %1;").arg(colors.surfaceMain.name()));
     m_scrollArea->setWidgetResizable(true);
     m_scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     m_scrollArea->setFrameShape(QFrame::NoFrame);
 
-    m_scrollContent = new QWidget(m_scrollArea);
-    m_scrollContent->setObjectName("scrollContent");
-    m_scrollContent->setStyleSheet(
-        QString("QWidget#scrollContent { background-color: %1; }").arg(colors.surfaceMain.name()));
-
-    m_cardsLayout = new QVBoxLayout(m_scrollContent);
+    if (!m_cardsLayout) return;
     m_cardsLayout->setContentsMargins(0, 0, 0, 0);
     m_cardsLayout->setSpacing(spacing.spacingSm);
     m_cardsLayout->addStretch();
-
-    m_scrollArea->setWidget(m_scrollContent);
-    mainLayout->addWidget(m_scrollArea);
 }
 
 void SignalList::onDbcChange()
 {
     populateDecodedFromModel();
+}
+
+auto SignalList::event(QEvent* event) -> bool
+{
+    if (event->type() == Core::StyleEvent::EventType)
+    {
+        applyStyle();
+        return true;
+    }
+    return QWidget::event(event);
 }
 
 void SignalList::populateDecodedFromModel()
@@ -127,7 +145,7 @@ void SignalList::populateDecodedFromModel()
 
                 m_signalValues.append(new QLabel(signalCard));
                 m_signalValues.last()->setText(
-                    QString("%1 / %2")
+                    QString("%1%2")
                         .arg(m_model
                                  ->data(signalIndex,
                                         MonitoringModel::MonitoringRoles::Role_LatestValue)

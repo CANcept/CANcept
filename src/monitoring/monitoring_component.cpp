@@ -31,17 +31,6 @@ MonitoringComponent::MonitoringComponent(Core::IEventBroker& broker)
     connect(this, &MonitoringComponent::dbcFrameReceived, m_model.get(),
             &MonitoringModel::onIncomingDbcFrame);
 
-    connect(m_view->interfaceSelector(), QOverload<int>::of(&QComboBox::currentIndexChanged), this,
-            [this](int index) -> void {
-                m_interfaceSelected = (index >= 0);
-                if (index >= 0)
-                {
-                    const auto deviceName =
-                        m_view->interfaceSelector()->currentText().toStdString();
-                    onDeviceChanged(deviceName);
-                }
-            });
-
     connect(&m_updateTimer, &QTimer::timeout, m_view.get(), &MonitoringView::onUpdateMessages);
     m_updateTimer.start(1000);
 }

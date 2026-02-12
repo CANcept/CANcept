@@ -9,6 +9,9 @@
 #include <utility>
 
 #include "core/macro/console_logging.hpp"
+#include "core/macro/theme.hpp"
+#include "core/theme/style_event.hpp"
+#include "qwt_scale_widget.h"
 
 namespace Monitoring {
 SignalGraph::SignalGraph(QString messageId, QString signalName, QWidget* parent)
@@ -26,22 +29,18 @@ void SignalGraph::setupPlot()
 {
     QVBoxLayout* layout = new QVBoxLayout(this);
 
-    m_plot->setCanvasBackground(Qt::white);
-
-    m_grid->setPen(Qt::gray, 0, Qt::DashLine);
     m_grid->enableX(false);
     m_grid->enableY(false);
     m_grid->attach(m_plot);
 
-    m_curve->setPen(Qt::black, 2);
     m_curve->setRenderHint(QwtPlotItem::RenderAntialiased, true);
 
     QwtDateScaleDraw* timeDraw = new QwtDateScaleDraw(Qt::LocalTime);
 
     timeDraw->setDateFormat(QwtDate::Hour, "HH:mm:ss");
     timeDraw->setDateFormat(QwtDate::Minute, "HH:mm:ss");
-    timeDraw->setDateFormat(QwtDate::Second, "HH:mm:ss");
-    timeDraw->setDateFormat(QwtDate::Millisecond, "HH:mm:ss");
+    timeDraw->setDateFormat(QwtDate::Second, "HH:mm:ss:zzz");
+    timeDraw->setDateFormat(QwtDate::Millisecond, "HH:mm:ss:zzz");
 
     m_plot->setAxisScaleDraw(QwtPlot::xBottom, timeDraw);
 
@@ -50,14 +49,27 @@ void SignalGraph::setupPlot()
 
     m_curve->attach(m_plot);
 
-    QwtSymbol* symbol =
-        new QwtSymbol(QwtSymbol::Ellipse, QBrush(Qt::black), QPen(Qt::black, 1), QSize(5, 5));
-    m_curve->setSymbol(symbol);
-
     layout->addWidget(m_plot);
     setLayout(layout);
 
-    setMinimumHeight(300);
+    applyStyle();
+}
+
+void SignalGraph::applyStyle()
+{
+    const auto& spacing = THEME.spacing();
+    const auto& colors = THEME.colors();
+
+    m_curve->setPen(colors.surfaceForeground, 2);
+
+    m_plot->setCanvasBackground(colors.surfacePrimary);
+    m_plot->axisWidget(QwtPlot::xBottom)
+        ->setStyleSheet("color: " + colors.textPrimary.name() + ";");
+    m_plot->axisWidget(QwtPlot::yLeft)->setStyleSheet("color: " + colors.textPrimary.name() + ";");
+
+    m_grid->setPen(colors.borderSubtle, 0, Qt::DashLine);
+
+    setFixedHeight(spacing.HeightXl);
 }
 
 void SignalGraph::updateGraphData(QVariant timestamps, QVariant signalValues)
