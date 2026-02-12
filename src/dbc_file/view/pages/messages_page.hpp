@@ -1,164 +1,183 @@
 #pragma once
-#include <QLabel>
+
+#include <QComboBox>
 #include <QListView>
 #include <QSplitter>
-#include <QWidget>
 
-#include "core/widgets/common/searchable_filter_widgets.hpp"
+// Forward declarations
+class QTableView;
+class QAbstractItemModel;
+class QModelIndex;
 
-class QComboBox;
 namespace Core {
-}
+class CardWidget;
+class SearchableFilterTable;
+}  // namespace Core
+
 namespace DbcFile {
+
 // ==============================================================================
-// Message Detail View (Bottom Pane)
+// 1. MessageDetailView
 // ==============================================================================
 
 /**
  * @class MessageDetailView
- * @brief The lower half of the Message page showing details (signals).
+ * @brief Displays detailed information about a selected CAN message.
  *
- * @details
- * **VISUALS:**
- * - Header Label (Message Name).
- * - List of Signals (Cards).
+ * This widget represents the lower part of the MessagesPage (detail pane).
+ * It consists of:
+ * - A header section (title + subtitle inside a CardWidget)
+ * - A QListView showing all signal children of the selected message
  *
- * **LOGIC:**
- * Updates content based on selection in the Master table.
+ * The list view operates by setting a root index in the source model,
+ * which allows displaying only the direct signal children of the message.
  */
 class MessageDetailView : public QWidget
 {
     Q_OBJECT
+
    public:
+    /**
+     * @brief Constructs the detail view UI.
+     * @param parent Optional parent widget.
+     */
     explicit MessageDetailView(QWidget* parent = nullptr);
 
     /**
-     * @brief Returns the list view (for the signals).
-     * @caller MessagesPage::setDetailModel().
-     * @return Pointer to the internal signal list view.
+     * @brief Returns the internal signal list view.
+     *
+     * Used by the page to assign models and delegates.
      */
     [[nodiscard]] auto getSignalList() const -> QListView*;
 
     /**
-     * @brief Sets the title text (Message Name).
-     * @caller MessagesPage::setDetailTitle().
-     * @param title The name of the selected message.
+     * @brief Sets the root index of the signal list.
+     * @param index Source model index of the selected message.
+     *
+     * The list view will display only the direct children (signals)
+     * of this index.
      */
-    void setMessageTitle(const QString& title);
+    void setRootIndex(const QModelIndex& index);
+
+    /**
+     * @brief Updates the header metadata for the selected message.
+     *
+     * @param name   Message name.
+     * @param id     Message identifier.
+     * @param sender Sender ECU name.
+     * @param dlc    Data length code.
+     */
+    void updateHeaderInfo(const QString& name, uint id, const QString& sender, int dlc);
 
    private:
-    /**
-     * @brief Initializes the detail view layout.
-     * @caller Constructor.
-     * @details Creates the Title Label and the Signal List View (configured with flow layout).
-     */
+    /** @brief Builds the widget layout. */
     void setupUi();
 
-    QLabel* m_lblTitle;
-    QListView* m_signalList;
+   private:
+    Core::CardWidget* m_card = nullptr;
+    QListView* m_signalList = nullptr;
 };
 
 // ==============================================================================
-// Messages Page (Master-Detail)
+// 2. MessagesPage
 // ==============================================================================
 
 /**
  * @class MessagesPage
- * @brief The main page for the Messages Tab (SRS 6.4).
+ * @brief Main page of the Messages tab.
  *
- * @details
- * **VISUALS:**
- * Master-Detail view using a vertical splitter.
+ * Implements a vertical master-detail layout using QSplitter:
  *
- * **LOGIC:**
- * - Displays a Master List of all messages (top).
- * - Emits `messageSelectionChanged` when the user selects a row.
- * - Receives updates from DbcView via `setDetailTitle` to update the bottom pane.
+ * Top section:
+ *   - Searchable and filterable table of messages.
+ *
+ * Bottom section:
+ *   - MessageDetailView displaying the selected message and its signals.
+ *
+ * The master table usually operates on a flat proxy model.
+ * The detail view operates on the source tree model using root indices.
  */
 class MessagesPage : public QWidget
 {
     Q_OBJECT
 
    public:
+    /**
+     * @brief Constructs the Messages page UI.
+     * @param parent Optional parent widget.
+     */
     explicit MessagesPage(QWidget* parent = nullptr);
+
     ~MessagesPage() override = default;
 
     /**
-     * @brief Sets the model for the master table (Top).
-     * @caller DbcView::setSourceModel().
-     * @details Connects to the selection model to detect row changes.
+     * @brief Selects a message for detail display.
+     * @param index Source model index of the message.
+     */
+    void selectMessageIndex(const QModelIndex& index);
+
+    /**
+     * @brief Sets the model for the master table (top section).
+     *
+     * Typically a FlatListProxy showing messages.
      */
     void setMasterModel(QAbstractItemModel* model);
 
     /**
-     * @brief Sets the model for the detail view (Bottom).
-     * @caller DbcView::setSourceModel().
-     * @details This connects the model to the Signal List in the Detail View.
+     * @brief Configures column visibility and resize behavior of the master table.
+     */
+    void configureMasterColumns(QTableView* table, const QAbstractItemModel* model);
+
+    /**
+     * @brief Sets the model for the detail view (bottom section).
+     *
+     * Usually the full tree model so the list can use root indices.
      */
     void setDetailModel(QAbstractItemModel* model);
 
     /**
-     * @brief Sets the delegate for the signal list (Card rendering).
-     * @caller DbcView::setDataItemDelegate().
+     * @brief Populates the sender filter combo box.
      */
-    void setSignalDelegate(QAbstractItemDelegate* delegate);
-
-    /**
-     * @brief Toggles the visibility of the bottom detail pane.
-     * @caller DbcView::onMessageSelected().
-     */
-    void showDetailsPane(bool visible);
-
-    /**
-     * @brief Access to the filter combo box of the master table.
-     * @caller DbcView::createSubViews().
-     */
-    [[nodiscard]] auto getMasterFilterCombo() const -> QComboBox*;
-
-    /**
-     * @brief Pass-through method to set the title in the detail view.
-     * @caller DbcView::onMessageSelected().
-     */
-    void setDetailTitle(const QString& title);
+    auto setAvailableSenders(const QStringList& senders) -> void;
 
    signals:
     /**
      * @brief Emitted when the user selects a message in the master table.
-     * @caller Internal slot `onSelectionChanged`.
-     * @param proxyIndex The index in the Proxy Model corresponding to the selected message.
      */
     void messageSelectionChanged(const QModelIndex& proxyIndex);
 
     /**
-     * @brief Emitted when the search text changes.
-     * @caller Internal SearchableFilterTable signal forwarding.
+     * @brief Forwarded search text change from the filter table.
      */
     void masterFilterTextChanged(const QString& text);
 
     /**
-     * @brief Emitted when the filter dropdown changes.
-     * @caller Internal SearchableFilterTable signal forwarding.
+     * @brief Emitted when the sender filter changes.
      */
-    void masterFilterIndexChanged(int index);
+    void filterSenderChanged(const QString& sender);
 
    private slots:
     /**
-     * @brief Internal slot connected to the TableView's selection model.
-     * @caller Qt ItemSelectionModel.
+     * @brief Handles selection changes in the master table.
      */
     void onSelectionChanged(const QModelIndex& current, const QModelIndex& previous);
 
-   private:
     /**
-     * @brief Assembles the master-detail layout.
-     * @caller Constructor.
-     * @details Creates the Splitter, SearchableFilterTable (Master), and MessageDetailView
-     * (Detail).
+     * @brief Handles changes in the sender filter combo box.
      */
+    void onFilterIndexChanged(int index);
+
+   private:
+    /** @brief Builds the page layout. */
     void setupUi();
 
-    QSplitter* m_splitter;
-    Core::SearchableFilterTable* m_messagesTable;  // Master (Top)
-    MessageDetailView* m_detailView;               // Detail (Bottom)
+    /** @brief Applies base configuration to the master table. */
+    void configureMasterTable();
+
+   private:
+    QSplitter* m_splitter = nullptr;
+    Core::SearchableFilterTable* m_messagesTable = nullptr;
+    MessageDetailView* m_detailView = nullptr;
 };
+
 }  // namespace DbcFile

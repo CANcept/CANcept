@@ -1,68 +1,70 @@
 #pragma once
+
+#include <QIcon>
 #include <QStyledItemDelegate>
+
+#include "core/macro/theme.hpp"
+#include "core/painters/item_painter.hpp"
+
 namespace Core {
+
 /**
- * @class CardListDelegate
- * @brief A generic delegate to render list items as "Cards" with Icon, Title, Detail Text, and
- * Badge.
+ * @brief Delegate for painting items as cards in a list view.
  *
- * @details
- * This delegate does not hardcode specific data roles like "ECU Count".
- * Instead, the consuming View injects the Role IDs into the constructor.
+ * CardListDelegate renders each row as a "card" with:
+ * - Optional icon on the left (DecorationRole)
+ * - Title (DisplayRole)
+ * - Optional badge on the right
+ * - Optional detail text next to the badge
  *
- * Visual Layout:
- * [ Icon ]  [ Title ]   [ Detail Text (optional) ]   [ Badge (Pill) ]
+ * This delegate uses THEME spacing and colors for consistent styling.
  */
-class CardListDelegate final : public QStyledItemDelegate
+class CardListDelegate : public QStyledItemDelegate
 {
     Q_OBJECT
 
    public:
     /**
-     * @brief Constructs the delegate with specific data roles.
-     *
-     * @param badgeRole The model role used to fetch the text for the gray badge (right side).
-     *                  If -1, no badge is drawn.
-     * @param detailRole The model role for secondary text (middle/right).
-     *                   If -1, no detail text is drawn.
-     * @param badgeIcon Icon to put into the badge.
-     * @param parent Parent object.
+     * @brief Constructs a CardListDelegate.
+     * @param badgeRole The model role used for the badge text. Set to -1 if unused.
+     * @param badgeIcon Optional icon displayed inside the badge.
+     * @param detailRole The model role used for the detail text. Set to -1 if unused.
+     * @param parent Optional parent QObject.
      */
-    explicit CardListDelegate(int badgeRole, QIcon badgeIcon = QIcon(), int detailRole = -1,
+    explicit CardListDelegate(int badgeRole = -1, QIcon badgeIcon = QIcon(), int detailRole = -1,
                               QObject* parent = nullptr);
-    ~CardListDelegate() override = default;
 
     /**
-     * @brief Paints a card item.
-     * @param painter QPainter used to draw the item.
-     * @param option Style options describing the item state.
-     * @param index The model index to retrieve data from.
+     * @brief Returns the preferred size of an item (row height).
+     * @param option Style options.
+     * @param index Model index (unused in this delegate).
+     * @return QSize representing the row width and height.
      *
-     * Draws the card background, icon, title, optional badge, and optional detail text.
-     * Selection state is automatically handled for background and icon tinting.
-     */
-    void paint(QPainter* painter, const QStyleOptionViewItem& option,
-               const QModelIndex& index) const override;
-
-    /**
-     * @brief Returns the preferred size of a card item.
-     * @param option The style options for the item.
-     * @param index The model index.
-     * @return QSize representing the width and height of a card item.
-     *
-     * The size is determined by ThemeManager::spacing().itemCardWidth/Height.
+     * The height is taken from THEME spacing (HeightMd).
      */
     [[nodiscard]] auto sizeHint(const QStyleOptionViewItem& option,
                                 const QModelIndex& index) const -> QSize override;
 
+    /**
+     * @brief Paints an item as a card with icon, title, badge, and detail text.
+     * @param painter The QPainter used for drawing.
+     * @param option Style options for the item.
+     * @param index Model index of the item to render.
+     *
+     * Painting order:
+     * 1. Card background
+     * 2. Left-aligned icon (if available)
+     * 3. Right-aligned badge (text + optional icon)
+     * 4. Detail text to the left of the badge (if available)
+     * 5. Title text filling the remaining space
+     */
+    void paint(QPainter* painter, const QStyleOptionViewItem& option,
+               const QModelIndex& index) const override;
+
    private:
-    /** Model role to retrieve badge text */
-    int m_badgeRole;
-
-    /** Model role to retrieve detail text */
-    QIcon m_badgeIcon;
-
-    /** Icon displayed inside the badge */
-    int m_detailRole;
+    int m_badgeRole;    ///< Model role for the badge text
+    int m_detailRole;   ///< Model role for the detail text
+    QIcon m_badgeIcon;  ///< Optional icon displayed in the badge
 };
+
 }  // namespace Core

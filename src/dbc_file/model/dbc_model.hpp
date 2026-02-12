@@ -9,7 +9,6 @@
 
 // Model Internal Components
 #include "dbc_item.hpp"
-#include "dbc_roles.hpp"
 
 namespace DbcFile {
 
@@ -30,68 +29,86 @@ class DbcModel : public QAbstractItemModel
 
    public:
     /**
-     * @brief Constructs the model and subscribes to system events.
-     * @caller DbcComponent (in constructor).
-     * @param broker Reference to the system-wide EventBroker.
-     * @param parent Standard Qt parent.
+     * @brief Constructs the model and subscribes to parsed-DBC events.
+     * @param broker Event broker used to subscribe to Core::DBCParsedEvent.
+     * @param parent Optional QObject parent.
+     *
+     * The constructor creates an initial root item and registers a callback that
+     * rebuilds the model whenever a DBCParsedEvent is published.
      */
     explicit DbcModel(Core::IEventBroker& broker, QObject* parent = nullptr);
-    ~DbcModel() override;
+    /**
+     * @brief Destroys the model.
+     *
+     * The event subscription connection is released automatically with the model.
+     */
+    ~DbcModel() override = default;
 
     // --- QAbstractItemModel Interface Implementation ---
 
     /**
-     * @brief Creates an index for the given row/column and parent.
-     * @caller Qt Views (QTreeView, QListView) and Proxies during navigation.
+     * @brief Returns the model index for a given row/column under a parent index.
+     * @param row Row of the requested child.
+     * @param column Column of the requested child.
+     * @param parent Parent model index.
+     * @return A valid QModelIndex if the child exists; otherwise an invalid index.
      */
     [[nodiscard]] auto index(int row, int column,
                              const QModelIndex& parent) const -> QModelIndex override;
 
     /**
-     * @brief Returns the parent index of the given child.
-     * @caller Qt Views (to draw hierarchy lines) and Proxies (to map indices).
+     * @brief Returns the parent index for a given child index.
+     * @param child Child model index.
+     * @return The parent QModelIndex, or an invalid index if the child is top-level.
      */
     [[nodiscard]] auto parent(const QModelIndex& child) const -> QModelIndex override;
 
     /**
-     * @brief Returns the number of children (rows) for the given parent.
-     * @caller Qt Views (to determine scrollbar size) and Proxies (to iterate).
-     * @return The amount of children the item with the given index has. Zero if index refers to a
-     * column other than 0
+     * @brief Returns the number of rows under a given parent.
+     * @param parent Parent model index.
+     * @return Number of child items.
+     *
+     * Only column 0 can have children; for parent.column() > 0 this returns 0.
      */
     [[nodiscard]] auto rowCount(const QModelIndex& parent) const -> int override;
 
     /**
-     * @brief Returns the number of columns (attributes) for the given parent.
-     * @caller Qt Views (to draw headers) and Proxies.
+     * @brief Returns the number of columns for a given parent.
+     * @param parent Parent model index.
+     * @return Column count appropriate for the item type of @p parent.
+     *
+     * The column count depends on the parent item type:
+     * - ECU -> message columns
+     * - Message -> signal columns
+     * - Other -> the item's own column count
+     *
+     * At the root level, a stable column count is returned to keep proxy models
+     * and views functional even when different top-level item types are present.
      */
     [[nodiscard]] auto columnCount(const QModelIndex& parent) const -> int override;
 
     /**
-     * @brief Returns the data for a specific index and role.
+     * @brief Returns data for the given index and role.
+     * @param index Model index.
+     * @param role Qt item role (standard or custom).
+     * @return Requested data as QVariant, or an invalid QVariant if not available.
      *
-     * @caller
-     * - **Qt Views:** To render text (DisplayRole).
-     * - **Delegates:** To format content (DbcRoles::Role_Unit, Role_IsHex).
-     * - **Proxies:** To filter data (DbcRoles::Role_ItemType).
-     * - **Mapper:** To populate labels (DisplayRole).
+     * Supports:
+     * - Qt::DisplayRole for table/tree display
+     * - Qt::DecorationRole for icons based on item type
+     * - Custom roles defined in dbc_roles.hpp (e.g. id, DLC, sender, unit, etc.)
+     *
+     * Some values are derived dynamically (e.g. message signal count via childCount()).
      */
     [[nodiscard]] auto data(const QModelIndex& index, int role) const -> QVariant override;
 
-    /**
-     * @brief Returns the header labels for the columns.
-     * @caller Qt HeaderViews (horizontal/vertical headers).
-     */
-    [[nodiscard]] auto headerData(int section, Qt::Orientation orientation,
-                                  int role = Qt::DisplayRole) const -> QVariant override;
-
-    // --- Helper Methods ---
-
    private:
     /**
-     * @brief Callback: Triggered when the EventBroker publishes a parsing success event.
-     * @caller Core::IEventBroker (via lambda callback).
-     * Resets model and calls setupData() to rebuild the tree.
+     * @brief Handles Core::DBCParsedEvent and rebuilds the model contents.
+     * @param event Parsed event containing the DBC configuration.
+     *
+     * This method resets the model (beginResetModel/endResetModel) and recreates
+     * the internal item tree from the provided configuration.
      */
     void onDbcParsed(const Core::DBCParsedEvent& event);
 
@@ -178,6 +195,7 @@ class DbcModel : public QAbstractItemModel
      *
      * @param signalDescriptions List of signals from the Message DTO.
      * @param messageItem Pointer to the parent Message Item.
+     * @param msgDesc
      *
      * @details
      * Static helper to keep `setupData` clean. It loops over the signal list, converts attributes
@@ -185,10 +203,15 @@ class DbcModel : public QAbstractItemModel
      * new `Signal` items to the `messageItem`.
      */
     static auto createSignalItems(const std::list<Core::DbcSignalDescription>& signalDescriptions,
-                                  DbcItem* messageItem) -> void;
+                                  DbcItem* messageItem,
+                                  const Core::DbcMessageDescription& msgDesc) -> void;
+
     /**
-     * @brief Rebuilds the internal DbcItem tree structure from the DTO.
-     * @caller Internal (onDbcParsed).
+     * @brief Populates the model from a DBC configuration.
+     * @param data Parsed DBC configuration.
+     *
+     * This creates ECU items, message items (including orphans), signal items,
+     * and an overview metadata item.
      */
     void setupData(const Core::DbcConfig& data);
 
@@ -202,6 +225,7 @@ class DbcModel : public QAbstractItemModel
      */
     Core::Connection m_dbcParsedConnection;
 
+    /** @brief Root item of the internal tree. Owns all children. */
     std::unique_ptr<DbcItem> m_rootItem;
 };
 

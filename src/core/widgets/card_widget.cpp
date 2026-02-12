@@ -16,6 +16,15 @@ CardWidget::CardWidget(const QString& title, const QString& subtitle, const QStr
     setupUi(title, subtitle, iconPath);
 }
 
+void CardWidget::setTitle(const QString& title)
+{
+    if (m_titleLabel) m_titleLabel->setText(title);
+}
+void CardWidget::setSubtitle(const QString& subtitle)
+{
+    if (m_subtitleLabel) m_subtitleLabel->setText(subtitle);
+}
+
 void CardWidget::setupUi(const QString& title, const QString& subtitle, const QString& iconPath)
 {
     const auto& spacing = THEME.spacing();

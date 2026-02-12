@@ -1,7 +1,9 @@
 #include "styled_filter_bar.hpp"
 
 #include <QAction>
+#include <QComboBox>
 #include <QHBoxLayout>
+#include <QLineEdit>
 #include <QListView>
 
 #include "core/constants.hpp"
@@ -22,9 +24,15 @@ auto StyledFilterBar::searchText() const -> QString
     return m_searchBar->text();
 }
 
-auto StyledFilterBar::currentFilter() const -> QString
+auto StyledFilterBar::currentFilterText() const -> QString
 {
     return m_filterBox->currentText();
+}
+
+auto StyledFilterBar::currentFilterData() const -> QVariant
+{
+    if (!m_filterBox) return {};
+    return m_filterBox->currentData();
 }
 
 // --- Setter ---
@@ -39,17 +47,31 @@ void StyledFilterBar::setSearchText(const QString& text)
     m_searchBar->setText(text);
 }
 
+void StyledFilterBar::clearFilterOptions()
+{
+    if (m_filterBox) m_filterBox->clear();
+}
+
 void StyledFilterBar::setFilterOptions(const QStringList& options)
 {
     m_filterBox->clear();
     m_filterBox->addItems(options);
 }
 
-void StyledFilterBar::setCurrentFilter(const QString& text)
+void StyledFilterBar::addFilterOption(const QString& text, const QVariant& userData)
 {
-    m_filterBox->setCurrentText(text);
+    if (m_filterBox) m_filterBox->addItem(text, userData);
 }
 
+void StyledFilterBar::setCurrentFilterText(const QString& text)
+{
+    if (!m_filterBox) return;
+    int idx = m_filterBox->findText(text);
+    if (idx >= 0)
+        m_filterBox->setCurrentIndex(idx);
+    else
+        m_filterBox->setCurrentIndex(0);  // Fallback
+}
 void StyledFilterBar::setCurrentFilterIndex(int index)
 {
     m_filterBox->setCurrentIndex(index);
@@ -98,7 +120,7 @@ void StyledFilterBar::setupUi()
 // Styles
 // -----------------------------------------------------------------------------
 
-void StyledFilterBar::setupStyles()
+void StyledFilterBar::setupStyles() const
 {
     const auto& spacing = THEME.spacing();
     const auto& colors = THEME.colors();

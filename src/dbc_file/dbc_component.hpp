@@ -15,18 +15,24 @@ namespace DbcFile {
 
 /**
  * @class DbcComponent
- * @brief The Controller/Composition Root for the DBC module.
+ * @brief Tab component responsible for managing the DBC feature workflow.
  *
- * @details
- * RESPONSIBILITIES:
- * - Implements the `Core::ITabComponent` interface to integrate into the AppRoot.
- * - Lifecycle Management: Creates and owns the Model, View, and Delegate.
- * - Wiring: Connects the View (Signals) to the System (EventBroker) and vice versa.
+ * DbcComponent acts as the coordination layer between:
  *
- * DATA FLOW:
- * - User Input (View) -> Component -> EventBroker (Publish `ParseDbcRequestEvent`)
- * - System Event (`DbcParsedEvent`) -> Component -> View (Unlock Navigation)
- * - System Event (`DbcParsedEvent`) -> Model (Update Data)
+ * - The DbcModel (data layer)
+ * - The DbcView (UI layer)
+ * - The application-wide event system (IEventBroker)
+ *
+ * Responsibilities include:
+ *
+ * - Initializing and connecting the model and view
+ * - Subscribing to DBC parsing events
+ * - Handling parse success and error events
+ * - Providing extracted metadata (e.g., signal units, message senders)
+ *   to the view for filtering purposes
+ *
+ * The component follows a lifecycle-based design via onStart() and onStop(),
+ * ensuring that event subscriptions are properly managed.
  */
 class DbcComponent : public Core::ITabComponent
 {
@@ -46,9 +52,12 @@ class DbcComponent : public Core::ITabComponent
     explicit DbcComponent(Core::IEventBroker& broker);
 
     /**
-     * @brief Destroys the DBC component.
+     * @brief Destructor.
+     *
+     * Cleans up component resources. Event subscriptions are
+     * released in onStop().
      */
-    ~DbcComponent() override;
+    ~DbcComponent() override = default;
 
     // --- Core::ITabComponent Interface Implementation ---
 
@@ -62,14 +71,46 @@ class DbcComponent : public Core::ITabComponent
     // --- Core::ILifecycle Interface Implementation ---
 
     /**
-     * @brief Called when the application starts/module is activated.
+     * @brief Called when the component becomes active.
+     *
+     * Establishes event subscriptions and connects view signals
+     * to internal handlers.
      */
     void onStart() override;
 
     /**
-     * @brief Called when the application stops/module is deactivated.
+     * @brief Called when the component is deactivated.
+     *
+     * Releases event subscriptions to avoid dangling callbacks
+     * and ensures proper lifecycle cleanup.
      */
     void onStop() override;
+
+    /**
+     * @brief Extracts all unique signal units from a parsed DBC file to provide filtering options
+     * for signals.
+     *
+     * Iterates over all message definitions and their signals,
+     * collects unique unit strings, and returns them sorted
+     * alphabetically (case-insensitive).
+     *
+     * @param event The parsed DBC event containing configuration data.
+     * @return A sorted list of unique signal units.
+     */
+    static auto extractSignalUnits(const Core::DBCParsedEvent& event) -> QStringList;
+
+    /**
+     * @brief Extracts all unique message senders from a parsed DBC event to provide filtering
+     * options for messages.
+     *
+     * Iterates over all message definitions and collects unique
+     * transmitter names. The result is sorted alphabetically
+     * (case-insensitive).
+     *
+     * @param event The parsed DBC event containing configuration data.
+     * @return A sorted list of unique message sender names.
+     */
+    static auto extractSenders(const Core::DBCParsedEvent& event) -> QStringList;
 
    private slots:
     /**
@@ -81,19 +122,19 @@ class DbcComponent : public Core::ITabComponent
      *
      * @param filePath Path to the selected DBC file.
      */
-    void onFileLoadRequested(const QString& filePath) const;
+    void onFileLoadRequested(const QString& filePath);
 
    private:
     /**
-     * @brief Handles successful DBC parsing.
+     * @brief Handles successful DBC parsing events.
      *
-     * @details
-     * Updates the view to indicate success and enables navigation
-     * to the remaining pages of the DBC view.
+     * Updates the view state to reflect successful parsing,
+     * enables navigation, and provides extracted metadata
+     * (signal units and message senders) for filtering.
      *
-     * @param event Event containing the parsed DBC result.
+     * @param event The parsed DBC event containing configuration data.
      */
-    void onDbcParsed(const Core::DBCParsedEvent& event) const;
+    void onDbcParsed(const Core::DBCParsedEvent& event);
 
     /**
      * @brief Handles DBC parsing errors.
@@ -104,7 +145,7 @@ class DbcComponent : public Core::ITabComponent
      *
      * @param event Event containing error details.
      */
-    void onDbcParseError(const Core::DBCParseErrorEvent& event) const;
+    void onDbcParseError(const Core::DBCParseErrorEvent& event);
 
     /**
      * @brief Sets up signal-slot and event broker connections.
