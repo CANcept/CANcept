@@ -80,7 +80,7 @@ void GraphListView::addGraph(const QString& messageId, const QString& signalName
 
     LOG_INF("MonitoringComponent", "GraphList graph added for signal");
 
-    auto* graph = new SignalGraph(messageId, signalName, nullptr);
+    auto* graph = new SignalGraph(messageId, signalName, this);
     graph->setContainer(new Core::CardWidget(QString("0x%1:  %2").arg(messageId, signalName),
                                              QString(), Constants::SIGNAL_GRAPH_ICON_PATH, this));
     graph->getContainer()->contentLayout()->addWidget(graph);
@@ -144,11 +144,8 @@ void GraphListView::updateViewData()
 {
     if (!m_model) return;
 
-    for (auto* weakGraph : m_signal_graphs)
+    for (SignalGraph* graph : m_signal_graphs)
     {
-        if (!weakGraph) continue;
-
-        SignalGraph* graph = weakGraph;
         QString targetMsgId = graph->getMessageId();
         QString targetSignalName = graph->getSignalName();
         QModelIndex messageIndex;

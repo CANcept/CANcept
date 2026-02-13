@@ -105,6 +105,8 @@ class MonitoringComponent final : public Core::ITabComponent
     void onDeviceChanged(const std::string& deviceName) const;
 
    private:
+    void connectSignals();
+
     /** @brief Model holding CAN sending configuration and data */
     std::unique_ptr<MonitoringModel> m_model;
 

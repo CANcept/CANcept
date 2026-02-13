@@ -1,12 +1,9 @@
 #include "monitoring_view.hpp"
 
-#include <QHeaderView>
 #include <QTimer>
 #include <QVBoxLayout>
 
 #include "can_bus_config_card.hpp"
-#include "core/dto/dbc_dto.hpp"
-#include "core/macro/console_logging.hpp"
 #include "core/macro/theme.hpp"
 #include "graph_list_view.hpp"
 #include "monitoring/constants.hpp"
@@ -14,15 +11,16 @@
 
 namespace Monitoring {
 
-MonitoringView::MonitoringView(MonitoringModel* model, MonitoringDelegate* delegate)
-    : QWidget(nullptr),
+MonitoringView::MonitoringView(MonitoringModel* model, MonitoringDelegate* delegate,
+                               QWidget* parent)
+    : QWidget(parent),
       m_treeProxy(new QSortFilterProxyModel(this)),
       m_signalListView(new SignalList(this, model)),
       m_graphListView(new GraphListView(model, delegate)),
-      m_splitter(new QSplitter(Qt::Horizontal, this))
+      m_splitter(new QSplitter(Qt::Horizontal, this)),
+      m_model(model),
+      m_delegate(delegate)
 {
-    m_model = model;
-    m_delegate = delegate;
     setupUi();
 }
 

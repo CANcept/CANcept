@@ -21,6 +21,18 @@ MonitoringComponent::MonitoringComponent(Core::IEventBroker& broker)
       m_view(std::make_unique<MonitoringView>(m_model.get(), m_delegate.get())),
       m_updateTimer(this)
 {
+    connectSignals();
+}
+
+MonitoringComponent::~MonitoringComponent() = default;
+
+auto MonitoringComponent::getView() -> QWidget*
+{
+    return m_view.get();
+}
+
+void MonitoringComponent::connectSignals()
+{
     connect(this, &MonitoringComponent::dbcConfigurationChanged, m_model.get(),
             &MonitoringModel::onDbcChange);
     connect(this, &MonitoringComponent::dbcConfigurationChanged, m_view->getSignalListView(),
@@ -32,14 +44,6 @@ MonitoringComponent::MonitoringComponent(Core::IEventBroker& broker)
             &MonitoringModel::onIncomingDbcFrame);
 
     connect(&m_updateTimer, &QTimer::timeout, m_view.get(), &MonitoringView::onUpdateMessages);
-    m_updateTimer.start(1000);
-}
-
-MonitoringComponent::~MonitoringComponent() = default;
-
-auto MonitoringComponent::getView() -> QWidget*
-{
-    return m_view.get();
 }
 
 void MonitoringComponent::onStart()
@@ -56,8 +60,7 @@ void MonitoringComponent::onStart()
             emit dbcFrameReceived(event.canMessage);
         });
 
-    m_updateTimer.setInterval(Constants::REFRESH_INTERVAL_MS);
-    m_updateTimer.start();
+    m_updateTimer.start(Constants::REFRESH_INTERVAL_MS);
 }
 
 void MonitoringComponent::onStop()
@@ -68,6 +71,7 @@ void MonitoringComponent::onStop()
     }
     m_parseSuccessConn = {};
     m_parseErrorConn = {};
+    m_decodedFrameReceivedConn = {};
 }
 
 void MonitoringComponent::onDeviceChanged(const std::string& deviceName) const

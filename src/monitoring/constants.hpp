@@ -1,5 +1,10 @@
 #pragma once
 
+#include <QString>
+#include <QStringList>
+#include <Qt>
+#include <QtGlobal>
+
 /**
  * @namespace Constants
  * @brief Module-level constants for CAN message sending configuration.
@@ -55,9 +60,6 @@ inline const QString FRAME_RATE_PLACEHOLDER = "--";
 /** @brief Label for the baud rate selection card */
 inline const QString MESSAGE_COUNT_LABEL = "Message types: ";
 
-/** @brief Placeholder text for the baud rate combo box */
-inline const QString MESSAGE_COUNT_PLACEHOLDER = "--";
-
 /** @brief Label for the baud rate selection card */
 inline const QString CAN_CONFIG_CONNECTED_LABEL = "CONNECTED";
 
@@ -69,15 +71,6 @@ inline const QString CAN_CONFIG_DISCONNECTED_LABEL = "DISCONNECTED";
 
 /** @brief Label for signal graph card */
 inline const QString SIGNAL_GRAPH_TITLE = "Signal Value";
-
-/** @brief Default list of CAN interfaces to populate in device selectors */
-inline const QStringList DEFAULT_CAN_DEVICES = {"vcan0", "can0", "can1"};
-
-/** @brief Default painting color for signal graphs */
-inline const Qt::GlobalColor SIGNAL_GRAPH_LINE_COLOR = Qt::blue;
-
-/** @brief Default width for line of signal graphs */
-inline const int SIGNAL_GRAPH_LINE_WIDTH = 2;
 
 /** @brief Label for messages list in view */
 inline const QString MESSAGES_LABEL = "Message";

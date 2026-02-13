@@ -9,7 +9,6 @@
  * @brief Contains delegate and UI components for CAN signal monitoring.
  */
 namespace Monitoring {
-class MonitoringModel;
 /**
  * @class MonitoringDelegate
  * @brief The active controller for the Monitoring module.
@@ -29,12 +28,6 @@ class MonitoringDelegate : public QStyledItemDelegate
      * @brief Default destructor.
      */
     ~MonitoringDelegate() override = default;
-
-    /**
-     * Sets a model for the delegate.
-     * @param model contains the model to be added
-     */
-    void setModel(QAbstractItemModel* model);
 
     /**
      * @brief Returns the formatted display text for a model value.

@@ -100,8 +100,11 @@ void SignalGraph::updateGraphData(QVariant timestamps, QVariant signalValues)
 
 SignalGraph::~SignalGraph()
 {
-    m_curve->detach();
-    delete m_curve;
+    if (m_curve)
+    {
+        m_curve->detach();
+        delete m_curve;
+    }
 }
 
 }  // namespace Monitoring
