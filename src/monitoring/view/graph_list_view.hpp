@@ -3,6 +3,7 @@
 #include <QAbstractItemDelegate>
 #include <QScrollArea>
 #include <QVBoxLayout>
+#include <QWidget>
 
 #include "monitoring/delegate/monitoring_delegate.hpp"
 #include "monitoring/model/monitoring_model.hpp"
@@ -39,7 +40,8 @@ class GraphListView : public QWidget
     /**
      * @brief Constructs the graph list view widget.
      *
-     * @param parent Optional Qt parent widget.
+     * @param m_model model storing the data to be displayed.
+     * @param m_delegate delegate responsible for handling user interactions and data updates.
      */
     explicit GraphListView(MonitoringModel* m_model, MonitoringDelegate* m_delegate);
 

@@ -1,5 +1,4 @@
 #pragma once
-#pragma once
 
 #include <QAbstractItemModel>
 #include <QList>
@@ -59,7 +58,10 @@ class MonitoringModel final : public QAbstractItemModel
     ~MonitoringModel() override
     {
         _execute = false;
-        message_check_thread.join();
+        if (message_check_thread.joinable())
+        {
+            message_check_thread.join();
+        }
     }
 
     /**

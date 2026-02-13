@@ -1,7 +1,7 @@
 #pragma once
 #include <qwt_plot_curve.h>
 
-#include <QWidget>
+#include <QVariant>
 
 #include "core/dto/can_dto.hpp"
 #include "core/widgets/card_widget.hpp"
@@ -37,9 +37,10 @@ class SignalGraph : public QWidget
     /**
      * @brief Constructs a graph widget for a specific CAN signal.
      *
-     * @param signal Rvalue reference to the CAN signal used to initialize
+     * @param messageId Id reference to the CAN signal used to initialize
      *               the graph. Ownership of the initial signal data is
      *               transferred to the internal model.
+     * @param signalName signal name reference to the name of the CAN signal for
      * @param parent Optional Qt parent widget.
      */
     explicit SignalGraph(QString messageId, QString signalName, QWidget* parent = nullptr);

@@ -120,8 +120,8 @@ void AppRoot::bootstrap()
     m_tabs.clear();
 
     initTab<DbcFile::DbcComponent>();
-    initTab<Sending::SendingComponent>();
     initTab<Monitoring::MonitoringComponent>();
+    initTab<Sending::SendingComponent>();
 
     for (const auto& tab : m_tabs)
     {

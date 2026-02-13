@@ -1,14 +1,11 @@
 #pragma once
 
-#include <QComboBox>
-#include <QGroupBox>
-#include <QLabel>
-#include <QPushButton>
 #include <QSortFilterProxyModel>
 #include <QSplitter>
 
 #include "can_bus_config_card.hpp"
 #include "core/dto/dbc_dto.hpp"
+#include "graph_list_view.hpp"
 #include "monitoring/delegate/monitoring_delegate.hpp"
 #include "monitoring/model/monitoring_model.hpp"
 #include "signal_list.hpp"
@@ -24,20 +21,9 @@ class MonitoringView : public QWidget
 {
     Q_OBJECT
    public:
-    explicit MonitoringView(MonitoringModel* model, MonitoringDelegate* delegate);
+    explicit MonitoringView(MonitoringModel* model, MonitoringDelegate* delegate,
+                            QWidget* parent = nullptr);
     ~MonitoringView() override = default;
-
-    /**
-     * Sets a model for the view.
-     * @param model contains the model to be added
-     */
-    void setModel(MonitoringModel* model);
-
-    /**
-     * Sets a model for the view.
-     * @param model contains the model to be added
-     */
-    void setDelegate(MonitoringDelegate* model);
 
     // Accessors for the Delegate to wire up signals/slots
     [[nodiscard]] auto getSignalListView() const -> SignalList*
@@ -49,8 +35,6 @@ class MonitoringView : public QWidget
     {
         return m_graphListView;
     }
-
-    void stopTimer();
 
    signals:
 

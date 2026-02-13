@@ -3,6 +3,8 @@
 #include <QApplication>
 #include <QPainter>
 
+#include "core/macro/theme.hpp"
+#include "monitoring/constants.hpp"
 #include "monitoring/model/monitoring_model.hpp"
 
 namespace Monitoring {
@@ -23,10 +25,9 @@ void MonitoringDelegate::paint(QPainter* painter, const QStyleOptionViewItem& op
     painter->save();
     painter->setRenderHint(QPainter::Antialiasing);
 
-    bool isMessage = !index.parent().isValid();
     QRect rect = option.rect.adjusted(5, 5, -5, -5);  // Add some padding between rows
 
-    if (isMessage)
+    if (!index.parent().isValid())  // Message
     {
         drawMessageNode(painter, rect, index);
     } else
@@ -41,25 +42,26 @@ void MonitoringDelegate::paint(QPainter* painter, const QStyleOptionViewItem& op
 void MonitoringDelegate::drawMessageNode(QPainter* painter, const QRect& rect,
                                          const QModelIndex& index) const
 {
-    painter->setBrush(QColor("#F0F0F0"));
-    painter->setPen(QPen(QColor("#C0C0C0"), 1));
-    painter->drawRoundedRect(rect, 8, 8);
+    painter->setBrush(QColor(THEME.colors().surfacePrimary));
+    painter->setPen(QPen(QColor(THEME.colors().borderSubtle), THEME.spacing().borderThin));
+    painter->drawRoundedRect(rect, THEME.spacing().radiusSm, THEME.spacing().radiusSm);
 
-    QRect iconRect(rect.left() + 10, rect.top() + (rect.height() - 32) / 2, 32, 32);
-    painter->drawPixmap(iconRect, QPixmap(":/path/to/placeholder.png"));
+    QRect iconRect(rect.left() + 10, rect.top() + (rect.height() - 32) / 2, THEME.spacing().IconSm,
+                   THEME.spacing().IconSm);
+    painter->drawPixmap(iconRect, QPixmap(Constants::ARROW_RIGHT_BUTTON_ICON_PATH));
 
-    painter->setPen(Qt::black);
-    painter->setFont(QFont("Arial", 10, QFont::Bold));
+    painter->setPen(THEME.colors().textPrimary);
+    painter->setFont(QFont("Arial", 10, THEME.spacing().fontWeightBold));
     painter->drawText(rect.adjusted(50, 5, -50, -rect.height() / 2), Qt::AlignBottom,
                       index.data().toString());
 
     painter->setFont(QFont("Arial", 8));
-    painter->setPen(Qt::gray);
+    painter->setPen(THEME.colors().textSecondary);
     QString idText = QString("ID: 0x%1").arg(index.data(Qt::UserRole).toUInt(), 0, 16);
     painter->drawText(rect.adjusted(50, rect.height() / 2, -50, -5), Qt::AlignTop, idText);
 
     int signalCount = index.model()->rowCount(index);
-    painter->setPen(Qt::blue);
+    painter->setPen(THEME.colors().textPrimary);
     painter->drawText(rect.adjusted(0, 0, -40, 0), Qt::AlignRight | Qt::AlignVCenter,
                       QString::number(signalCount));
 
@@ -70,25 +72,24 @@ void MonitoringDelegate::drawMessageNode(QPainter* painter, const QRect& rect,
 void MonitoringDelegate::drawSignalLeaf(QPainter* painter, const QRect& rect,
                                         const QModelIndex& index) const
 {
-    painter->setBrush(Qt::white);
-    painter->setPen(QPen(QColor("#D0D0D0"), 1));
-    painter->drawRoundedRect(rect, 6, 6);
+    painter->setBrush(QColor(THEME.colors().surfacePrimary));
+    painter->setPen(QPen(QColor(THEME.colors().borderSubtle), THEME.spacing().borderThin));
+    painter->drawRoundedRect(rect, THEME.spacing().radiusSm, THEME.spacing().radiusSm);
 
-    painter->setPen(Qt::black);
+    painter->setPen(THEME.colors().textPrimary);
     painter->drawText(rect.adjusted(30, 0, 0, 0), Qt::AlignLeft | Qt::AlignVCenter,
                       index.data().toString());
 
     QString value = index.data(Qt::UserRole + 1).toString();
-    QString unit = "V";
 
-    painter->setFont(QFont("Arial", 10, QFont::Bold));
+    painter->setFont(QFont("Arial", 10, THEME.spacing().fontWeightBold));
     painter->drawText(rect.adjusted(0, 5, -10, -rect.height() / 2),
                       Qt::AlignRight | Qt::AlignBottom, value);
 
     painter->setFont(QFont("Arial", 8));
-    painter->setPen(Qt::darkGray);
+    painter->setPen(THEME.colors().textSecondary);
     painter->drawText(rect.adjusted(0, rect.height() / 2, -10, -5), Qt::AlignRight | Qt::AlignTop,
-                      unit);
+                      nullptr);
 }
 
 auto MonitoringDelegate::sizeHint(const QStyleOptionViewItem& option,
@@ -96,9 +97,9 @@ auto MonitoringDelegate::sizeHint(const QStyleOptionViewItem& option,
 {
     if (!index.parent().isValid())
     {
-        return {200, 60};
+        return {THEME.spacing().WidthMd, THEME.spacing().HeightMd};
     }
-    return {200, 45};
+    return {THEME.spacing().WidthMd, THEME.spacing().HeightMd};
 }
 
 }  // namespace Monitoring

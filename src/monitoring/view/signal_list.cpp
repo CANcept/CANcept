@@ -188,7 +188,7 @@ void SignalList::populateDecodedFromModel()
 
         int insertIndex = m_cardsLayout->count() - 1;
         if (insertIndex < 0) insertIndex = 0;
-        m_cardsLayout->insertWidget(insertIndex, messageCard);
+        m_cardsLayout->addWidget(messageCard);
     }
 
     LOG_INF("MonitoringComponent", "Signal List view built...");
@@ -214,6 +214,7 @@ void SignalList::clearMessages()
         }
         m_signalValues.removeLast();
     }
+    m_signalLists.clear();
 }
 
 void SignalList::updateViewData()
