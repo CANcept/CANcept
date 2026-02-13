@@ -96,7 +96,8 @@ void RepeatedSendingWorker::run()
                     m_callback();
                 } catch (const std::exception& e)
                 {
-                    emit errorOccurred(QString(Constants::ERR_CALLBACK_EXCEPTION_TEMPLATE).arg(e.what()));
+                    emit errorOccurred(
+                        QString(Constants::ERR_CALLBACK_EXCEPTION_TEMPLATE).arg(e.what()));
                 } catch (...)
                 {
                     emit errorOccurred(Constants::ERR_UNKNOWN_CALLBACK_ERROR);

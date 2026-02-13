@@ -73,7 +73,7 @@ class RepeatedSendingWorker final : public QThread
    private:
     std::atomic<bool> m_isActive{false};
     std::atomic<bool> m_shouldStop{false};
-    std::atomic<int> m_intervalMs{Constants::DEFAULT_CYCLE_INTERVAL_MS};
+    std::atomic<int> m_intervalMs{100};
 
     mutable std::mutex m_callbackMutex;
     SendCallback m_callback;
