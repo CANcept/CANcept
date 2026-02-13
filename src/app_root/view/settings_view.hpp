@@ -17,8 +17,8 @@ struct SettingRenderer;
 template <>
 struct SettingRenderer<Core::SettingType::Select> {
     /** @brief Creates the select setting widget. */
-    static auto create(const Core::ISetting* setting, SettingsModel* model, QWidget* parent)
-        -> QWidget*;
+    static auto create(const Core::ISetting* setting, SettingsModel* model,
+                       QWidget* parent) -> QWidget*;
 };
 
 /** @brief The defintion of the Presentation of the settings. */
