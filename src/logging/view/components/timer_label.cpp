@@ -19,13 +19,13 @@ void TimerLabel::applyStyle()
 
     const QString labelStyle = QString(
                                    "QLabel {"
-                                   "   font-family: 'Roboto';"
-                                   "   font-size: 24px;"
+                                   "   font-size: %3px;"
                                    "   font-weight: %1;"
                                    "   color: %2;"
                                    "}")
                                    .arg(spacing.fontWeightNormal)
-                                   .arg(colors.textPrimary.name());
+                                   .arg(colors.textPrimary.name())
+                                   .arg(spacing.fontSizeMd);
     setStyleSheet(labelStyle);
 }
 

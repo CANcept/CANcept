@@ -12,7 +12,7 @@
 namespace Logging {
 
 /**
- * @class SignalSelectionWidget
+ * @class SignalSelectionTree
  * @brief Widget for displaying and selecting signals from a DBC message.
  *
  * @details
@@ -20,7 +20,7 @@ namespace Logging {
  * Users can select/deselect individual signals to be logged.
  * Uses a card-based layout similar to signals_page.cpp but optimized for logging selection.
  */
-class SignalSelectionWidget : public QWidget
+class SignalSelectionTree : public QWidget
 {
     Q_OBJECT
 
@@ -31,10 +31,10 @@ class SignalSelectionWidget : public QWidget
      * @param messageName The human-readable name of the message.
      * @param parent Parent widget.
      */
-    explicit SignalSelectionWidget(uint32_t messageId, const QString& messageName,
-                                   QWidget* parent = nullptr);
+    explicit SignalSelectionTree(uint32_t messageId, const QString& messageName,
+                                 QWidget* parent = nullptr);
 
-    ~SignalSelectionWidget() override = default;
+    ~SignalSelectionTree() override = default;
 
     /**
      * @brief Populates the widget with signals from a DBC message.
@@ -71,8 +71,12 @@ class SignalSelectionWidget : public QWidget
      */
     void selectionChanged(uint32_t messageId, int selectedCount);
 
+   protected:
+    bool event(QEvent* event) override;
+
    private:
     void setupUi();
+    void applyStyle();
 
     uint32_t m_messageId;
     QString m_messageName;

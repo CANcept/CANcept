@@ -1,12 +1,11 @@
 #include "message_selection_dialog.hpp"
 
-#include <QIcon>
-
 #include "core/macro/theme.hpp"
+#include "core/theme/style_event.hpp"
 #include "core/widgets/card_widget.hpp"
 #include "core/widgets/common/styled_checkbox.hpp"
 #include "core/widgets/dbc_signal_row.hpp"
-#include "logging/view/components/action_button.hpp"
+#include "logging/view/components/start_stop_button.hpp"
 
 namespace Logging {
 
@@ -39,19 +38,6 @@ void MessageSelectionDialog::setupUi()
                                    spacing.spacingMd);
     mainLayout->setSpacing(spacing.spacingMd);
 
-    // Apply dialog styling
-    const QString dialogStyle = QString(
-                                    "QDialog {"
-                                    "   background-color: %1;"
-                                    "   border: %2px solid %3;"
-                                    "   border-radius: %4px;"
-                                    "}")
-                                    .arg(colors.surfaceMain.name())
-                                    .arg(spacing.borderThin)
-                                    .arg(colors.borderStrong.name())
-                                    .arg(spacing.radiusMd);
-    setStyleSheet(dialogStyle);
-
     // ===== Header Section =====
     m_headerWidget = new QWidget(this);
     auto* headerLayout = new QHBoxLayout(m_headerWidget);
@@ -60,45 +46,15 @@ void MessageSelectionDialog::setupUi()
     headerLayout->setSpacing(spacing.spacingMd);
 
     // Title
-    auto* titleLabel = new QLabel("Select Messages to Log", m_headerWidget);
-    const QString titleStyle = QString(
-                                   "QLabel {"
-                                   "   font-family: 'Roboto';"
-                                   "   font-size: 24px;"
-                                   "   font-weight: %1;"
-                                   "   color: %2;"
-                                   "}")
-                                   .arg(spacing.fontWeightMedium)
-                                   .arg(colors.textPrimary.name());
-    titleLabel->setStyleSheet(titleStyle);
-    headerLayout->addWidget(titleLabel);
+    m_titleLabel = new QLabel("Select Messages to Log", m_headerWidget);
+    headerLayout->addWidget(m_titleLabel);
     headerLayout->addStretch();
 
     // Close button
-    auto* closeBtn = new QPushButton("×", m_headerWidget);
-    closeBtn->setFixedSize(48, 48);
-    const QString closeBtnStyle = QString(
-                                      "QPushButton {"
-                                      "   background-color: transparent;"
-                                      "   border: none;"
-                                      "   font-size: 32px;"
-                                      "   font-weight: %1;"
-                                      "   color: %2;"
-                                      "}"
-                                      "QPushButton:hover {"
-                                      "   background-color: %3;"
-                                      "   border-radius: 24px;"
-                                      "}"
-                                      "QPushButton:pressed {"
-                                      "   background-color: %4;"
-                                      "}")
-                                      .arg(spacing.fontWeightBold)
-                                      .arg(colors.textPrimary.name())
-                                      .arg(QColor(0, 0, 0, 13).name(QColor::HexArgb))
-                                      .arg(QColor(0, 0, 0, 26).name(QColor::HexArgb));
-    closeBtn->setStyleSheet(closeBtnStyle);
-    connect(closeBtn, &QPushButton::clicked, this, &QDialog::reject);
-    headerLayout->addWidget(closeBtn);
+    m_closeButton = new QPushButton("×", m_headerWidget);
+    m_closeButton->setFixedSize(48, 48);
+    connect(m_closeButton, &QPushButton::clicked, this, &QDialog::reject);
+    headerLayout->addWidget(m_closeButton);
 
     mainLayout->addWidget(m_headerWidget);
 
@@ -117,8 +73,6 @@ void MessageSelectionDialog::setupUi()
 
         m_scrollContent = new QWidget(m_scrollArea);
         m_scrollContent->setObjectName("scrollContent");
-        m_scrollContent->setStyleSheet(QString("QWidget#scrollContent { background-color: %1; }")
-                                           .arg(colors.surfaceMain.name()));
 
         m_scrollLayout = new QVBoxLayout(m_scrollContent);
         m_scrollLayout->setContentsMargins(0, 0, 0, 0);
@@ -138,7 +92,7 @@ void MessageSelectionDialog::setupUi()
     bottomLayout->setSpacing(0);
     bottomLayout->addStretch();
 
-    auto* startBtn = new ActionButton(bottomBar);
+    auto* startBtn = new StartStopButton(bottomBar);
     startBtn->setRecordingState(false);  // Start state (not recording)
     connect(startBtn, &QPushButton::clicked, this, &QDialog::accept);
     bottomLayout->addWidget(startBtn);
@@ -278,6 +232,70 @@ std::map<uint32_t, QStringList> MessageSelectionDialog::getSelectedSignals() con
     }
 
     return selectedSignalsMap;
+}
+
+void MessageSelectionDialog::applyStyle()
+{
+    const auto& colors = THEME.colors();
+    const auto& spacing = THEME.spacing();
+    setStyleSheet(QString("QDialog {"
+                          "   background-color: %1;"
+                          "   border: %2px solid %3;"
+                          "   border-radius: %4px;"
+                          "}")
+                      .arg(colors.surfaceMain.name())
+                      .arg(spacing.borderThin)
+                      .arg(colors.borderStrong.name())
+                      .arg(spacing.radiusMd));
+    if (m_titleLabel)
+    {
+        m_titleLabel->setStyleSheet(QString("QLabel {"
+                                            "   font-size: %3px;"
+                                            "   font-weight: %1;"
+                                            "   color: %2;"
+                                            "}")
+                                        .arg(spacing.fontWeightMedium)
+                                        .arg(colors.textPrimary.name())
+                                        .arg(spacing.fontSizeLg));
+    }
+    if (m_closeButton)
+    {
+        m_closeButton->setStyleSheet(QString("QPushButton {"
+                                             "   background-color: transparent;"
+                                             "   border: none;"
+                                             "   font-size: %5px;"
+                                             "   font-weight: %1;"
+                                             "   color: %2;"
+                                             "}"
+                                             "QPushButton:hover {"
+                                             "   background-color: %3;"
+                                             "   border-radius: %6px;"
+                                             "}"
+                                             "QPushButton:pressed {"
+                                             "   background-color: %4;"
+                                             "}")
+                                         .arg(spacing.fontWeightBold)
+                                         .arg(colors.textPrimary.name())
+                                         .arg(QColor(0, 0, 0, 13).name(QColor::HexArgb))
+                                         .arg(QColor(0, 0, 0, 26).name(QColor::HexArgb))
+                                         .arg(spacing.fontSizeLg)
+                                         .arg(spacing.radiusLg));
+    }
+    if (m_scrollContent)
+    {
+        m_scrollContent->setStyleSheet(QString("QWidget#scrollContent { background-color: %1; }")
+                                           .arg(colors.surfaceMain.name()));
+    }
+}
+
+bool MessageSelectionDialog::event(QEvent* event)
+{
+    if (event->type() == Core::StyleEvent::EventType)
+    {
+        applyStyle();
+        return true;
+    }
+    return QWidget::event(event);
 }
 
 }  // namespace Logging

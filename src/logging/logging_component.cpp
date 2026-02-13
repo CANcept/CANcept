@@ -462,13 +462,13 @@ QWidget* LoggingComponent::createDetailWidget(const LogSession* session)
     auto* title = new QLabel(QString("Session Details: %1").arg(session->id), detailView);
     const QString titleStyle = QString(
                                    "QLabel {"
-                                   "   font-family: 'Roboto';"
-                                   "   font-size: 24px;"
+                                   "   font-size: %3px;"
                                    "   font-weight: %1;"
                                    "   color: %2;"
                                    "}")
                                    .arg(spacing.fontWeightMedium)
-                                   .arg(colors.textPrimary.name());
+                                   .arg(colors.textPrimary.name())
+                                   .arg(spacing.fontSizeLg);
     title->setStyleSheet(titleStyle);
 
     layout->addWidget(title);

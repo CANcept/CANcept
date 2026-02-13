@@ -1,22 +1,23 @@
-#include "action_button.hpp"
+#include "start_stop_button.hpp"
 
 #include <QIcon>
 #include <QStyle>
 
 #include "core/macro/theme.hpp"
+#include "core/theme/style_event.hpp"
 
 namespace Logging {
 
-ActionButton::ActionButton(QWidget* parent) : QPushButton(parent)
+StartStopButton::StartStopButton(QWidget* parent) : QPushButton(parent)
 {
     const auto& spacing = THEME.spacing();
     setIconSize(QSize(20, 20));
-    setFixedSize(150, 75);
+    setFixedSize(75, 35);
     applyStyle();
     setRecordingState(false);
 }
 
-void ActionButton::applyStyle()
+void StartStopButton::applyStyle()
 {
     const auto& spacing = THEME.spacing();
     const auto& colors = THEME.colors();
@@ -24,9 +25,8 @@ void ActionButton::applyStyle()
     const QString buttonStyle = QString(
                                     "QPushButton {"
                                     "   border: none;"
-                                    "   border-radius: 30px;"
-                                    "   font-family: 'Roboto';"
-                                    "   font-size: 22px;"
+                                    "   border-radius: %9px;"
+                                    "   font-size: %10px;"
                                     "   font-weight: %1;"
                                     "   padding: %2px %2px;"
                                     "}"
@@ -57,11 +57,13 @@ void ActionButton::applyStyle()
                                     .arg(colors.colorPrimaryHover.name())
                                     .arg(colors.statusError.name())
                                     .arg(colors.textOnPrimary.name())
-                                    .arg(colors.statusErrorHover.name());
+                                    .arg(colors.statusErrorHover.name())
+                                    .arg(spacing.radiusMd)
+                                    .arg(spacing.fontSizeMd);
     setStyleSheet(buttonStyle);
 }
 
-void ActionButton::setRecordingState(bool isRecording)
+void StartStopButton::setRecordingState(bool isRecording)
 {
     m_isRecording = isRecording;
 
@@ -82,6 +84,16 @@ void ActionButton::setRecordingState(bool isRecording)
     // Force style refresh
     style()->unpolish(this);
     style()->polish(this);
+}
+
+bool StartStopButton::event(QEvent* event)
+{
+    if (event->type() == Core::StyleEvent::EventType)
+    {
+        applyStyle();
+        return true;
+    }
+    return QWidget::event(event);
 }
 
 }  // namespace Logging

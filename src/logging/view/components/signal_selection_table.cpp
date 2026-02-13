@@ -1,12 +1,13 @@
-#include "signal_selection_widget.hpp"
+#include "signal_selection_table.hpp"
 
-#include <QIcon>
+#include "core/macro/theme.hpp"
+#include "core/theme/style_event.hpp"
 
 namespace Logging {
 
 // Constructs a signal selection widget for a specific CAN message
-SignalSelectionWidget::SignalSelectionWidget(uint32_t messageId, const QString& messageName,
-                                             QWidget* parent)
+SignalSelectionTree::SignalSelectionTree(uint32_t messageId, const QString& messageName,
+                                         QWidget* parent)
     : QWidget(parent),
       m_messageId(messageId),
       m_messageName(messageName),
@@ -18,7 +19,7 @@ SignalSelectionWidget::SignalSelectionWidget(uint32_t messageId, const QString& 
 }
 
 // Initializes the UI with checkbox and signal list view
-void SignalSelectionWidget::setupUi()
+void SignalSelectionTree::setupUi()
 {
     auto* layout = new QVBoxLayout(this);
     layout->setContentsMargins(10, 10, 10, 10);
@@ -28,13 +29,6 @@ void SignalSelectionWidget::setupUi()
     auto* headerLayout = new QHBoxLayout();
 
     m_selectAllCheckbox = new QCheckBox("Select All Signals", this);
-    m_selectAllCheckbox->setStyleSheet(
-        "QCheckBox {"
-        "   font-family: 'Roboto';"
-        "   font-size: 14px;"
-        "   font-weight: 500;"
-        "   color: black;"
-        "}");
 
     connect(m_selectAllCheckbox, &QCheckBox::toggled, this,
             [this](bool checked) { setAllSignalsSelected(checked); });
@@ -50,31 +44,16 @@ void SignalSelectionWidget::setupUi()
     m_signalList->setWrapping(false);
     m_signalList->setUniformItemSizes(true);
     m_signalList->setMaximumHeight(200);
-    m_signalList->setStyleSheet(
-        "QListView {"
-        "   background-color: #f9f9f9;"
-        "   border: 1px solid rgba(0, 0, 0, 0.1);"
-        "   border-radius: 5px;"
-        "   padding: 5px;"
-        "   font-family: 'Roboto';"
-        "   font-size: 13px;"
-        "}"
-        "QListView::item {"
-        "   padding: 4px;"
-        "   border-radius: 3px;"
-        "}"
-        "QListView::item:hover {"
-        "   background-color: rgba(0, 0, 0, 0.03);"
-        "}");
 
     m_signalModel = new QStandardItemModel(this);
     m_signalList->setModel(m_signalModel);
 
     layout->addWidget(m_signalList);
+    applyStyle();
 }
 
 // Populates the list with signals from DBC message description
-void SignalSelectionWidget::setSignals(const std::list<Core::DbcSignalDescription>& signalList)
+void SignalSelectionTree::setSignals(const std::list<Core::DbcSignalDescription>& signalList)
 {
     m_signalModel->clear();
 
@@ -123,7 +102,7 @@ void SignalSelectionWidget::setSignals(const std::list<Core::DbcSignalDescriptio
 }
 
 // Returns list of signal names that are currently checked
-QStringList SignalSelectionWidget::getSelectedSignals() const
+QStringList SignalSelectionTree::getSelectedSignals() const
 {
     QStringList selectedSignals;
 
@@ -141,7 +120,7 @@ QStringList SignalSelectionWidget::getSelectedSignals() const
 }
 
 // Selects or deselects all signals in the list
-void SignalSelectionWidget::setAllSignalsSelected(bool checked)
+void SignalSelectionTree::setAllSignalsSelected(bool checked)
 {
     m_signalModel->blockSignals(true);
 
@@ -159,6 +138,59 @@ void SignalSelectionWidget::setAllSignalsSelected(bool checked)
     // Emit signal once after all changes
     int selectedCount = checked ? m_signalModel->rowCount() : 0;
     emit selectionChanged(m_messageId, selectedCount);
+}
+
+void SignalSelectionTree::applyStyle()
+{
+    const auto& spacing = THEME.spacing();
+    const auto& colors = THEME.colors();
+
+    if (m_selectAllCheckbox)
+    {
+        m_selectAllCheckbox->setStyleSheet(QString("QCheckBox {"
+                                                   "   font-size: %1px;"
+                                                   "   font-weight: %2;"
+                                                   "   color: %3;"
+                                                   "}")
+                                               .arg(spacing.fontSizeMd)
+                                               .arg(spacing.fontWeightMedium)
+                                               .arg(colors.textPrimary.name()));
+    }
+    if (m_signalList)
+    {
+        m_signalList->setStyleSheet(QString("QListView {"
+                                            "   background-color: %1;"
+                                            "   border: %2px solid %3;"
+                                            "   border-radius: %4px;"
+                                            "   padding: %5px;"
+                                            "   font-size: %6px;"
+                                            "}"
+                                            "QListView::item {"
+                                            "   padding: %5px;"
+                                            "   border-radius: %7px;"
+                                            "}"
+                                            "QListView::item:hover {"
+                                            "   background-color: %8;"
+                                            "}")
+                                        .arg(colors.surfacePrimary.name())
+                                        .arg(spacing.borderThin)
+                                        .arg(colors.borderSubtle.name())
+                                        .arg(spacing.radiusSm)
+                                        .arg(spacing.spacingXs)
+                                        .arg(spacing.fontSizeMd)
+                                        .arg(spacing.radiusXs)
+                                        .arg(colors.surfaceHover.name()));
+    }
+}
+
+bool SignalSelectionTree::event(QEvent* event)
+{
+    if (event->type() == Core::StyleEvent::EventType)
+    {
+        applyStyle();
+        return true;
+    }
+    return QWidget::event(event);
 }
 
 }  // namespace Logging

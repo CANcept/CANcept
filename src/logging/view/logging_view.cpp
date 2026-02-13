@@ -4,6 +4,9 @@
 #include <QIcon>
 #include <QSpacerItem>
 
+#include "core/macro/theme.hpp"
+#include "core/theme/style_event.hpp"
+
 namespace Logging {
 
 LoggingView::LoggingView(QWidget* parent) : QWidget(parent)
@@ -24,7 +27,7 @@ void LoggingView::setupUi()
     headerLayout->setSpacing(10);
 
     // Action Button (Start/Stop)
-    m_btnAction = new ActionButton(m_headerBox);
+    m_btnAction = new StartStopButton(m_headerBox);
     headerLayout->addWidget(m_btnAction);
 
     // Timer Label
@@ -42,12 +45,6 @@ void LoggingView::setupUi()
     // ===== Main Frame (bordered container) =====
     m_mainFrame = new QFrame(this);
     m_mainFrame->setFrameShape(QFrame::StyledPanel);
-    m_mainFrame->setStyleSheet(
-        "QFrame {"
-        "   border: 1px solid rgba(0, 0, 0, 0.1);"
-        "   border-radius: 10px;"
-        "   background-color: white;"
-        "}");
 
     auto* frameLayout = new QVBoxLayout(m_mainFrame);
     frameLayout->setContentsMargins(0, 0, 0, 0);
@@ -61,11 +58,11 @@ void LoggingView::setupUi()
     auto* historyLayout = new QVBoxLayout(m_historyPage);
     historyLayout->setContentsMargins(10, 10, 10, 10);
 
-    m_historyTable = new HistoryTable(m_historyPage);
+    m_historyTable = new LogHistoryTable(m_historyPage);
     historyLayout->addWidget(m_historyTable);
 
     // Empty state label
-    m_emptyLabel = new EmptyStateLabel(m_historyPage);
+    m_emptyLabel = new NoLogsLabel(m_historyPage);
     historyLayout->addWidget(m_emptyLabel);
 
     m_contentStack->addWidget(m_historyPage);
@@ -84,6 +81,7 @@ void LoggingView::setupUi()
     frameLayout->addWidget(m_contentStack);
     mainLayout->addWidget(m_mainFrame, 1);
 
+    applyStyle();
     // ===== Connections =====
     connect(m_btnAction, &QPushButton::clicked, this, [this]() {
         if (m_isRecording)
@@ -189,6 +187,35 @@ void LoggingView::updateTimer(qint64 elapsedMs)
 void LoggingView::updateStatusTags(const QStringList& messages)
 {
     m_statusContainer->updateStatusTags(messages);
+}
+
+void LoggingView::applyStyle()
+{
+    auto spacing = THEME.spacing();
+    auto color = THEME.colors();
+
+    if (m_mainFrame)
+    {
+        m_mainFrame->setStyleSheet(QString("QFrame {"
+                                           "   border: %1px solid %2;"
+                                           "   border-radius: %3px;"
+                                           "   background-color: %4;"
+                                           "}")
+                                       .arg(spacing.borderThin)
+                                       .arg(color.borderSubtle.name(QColor::HexArgb))
+                                       .arg(spacing.radiusMd)
+                                       .arg(color.surfaceMain.name(QColor::HexArgb)));
+    }
+}
+
+bool LoggingView::event(QEvent* event)
+{
+    if (event->type() == Core::StyleEvent::EventType)
+    {
+        applyStyle();
+        return true;
+    }
+    return QWidget::event(event);
 }
 
 }  // namespace Logging

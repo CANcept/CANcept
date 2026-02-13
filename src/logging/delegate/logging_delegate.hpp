@@ -4,8 +4,8 @@
 #include <QStyledItemDelegate>
 
 #include "logging/model/logging_model.hpp"
+#include "logging/view/components/message_selection_dialog.hpp"
 #include "logging/view/logging_view.hpp"
-#include "logging/view/message_selection_dialog.hpp"
 
 namespace Logging {
 
@@ -13,7 +13,7 @@ namespace Logging {
  * @class LoggingDelegate
  * @brief The controller logic that bridges the View, Model, and Modal Dialog.
  * * @details
- * It is responisble to route start/stop action, fullfill navigation and style.
+ * It is responsible to route start/stop action, fulfill navigation and style.
  */
 class LoggingDelegate final : public QStyledItemDelegate
 {

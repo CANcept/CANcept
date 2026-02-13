@@ -2,18 +2,13 @@
 
 #include <QComboBox>
 #include <QDialog>
-#include <QDialogButtonBox>
 #include <QScrollArea>
 #include <QStringList>
-#include <QVBoxLayout>
 #include <map>
 
 #include "core/dto/dbc_dto.hpp"
+#include "core/widgets/card_widget.hpp"
 #include "core/widgets/dbc_message_card.hpp"
-
-namespace Core {
-class CardWidget;
-}
 
 namespace Logging {
 
@@ -61,9 +56,13 @@ class MessageSelectionDialog final : public QDialog
      */
     std::map<uint32_t, QStringList> getSelectedSignals() const;
 
+   protected:
+    bool event(QEvent* event) override;
+
    private:
     /** @brief Initializes the structural layout and styling. */
     void setupUi();
+    void applyStyle();
 
     QWidget* m_headerWidget;
 
@@ -74,6 +73,8 @@ class MessageSelectionDialog final : public QDialog
 
     // Storage for message cards mapped by message ID
     std::map<uint32_t, Core::DbcMessageCard*> m_messageCards;
+    QLabel* m_titleLabel;
+    QPushButton* m_closeButton;
 };
 
 }  // namespace Logging

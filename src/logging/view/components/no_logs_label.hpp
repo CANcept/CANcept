@@ -5,19 +5,19 @@
 namespace Logging {
 
 /**
- * @class EmptyStateLabel
+ * @class NoLogsLabel
  * @brief Styled label shown when no logging sessions exist.
  *
  * This component provides a consistent styled placeholder label
  * displayed in the center when the history table is empty.
  */
-class EmptyStateLabel final : public QLabel
+class NoLogsLabel final : public QLabel
 {
     Q_OBJECT
 
    public:
-    explicit EmptyStateLabel(QWidget* parent = nullptr);
-    ~EmptyStateLabel() override = default;
+    explicit NoLogsLabel(QWidget* parent = nullptr);
+    ~NoLogsLabel() override = default;
 
    private:
     void applyStyle();
