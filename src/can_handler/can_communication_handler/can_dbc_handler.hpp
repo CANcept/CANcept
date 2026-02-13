@@ -25,6 +25,8 @@ class CanDbcHandler final : public ICanParser
             });
         dbcConfigChangeConnection = eventBroker.subscribe<Core::DBCParsedEvent>(
             [this](const Core::DBCParsedEvent& event) -> void { handleNewDbc(event); });
+
+        dbcMessages.fill(nullptr);
     };
     ~CanDbcHandler() override;
 

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QTimer>
+
 #include "core/interface/i_event_broker.hpp"
 #include "core/interface/i_tab_component.hpp"
 #include "monitoring/delegate/monitoring_delegate.hpp"
@@ -66,55 +68,53 @@ class MonitoringComponent final : public Core::ITabComponent
 
    signals:
     /**
-     * @brief Signal emitted when a new dbcConfiguration is available.
+     * @brief Signal emitted when a new dbcConfiguration is used.
      * The available ECUs and signals refresh, no signal is selected for plotting.
      */
-    void dbcConfigurationChanged();
+    void dbcConfigurationChanged(const Core::DbcConfig& config);
 
     /**
-     * @brief Updates the message data when a CAN frame is received.
+     * @brief Updates the message data when a dbc decoded CAN frame is received.
      *
      * Adds new frames or updates existing ones and refreshes the signal
      * values associated with the frame.
      *
-     * @param message Reference to the received CAN message.
+     * @param message Reference to the received dbc decoded CAN message.
      */
-    void frameReceived(Core::DbcCanMessage& message);
+    void dbcFrameReceived(const Core::DbcCanMessage& message);
+
+    /**
+     * @brief Updates the message data when a raw CAN frame is received.
+     *
+     * Adds new frames or updates existing ones and refreshes the signal
+     * values associated with the frame.
+     *
+     * @param message Reference to the received raw CAN message.
+     */
+    void rawFrameReceived(const Core::RawCanMessage& message);
+
+    void tick();
 
    private slots:
+
     /**
-     * @brief Triggered when the user selects a different CAN interface.
+     * @brief Triggered when the user selects a different CAN device/interface.
      * It also publishes the CanDriverChangeEvent.
      * @param deviceName The identifier of the newly selected hardware.
      */
-    void onSourceChanged(const std::string& deviceName);
-
-    /**
-     * @brief Triggered when the user checks a signal to display in a graph
-     * Notifies GraphListView to plot the checked signal in a new Graph.
-     * @param messageId the id of the message the checked signal belongs to
-     * @param signalName the name of the checked signal
-     */
-    void onSignalChecked(char messageId, const std::string& signalName);
-
-    /**
-     * @brief Triggered when the user unchecks a signal currently checked (therefor plotted in a
-     * graph) Notifies GraphListView to erase graph of the checked signal and discontinue the
-     * plotting
-     * @param messageId the id of the message the unchecked signal belongs to
-     * @param signalName the name of the unchecked signal
-     */
-    void onSignalUnchecked(char messageId, const std::string& signalName);
+    void onDeviceChanged(const std::string& deviceName) const;
 
    private:
+    void connectSignals();
+
     /** @brief Model holding CAN sending configuration and data */
     std::unique_ptr<MonitoringModel> m_model;
 
-    /** @brief View responsible for rendering the sending UI */
-    std::unique_ptr<MonitoringView> m_view;
-
     /** @brief Delegate handling user actions and coordination */
     std::unique_ptr<MonitoringDelegate> m_delegate;
+
+    /** @brief View responsible for rendering the sending UI */
+    std::unique_ptr<MonitoringView> m_view;
 
     /**
      * @brief RAII Handle for success event subscription.
@@ -124,5 +124,13 @@ class MonitoringComponent final : public Core::ITabComponent
 
     /** @brief RAII Handle for error event subscription. */
     Core::Connection m_parseErrorConn;
+
+    /** @brief RAII Handle for incoming CAN frames subscription. */
+    Core::Connection m_decodedFrameReceivedConn;
+
+    /** @brief Tracks whether a CAN interface is currently selected */
+    bool m_interfaceSelected = false;
+
+    QTimer m_updateTimer;
 };
 }  // namespace Monitoring
