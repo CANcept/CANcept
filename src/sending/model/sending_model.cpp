@@ -7,10 +7,8 @@
 
 namespace Sending {
 
-SendingModel::SendingModel(QObject* parent)
-    : QAbstractItemModel(parent), m_currentDbc(std::nullopt), m_cyclicTimer(new QTimer(this))
+SendingModel::SendingModel(QObject* parent) : QAbstractItemModel(parent), m_currentDbc(std::nullopt)
 {
-    connect(m_cyclicTimer, &QTimer::timeout, this, &SendingModel::onCyclicTimerTimeout);
 }
 
 auto SendingModel::makeSignalKey(const uint16_t messageId,
@@ -201,24 +199,20 @@ auto SendingModel::setData(const QModelIndex& index, const QVariant& value, int 
 
         case Role_IsCyclicEnabled:
             m_cyclicState.isEnabled = value.toBool();
-            updateTimerState();
             emit dataChanged(index, index, {role});
             return true;
 
         case Role_CycleIntervalMs: {
             int interval = value.toInt();
-            // Enforce minimum interval (prevent system overload)
             if (interval < Constants::MIN_CYCLE_INTERVAL_MS)
             {
                 interval = Constants::MIN_CYCLE_INTERVAL_MS;
             }
-            // Enforce maximum interval
             if (interval > Constants::MAX_CYCLE_INTERVAL_MS)
             {
                 interval = Constants::MAX_CYCLE_INTERVAL_MS;
             }
             m_cyclicState.intervalMs = interval;
-            updateTimerState();
             emit dataChanged(index, index, {role});
             return true;
         }
@@ -286,18 +280,23 @@ void SendingModel::updateDbcConfig(const Core::DbcConfig& config)
 
 void SendingModel::setTransmissionStatus(const bool isActive)
 {
-    if (m_cyclicState.isSending != isActive)
+    if (m_cyclicState.isSending == isActive)
     {
-        m_cyclicState.isSending = isActive;
-        if (!isActive)
-        {
-            m_cyclicTimer->stop();
-        }
-        emit dataChanged(QModelIndex(), QModelIndex(), {Role_IsCurrentlySending});
+        return;
     }
+    m_cyclicState.isSending = isActive;
+    emit dataChanged(QModelIndex(), QModelIndex(), {Role_IsCurrentlySending});
 }
 
 void SendingModel::transmitCurrent()
+{
+    forEachPendingMessage([this](const Core::RawCanMessage& msg) { emit requestSendRaw("", msg); },
+                          [this](const Core::DbcCanMessage& msg) { emit requestSendDbc("", msg); });
+}
+
+void SendingModel::forEachPendingMessage(
+    const std::function<void(const Core::RawCanMessage&)>& rawHandler,
+    const std::function<void(const Core::DbcCanMessage&)>& dbcHandler) const
 {
     if (m_currentMode == Mode::Raw)
     {
@@ -310,7 +309,10 @@ void SendingModel::transmitCurrent()
             message.data[i] = static_cast<char>(m_rawState.data[i]);
         }
 
-        emit requestSendRaw("", message);
+        if (rawHandler)
+        {
+            rawHandler(message);
+        }
     } else
     {
         // DBC mode - send messages that have any selected signals
@@ -350,30 +352,11 @@ void SendingModel::transmitCurrent()
             }
 
             // Only send if this message has at least one selected signal
-            if (!message.signalValues.empty())
+            if (!message.signalValues.empty() && dbcHandler)
             {
-                emit requestSendDbc("", message);
+                dbcHandler(message);
             }
         }
-    }
-}
-
-void SendingModel::onCyclicTimerTimeout()
-{
-    if (m_cyclicState.isEnabled && m_cyclicState.isSending)
-    {
-        transmitCurrent();
-    }
-}
-
-void SendingModel::updateTimerState() const
-{
-    if (m_cyclicState.isEnabled && m_cyclicState.isSending)
-    {
-        m_cyclicTimer->start(m_cyclicState.intervalMs);
-    } else
-    {
-        m_cyclicTimer->stop();
     }
 }
 

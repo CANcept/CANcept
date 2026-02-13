@@ -15,7 +15,8 @@ SendingComponent::SendingComponent(Core::IEventBroker& broker)
                     Constants::TAB_TITLE, QIcon(Constants::SENDING_ICON_PATH)),
       m_model(std::make_unique<SendingModel>()),
       m_view(std::make_unique<SendingView>()),
-      m_delegate(new SendingDelegate(this))
+      m_delegate(new SendingDelegate(this)),
+      m_sendingWorker(std::make_unique<RepeatedSendingWorker>())
 {
     m_view->setModel(m_model.get());
 
@@ -24,6 +25,7 @@ SendingComponent::SendingComponent(Core::IEventBroker& broker)
 
 SendingComponent::~SendingComponent()
 {
+    stopRepeatedSending();
     m_parseErrorConn.release();
     m_parseSuccessConn.release();
     LOG_INF(Constants::MODULE_IDENTIFIER, "Sending Component destroyed");
@@ -46,7 +48,7 @@ void SendingComponent::onStop()
     LOG_INF(Constants::MODULE_IDENTIFIER, "Stopping Sending Component...");
 
     // Stop any active cyclic transmissions
-    m_model->setTransmissionStatus(false);
+    stopRepeatedSending();
 
     LOG_INF(Constants::MODULE_IDENTIFIER, "Sending Component stopped");
 }
@@ -119,6 +121,68 @@ void SendingComponent::setupConnections()
                         message.messageId);
                 publishDbcMessageAsync(message);
             });
+
+    // View requests: single send
+    connect(m_view.get(), &SendingView::sendOnceRequested, this, &SendingComponent::sendOnce);
+
+    connect(m_view.get(), &SendingView::startRepeatedSendingRequested, this,
+            &SendingComponent::startRepeatedSending);
+    connect(m_view.get(), &SendingView::stopRepeatedSendingRequested, this,
+            &SendingComponent::stopRepeatedSending);
+
+    // Worker error handling
+    connect(
+        m_sendingWorker.get(), &RepeatedSendingWorker::errorOccurred, this,
+        [this](const QString& error) {
+            LOG_ERR(Constants::MODULE_IDENTIFIER, "Repeated sending error: {}",
+                    error.toStdString());
+            stopRepeatedSending();
+        },
+        Qt::QueuedConnection);
+}
+
+void SendingComponent::startRepeatedSending(const int intervalMs) const
+{
+    if (m_sendingWorker->isSending())
+    {
+        return;
+    }
+
+    LOG_INF(Constants::MODULE_IDENTIFIER, "Starting repeated sending, interval={}ms", intervalMs);
+
+    auto callback = [this]() {
+        // Called from worker thread - build messages and publish directly to broker
+        m_model->forEachPendingMessage(
+            [this](const Core::RawCanMessage& message) {
+                std::scoped_lock lock(m_brokerMutex);
+                m_eventBroker.publish(Core::SendCanMessageRawEvent(message));
+            },
+            [this](const Core::DbcCanMessage& message) {
+                std::scoped_lock lock(m_brokerMutex);
+                m_eventBroker.publish(Core::SendCanMessageDbcEvent(message));
+            });
+    };
+
+    m_sendingWorker->startSending(callback, intervalMs);
+    m_model->setTransmissionStatus(true);
+}
+
+void SendingComponent::stopRepeatedSending() const
+{
+    if (!m_sendingWorker->isSending())
+    {
+        m_model->setTransmissionStatus(false);
+        return;
+    }
+
+    LOG_INF(Constants::MODULE_IDENTIFIER, "Stopping repeated sending");
+    m_sendingWorker->stopSending();
+    m_model->setTransmissionStatus(false);
+}
+
+void SendingComponent::sendOnce() const
+{
+    m_model->transmitCurrent();
 }
 
 void SendingComponent::setupBrokerSubscriptions()

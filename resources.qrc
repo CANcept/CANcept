@@ -28,5 +28,6 @@
         <file>assets/icon/monitoring/bus_disconnected.svg</file>
         <file>assets/icon/monitoring/arrow_right.svg</file>
         <file>assets/icon/monitoring/arrow_down.svg</file>
+        <file>assets/icon/sending/stop.svg</file>
     </qresource>
 </RCC>

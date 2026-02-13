@@ -6,6 +6,7 @@
 #include <QScrollArea>
 #include <QWidget>
 
+#include "components/repeated_sending_card.hpp"
 #include "components/send_message_button.hpp"
 #include "core/widgets/dbc_message_card.hpp"
 
@@ -45,6 +46,11 @@ class DbcSendingSubView final : public QWidget
         return m_sendButton;
     }
 
+    [[nodiscard]] auto repeatedSendingCard() const -> RepeatedSendingCard*
+    {
+        return m_repeatedSendingCard;
+    }
+
    signals:
     /**
      * @brief Emitted when user toggles message selection checkbox.
@@ -80,6 +86,7 @@ class DbcSendingSubView final : public QWidget
     QWidget* m_scrollContent;
     QVBoxLayout* m_cardsLayout;
 
+    RepeatedSendingCard* m_repeatedSendingCard;
     QPushButton* m_sendButton;
 };
 

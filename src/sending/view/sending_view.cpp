@@ -6,6 +6,8 @@
 #include <QVBoxLayout>
 
 #include "sending/constants.hpp"
+#include "sending/view/components/repeated_sending_card.hpp"
+#include "sending/view/components/send_message_button.hpp"
 
 namespace Sending {
 
@@ -126,13 +128,103 @@ void SendingView::setModel(SendingModel* model)
                 model->setRawData(data);
             });
 
-    // Raw Send Button to Model Transmit
-    connect(m_rawView->sendButton(), &QPushButton::clicked, this,
-            [model]() { model->transmitCurrent(); });
+    // Raw View: Repeated Sending Toggle
+    connect(m_rawView->repeatedSendingCard(), &RepeatedSendingCard::toggled, this,
+            [model](const bool enabled) {
+                model->setData(QModelIndex(), enabled, SendingModel::Role_IsCyclicEnabled);
+            });
 
-    // DBC Send Button to Model Transmit
-    connect(m_dbcView->sendButton(), &QPushButton::clicked, this,
-            [model]() { model->transmitCurrent(); });
+    // Raw View: Repeated Sending Interval
+    connect(m_rawView->repeatedSendingCard()->frequencyEditor(), &QLineEdit::textChanged, this,
+            [model](const QString& text) {
+                bool ok = false;
+                if (const int interval = text.toInt(&ok); ok && interval > 0)
+                {
+                    model->setData(QModelIndex(), interval, SendingModel::Role_CycleIntervalMs);
+                }
+            });
+
+    // Raw Send Button: Start/Stop repeated sending or send once
+    connect(m_rawView->sendButton(), &QPushButton::clicked, this, [this]() {
+        if (m_rawView->repeatedSendingCard()->isRepeatedSendingEnabled())
+        {
+            // Toggle repeated sending state
+            if (m_model->isCurrentlySending())
+            {
+                emit stopRepeatedSendingRequested();
+            } else
+            {
+                // REtrieve interval from frequency editor
+                bool ok = false;
+                const int interval =
+                    m_rawView->repeatedSendingCard()->frequencyEditor()->text().toInt(&ok);
+                const int safeInterval =
+                    ok && interval > 0 ? interval : Constants::DEFAULT_CYCLE_INTERVAL_MS;
+                emit startRepeatedSendingRequested(safeInterval);
+            }
+        } else
+        {
+            emit sendOnceRequested();
+        }
+    });
+
+    // DBC View: Repeated Sending Toggle
+    connect(m_dbcView->repeatedSendingCard(), &RepeatedSendingCard::toggled, this,
+            [model](const bool enabled) {
+                model->setData(QModelIndex(), enabled, SendingModel::Role_IsCyclicEnabled);
+            });
+
+    // DBC View: Repeated Sending Interval
+    connect(m_dbcView->repeatedSendingCard()->frequencyEditor(), &QLineEdit::textChanged, this,
+            [model](const QString& text) {
+                bool ok = false;
+                if (const int interval = text.toInt(&ok); ok && interval > 0)
+                {
+                    model->setData(QModelIndex(), interval, SendingModel::Role_CycleIntervalMs);
+                }
+            });
+
+    // DBC Send Button: Start/Stop repeated sending or send once
+    connect(m_dbcView->sendButton(), &QPushButton::clicked, this, [this]() {
+        if (m_dbcView->repeatedSendingCard()->isRepeatedSendingEnabled())
+        {
+            // Toggle repeated sending state
+            if (m_model->isCurrentlySending())
+            {
+                emit stopRepeatedSendingRequested();
+            } else
+            {
+                // Get interval from the frequency editor
+                bool ok = false;
+                const int interval =
+                    m_dbcView->repeatedSendingCard()->frequencyEditor()->text().toInt(&ok);
+                const int safeInterval =
+                    ok && interval > 0 ? interval : Constants::DEFAULT_CYCLE_INTERVAL_MS;
+                emit startRepeatedSendingRequested(safeInterval);
+            }
+        } else
+        {
+            // Send once
+            emit sendOnceRequested();
+        }
+    });
+
+    // Update button appearance based on sending state
+    connect(model, &QAbstractItemModel::dataChanged, this,
+            [this, model](const QModelIndex&, const QModelIndex&, const QList<int>& roles) {
+                if (roles.contains(SendingModel::Role_IsCurrentlySending))
+                {
+                    const bool isSending = model->isCurrentlySending();
+                    if (auto* rawBtn = dynamic_cast<SendMessageButton*>(m_rawView->sendButton()))
+                    {
+                        rawBtn->setSendingState(isSending);
+                    }
+                    if (auto* dbcBtn = dynamic_cast<SendMessageButton*>(m_dbcView->sendButton()))
+                    {
+                        dbcBtn->setSendingState(isSending);
+                    }
+                }
+            });
 
     // Initial button state
     updateSendButtonStates();

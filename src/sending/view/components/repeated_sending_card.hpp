@@ -4,8 +4,8 @@
 #include <QWidget>
 
 #include "core/widgets/card_widget.hpp"
-#include "core/widgets/common/styled_checkbox.hpp"
 #include "core/widgets/common/styled_line_edit.hpp"
+#include "core/widgets/common/styled_switch.hpp"
 
 namespace Sending {
 
@@ -39,19 +39,25 @@ class RepeatedSendingCard final : public QWidget
         return m_frequencyEditor;
     }
 
+   signals:
+    /**
+     * @brief Emitted when the repeated sending toggle changes state.
+     * @param enabled true if repeated sending is enabled, false otherwise
+     */
+    void toggled(bool enabled);
+
    protected:
     bool event(QEvent* event) override;
 
    private:
     void setupUi();
-    void applyStyle();
+    void applyStyle() const;
     void onToggleChanged(bool checked);
 
     Core::CardWidget* m_card;
-    QLabel* m_iconLabel;
     QLabel* m_titleLabel;
     QLabel* m_subtitleLabel;
-    Core::StyledCheckBox* m_toggleCheckbox;
+    Core::StyledSwitch* m_toggleSwitch;
     Core::StyledLineEdit* m_frequencyEditor;
     QLabel* m_frequencyLabel;
 };
