@@ -23,6 +23,7 @@ DbcSendingSubView::DbcSendingSubView(QWidget* parent)
       m_scrollArea(nullptr),
       m_scrollContent(nullptr),
       m_cardsLayout(nullptr),
+      m_repeatedSendingCard(nullptr),
       m_sendButton(nullptr)
 {
     setupUi();
@@ -70,6 +71,12 @@ void DbcSendingSubView::setupUi()
     }
 
     mainLayout->addWidget(m_messagesCard, 1);
+
+    // Repeated sending configuration
+    m_repeatedSendingCard = new RepeatedSendingCard(scrollContent);
+    mainLayout->addWidget(m_repeatedSendingCard);
+
+    mainLayout->addStretch();
 
     outerLayout->addWidget(m_outerScrollArea, 1);
 

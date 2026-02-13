@@ -1,7 +1,7 @@
 #pragma once
 
 #include <QAbstractItemModel>
-#include <QTimer>
+#include <functional>
 #include <optional>
 #include <set>
 #include <string>
@@ -137,12 +137,13 @@ class SendingModel final : public QAbstractItemModel
      */
     void transmitCurrent();
 
-   private slots:
+   public:
     /**
-     * @brief Internal slot handling the cyclic timer timeout.
-     * Calls transmitCurrent() automatically.
+     * @brief Builds pending messages and passes them to the provided handlers.
      */
-    void onCyclicTimerTimeout();
+    void forEachPendingMessage(
+        const std::function<void(const Core::RawCanMessage&)>& rawHandler,
+        const std::function<void(const Core::DbcCanMessage&)>& dbcHandler) const;
 
    private:
     /**
@@ -151,18 +152,14 @@ class SendingModel final : public QAbstractItemModel
     [[nodiscard]] static auto makeSignalKey(uint16_t messageId,
                                             const std::string& signalName) -> std::string;
 
-    /**
-     * @brief internal helper to start/stop QTimer based on m_cyclicState.
-     */
-    void updateTimerState() const;
-
     // Navigation & Mode
     Mode m_currentMode = Mode::Raw;
+
     // Cyclic Transmission State
     struct CyclicState {
         bool isEnabled = false;  // The user "intent" to send cyclically
         int intervalMs = 100;    // Default interval
-        bool isSending = false;  // The actual "live" state of the transmission
+        bool isSending = false;  // Whether the component is actively sending
     } m_cyclicState;
 
     // Payload States
@@ -185,9 +182,6 @@ class SendingModel final : public QAbstractItemModel
 
     /** @brief Current DBC config (owned by this model) */
     std::optional<Core::DbcConfig> m_currentDbc;
-
-    // Moved from SendingDelegate: The Model now owns the timing source of truth
-    QTimer* m_cyclicTimer;
 };
 
 }  // namespace Sending

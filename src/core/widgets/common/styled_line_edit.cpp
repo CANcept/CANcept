@@ -83,7 +83,6 @@ void StyledLineEdit::applyStyle()
                               .arg(colors.surfaceSecondary.name());
 
     setStyleSheet(style);
-    updateGeometry();
 }
 
 bool StyledLineEdit::event(QEvent* event)

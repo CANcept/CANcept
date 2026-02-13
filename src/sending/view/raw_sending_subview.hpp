@@ -7,6 +7,7 @@
 #include <QWidget>
 
 #include "components/hex_id_line_edit.hpp"
+#include "components/repeated_sending_card.hpp"
 #include "components/send_message_button.hpp"
 #include "core/widgets/card_widget.hpp"
 #include "sending/view/formatter/hex_data_formatter.hpp"
@@ -21,7 +22,7 @@ namespace Sending {
  * The view uses a card-based design matching the Figma mockups:
  * 1. CAN-Bus Configuration Card: Interface and Baud Rate selection
  * 2. CAN Frame Card: Single-line hex inputs for ID and Message Data
- * 3. Repeat Settings Card: (Optional - not yet implemented)
+ * 3. Repeated Sending Card: Configure cyclic message transmission
  * 4. Floating Send Message button at bottom right
  */
 class RawSendingSubView final : public QWidget
@@ -54,6 +55,11 @@ class RawSendingSubView final : public QWidget
     {
         return m_sendButton;
     }
+
+    [[nodiscard]] auto repeatedSendingCard() const -> RepeatedSendingCard*
+    {
+        return m_repeatedSendingCard;
+    }
     /** @} */
 
    protected:
@@ -75,6 +81,9 @@ class RawSendingSubView final : public QWidget
     HexDataFormatter* m_messageDataFormatter;
     QLabel* m_canIdLabel;
     QLabel* m_messageDataLabel;
+
+    // Repeated Sending Card
+    RepeatedSendingCard* m_repeatedSendingCard;
 
     // Floating Send Button
     QPushButton* m_sendButton;

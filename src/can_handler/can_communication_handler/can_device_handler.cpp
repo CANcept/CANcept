@@ -17,7 +17,7 @@ auto CanDeviceHandler::checkForCanMessage() const -> std::list<CanMessage>
         {
             return {};
         }
-        if (!canDriver->waitForMessages(std::chrono::milliseconds(50)))
+        if (!canDriver->waitForMessages(std::chrono::milliseconds(0)))
         {
             break;
         }

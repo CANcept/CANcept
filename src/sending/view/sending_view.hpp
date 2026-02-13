@@ -43,6 +43,15 @@ class SendingView final : public QWidget
     /** @brief Emitted when the sidebar selection changes (0=Raw, 1=DBC) */
     void modeChanged(bool isDbcMode);
 
+    /** @brief Emitted when user requests to start repeated sending */
+    void startRepeatedSendingRequested(int intervalMs);
+
+    /** @brief Emitted when user requests to stop repeated sending */
+    void stopRepeatedSendingRequested();
+
+    /** @brief Emitted when user requests a single send */
+    void sendOnceRequested();
+
    public slots:
     /** @brief Switches the visible sub-view (0 for Raw, 1 for DBC) */
     void displayMode(int index);

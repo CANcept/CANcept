@@ -12,6 +12,7 @@
 #include "delegate/sending_delegate.hpp"
 #include "model/sending_model.hpp"
 #include "view/sending_view.hpp"
+#include "worker/repeated_sending_worker.hpp"
 
 namespace Sending {
 /**
@@ -104,6 +105,21 @@ class SendingComponent final : public Core::ITabComponent
      */
     void publishDbcMessageAsync(const Core::DbcCanMessage& message);
 
+    /**
+     * @brief Starts repeated sending at the given interval using the worker thread.
+     */
+    void startRepeatedSending(int intervalMs) const;
+
+    /**
+     * @brief Stops the repeated sending worker.
+     */
+    void stopRepeatedSending() const;
+
+    /**
+     * @brief Sends the current message once (offloaded to a thread).
+     */
+    void sendOnce() const;
+
     /** @brief Model holding CAN sending configuration and data */
     std::unique_ptr<SendingModel> m_model;
 
@@ -123,6 +139,9 @@ class SendingComponent final : public Core::ITabComponent
 
     /** @brief Mutex protecting event broker access from multiple threads. */
     mutable std::mutex m_brokerMutex;
+
+    /** @brief Worker thread for repeated (cyclic) CAN message transmission. */
+    std::unique_ptr<RepeatedSendingWorker> m_sendingWorker;
 };
 
 }  // namespace Sending
