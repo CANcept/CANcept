@@ -1,25 +1,26 @@
-#include "history_table.hpp"
+#include "log_history_table.hpp"
 
 #include <QHeaderView>
 
 #include "core/macro/theme.hpp"
+#include "core/theme/style_event.hpp"
 
 namespace Logging {
 
-HistoryTable::HistoryTable(QWidget* parent) : QTreeView(parent)
+LogHistoryTable::LogHistoryTable(QWidget* parent) : QTreeView(parent)
 {
     setupUi();
     applyStyle();
 }
 
-void HistoryTable::setupUi()
+void LogHistoryTable::setupUi()
 {
     setRootIsDecorated(false);
     setAlternatingRowColors(false);
-    setSelectionBehavior(QAbstractItemView::SelectRows);
-    setSelectionMode(QAbstractItemView::SingleSelection);
-    setEditTriggers(QAbstractItemView::NoEditTriggers);
-    setFrameShape(QFrame::NoFrame);
+    setSelectionBehavior(SelectRows);
+    setSelectionMode(SingleSelection);
+    setEditTriggers(NoEditTriggers);
+    setFrameShape(NoFrame);
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
     // Configure header
@@ -28,7 +29,7 @@ void HistoryTable::setupUi()
     header->setSectionResizeMode(QHeaderView::Stretch);
 }
 
-void HistoryTable::applyStyle()
+void LogHistoryTable::applyStyle()
 {
     const auto& spacing = THEME.spacing();
     const auto& colors = THEME.colors();
@@ -37,14 +38,12 @@ void HistoryTable::applyStyle()
                                    "QTreeView {"
                                    "   border: none;"
                                    "   background-color: %1;"
-                                   "   font-family: 'Roboto';"
-                                   "   font-size: 20px;"
+                                   "   font-size: %11px;"
                                    "   font-weight: %2;"
-                                   "   padding: 32px;"
+                                   "   padding: %10px;"
                                    "   outline: none;"
                                    "}"
                                    "QTreeView::item {"
-                                   "   height: 61px;"
                                    "   border: none;"
                                    "   padding: %3px;"
                                    "   margin-bottom: %4px;"
@@ -70,8 +69,7 @@ void HistoryTable::applyStyle()
                                    "   border: none;"
                                    "   border-bottom: %5px solid %6;"
                                    "   padding: %4px %7px;"
-                                   "   font-family: 'Roboto';"
-                                   "   font-size: 24px;"
+                                   "   font-size: %11px;"
                                    "   font-weight: %8;"
                                    "   color: %9;"
                                    "}")
@@ -83,8 +81,20 @@ void HistoryTable::applyStyle()
                                    .arg(colors.borderSubtle.name())
                                    .arg(spacing.spacingMd - 2)
                                    .arg(spacing.fontWeightMedium)
-                                   .arg(colors.textPrimary.name());
+                                   .arg(colors.textPrimary.name())
+                                   .arg(spacing.spacingXl)
+                                   .arg(spacing.fontSizeMd);
     setStyleSheet(tableStyle);
+}
+
+bool LogHistoryTable::event(QEvent* event)
+{
+    if (event->type() == Core::StyleEvent::EventType)
+    {
+        applyStyle();
+        return true;
+    }
+    return QWidget::event(event);
 }
 
 }  // namespace Logging

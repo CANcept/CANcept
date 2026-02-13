@@ -67,7 +67,6 @@ void LoggingDelegate::paint(QPainter* painter, const QStyleOptionViewItem& optio
         int y = option.rect.top() + (option.rect.height() - 30) / 2;  // Center vertically
 
         QFont font = painter->font();
-        font.setFamily("Roboto");
         font.setPixelSize(16);
         font.setWeight(QFont::Normal);
         painter->setFont(font);
@@ -133,7 +132,6 @@ void LoggingDelegate::paint(QPainter* painter, const QStyleOptionViewItem& optio
     {
         // Default rendering for other columns (Timestamp, Duration)
         QFont font = painter->font();
-        font.setFamily("Roboto");
         font.setPixelSize(20);
         font.setWeight(QFont::Normal);
         painter->setFont(font);

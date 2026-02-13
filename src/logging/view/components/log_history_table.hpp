@@ -5,19 +5,22 @@
 namespace Logging {
 
 /**
- * @class HistoryTable
+ * @class LogHistoryTable
  * @brief Styled tree view for displaying logging session history.
  *
  * This component provides a consistent styled table view for displaying
  * past logging sessions with proper theming and configuration.
  */
-class HistoryTable final : public QTreeView
+class LogHistoryTable final : public QTreeView
 {
     Q_OBJECT
 
    public:
-    explicit HistoryTable(QWidget* parent = nullptr);
-    ~HistoryTable() override = default;
+    explicit LogHistoryTable(QWidget* parent = nullptr);
+    ~LogHistoryTable() override = default;
+
+   protected:
+    bool event(QEvent* event) override;
 
    private:
     void setupUi();

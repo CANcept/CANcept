@@ -41,8 +41,7 @@ void StatusTagsContainer::updateStatusTags(const QStringList& messages)
                                      "   background-color: %1;"
                                      "   border-radius: %2px;"
                                      "   padding: %3px;"
-                                     "   font-family: 'Roboto';"
-                                     "   font-size: 20px;"
+                                     "   font-size: %px;"
                                      "   font-weight: %4;"
                                      "   color: %5;"
                                      "}")
@@ -50,7 +49,8 @@ void StatusTagsContainer::updateStatusTags(const QStringList& messages)
                                      .arg(spacing.radiusXs)
                                      .arg(spacing.spacingSm)
                                      .arg(spacing.fontWeightNormal)
-                                     .arg(colors.textPrimary.name());
+                                     .arg(colors.textPrimary.name())
+                                     .arg(spacing.fontSizeMd);
         tagLabel->setStyleSheet(tagStyle);
         m_layout->insertWidget(m_layout->count() - 1, tagLabel);
     }

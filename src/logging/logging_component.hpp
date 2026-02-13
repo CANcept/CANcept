@@ -19,7 +19,7 @@
 #include "logging/delegate/logging_delegate.hpp"
 #include "logging/model/logging_model.hpp"
 #include "logging/view/logging_view.hpp"
-#include "logging/view/message_selection_dialog.hpp"
+#include "view/components/message_selection_dialog.hpp"
 
 namespace Logging {
 
