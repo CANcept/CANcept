@@ -15,8 +15,6 @@
  * @brief Contains delegate and UI components for CAN signal monitoring.
  */
 namespace Monitoring {
-class GraphListView;
-class MonitoringDelegate;
 class MonitoringView : public QWidget
 {
     Q_OBJECT
