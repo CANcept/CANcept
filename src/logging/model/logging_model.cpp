@@ -49,8 +49,13 @@ QVariant LoggingModel::data(const QModelIndex& index, int role) const
                         "HH:mm:ss");  // Show start time in 24h format (fixed)
                 case Col_Duration:
                     return session.duration;
-                case Col_Signals:
-                    return QVariant();  // Signals will be painted by delegate
+                case Col_Signals: {
+                    QStringList signalsList;
+                    for(auto it = session.selectedSignals.begin(); it != session.selectedSignals.end(); ++it) {
+                        signalsList.push_back(QString::number(it->first));
+                    }
+                    return signalsList;
+                }
                 case Col_Actions:
                     return QVariant();  // Actions will be painted by delegate
                 default:
@@ -67,7 +72,11 @@ QVariant LoggingModel::data(const QModelIndex& index, int role) const
             return static_cast<qulonglong>(0);
         }
         case SignalsListRole: {
-            return QStringList();
+            QStringList signalsList;
+            for(auto it = session.selectedSignals.begin(); it != session.selectedSignals.end(); ++it) {
+                signalsList.push_back(QString::number(it->first));
+            }
+            return signalsList;
         }
         default: {
             return QVariant();
