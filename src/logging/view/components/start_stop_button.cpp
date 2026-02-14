@@ -72,13 +72,11 @@ void StartStopButton::setRecordingState(bool isRecording)
         // Recording state - Red Stop button
         setProperty("recording", true);
         setText(" Stop");
-        setIcon(QIcon(":/assets/icon/stop_logging.svg"));
     } else
     {
         // Idle state - Start button
         setProperty("recording", false);
         setText(" Start");
-        setIcon(QIcon(":/assets/icon/logging_start.svg"));
     }
 
     // Force style refresh
