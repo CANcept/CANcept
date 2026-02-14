@@ -98,7 +98,6 @@ auto DbcModel::rowCount(const QModelIndex& parent) const -> int
 
 auto DbcModel::columnCount(const QModelIndex& parent) const -> int
 {
-    // When called for a specific parent item, decide column count based on item type.
     if (parent.isValid())
     {
         const auto* parentItem = itemFromIndex(parent);
@@ -107,21 +106,22 @@ auto DbcModel::columnCount(const QModelIndex& parent) const -> int
         switch (parentItem->type())
         {
             case Core::DbcItemType::Message:
-                // Signals are children of a message.
+                // Kinder einer Message sind Signale -> 12 Spalten
                 return Constants::Columns::SignalColumnCount;
+
             case Core::DbcItemType::Ecu:
-                // Messages are children of an ECU.
+            case Core::DbcItemType::OrphanHolder: // <--- WICHTIGER FIX!
+                // Kinder einer ECU oder des OrphanHolders sind Messages -> 5 Spalten
                 return Constants::Columns::MsgColumnCount;
+
             default:
                 return parentItem->columnCount();
         }
     }
 
-    // Root level: keep a stable column count for proxy models and views.
-    // Most views at the root show message-like tables, so MsgColumnCount is a reasonable default.
+    // Root level
     return Constants::Columns::MsgColumnCount;
 }
-
 auto DbcModel::data(const QModelIndex& index, int role) const -> QVariant
 {
     if (!index.isValid()) return {};
@@ -146,12 +146,6 @@ auto DbcModel::data(const QModelIndex& index, int role) const -> QVariant
                 return item->childCount();
             }
             return item->data(index.column());
-        }
-
-        // Hint for a delegate: display message ID as hex.
-        if (role == Role_IsHex && index.column() == Constants::Columns::MsgId)
-        {
-            return true;
         }
 
         switch (role)
@@ -180,7 +174,7 @@ auto DbcModel::data(const QModelIndex& index, int role) const -> QVariant
         }
 
         // Signals do not have an ID; retrieve the ID from the parent message.
-        if (role == DbcRoles::Role_Id)
+        if (role == Role_Id)
         {
             if (auto* parent = item->parent())
             {
@@ -217,7 +211,7 @@ auto DbcModel::data(const QModelIndex& index, int role) const -> QVariant
     // -------------------------------------------------------------------------
     // ECU-specific roles (kept small and explicit)
     // -------------------------------------------------------------------------
-    if (type == Core::DbcItemType::Ecu && role == DbcRoles::Role_EcuTotalSignals)
+    if (type == Core::DbcItemType::Ecu && role == Role_EcuTotalSignals)
     {
         return item->data(Constants::Columns::EcuTotalSignals);
     }
@@ -329,7 +323,7 @@ auto DbcModel::createMessageItems(const Core::DbcConfig& data,
 
     // Container node for messages whose sender ECU is missing/unknown.
     QList<QVariant> orphanData;
-    orphanData.append(QStringLiteral("Orphan Messages"));
+    // orphanData.append(QStringLiteral("Orphan Messages"));
     auto orphanHolder =
         std::make_unique<DbcItem>(orphanData, Core::DbcItemType::OrphanHolder, m_rootItem.get());
 
@@ -361,6 +355,7 @@ auto DbcModel::createMessageItems(const Core::DbcConfig& data,
         {
             parent = orphanHolder.get();
             ++orphanCount;
+            LOG_WRN("Debug", "Msg '{}' is Orphan! Parent is OrphanHolder.", msg.messageName);
         }
 
         auto messageItem =

@@ -66,4 +66,10 @@ auto EcuTreeProxy::filterAcceptsRow(int sourceRow, const QModelIndex& sourcePare
     return false;
 }
 
+int EcuTreeProxy::columnCount(const QModelIndex& parent) const
+{
+    Q_UNUSED(parent);
+    return 1;
+}
+
 }  // namespace DbcFile

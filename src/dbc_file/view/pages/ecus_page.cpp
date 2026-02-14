@@ -8,6 +8,7 @@
 #include "core/widgets/common/searchable_filter_widgets.hpp"
 #include "dbc_file/constants.hpp"
 #include "dbc_file/delegate/ecu_tree_delegate.hpp"
+#include "dbc_file/styles.hpp"
 
 namespace DbcFile {
 
@@ -16,7 +17,7 @@ EcusPage::EcusPage(QWidget* parent) : QWidget(parent)
     setupUi();
 }
 
-void EcusPage::setModel(QAbstractItemModel* model) const
+void EcusPage::setModel(QAbstractItemModel* model)
 {
     if (!m_treeWidget || !model) return;
 
@@ -24,6 +25,36 @@ void EcusPage::setModel(QAbstractItemModel* model) const
     {
         view->setModel(model);
         view->expandAll();
+
+        // delete old connections
+        disconnect(model, nullptr, this, nullptr);
+
+        // Connect to show label when filtered
+        connect(model, &QAbstractItemModel::modelReset, this, &EcusPage::updateEmptyState);
+        connect(model, &QAbstractItemModel::rowsInserted, this, &EcusPage::updateEmptyState);
+        connect(model, &QAbstractItemModel::rowsRemoved, this, &EcusPage::updateEmptyState);
+
+        // Set initial state
+        updateEmptyState();
+    }
+}
+
+void EcusPage::updateEmptyState()
+{
+    if (!m_treeWidget || !m_emptyLabel) return;
+
+    auto* view = m_treeWidget->treeView();
+    if (!view || !view->model()) return;
+
+    // Check vor rows in tree
+    bool isEmpty = (view->model()->rowCount() == 0);
+
+    if (isEmpty) {
+        view->hide();
+        m_emptyLabel->show();
+    } else {
+        view->show();
+        m_emptyLabel->hide();
     }
 }
 
@@ -58,6 +89,18 @@ void EcusPage::createTreeSection()
     m_treeWidget->setFilterOptions(
         {Constants::EcusPage::FilterAllText, Constants::EcusPage::FilterActive});
 
+
+    m_emptyLabel = new QLabel(Constants::EcusPage::EmptyLabelText, m_treeWidget);
+    m_emptyLabel->setAlignment(Qt::AlignCenter);
+    m_emptyLabel->hide(); // hide label
+    m_emptyLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
+    m_emptyLabel->setStyleSheet(Style::EcusPage::emptyLabel());
+
+    if (auto* layout = qobject_cast<QVBoxLayout*>(m_treeWidget->layout())) {
+        layout->addWidget(m_emptyLabel, 1);
+    }
+
     if (m_cardLayout) m_cardLayout->addWidget(m_treeWidget);
 
     configureTreeView();
@@ -78,30 +121,20 @@ void EcusPage::configureTreeView()
     view->setExpandsOnDoubleClick(false);
     view->setItemsExpandable(true);
     view->header()->setSectionsClickable(false);
+    view->header()->setSectionResizeMode(QHeaderView::Stretch);
+    view->header()->setStretchLastSection(false);
+    view->setWordWrap(true);
 
     applyTreeStyle(view);
 
     view->setRootIsDecorated(true);
     view->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     view->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    view->installEventFilter(this);
 }
 void EcusPage::applyTreeStyle(QTreeView* view)
 {
-    const QString style =
-        QString(R"(
-        QTreeView {
-            background: transparent;
-            border: none;
-            outline: none;
-        }
-        QTreeView::item { border: none; }
-        QTreeView::branch { width: 18px; height: 18px; }
-        QTreeView::branch:closed:has-children { image: url(%1); }
-        QTreeView::branch:open:has-children { image: url(%2); }
-    )")
-            .arg(Core::Constants::ARROW_RIGHT_ICON, Core::Constants::ARROW_DOWN_ICON);
-
-    view->setStyleSheet(style);
+    view->setStyleSheet(Style::EcusPage::treeStyle());
 }
 void EcusPage::connectSignals()
 {
@@ -120,5 +153,4 @@ void EcusPage::setupUi()
     createTreeSection();
     connectSignals();
 }
-
 }  // namespace DbcFile
