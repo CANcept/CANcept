@@ -8,7 +8,9 @@
 
 #include "core/dto/dbc_dto.hpp"
 #include "core/widgets/card_widget.hpp"
+#include "core/widgets/common/styled_switch.hpp"
 #include "core/widgets/dbc_message_card.hpp"
+#include "logging/model/logging_model.hpp"
 
 namespace Logging {
 
@@ -56,8 +58,12 @@ class MessageSelectionDialog final : public QDialog
      */
     std::map<uint32_t, QStringList> getSelectedSignals() const;
 
+    LogSessionType getSelectedLogSessionType() const;
+
    protected:
     bool event(QEvent* event) override;
+   private slots:
+    void onLogTypeToggle(bool checked);
 
    private:
     /** @brief Initializes the structural layout and styling. */
@@ -70,11 +76,15 @@ class MessageSelectionDialog final : public QDialog
     QScrollArea* m_scrollArea;
     QWidget* m_scrollContent;
     QVBoxLayout* m_scrollLayout;
+    QWidget* m_buttonWidget;
 
     // Storage for message cards mapped by message ID
     std::map<uint32_t, Core::DbcMessageCard*> m_messageCards;
     QLabel* m_titleLabel;
     QPushButton* m_closeButton;
+    QLabel* m_rawLabel;
+    Core::StyledSwitch* m_logTypeSwitch;
+    QLabel* m_dbcLabel;
 };
 
 }  // namespace Logging

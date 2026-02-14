@@ -13,7 +13,6 @@
 #include "components/log_history_table.hpp"
 #include "components/no_logs_label.hpp"
 #include "components/start_stop_button.hpp"
-#include "components/status_tags_container.hpp"
 #include "components/timer_label.hpp"
 #include "logging/model/logging_model.hpp"
 
@@ -68,12 +67,6 @@ class LoggingView final : public QWidget
      */
     void updateTimer(qint64 elapsedMs);
 
-    /**
-     * @brief Updates the message status tags shown during recording.
-     * @param messages List of message IDs/names to display as tags.
-     */
-    void updateStatusTags(const QStringList& messages);
-
    signals:
     /** @brief Emitted when user wants to start; triggers the Modal Selection Dialog. */
     void startRequested();
@@ -94,9 +87,8 @@ class LoggingView final : public QWidget
     void applyStyle();
 
     QWidget* m_headerBox;
-    TimerLabel* m_timerLabel;               /**< Displays elapsed time during recording. */
-    StartStopButton* m_btnAction;           /**< The Start/Stop toggle button. */
-    StatusTagsContainer* m_statusContainer; /**< Container for message status tags. */
+    TimerLabel* m_timerLabel;     /**< Displays elapsed time during recording. */
+    StartStopButton* m_btnAction; /**< The Start/Stop toggle button. */
 
     NoLogsLabel* m_emptyLabel; /**< Empty state placeholder when no sessions exist. */
     bool m_isRecording{false};

@@ -118,6 +118,7 @@ class LoggingModel final : public QAbstractTableModel
         const std::map<uint32_t, QStringList>& selectedSignals = {},
         const std::map<uint16_t, std::pair<int, int>>& signalsBeforeAfterMessage = {});
 
+    void startNewRawLogsSession();
     /**
      * @brief Finalizes the active session, locking it for export.
      */
