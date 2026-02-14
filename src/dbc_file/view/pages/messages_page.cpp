@@ -6,7 +6,10 @@
 #include <QVariant>
 
 // Project Includes
+#include <qevent.h>
+
 #include "core/macro/theme.hpp"
+#include "core/util/dbc_utils.hpp"
 #include "core/widgets/card_widget.hpp"
 #include "core/widgets/common/searchable_filter_widgets.hpp"
 #include "core/widgets/common/styled_filter_bar.hpp"
@@ -14,23 +17,9 @@
 #include "dbc_file/delegate/message_detail_delegate.hpp"
 #include "dbc_file/delegate/message_table_delegate.hpp"
 #include "dbc_file/model/dbc_roles.hpp"
+#include "dbc_file/styles.hpp"
 
 namespace DbcFile {
-
-namespace {
-
-// Qt 5 compatible "siblingAtColumn" replacement.
-inline auto siblingAtColumnQt5(const QModelIndex& idx, int column) -> QModelIndex
-{
-    return idx.sibling(idx.row(), column);
-}
-
-inline auto formatMessageIdHex(uint id) -> QString
-{
-    return QStringLiteral("0x%1").arg(id, 0, 16).toUpper();
-}
-
-}  // namespace
 
 // =============================================================================
 // MessageDetailView
@@ -48,8 +37,18 @@ auto MessageDetailView::getSignalList() const -> QListView*
 
 void MessageDetailView::setRootIndex(const QModelIndex& index)
 {
-    // Qt trick: the view treats 'index' as the root and shows only its direct children.
     m_signalList->setRootIndex(index);
+
+    int signalCount = 0;
+    if (index.isValid() && m_signalList->model()) {
+        signalCount = m_signalList->model()->rowCount(index);
+    }
+
+    if (signalCount > 0) {
+        m_stack->setCurrentIndex(0);
+    } else {
+        m_stack->setCurrentIndex(1);
+    }
 }
 
 void MessageDetailView::updateHeaderInfo(const QString& name, uint id, const QString& sender,
@@ -67,7 +66,7 @@ void MessageDetailView::updateHeaderInfo(const QString& name, uint id, const QSt
     m_card->setTitle(QString(Constants::MessagesPage::DetailTitle).arg(name));
 
     const QString subtitle = QString(Constants::MessagesPage::DetailSubtitle)
-                                 .arg(formatMessageIdHex(id), sender, QString::number(dlc));
+                                 .arg(Core::Util::formatId(id), sender, QString::number(dlc));
     m_card->setSubtitle(subtitle);
 }
 
@@ -82,16 +81,36 @@ void MessageDetailView::setupUi()
 
     auto* cardContent = m_card->contentLayout();
 
-    m_signalList = new QListView(m_card);
+    // Create stack
+    m_stack = new QStackedWidget(m_card);
+
+    // Create List
+    m_signalList = new QListView(m_stack);
     m_signalList->setFrameShape(QFrame::NoFrame);
-    m_signalList->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    m_signalList->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    m_signalList->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     m_signalList->setSelectionMode(QAbstractItemView::NoSelection);
     m_signalList->setStyleSheet(QStringLiteral("background: transparent; border: none;"));
     m_signalList->setResizeMode(QListView::Adjust);
     m_signalList->setViewMode(QListView::ListMode);
     m_signalList->setItemDelegate(new MessagesDetailDelegate(m_signalList));
 
-    cardContent->addWidget(m_signalList);
+    // Add list as page 0
+    m_stack->addWidget(m_signalList);
+
+    // Create label
+    m_detailLabel = new QLabel(Constants::MessagesPage::NoSignalsIndicator, m_stack);
+    m_detailLabel->setAlignment(Qt::AlignCenter);
+
+    const auto& colors = THEME.colors();
+    m_detailLabel->setStyleSheet(Style::MessagesPage::detailLabel());
+
+    // Add label as page 1
+    m_stack->addWidget(m_detailLabel);
+
+    // Add stack to card
+    cardContent->addWidget(m_stack);
+
     layout->addWidget(m_card);
 }
 
@@ -125,6 +144,9 @@ void MessagesPage::setupUi()
     configureMasterTable();
     messageTableCard->layout()->addWidget(m_messagesTable);
 
+    if (auto* table = m_messagesTable->tableView()) {
+        table->viewport()->installEventFilter(this);
+    }
     // Table filter signals.
     connect(m_messagesTable, &Core::SearchableFilterTable::filterTextChanged, this,
             &MessagesPage::masterFilterTextChanged);
@@ -154,7 +176,6 @@ void MessagesPage::configureMasterTable()
     m_messagesTable->setSearchPlaceholder(Constants::MessagesPage::SearchbarText);
     m_messagesTable->configureTableBasics();
     m_messagesTable->applyTableStyle();
-    m_messagesTable->configureHeaderStyle();
 }
 
 void MessagesPage::setMasterModel(QAbstractItemModel* model)
@@ -221,10 +242,11 @@ void MessagesPage::selectMessageIndex(const QModelIndex& index)
 {
     if (!m_detailView || !index.isValid()) return;
 
-    const QModelIndex nameIdx = siblingAtColumnQt5(index, Constants::Columns::MsgName);
-    const QModelIndex idIdx = siblingAtColumnQt5(index, Constants::Columns::MsgId);
-    const QModelIndex senderIdx = siblingAtColumnQt5(index, Constants::Columns::MsgSender);
-    const QModelIndex dlcIdx = siblingAtColumnQt5(index, Constants::Columns::MsgDlc);
+    const QModelIndex nameIdx = Core::Util::siblingAtColumnQt5(index, Constants::Columns::MsgName);
+    const QModelIndex idIdx = Core::Util::siblingAtColumnQt5(index, Constants::Columns::MsgId);
+    const QModelIndex senderIdx =
+        Core::Util::siblingAtColumnQt5(index, Constants::Columns::MsgSender);
+    const QModelIndex dlcIdx = Core::Util::siblingAtColumnQt5(index, Constants::Columns::MsgDlc);
 
     const QString name = nameIdx.data(Qt::DisplayRole).toString();
 
@@ -288,6 +310,47 @@ auto MessagesPage::setAvailableSenders(const QStringList& senders) -> void
 
     bar->setCurrentFilterText(currentSelection);
     bar->blockSignals(wasBlocked);
+}
+void MessagesPage::mousePressEvent(QMouseEvent* event)
+{
+    // Click out of table -> deselect
+    if (m_messagesTable && m_messagesTable->tableView()) {
+        m_messagesTable->tableView()->clearSelection();
+        m_messagesTable->tableView()->setCurrentIndex(QModelIndex());
+    }
+
+    // Standard handling
+    QWidget::mousePressEvent(event);
+}
+bool MessagesPage::eventFilter(QObject* watched, QEvent* event)
+{
+    auto* table = m_messagesTable->tableView();
+
+    // only check clicks within table viewport
+    if (table && watched == table->viewport() && event->type() == QEvent::MouseButtonPress)
+    {
+        auto* mouseEvent = static_cast<QMouseEvent*>(event);
+        QModelIndex index = table->indexAt(mouseEvent->pos());
+
+        if (index.isValid())
+        {
+            // Case A: click on row -> check selection model: is row already selected?
+            if (table->selectionModel()->isSelected(index))
+            {
+                table->clearSelection();
+                table->setCurrentIndex(QModelIndex());
+                return true;
+            }
+        }
+        else
+        {
+            // Case B: Click in white space below rows
+            table->clearSelection();
+            table->setCurrentIndex(QModelIndex());
+        }
+    }
+
+    return QWidget::eventFilter(watched, event);
 }
 
 }  // namespace DbcFile
