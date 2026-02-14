@@ -12,6 +12,7 @@
 
 namespace Logging {
 
+enum LogSessionType { RAW, DBC_BASED };
 /** * @struct LogSession
  * @brief Represents a complete recording period with metadata.
  *
@@ -23,8 +24,10 @@ struct LogSession {
     QDateTime startDateTime;   // When session started
     QString duration;          // Session duration (HH:MM:SS)
     bool isRecording = false;  // Whether session is currently active
+    LogSessionType type;       // Type of the Session
     std::map<uint32_t, QStringList> selectedSignals;  // Map of message ID to selected signal names
                                                       // (for filtering during logging)
+    std::map<uint16_t, std::pair<int, int>> signalsBeforeAfterMessage;
 };
 
 /**
@@ -106,15 +109,14 @@ class LoggingModel final : public QAbstractTableModel
 
     void updateDbcConfig(const Core::DbcConfig& config);
 
-   public slots:
     /**
      * @brief Creates a new session and sets it as the active target for data.
-     * @param deviceName The hardware interface used for this session (unused, kept for
-     * compatibility).
      * @param selectedSignals Map of message IDs to selected signal names for logging.
+     * @param signalsBeforeAfterMessage
      */
-    void startNewSession(const QString& deviceName,
-                         const std::map<uint32_t, QStringList>& selectedSignals = {});
+    void startNewDbcLogSession(
+        const std::map<uint32_t, QStringList>& selectedSignals = {},
+        const std::map<uint16_t, std::pair<int, int>>& signalsBeforeAfterMessage = {});
 
     /**
      * @brief Finalizes the active session, locking it for export.

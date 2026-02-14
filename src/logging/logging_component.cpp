@@ -132,50 +132,40 @@ void LoggingComponent::startLogging()
         return;  // User cancelled
     }
 
+    // DBC based logging
+
+    int selectedSignalsCount = 0;
+    std::map<uint16_t, std::pair<int, int>> signalsBeforeAfterMessage = {};
     std::map<uint32_t, QStringList> selectedSignals = m_selectionDialog->getSelectedSignals();
-
-    // Populate thread-safe caches (for CAN thread access)
+    for (const auto& [msgId, signalList] : selectedSignals)
     {
-        std::lock_guard<std::mutex> lock(m_cacheMutex);
-        m_selectedSignalsCache.clear();
-        m_messageNamesCache.clear();
-        m_signalUnitsCache.clear();
-
-        for (const auto& [msgId, signalList] : selectedSignals)
-        {
-            // Convert QStringList to std::vector<std::string>
-            std::vector<std::string> signalNames;
-            signalNames.reserve(signalList.size());
-            for (const QString& sig : signalList)
-            {
-                signalNames.push_back(sig.toStdString());
-            }
-            m_selectedSignalsCache[msgId] = std::move(signalNames);
-
-            // Cache message name
-            m_messageNamesCache[msgId] = m_model->getMessageName(msgId).toStdString();
-
-            // Cache signal units
-            for (const QString& sig : signalList)
-            {
-                QString unit = m_model->getSignalUnit(msgId, sig);
-                uint64_t hash = (static_cast<uint64_t>(msgId) << 32) |
-                                std::hash<std::string>{}(sig.toStdString());
-                m_signalUnitsCache[hash] = unit.toStdString();
-            }
-        }
+        selectedSignalsCount += signalList.size();
+    }
+    int currentSignalCount = 0;
+    for (const auto& [msgId, signalList] : selectedSignals)
+    {
+        signalsBeforeAfterMessage[msgId] = {
+            currentSignalCount, selectedSignalsCount - currentSignalCount - signalList.size()};
+        currentSignalCount += signalList.size();
     }
 
-    // Start new session in model (no device name needed)
-    m_model->startNewSession(QString(), selectedSignals);
-
-    // Get session ID and create session logger
+    m_model->startNewDbcLogSession(selectedSignals, signalsBeforeAfterMessage);
     m_currentSessionId = m_model->getCurrentSessionId().toStdString();
     m_sessionLogger =
         Core::LogService::getInstance().getLogger(Core::LogContext::CanLogging, m_currentSessionId);
-
-    // Log session start marker
-    m_sessionLogger->info("SESSION_START,{}", selectedSignals.size());
+    std::string headerLine;
+    headerLine += "Timestamp,";
+    for (const auto& [msgId, signalList] : selectedSignals)
+    {
+        std::string msgName = m_model->getMessageName(msgId).toStdString();
+        for (const QString& sig : signalList)
+        {
+            headerLine += fmt::format("{}_{}_{}", msgName, sig.toStdString(),
+                                      m_model->getSignalUnit(msgId, sig).toStdString());
+            headerLine += ",";
+        }
+    }
+    m_sessionLogger->info(headerLine.c_str());
 
     // Set recording flag (thread-safe atomic)
     m_isRecording.store(true, std::memory_order_release);
@@ -185,49 +175,6 @@ void LoggingComponent::startLogging()
     m_view->updateTimer(0);
     m_timer->start();  // Starts with 100ms interval set in constructor
 
-    // Subscribe to raw CAN frames (for messages without DBC definitions)
-    m_rawMsgConn = m_eventBroker.subscribe<Core::ReceivedCanRawEvent>(
-        [this](const Core::ReceivedCanRawEvent& event) {
-            // Fast path: early return if not recording (thread-safe atomic)
-            if (!m_isRecording.load(std::memory_order_acquire) || !m_sessionLogger) [[unlikely]]
-            {
-                return;
-            }
-
-            const auto& msg = event.canMessage;
-
-            // Check if this message has a DBC definition (thread-safe cache lookup)
-            std::string messageName;
-            {
-                std::lock_guard<std::mutex> lock(m_cacheMutex);
-                auto it = m_messageNamesCache.find(msg.messageId);
-                if (it != m_messageNamesCache.end())
-                {
-                    messageName = it->second;
-                } else
-                {
-                    messageName = "UNKNOWN_0x" + fmt::format("{:03X}", msg.messageId);
-                }
-            }
-
-            // Only log raw if no DBC definition exists
-            if (messageName.find("UNKNOWN_") == 0)
-            {
-                // Optimized hex formatting - pre-allocate space
-                std::string hexData;
-                hexData.reserve(msg.dlc * 3);
-                for (int i = 0; i < msg.dlc; ++i)
-                {
-                    hexData += fmt::format("{:02X}", static_cast<unsigned char>(msg.data[i]));
-                    if (i < msg.dlc - 1) hexData += " ";
-                }
-
-                // Async log (non-blocking, thread-safe)
-                m_sessionLogger->info("0x{:03X},{},RAW_DATA,{},hex", msg.messageId, messageName,
-                                      hexData);
-            }
-        });
-
     // Subscribe to decoded DBC messages
     m_dbcMsgConn = m_eventBroker.subscribe<Core::ReceivedCanDbcEvent>(
         [this](const Core::ReceivedCanDbcEvent& event) {
@@ -236,51 +183,39 @@ void LoggingComponent::startLogging()
             {
                 return;
             }
+            auto* logSession = m_model->getSession(QString().fromStdString(m_currentSessionId));
+            if (logSession->type != DBC_BASED ||
+                !logSession->selectedSignals.contains(event.canMessage.messageId))
+            {
+                return;
+            }
 
             const auto& msg = event.canMessage;
 
-            // Get selected signals (thread-safe cache)
-            std::vector<std::string> selectedSignals;
-            std::string messageName;
+            std::string messageLine = "";
+            messageLine += fmt::format("{},", msg.receiveTime.count());
+            messageLine.append(logSession->signalsBeforeAfterMessage.at(msg.messageId).first, ',');
+            for (const auto& signal : logSession->selectedSignals.at(msg.messageId))
             {
-                std::lock_guard<std::mutex> lock(m_cacheMutex);
-
-                auto it = m_selectedSignalsCache.find(msg.messageId);
-                if (it == m_selectedSignalsCache.end())
+                bool containsValue = false;
+                for (const auto& [name, value] : msg.signalValues)
                 {
-                    return;  // No signals selected for this message ID
-                }
-                selectedSignals = it->second;
-
-                // Get message name
-                auto nameIt = m_messageNamesCache.find(msg.messageId);
-                messageName = (nameIt != m_messageNamesCache.end()) ? nameIt->second : "UNKNOWN";
-            }
-
-            // Iterate through signal values and log selected ones (no Qt objects, thread-safe!)
-            for (const auto& signal : msg.signalValues)
-            {
-                // Check if signal is in selected list
-                auto it = std::find(selectedSignals.begin(), selectedSignals.end(), signal.name);
-                if (it != selectedSignals.end())
-                {
-                    // Get signal unit from cache
-                    uint64_t hash = (static_cast<uint64_t>(msg.messageId) << 32) |
-                                    std::hash<std::string>{}(signal.name);
-                    std::string unit;
+                    if (signal.toStdString() == name)
                     {
-                        std::lock_guard<std::mutex> lock(m_cacheMutex);
-                        auto unitIt = m_signalUnitsCache.find(hash);
-                        unit = (unitIt != m_signalUnitsCache.end()) ? unitIt->second : "";
+                        messageLine += fmt::format("{:.6f},", value);
+                        containsValue = true;
+                        break;
                     }
-
-                    // Async log (non-blocking, thread-safe)
-                    m_sessionLogger->info("0x{:03X},{},{},{:.6f},{}", msg.messageId, messageName,
-                                          signal.name, signal.value, unit);
+                }
+                if (!containsValue)
+                {
+                    messageLine += ",";
                 }
             }
-        });
 
+            messageLine.append(logSession->signalsBeforeAfterMessage.at(msg.messageId).second, ',');
+            m_sessionLogger->info(messageLine.c_str());
+        });
     m_view->setRecordingState(true);
 }
 
@@ -301,18 +236,9 @@ void LoggingComponent::stopLogging()
     m_rawMsgConn.release();
     m_dbcMsgConn.release();
 
-    // Clear thread-safe caches
-    {
-        std::lock_guard<std::mutex> lock(m_cacheMutex);
-        m_selectedSignalsCache.clear();
-        m_messageNamesCache.clear();
-        m_signalUnitsCache.clear();
-    }
-
     // Log session end marker
     if (m_sessionLogger)
     {
-        m_sessionLogger->info("SESSION_END,{}", m_elapsedTimer.elapsed());
         m_sessionLogger->flush();
 
         // Close session logger
@@ -328,10 +254,15 @@ void LoggingComponent::stopLogging()
 // Exports a logging session to CSV file
 void LoggingComponent::exportLogSession(const QString& sessionId, const QString& filePath)
 {
-    if (!writeToCsv(sessionId, filePath))
+    try
     {
-        QMessageBox::critical(m_view.get(), "Export Failed",
-                              "Could not write to the specified file.");
+        std::filesystem::copy_file(
+            Core::LogService::getLogFilePath(Core::LogContext::CanLogging, sessionId.toStdString()),
+            filePath.toStdString());
+    } catch (const std::exception& e)
+    {
+        QMessageBox::critical(m_view.get(), "Error",
+                              QString("Failed to export log session: %1").arg(e.what()));
     }
 }
 

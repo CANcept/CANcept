@@ -6,6 +6,8 @@
 
 #include <filesystem>
 
+#include "spdlog/sinks/basic_file_sink.h"
+
 namespace Core {
 
 // Private constructor - initializes spdlog async thread pool
@@ -46,17 +48,16 @@ std::shared_ptr<spdlog::logger> LogService::getLogger(LogContext context,
         if (context == LogContext::CanLogging)
         {
             // Session-specific CAN data logger (file only)
-            std::string logFilePath = "logs/session_" + sessionId + "_CanLogging.log";
+            std::string logFilePath = getLogFilePath(context, sessionId);
 
             // Ensure logs directory exists
             std::filesystem::create_directories("logs");
 
             // Create rotating file sink (50MB max, 5 files for stress testing)
-            auto file_sink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(
-                logFilePath, 1024 * 1024 * 50, 5);
+            auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(logFilePath);
 
             // Format: timestamp|level|data (for easy CSV parsing)
-            file_sink->set_pattern("%Y-%m-%d %H:%M:%S.%e|%l|%v");
+            file_sink->set_pattern("%v");
 
             // Create async logger with overrun policy (drops messages if queue full)
             logger = std::make_shared<spdlog::async_logger>(
@@ -68,7 +69,7 @@ std::shared_ptr<spdlog::logger> LogService::getLogger(LogContext context,
         } else                                       // LogContext::Debug
         {
             // System-wide debug logger (console + file)
-            std::string logFilePath = "logs/system_debug.log";
+            std::string logFilePath = getLogFilePath(context, sessionId);
 
             // Ensure logs directory exists
             std::filesystem::create_directories("logs");
@@ -151,10 +152,24 @@ void LogService::closeLogger(LogContext context, const std::string& sessionId)
 }
 
 // Helper to generate unique registry key
-std::string LogService::createRegistryKey(LogContext context, const std::string& sessionId)
+auto LogService::createRegistryKey(LogContext context, const std::string& sessionId) -> std::string
 {
     std::string contextStr = (context == LogContext::CanLogging) ? "CanLogging" : "Debug";
     return contextStr + "_" + sessionId;
+}
+
+auto LogService::getLogFilePath(const LogContext context,
+                                const std::string& sessionId) -> std::string
+{
+    switch (context)
+    {
+        case LogContext::Debug:
+            return "logs/system_debug.log";
+        case LogContext::CanLogging:
+            return "logs/session_" + sessionId + "_CanLogging.log";
+        default:
+            return "";
+    }
 }
 
 }  // namespace Core
