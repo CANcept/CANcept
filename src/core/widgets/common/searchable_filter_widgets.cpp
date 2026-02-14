@@ -14,7 +14,6 @@
 #include "core/widgets/common/styled_filter_bar.hpp"
 
 namespace Core {
-
 // --- SearchableFilterTable ---
 SearchableFilterTable::SearchableFilterTable(QWidget* parent) : QWidget(parent)
 {
@@ -73,15 +72,64 @@ void SearchableFilterTable::configureHeaderStyle()
 void SearchableFilterTable::applyTableStyle()
 {
     const auto& spacing = THEME.spacing();
-    const auto& colors = THEME.colors();
+    const auto& colors  = THEME.colors();
 
-    m_tableView->setStyleSheet(QString("QTableView {"
-                                       "   border: none;"
-                                       "   border-radius: %1px;"
-                                       "   background-color: %2;"
-                                       "}")
-                                   .arg(spacing.radiusSm)
-                                   .arg(colors.surfaceMain.name()));
+    // Wichtig bei Qt: verhindert weißes Viewport-Fallback
+    m_tableView->viewport()->setAutoFillBackground(true);
+
+    QString tableStyle = QString(R"(
+
+        /* === TABLE ROOT === */
+        QTableView {
+            border: none;
+            border-radius: %1px;
+            background-color: %2;
+            color: %3;
+            gridline-color: %4;
+            selection-background-color: %5;
+            selection-color: %3;
+        }
+
+        /* === VIEWPORT (leerer Bereich unten!) === */
+        QTableView::viewport {
+            background-color: %2;
+        }
+
+        /* === ITEMS === */
+        QTableView::item {
+            background-color: %2;
+            padding: %6px;
+        }
+
+        QTableView::item:selected {
+            background-color: %5;
+            color: %3;
+        }
+
+        /* === HEADER ROOT === */
+        QHeaderView {
+            background-color: %2;
+        }
+
+        /* === HEADER SECTIONS === */
+        QHeaderView::section {
+            background-color: %2;
+            color: %3;
+            border: none;
+            border-bottom: %7px solid %4;
+            padding: %6px;
+            font-weight: bold;
+        }
+
+    )")
+        .arg(spacing.radiusSm)                                   // %1
+        .arg(colors.surfaceMain.name(QColor::HexArgb))                           // %2
+        .arg(colors.textPrimary.name())                           // %3
+        .arg(colors.borderSubtle.name(QColor::HexArgb))           // %4
+        .arg(colors.surfaceHover.name())                          // %5
+        .arg(spacing.spacingXs)                                   // %6
+        .arg(spacing.borderThick);                               // %7
+    m_tableView->setStyleSheet(tableStyle);
 }
 void SearchableFilterTable::configureTableBasics()
 {
@@ -129,10 +177,10 @@ void SearchableFilterTable::setupUi()
     mainLayout->addWidget(m_filterBar);
     mainLayout->addWidget(borderFrame);
     // Signal forwarding
-    connect(m_filterBar, &Core::StyledFilterBar::searchTextChanged, this,
+    connect(m_filterBar, &StyledFilterBar::searchTextChanged, this,
             &SearchableFilterTable::filterTextChanged);
 
-    connect(m_filterBar, &Core::StyledFilterBar::filterIndexChanged, this,
+    connect(m_filterBar, &StyledFilterBar::filterIndexChanged, this,
             &SearchableFilterTable::filterIndexChanged);
 }
 
@@ -176,7 +224,7 @@ void SearchableFilterTree::setupUi()
     mainLayout->setSpacing(spacing.spacingMd);
 
     // --- FilterBar ---
-    m_filterBar = new Core::StyledFilterBar(this);
+    m_filterBar = new StyledFilterBar(this);
 
     // --- Tree View ---
     m_treeView = new QTreeView(this);

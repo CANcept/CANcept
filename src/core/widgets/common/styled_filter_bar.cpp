@@ -8,6 +8,7 @@
 
 #include "core/constants.hpp"
 #include "core/macro/theme.hpp"
+#include "styled_combo_box.hpp"
 
 namespace Core {
 
@@ -144,7 +145,7 @@ QLineEdit#SearchField::placeholder {
     color: %8;
 }
 )")
-                                    .arg(colors.surfacePrimary.name())
+                                    .arg(colors.surfaceSecondary.name())
                                     .arg(spacing.radiusMd)
                                     .arg(spacing.HeightSm)
                                     .arg(spacing.spacingLg)
@@ -212,7 +213,7 @@ QComboBox#FilterCombo QAbstractItemView::item:selected {
     color: %2;
 }
 )")
-                                   .arg(colors.surfacePrimary.name())
+                                   .arg(colors.surfaceSecondary.name())
                                    .arg(colors.textSecondary.name())
                                    .arg(spacing.radiusMd)
                                    .arg(spacing.HeightSm)

@@ -84,7 +84,6 @@ void SignalsPage::setupUi()
 
     m_tableWidget->configureTableBasics();
     m_tableWidget->applyTableStyle();
-    m_tableWidget->configureHeaderStyle();
 
     card->layout()->addWidget(m_tableWidget);
 
@@ -102,69 +101,6 @@ void SignalsPage::setupUi()
     connect(m_tableWidget, &Core::SearchableFilterTable::filterIndexChanged, this,
             &SignalsPage::onFilterIndexChanged);
 }
-
-// ============================================================================
-// Table Configuration (UI only)
-// ============================================================================
-
-// void SignalsPage::configureTableBasics(QTableView* table)
-// {
-//     table->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-//     table->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-//
-//     table->setShowGrid(false);
-//     table->setAlternatingRowColors(false);
-//
-//     table->setSelectionMode(QAbstractItemView::NoSelection);
-//     table->setSelectionBehavior(QAbstractItemView::SelectRows);
-//
-//     if (table->verticalHeader())
-//         table->verticalHeader()->hide();
-// }
-
-// void SignalsPage::applyTableStyle(QTableView* table)
-// {
-//     const auto& spacing = THEME.spacing();
-//     const auto& colors  = THEME.colors();
-//
-//     table->setStyleSheet(QString(
-//         "QTableView {"
-//         "   border: none;"
-//         "   border-radius: %1px;"
-//         "   background-color: %2;"
-//         "}")
-//         .arg(spacing.radiusSm)
-//         .arg(colors.surfaceMain.name())
-//     );
-// }
-//
-// void SignalsPage::configureHeaderStyle(const QTableView* table)
-// {
-//     const auto& spacing = THEME.spacing();
-//     const auto& colors  = THEME.colors();
-//
-//     auto* header = table->horizontalHeader();
-//     if (!header) return;
-//
-//     header->setSectionResizeMode(QHeaderView::Interactive);
-//     header->setStretchLastSection(false);
-//
-//     header->setStyleSheet(QString(
-//         "QHeaderView::section {"
-//         "   background-color: %1;"
-//         "   border: none;"
-//         "   border-bottom: %2px solid %3;"
-//         "   padding: %4px;"
-//         "   font-weight: bold;"
-//         "   color: %5;"
-//         "}")
-//         .arg(colors.surfaceMain.name())
-//         .arg(spacing.borderThick)
-//         .arg(colors.borderSubtle.name(QColor::HexArgb))
-//         .arg(spacing.spacingXs)
-//         .arg(colors.textPrimary.name())
-//     );
-// }
 
 // ============================================================================
 // Model-dependent Column Configuration

@@ -16,6 +16,7 @@
 #include "core/widgets/card_widget.hpp"
 #include "core/widgets/tinted_icon_label.hpp"
 #include "dbc_file/constants.hpp"
+#include "dbc_file/styles.hpp"
 
 namespace DbcFile {
 LoadPage::LoadPage(QWidget* parent) : QWidget(parent)
@@ -63,16 +64,8 @@ void LoadPage::showStatusMessage(const QString& message, const bool isError) con
     const auto& spacing = THEME.spacing();
     m_statusLabel->setText(message);
     m_statusLabel->show();
-    const QString labelStyle =
-        "font-weight: %1;"
-        "font-size: %2px;"
-        "margin-top: %3px;"
-        "color: %4;";
     const QString color = isError ? colors.statusError.name() : colors.statusSuccess.name();
-    m_statusLabel->setStyleSheet(labelStyle.arg(spacing.fontWeightNormal)
-                                     .arg(spacing.fontSizeSm)
-                                     .arg(spacing.spacingSm)
-                                     .arg(color));
+    m_statusLabel->setStyleSheet(Style::LoadPage::statusLabel(isError));
     // updateDragStyle(m_uploadBoxFrame, DragStateNone);
 }
 void LoadPage::resetStatus() const
@@ -263,40 +256,11 @@ void LoadPage::applyStyle() const
     const auto& colors = THEME.colors();
     const auto& spacing = THEME.spacing();
 
-    const QString zoneStyle = QString(
-                                  "#UploadZone { "
-                                  "  background-color: %1;"
-                                  "  border: %2px solid %3; "
-                                  "  border-radius: %4px; "
-                                  "}"
-                                  "#UploadZone:hover { "
-                                  "  background-color: %5;"
-                                  "  border-color: %6; "
-                                  "}"
-                                  "#UploadZone[dragState=\"valid\"] { "
-                                  "  border: %2px solid %7;"
-                                  "}"
-                                  "#UploadZone[dragState=\"invalid\"] { "
-                                  "  border: %2px solid %8;"
-                                  "}")
-                                  .arg(colors.surfaceMain.name(QColor::HexArgb))
-                                  .arg(spacing.borderThick)
-                                  .arg(colors.borderStrong.name(QColor::HexArgb))
-                                  .arg(spacing.radiusSm)
-                                  .arg(colors.surfaceHover.name(QColor::HexArgb))
-                                  .arg(colors.borderStrong.name(QColor::HexArgb))
-                                  .arg(colors.statusSuccess.name(QColor::HexArgb))
-                                  .arg(colors.statusError.name(QColor::HexArgb));
-
-    m_uploadBoxFrame->setStyleSheet(zoneStyle);
+    m_uploadBoxFrame->setStyleSheet(Style::LoadPage::uploadZone());
 
     if (m_instructionLabel)
     {
-        const QString fontStyle = QString("font-size: %1px; font-weight: %2; color: %3;")
-                                      .arg(spacing.fontSizeSm)
-                                      .arg(spacing.fontWeightNormal)
-                                      .arg(colors.textSecondary.name());
-        m_instructionLabel->setStyleSheet(fontStyle);
+        m_instructionLabel->setStyleSheet(Style::LoadPage::uploadInstruction());
     }
 
     if (m_iconLabel)

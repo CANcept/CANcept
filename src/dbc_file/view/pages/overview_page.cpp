@@ -1,7 +1,6 @@
 #include "overview_page.hpp"
 
 #include <QLineEdit>
-#include <QPainter>
 #include <QScrollArea>
 #include <QTimer>
 #include <QVBoxLayout>
@@ -14,6 +13,7 @@
 #include "core/widgets/tinted_icon_label.hpp"
 #include "dbc_file/constants.hpp"
 #include "dbc_file/model/dbc_roles.hpp"
+#include "dbc_file/styles.hpp"
 #include "spdlog/fmt/bundled/os.h"
 namespace DbcFile {
 OverviewPage::OverviewPage(QWidget* parent) : QWidget(parent)
@@ -153,7 +153,7 @@ void OverviewPage::setupUi()
     const auto& spacing = THEME.spacing();
 
     auto* mainLayout = new QVBoxLayout(this);
-    mainLayout->setContentsMargins(0, 0, 0, 0);
+    mainLayout->setContentsMargins(spacing.spacingMd, spacing.spacingMd, spacing.spacingMd, spacing.spacingMd);
 
     // ScrollArea
     m_scrollArea = new QScrollArea(this);
@@ -162,6 +162,7 @@ void OverviewPage::setupUi()
 
     auto* contentWidget = new QWidget(this);
     auto* contentLayout = new QVBoxLayout(contentWidget);
+    contentLayout->setContentsMargins(0, 0, 0, 0);
     contentLayout->setSpacing(spacing.spacingSm);
 
     setupFileInfoSection(contentLayout);
@@ -205,60 +206,90 @@ auto OverviewPage::createStatCard(const QString& title, QLabel*& valueLabelPtr,
 
     return card;
 }
-
 void OverviewPage::applyStyle() const
 {
-    const auto& colors = THEME.colors();
-    const auto& spacing = THEME.spacing();
-
     if (m_scrollArea)
-    {
-        m_scrollArea->setStyleSheet(
-            QString("background-color: %1; width: 0px;").arg(colors.surfaceMain.name()));
-    }
+        m_scrollArea->setStyleSheet(Style::OverviewPage::scrollArea());
 
     if (m_fileNameTitle)
-    {
-        m_fileNameTitle->setStyleSheet(QString("color: %1;").arg(colors.textSecondary.name()));
-    }
+        m_fileNameTitle->setStyleSheet(Style::OverviewPage::secondaryLabel());
+
     if (m_lblFileName)
-    {
-        m_lblFileName->setStyleSheet(QString("color: %1;").arg(colors.textSecondary.name()));
-    }
+        m_lblFileName->setStyleSheet(Style::OverviewPage::secondaryLabel());
+
     if (m_fileVersionTitle)
-    {
-        m_fileVersionTitle->setStyleSheet(QString("color: %1;").arg(colors.textSecondary.name()));
-    }
+        m_fileVersionTitle->setStyleSheet(Style::OverviewPage::secondaryLabel());
+
     if (m_lblVersion)
-    {
-        m_lblVersion->setStyleSheet(QString("color: %1;").arg(colors.textSecondary.name()));
-    }
+        m_lblVersion->setStyleSheet(Style::OverviewPage::secondaryLabel());
 
     for (size_t i = 0; i < m_statTitleLabels.size(); ++i)
     {
         if (i % 2 == 0)
-        {
-            m_statTitleLabels[i]->setStyleSheet(QString("color: %1; font-size: %2px;")
-                                                    .arg(colors.textPrimary.name())
-                                                    .arg(spacing.fontSizeMd));
-        } else
-        {
             m_statTitleLabels[i]->setStyleSheet(
-                QString("color: %1; font-weight: %2; font-size: %3px;")
-                    .arg(colors.textPrimary.name())
-                    .arg(spacing.fontWeightNormal)
-                    .arg(spacing.fontSizeLg));
-        }
+                Style::OverviewPage::statTitle());
+        else
+            m_statTitleLabels[i]->setStyleSheet(
+                Style::OverviewPage::statValue());
     }
 
     for (auto* iconLabel : m_statIconLabels)
-    {
         if (iconLabel)
-        {
-            iconLabel->setColor(colors.textPrimary);
-        }
-    }
+            iconLabel->setColor(THEME.colors().textPrimary);
 }
+// void OverviewPage::applyStyle() const
+// {
+//     const auto& colors = THEME.colors();
+//     const auto& spacing = THEME.spacing();
+//
+//     if (m_scrollArea)
+//     {
+//         m_scrollArea->setStyleSheet(
+//             QString("background-color: %1; width: 0px;").arg(colors.surfaceMain.name()));
+//     }
+//
+//     if (m_fileNameTitle)
+//     {
+//         m_fileNameTitle->setStyleSheet(QString("color: %1;").arg(colors.textSecondary.name()));
+//     }
+//     if (m_lblFileName)
+//     {
+//         m_lblFileName->setStyleSheet(QString("color: %1;").arg(colors.textSecondary.name()));
+//     }
+//     if (m_fileVersionTitle)
+//     {
+//         m_fileVersionTitle->setStyleSheet(QString("color: %1;").arg(colors.textSecondary.name()));
+//     }
+//     if (m_lblVersion)
+//     {
+//         m_lblVersion->setStyleSheet(QString("color: %1;").arg(colors.textSecondary.name()));
+//     }
+//
+//     for (size_t i = 0; i < m_statTitleLabels.size(); ++i)
+//     {
+//         if (i % 2 == 0)
+//         {
+//             m_statTitleLabels[i]->setStyleSheet(QString("color: %1; font-size: %2px;")
+//                                                     .arg(colors.textPrimary.name())
+//                                                     .arg(spacing.fontSizeMd));
+//         } else
+//         {
+//             m_statTitleLabels[i]->setStyleSheet(
+//                 QString("color: %1; font-weight: %2; font-size: %3px;")
+//                     .arg(colors.textPrimary.name())
+//                     .arg(spacing.fontWeightNormal)
+//                     .arg(spacing.fontSizeLg));
+//         }
+//     }
+//
+//     for (auto* iconLabel : m_statIconLabels)
+//     {
+//         if (iconLabel)
+//         {
+//             iconLabel->setColor(colors.textPrimary);
+//         }
+//     }
+// }
 
 bool OverviewPage::event(QEvent* event)
 {

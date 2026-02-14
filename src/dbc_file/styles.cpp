@@ -140,6 +140,15 @@ QString treeStyle()
         .arg(Core::Constants::ARROW_RIGHT_ICON,
              Core::Constants::ARROW_DOWN_ICON);
 }
+
+QString emptyLabel()
+{
+    const auto& colors = THEME.colors();
+    const auto& spacing = THEME.spacing();
+    return QString("color: %1; font-size: %2px;")
+                                .arg(colors.textSecondary.name())
+                                .arg(spacing.fontSizeMd);
+}
 }
 namespace MessagesPage {
 

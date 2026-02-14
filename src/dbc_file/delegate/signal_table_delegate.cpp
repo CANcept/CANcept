@@ -2,6 +2,7 @@
 
 #include "core/macro/theme.hpp"
 #include "core/painters/item_painter.hpp"
+#include "core/util/dbc_utils.hpp"
 #include "dbc_file/constants.hpp"
 #include "dbc_file/model/dbc_roles.hpp"
 
@@ -24,60 +25,117 @@ void SignalTableDelegate::paint(QPainter* painter, const QStyleOptionViewItem& o
 
     // --- Column Logic ---
 
-    // 1. Message Column (Badge + Text)
+    // Message Column (Badge + Text)
     if (index.column() == Constants::Columns::SigMessage)
     {
         uint msgId = index.data(DbcRoles::Role_Id).toUInt();
-        QString idText = QString("0x%1").arg(msgId, 3, 16, QChar('0')).toUpper();
+        QString idText = Core::Util::formatId(msgId);
         QString msgName = index.data(Qt::DisplayRole).toString();
 
+        // --- Measure badge ---
         QSize badgeSize = Core::ItemPainter::measureBadge(idText);
-        QRect badgeRect(cellRect.left(), cellRect.center().y() - badgeSize.height() / 2 + 1,
-                        badgeSize.width(), badgeSize.height());
 
-        // Custom ID badge style
+        // --- Measure text ---
+        painter->save();
+        QFontMetrics fm(painter->font());
+        int textWidth = fm.horizontalAdvance(msgName);
+        int textHeight = fm.height();
+        painter->restore();
+
+        const int spacingBetween = padding; // distance between badge and text
+
+        // --- Total width of (badge + spacing + text) ---
+        int totalWidth = badgeSize.width() + spacingBetween + textWidth;
+
+        // --- Calculate centered start X ---
+        int startX = cellRect.left() + (cellRect.width() - totalWidth) / 2;
+        int centerY = cellRect.center().y();
+
+        // --- Badge rect ---
+        QRect badgeRect(
+            startX,
+            centerY - badgeSize.height() / 2,
+            badgeSize.width(),
+            badgeSize.height()
+        );
+
+        // Custom badge style
         Core::ItemPainter::BadgeStyle badgeStyle;
         badgeStyle.background = Qt::transparent;
         badgeStyle.text = colors.textSecondary;
         badgeStyle.border = colors.borderSubtle;
+
         Core::ItemPainter::paintBadge(painter, badgeRect, idText, QIcon(), &badgeStyle);
 
-        // Paint text next to badge
-        int textOffset = badgeSize.width() + padding;
-        QRect textRect = cellRect.adjusted(textOffset, 0, 0, 0);
+        // --- Text rect ---
+        QRect textRect(
+            badgeRect.right() + spacingBetween,
+            centerY - textHeight / 2,
+            textWidth,
+            textHeight
+        );
 
-        Core::ItemPainter::paintText(painter, textRect, msgName);
+        Core::ItemPainter::paintText(
+            painter,
+            textRect,
+            msgName,
+            false,
+            QColor(),
+            Qt::AlignLeft | Qt::AlignVCenter
+        );
     }
-    // 2. Range Column
+    // if (index.column() == Constants::Columns::SigMessage)
+    // {
+    //     uint msgId = index.data(DbcRoles::Role_Id).toUInt();
+    //     QString idText = Core::Util::formatId(msgId);
+    //     QString msgName = index.data(Qt::DisplayRole).toString();
+    //
+    //     QSize badgeSize = Core::ItemPainter::measureBadge(idText);
+    //     QRect badgeRect(cellRect.left(), cellRect.center().y() - badgeSize.height() / 2 + 1,
+    //                     badgeSize.width(), badgeSize.height());
+    //
+    //     // Custom ID badge style
+    //     Core::ItemPainter::BadgeStyle badgeStyle;
+    //     badgeStyle.background = Qt::transparent;
+    //     badgeStyle.text = colors.textSecondary;
+    //     badgeStyle.border = colors.borderSubtle;
+    //     Core::ItemPainter::paintBadge(painter, badgeRect, idText, QIcon(), &badgeStyle);
+    //
+    //     // Paint text next to badge
+    //     int textOffset = badgeSize.width() + padding;
+    //     QRect textRect = cellRect.adjusted(textOffset, 0, 0, 0);
+    //
+    //     Core::ItemPainter::paintText(painter, textRect, msgName);
+    // }
+    // Range Column
     else if (index.column() == Constants::Columns::SigMin)
     {
         double min = index.data(Qt::DisplayRole).toDouble();
         double max = index.sibling(index.row(), Constants::Columns::SigMax).data().toDouble();
-        QString text = QString("[%1, %2]").arg(min).arg(max);
+        QString text = Core::Util::formatRange(min, max);
 
         Core::ItemPainter::paintText(painter, cellRect, text, false, QColor(), Qt::AlignCenter);
     }
-    // 3. Length Column
+    // Length Column
     else if (index.column() == Constants::Columns::SigLength)
     {
         QString val = index.data(Qt::DisplayRole).toString();
         if (!val.isEmpty()) val += Constants::SignalsPage::LengthUnit;
         Core::ItemPainter::paintText(painter, cellRect, val, false, QColor(), Qt::AlignCenter);
     }
-    // 4. Unit Column
+    // Unit Column
     else if (index.column() == Constants::Columns::SigUnit)
     {
         QString val = Constants::SignalsPage::DefaultUnit;
         if (!index.data(Role_Unit).toString().isEmpty()) val = index.data(Role_Unit).toString();
         Core::ItemPainter::paintText(painter, cellRect, val, false, QColor(), Qt::AlignCenter);
     }
-    // 5. Standard columns
+    // Standard columns
     else
     {
         QString text = index.data(Qt::DisplayRole).toString();
-        bool isBold = (index.column() == Constants::Columns::SigName);
 
-        Core::ItemPainter::paintText(painter, cellRect, text, isBold, QColor(), Qt::AlignCenter);
+        Core::ItemPainter::paintText(painter, cellRect, text, false, QColor(), Qt::AlignCenter);
     }
 }
 

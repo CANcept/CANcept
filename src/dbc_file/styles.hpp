@@ -21,6 +21,7 @@ QString statValue();
 namespace EcusPage
 {
 QString treeStyle();
+QString emptyLabel();
 }
 namespace MessagesPage
 {
