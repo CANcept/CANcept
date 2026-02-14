@@ -39,39 +39,40 @@ QVariant LoggingModel::data(const QModelIndex& index, int role) const
     const LogSession& session = m_sessions[index.row()];
 
     // Handle display and custom roles
-    if (role == Qt::DisplayRole)
+    switch (role)
     {
-        switch (index.column())
-        {
-            case Col_Timestamp:
-                return session.startDateTime.toString(
-                    "HH:mm:ss");  // Show start time in 24h format (fixed)
-            case Col_Duration:
-                return session.duration;
-            case Col_Signals:
-                return QVariant();  // Signals will be painted by delegate
-            case Col_Actions:
-                return QVariant();  // Actions will be painted by delegate
-            default:
-                return QVariant();
+        case Qt::DisplayRole: {
+            switch (index.column())
+            {
+                case Col_Timestamp:
+                    return session.startDateTime.toString(
+                        "HH:mm:ss");  // Show start time in 24h format (fixed)
+                case Col_Duration:
+                    return session.duration;
+                case Col_Signals:
+                    return QVariant();  // Signals will be painted by delegate
+                case Col_Actions:
+                    return QVariant();  // Actions will be painted by delegate
+                default:
+                    return QVariant();
+            }
         }
-        // Custom roles
-    } else if (role == SessionIdRole)
-    {
-        return session.id;
-    } else if (role == IsActiveRole)
-    {
-        return session.isRecording;
-    } else if (role == EntryCountRole)
-    {
-        // Entry count not tracked in memory - read from log file if needed
-        return static_cast<qulonglong>(0);
-    } else if (role == SignalsListRole)
-    {
-        // Message signals not tracked in memory - read from log file if needed
-        return QStringList();
+        case SessionIdRole: {
+            return session.id;
+        }
+        case IsActiveRole: {
+            return session.isRecording;
+        }
+        case EntryCountRole: {
+            return static_cast<qulonglong>(0);
+        }
+        case SignalsListRole: {
+            return QStringList();
+        }
+        default: {
+            return QVariant();
+        }
     }
-    return QVariant();
 }
 
 // Returns column header labels
@@ -99,7 +100,7 @@ QVariant LoggingModel::headerData(int section, Qt::Orientation orientation, int 
 }
 
 // Retrieves a session by its unique ID
-const Logging::LogSession* LoggingModel::getSession(const QString& sessionId) const
+const LogSession* LoggingModel::getSession(const QString& sessionId) const
 {
     for (const auto& session : m_sessions)
     {
@@ -200,18 +201,17 @@ QStringList LoggingModel::getSelectedSignalsForMessage(uint16_t messageId) const
     return QStringList();
 }
 
-// Updates the stored DBC configuration reference HIER
+// Updates the stored DBC configuration reference
 void LoggingModel::updateDbcConfig(const Core::DbcConfig& config)
 {
     m_currentDbc = config;  // Store a copy in std::optional
 }
 
 // Creates and starts a new logging session with selected signals
-void LoggingModel::startNewSession(const QString& deviceName,
-                                   const std::map<uint32_t, QStringList>& selectedSignals)
+void LoggingModel::startNewDbcLogSession(
+    const std::map<uint32_t, QStringList>& selectedSignals,
+    const std::map<uint16_t, std::pair<int, int>>& signalsBeforeAfterMessage)
 {
-    Q_UNUSED(deviceName);  // Not used, kept for compatibility
-
     if (isRecording())
     {
         stopActiveSession();
@@ -224,6 +224,8 @@ void LoggingModel::startNewSession(const QString& deviceName,
     newSession.duration = "00:00:00";
     newSession.isRecording = true;
     newSession.selectedSignals = selectedSignals;
+    newSession.signalsBeforeAfterMessage = signalsBeforeAfterMessage;
+    newSession.type = DBC_BASED;
 
     m_sessions.push_back(newSession);
     m_activeSessionIndex = static_cast<int>(m_sessions.size()) - 1;
