@@ -131,91 +131,155 @@ void LoggingComponent::startLogging()
     {
         return;  // User cancelled
     }
-
-    // DBC based logging
-
-    int selectedSignalsCount = 0;
-    std::map<uint16_t, std::pair<int, int>> signalsBeforeAfterMessage = {};
-    std::map<uint32_t, QStringList> selectedSignals = m_selectionDialog->getSelectedSignals();
-    for (const auto& [msgId, signalList] : selectedSignals)
+    switch (m_selectionDialog->getSelectedLogSessionType())
     {
-        selectedSignalsCount += signalList.size();
-    }
-    int currentSignalCount = 0;
-    for (const auto& [msgId, signalList] : selectedSignals)
-    {
-        signalsBeforeAfterMessage[msgId] = {
-            currentSignalCount, selectedSignalsCount - currentSignalCount - signalList.size()};
-        currentSignalCount += signalList.size();
-    }
+        case DBC_BASED: {
+            // DBC based logging
 
-    m_model->startNewDbcLogSession(selectedSignals, signalsBeforeAfterMessage);
-    m_currentSessionId = m_model->getCurrentSessionId().toStdString();
-    m_sessionLogger =
-        Core::LogService::getInstance().getLogger(Core::LogContext::CanLogging, m_currentSessionId);
-    std::string headerLine;
-    headerLine += "Timestamp,";
-    for (const auto& [msgId, signalList] : selectedSignals)
-    {
-        std::string msgName = m_model->getMessageName(msgId).toStdString();
-        for (const QString& sig : signalList)
-        {
-            headerLine += fmt::format("{}_{}_{}", msgName, sig.toStdString(),
-                                      m_model->getSignalUnit(msgId, sig).toStdString());
-            headerLine += ",";
+            int selectedSignalsCount = 0;
+            std::map<uint16_t, std::pair<int, int>> signalsBeforeAfterMessage = {};
+            std::map<uint32_t, QStringList> selectedSignals =
+                m_selectionDialog->getSelectedSignals();
+            for (const auto& [msgId, signalList] : selectedSignals)
+            {
+                selectedSignalsCount += signalList.size();
+            }
+            int currentSignalCount = 0;
+            for (const auto& [msgId, signalList] : selectedSignals)
+            {
+                signalsBeforeAfterMessage[msgId] = {
+                    currentSignalCount,
+                    selectedSignalsCount - currentSignalCount - signalList.size()};
+                currentSignalCount += signalList.size();
+            }
+
+            m_model->startNewDbcLogSession(selectedSignals, signalsBeforeAfterMessage);
+            m_currentSessionId = m_model->getCurrentSessionId().toStdString();
+            m_sessionLogger = Core::LogService::getInstance().getLogger(
+                Core::LogContext::CanLogging, m_currentSessionId);
+            std::string headerLine;
+            headerLine += "Timestamp,";
+            for (const auto& [msgId, signalList] : selectedSignals)
+            {
+                std::string msgName = m_model->getMessageName(msgId).toStdString();
+                for (const QString& sig : signalList)
+                {
+                    headerLine += fmt::format("{}_{}_{}", msgName, sig.toStdString(),
+                                              m_model->getSignalUnit(msgId, sig).toStdString());
+                    headerLine += ",";
+                }
+            }
+            headerLine.pop_back();
+            m_sessionLogger->info(headerLine.c_str());
+
+            // Set recording flag (thread-safe atomic)
+            m_isRecording.store(true, std::memory_order_release);
+
+            // Start timer and elapsed time tracking
+            m_elapsedTimer.start();
+            m_view->updateTimer(0);
+            m_timer->start();  // Starts with 100ms interval set in constructor
+
+            // Subscribe to decoded DBC messages
+            m_dbcMsgConn = m_eventBroker.subscribe<Core::ReceivedCanDbcEvent>(
+                [this](const Core::ReceivedCanDbcEvent& event) {
+                    // Fast path: early return if not recording (thread-safe atomic)
+                    if (!m_isRecording.load(std::memory_order_acquire) || !m_sessionLogger)
+                        [[unlikely]]
+                    {
+                        return;
+                    }
+                    auto* logSession =
+                        m_model->getSession(QString().fromStdString(m_currentSessionId));
+                    if (logSession->type != DBC_BASED ||
+                        !logSession->selectedSignals.contains(event.canMessage.messageId))
+                    {
+                        return;
+                    }
+
+                    const auto& msg = event.canMessage;
+
+                    std::string messageLine = "";
+                    messageLine += fmt::format("{},", msg.receiveTime.count());
+                    messageLine.append(
+                        logSession->signalsBeforeAfterMessage.at(msg.messageId).first, ',');
+                    for (const auto& signal : logSession->selectedSignals.at(msg.messageId))
+                    {
+                        bool containsValue = false;
+                        for (const auto& [name, value] : msg.signalValues)
+                        {
+                            if (signal.toStdString() == name)
+                            {
+                                messageLine += fmt::format("{:.3f},", value);
+                                containsValue = true;
+                                break;
+                            }
+                        }
+                        if (!containsValue)
+                        {
+                            messageLine += ",";
+                        }
+                    }
+
+                    messageLine.append(
+                        logSession->signalsBeforeAfterMessage.at(msg.messageId).second, ',');
+                    messageLine.pop_back();
+                    m_sessionLogger->info(messageLine.c_str());
+                });
+            break;
+        }
+        case RAW: {
+            m_model->startNewRawLogsSession();
+            m_currentSessionId = m_model->getCurrentSessionId().toStdString();
+            m_sessionLogger = Core::LogService::getInstance().getLogger(
+                Core::LogContext::CanLogging, m_currentSessionId);
+            std::string headerLine;
+            headerLine += "Timestamp,";
+            headerLine += "MessageId,";
+            headerLine += "Data";
+            m_sessionLogger->info(headerLine.c_str());
+
+            // Set recording flag (thread-safe atomic)
+            m_isRecording.store(true, std::memory_order_release);
+
+            // Start timer and elapsed time tracking
+            m_elapsedTimer.start();
+            m_view->updateTimer(0);
+            m_timer->start();  // Starts with 100ms interval set in constructor
+
+            // Subscribe to decoded DBC messages
+            m_dbcMsgConn = m_eventBroker.subscribe<Core::ReceivedCanRawEvent>(
+                [this](const Core::ReceivedCanRawEvent& event) {
+                    // Fast path: early return if not recording (thread-safe atomic)
+                    if (!m_isRecording.load(std::memory_order_acquire) || !m_sessionLogger)
+                        [[unlikely]]
+                    {
+                        return;
+                    }
+                    auto* logSession =
+                        m_model->getSession(QString().fromStdString(m_currentSessionId));
+                    if (logSession->type != RAW)
+                    {
+                        return;
+                    }
+
+                    const auto& msg = event.canMessage;
+
+                    std::string messageLine = "";
+                    messageLine += fmt::format("{},", msg.receiveTime.count());
+                    messageLine += fmt::format("{:x},", msg.messageId);
+                    for (uint8_t data : msg.data)
+                    {
+                        messageLine += fmt::format("{:x} ", data);
+                    }
+                    messageLine.pop_back();
+                    m_sessionLogger->info(messageLine.c_str());
+                });
+            break;
+        }
+        default: {
         }
     }
-    m_sessionLogger->info(headerLine.c_str());
-
-    // Set recording flag (thread-safe atomic)
-    m_isRecording.store(true, std::memory_order_release);
-
-    // Start timer and elapsed time tracking
-    m_elapsedTimer.start();
-    m_view->updateTimer(0);
-    m_timer->start();  // Starts with 100ms interval set in constructor
-
-    // Subscribe to decoded DBC messages
-    m_dbcMsgConn = m_eventBroker.subscribe<Core::ReceivedCanDbcEvent>(
-        [this](const Core::ReceivedCanDbcEvent& event) {
-            // Fast path: early return if not recording (thread-safe atomic)
-            if (!m_isRecording.load(std::memory_order_acquire) || !m_sessionLogger) [[unlikely]]
-            {
-                return;
-            }
-            auto* logSession = m_model->getSession(QString().fromStdString(m_currentSessionId));
-            if (logSession->type != DBC_BASED ||
-                !logSession->selectedSignals.contains(event.canMessage.messageId))
-            {
-                return;
-            }
-
-            const auto& msg = event.canMessage;
-
-            std::string messageLine = "";
-            messageLine += fmt::format("{},", msg.receiveTime.count());
-            messageLine.append(logSession->signalsBeforeAfterMessage.at(msg.messageId).first, ',');
-            for (const auto& signal : logSession->selectedSignals.at(msg.messageId))
-            {
-                bool containsValue = false;
-                for (const auto& [name, value] : msg.signalValues)
-                {
-                    if (signal.toStdString() == name)
-                    {
-                        messageLine += fmt::format("{:.3f},", value);
-                        containsValue = true;
-                        break;
-                    }
-                }
-                if (!containsValue)
-                {
-                    messageLine += ",";
-                }
-            }
-
-            messageLine.append(logSession->signalsBeforeAfterMessage.at(msg.messageId).second, ',');
-            m_sessionLogger->info(messageLine.c_str());
-        });
     m_view->setRecordingState(true);
 }
 
@@ -254,6 +318,7 @@ void LoggingComponent::stopLogging()
 // Exports a logging session to CSV file
 void LoggingComponent::exportLogSession(const QString& sessionId, const QString& filePath)
 {
+    stopLogging();
     try
     {
         std::filesystem::copy_file(
@@ -279,102 +344,6 @@ void LoggingComponent::onDetailRequested(const QModelIndex& index)
 
     QWidget* detailWidget = createDetailWidget(session);
     m_view->showDetailView(detailWidget);
-}
-
-// Writes session data from log file to CSV with progress dialog
-bool LoggingComponent::writeToCsv(const QString& sessionId, const QString& filePath)
-{
-    // Input log file path
-    QString logFilePath = QString("logs/session_%1_CanLogging.log").arg(sessionId);
-
-    QFile logFile(logFilePath);
-    if (!logFile.open(QIODevice::ReadOnly | QIODevice::Text))
-    {
-        return false;
-    }
-
-    // Output CSV file
-    QFile csvFile(filePath);
-    if (!csvFile.open(QIODevice::WriteOnly | QIODevice::Text))
-    {
-        return false;
-    }
-
-    // Count total lines for progress
-    QTextStream counter(&logFile);
-    int totalLines = 0;
-    while (!counter.atEnd())
-    {
-        counter.readLine();
-        totalLines++;
-    }
-    logFile.seek(0);  // Reset to beginning
-
-    // Create progress dialog
-    QProgressDialog progress("Exporting to CSV...", "Cancel", 0, totalLines, m_view.get());
-    progress.setWindowModality(Qt::WindowModal);
-    progress.setMinimumDuration(500);  // Show after 500ms
-
-    QTextStream in(&logFile);
-    QTextStream out(&csvFile);
-
-    // Write CSV header
-    out << "Timestamp,Log Level,Message ID,Message Name,Signal Name,Value,Unit\n";
-
-    int lineCount = 0;
-    bool hadErrors = false;
-
-    // Parse each log line
-    while (!in.atEnd())
-    {
-        QString line = in.readLine();
-        lineCount++;
-
-        // Update progress every 100 lines
-        if (lineCount % 100 == 0)
-        {
-            progress.setValue(lineCount);
-            if (progress.wasCanceled())
-            {
-                return false;
-            }
-        }
-
-        // Skip empty lines
-        if (line.trimmed().isEmpty())
-        {
-            continue;
-        }
-
-        // Parse format: "2024-01-15 14:23:01.123|info|0x123,EngineSpeed,RPM,2500.123,rpm"
-        QStringList parts = line.split('|');
-        if (parts.size() >= 3)
-        {
-            QString timestamp = parts[0];
-            QString level = parts[1];
-            QString data = parts[2];
-
-            // Special handling for session markers
-            if (data.startsWith("SESSION_START") || data.startsWith("SESSION_END"))
-            {
-                out << timestamp << "," << level << "," << data << ",,,\n";
-            } else
-            {
-                // Write as CSV (data already in correct format)
-                out << timestamp << "," << level << "," << data << "\n";
-            }
-        } else
-        {
-            hadErrors = true;
-        }
-    }
-
-    progress.setValue(totalLines);
-
-    logFile.close();
-    csvFile.close();
-
-    return true;
 }
 
 // Creates a detail view widget for displaying session information

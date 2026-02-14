@@ -1,5 +1,7 @@
 #include "message_selection_dialog.hpp"
 
+#include <QRadioButton>
+
 #include "core/macro/theme.hpp"
 #include "core/theme/style_event.hpp"
 #include "core/widgets/card_widget.hpp"
@@ -30,7 +32,9 @@ void MessageSelectionDialog::setupUi()
     // Remove window frame to show only the custom dialog
     setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint);
     setModal(true);  // Block interaction with parent window
-    setMinimumSize(635, 517);
+    setMinimumWidth(600);
+    setMinimumHeight(700);
+    setSizePolicy(QSizePolicy::Minimum, QSizePolicy::MinimumExpanding);
 
     // Main container layout
     auto* mainLayout = new QVBoxLayout(this);
@@ -58,6 +62,24 @@ void MessageSelectionDialog::setupUi()
 
     mainLayout->addWidget(m_headerWidget);
 
+    // Type
+    m_buttonWidget = new QWidget();
+    auto* buttonLayout = new QHBoxLayout(m_buttonWidget);
+    buttonLayout->setContentsMargins(spacing.spacingMd, spacing.spacingMd, spacing.spacingMd,
+                                     spacing.spacingMd);
+    buttonLayout->setSpacing(spacing.spacingMd);
+    m_dbcLabel = new QLabel("DBC based");
+    m_rawLabel = new QLabel("Raw");
+    m_rawLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    m_logTypeSwitch = new Core::StyledSwitch();
+
+    buttonLayout->addWidget(m_rawLabel);
+    buttonLayout->addWidget(m_logTypeSwitch);
+    buttonLayout->addWidget(m_dbcLabel);
+    mainLayout->addWidget(m_buttonWidget);
+    connect(m_logTypeSwitch, &Core::StyledSwitch::toggled, this,
+                &MessageSelectionDialog::onLogTypeToggle);
+
     // ===== Messages Card Widget =====
     m_messagesCard = new Core::CardWidget("Messages", QString(), QString(), this);
 
@@ -83,6 +105,10 @@ void MessageSelectionDialog::setupUi()
     }
 
     mainLayout->addWidget(m_messagesCard, 1);
+    QSizePolicy sp_retain = m_messagesCard->sizePolicy();
+    sp_retain.setRetainSizeWhenHidden(true);
+    m_messagesCard->setSizePolicy(sp_retain);
+    m_messagesCard->setVisible(false);
 
     // ===== Bottom Bar with Start Button =====
     auto* bottomBar = new QWidget(this);
@@ -285,6 +311,64 @@ void MessageSelectionDialog::applyStyle()
     {
         m_scrollContent->setStyleSheet(QString("QWidget#scrollContent { background-color: %1; }")
                                            .arg(colors.surfaceMain.name()));
+    }
+    if (m_buttonWidget)
+    {
+        m_buttonWidget->setStyleSheet(QString("QWidget {"
+                                              "   border: none;"
+                                              "   font-size: %3px;"
+                                              "   font-weight: %1;"
+                                              "   color: %2;"
+                                              "}")
+                                          .arg(spacing.fontWeightNormal)
+                                          .arg(colors.textSecondary.name())
+                                          .arg(spacing.fontSizeSm));
+    }
+    if (m_dbcLabel)
+    {
+        m_dbcLabel->setStyleSheet(QString("QLabel {"
+                                          "   border: none;"
+                                          "   font-size: %3px;"
+                                          "   font-weight: %1;"
+                                          "   color: %2;"
+                                          "}")
+                                      .arg(spacing.fontWeightNormal)
+                                      .arg(colors.textSecondary.name())
+                                      .arg(spacing.fontSizeSm));
+    }
+    if (m_rawLabel)
+    {
+        m_rawLabel->setStyleSheet(QString("QLabel {"
+                                          "   border: none;"
+                                          "   font-size: %3px;"
+                                          "   font-weight: %1;"
+                                          "   color: %2;"
+                                          "}")
+                                      .arg(spacing.fontWeightNormal)
+                                      .arg(colors.textSecondary.name())
+                                      .arg(spacing.fontSizeSm));
+    }
+}
+
+LogSessionType MessageSelectionDialog::getSelectedLogSessionType() const
+{
+    if (m_logTypeSwitch)
+    {
+        return m_logTypeSwitch->isChecked() ? DBC_BASED : RAW;
+    }
+    return RAW;
+}
+
+void MessageSelectionDialog::onLogTypeToggle(bool checked)
+{
+    if (checked)
+    {
+        m_messagesCard->setVisible(true);
+        //setMinimumHeight(600);
+    } else
+    {
+        m_messagesCard->setVisible(false);
+        //setMinimumHeight(0);
     }
 }
 

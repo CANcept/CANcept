@@ -59,12 +59,6 @@ class LoggingComponent final : public Core::ITabComponent
     void onDetailRequested(const QModelIndex& index);
 
    private:
-    /**
-     * @brief Writes session metadata to CSV.
-     * @note Message-level export can be added once the model stores frame data.
-     */
-    bool writeToCsv(const QString& sessionId, const QString& filePath);
-
     /** @brief Builds a detail widget for a specific session */
     QWidget* createDetailWidget(const LogSession* session);
 

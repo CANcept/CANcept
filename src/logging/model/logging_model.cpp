@@ -50,13 +50,24 @@ QVariant LoggingModel::data(const QModelIndex& index, int role) const
                 case Col_Duration:
                     return session.duration;
                 case Col_Signals: {
-                    QStringList signalsList;
-                    for (auto it = session.selectedSignals.begin();
-                         it != session.selectedSignals.end(); ++it)
+                    switch (session.type)
                     {
-                        signalsList.push_back(QString("0x") + QString::number(it->first, 16));
+                        case DBC_BASED: {
+                            QStringList signalsList;
+                            for (auto it = session.selectedSignals.begin();
+                                 it != session.selectedSignals.end(); ++it)
+                            {
+                                signalsList.push_back(QString("0x") +
+                                                      QString::number(it->first, 16));
+                            }
+                            return signalsList;
+                        }
+                        case RAW: {
+                            return QStringList{QString("Raw")};
+                        }
+                        default:
+                            return QVariant();
                     }
-                    return signalsList;
                 }
                 case Col_Actions:
                     return QVariant();  // Actions will be painted by delegate
@@ -74,13 +85,23 @@ QVariant LoggingModel::data(const QModelIndex& index, int role) const
             return static_cast<qulonglong>(0);
         }
         case SignalsListRole: {
-            QStringList signalsList;
-            for (auto it = session.selectedSignals.begin(); it != session.selectedSignals.end();
-                 ++it)
+            switch (session.type)
             {
-                signalsList.push_back(QString("0x") + QString::number(it->first, 16));
+                case DBC_BASED: {
+                    QStringList signalsList;
+                    for (auto it = session.selectedSignals.begin();
+                         it != session.selectedSignals.end(); ++it)
+                    {
+                        signalsList.push_back(QString("0x") + QString::number(it->first, 16));
+                    }
+                    return signalsList;
+                }
+                case RAW: {
+                    return QStringList{QString("Raw")};
+                }
+                default:
+                    return QVariant();
             }
-            return signalsList;
         }
         default: {
             return QVariant();
@@ -239,6 +260,25 @@ void LoggingModel::startNewDbcLogSession(
     newSession.selectedSignals = selectedSignals;
     newSession.signalsBeforeAfterMessage = signalsBeforeAfterMessage;
     newSession.type = DBC_BASED;
+
+    m_sessions.push_back(newSession);
+    m_activeSessionIndex = static_cast<int>(m_sessions.size()) - 1;
+    endInsertRows();
+}
+
+void LoggingModel::startNewRawLogsSession()
+{
+    if (isRecording())
+    {
+        stopActiveSession();
+    }
+    beginInsertRows(QModelIndex(), rowCount(), rowCount());
+    LogSession newSession;
+    newSession.id = QString::number(QDateTime::currentMSecsSinceEpoch());
+    newSession.startDateTime = QDateTime::currentDateTime();
+    newSession.duration = "00:00:00";
+    newSession.isRecording = true;
+    newSession.type = RAW;
 
     m_sessions.push_back(newSession);
     m_activeSessionIndex = static_cast<int>(m_sessions.size()) - 1;

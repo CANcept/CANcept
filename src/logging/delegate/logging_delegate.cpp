@@ -100,7 +100,7 @@ void LoggingDelegate::paint(QPainter* painter, const QStyleOptionViewItem& optio
         // Paint action icons
         int x = option.rect.left() + 5;
         int y = option.rect.top() + option.rect.height() / 2;
-
+        painter->setPen(THEME.colors().textPrimary);
         const QIcon exportIcon(":/assets/icon/logging/logging_export.svg");
         exportIcon.paint(painter, QRect(x, y - spacing.IconSm / 2, spacing.IconSm, spacing.IconSm));
         //QPixmap exportPixmap = exportIcon.pixmap(QSize(spacing.IconSm, spacing.IconSm))

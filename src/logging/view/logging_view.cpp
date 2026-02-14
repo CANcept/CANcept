@@ -34,10 +34,6 @@ void LoggingView::setupUi()
     m_timerLabel = new TimerLabel(m_headerBox);
     headerLayout->addWidget(m_timerLabel);
 
-    // Status container for message tags (shown during recording)
-    m_statusContainer = new StatusTagsContainer(m_headerBox);
-    headerLayout->addWidget(m_statusContainer);
-
     headerLayout->addStretch();
 
     mainLayout->addWidget(m_headerBox);
@@ -176,17 +172,11 @@ void LoggingView::setRecordingState(bool isRecording)
 
     m_btnAction->setRecordingState(isRecording);
     m_timerLabel->setVisible(isRecording);
-    m_statusContainer->setVisible(isRecording);
 }
 
 void LoggingView::updateTimer(qint64 elapsedMs)
 {
     m_timerLabel->updateTimer(elapsedMs);
-}
-
-void LoggingView::updateStatusTags(const QStringList& messages)
-{
-    m_statusContainer->updateStatusTags(messages);
 }
 
 void LoggingView::applyStyle()
