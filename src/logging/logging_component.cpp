@@ -5,6 +5,7 @@
 #include <QMessageBox>
 #include <QTextStream>
 #include <core/event/dbc_event.hpp>
+#
 
 namespace Logging {
 
@@ -42,17 +43,28 @@ LoggingComponent::LoggingComponent(Core::IEventBroker& broker)
     m_view->getHistoryTable()->setItemDelegate(m_delegate.get());
 
     // Connect delegate signals
-    connect(
-        m_delegate.get(), &LoggingDelegate::exportClicked, this, [this](const QModelIndex& index) {
-            const QString sessionId = m_model->sessionIdAt(index);
-            const QString filePath =
-                QFileDialog::getSaveFileName(m_view.get(), "Export Log", {}, "CSV Files (*.csv)");
+    connect(m_delegate.get(), &LoggingDelegate::exportClicked, this,
+            [this](const QModelIndex& index) {
+                const QString sessionId = m_model->sessionIdAt(index);
+                const LogSession* session = m_model->getSession(sessionId);
 
-            if (!filePath.isEmpty())
-            {
-                exportLogSession(sessionId, filePath);
-            }
-        });
+                // Create a suggested filename
+                QString defaultFileName = QString("can_log_%1.csv").arg(sessionId);
+                if (session)
+                {
+                    defaultFileName = QString("can_log_%1_%2.csv")
+                                          .arg(session->startDateTime.toString("yyyyMMdd_HHmmss"))
+                                          .arg(sessionId);
+                }
+
+                const QString filePath = QFileDialog::getSaveFileName(
+                    m_view.get(), "Export Log", defaultFileName, "CSV Files (*.csv)");
+
+                if (!filePath.isEmpty())
+                {
+                    exportLogSession(sessionId, filePath);
+                }
+            });
 
     connect(m_delegate.get(), &LoggingDelegate::detailClicked, this,
             &LoggingComponent::onDetailRequested);
@@ -68,8 +80,19 @@ LoggingComponent::LoggingComponent(Core::IEventBroker& broker)
 
     connect(m_view.get(), &LoggingView::exportRequested, this, [this](const QModelIndex& index) {
         const QString sessionId = m_model->sessionIdAt(index);
-        const QString filePath =
-            QFileDialog::getSaveFileName(m_view.get(), "Export Log", {}, "CSV Files (*.csv)");
+        const LogSession* session = m_model->getSession(sessionId);
+
+        // Create a suggested filename
+        QString defaultFileName = QString("can_log_%1.csv").arg(sessionId);
+        if (session)
+        {
+            defaultFileName = QString("can_log_%1_%2.csv")
+                                  .arg(session->startDateTime.toString("yyyyMMdd_HHmmss"))
+                                  .arg(sessionId);
+        }
+
+        const QString filePath = QFileDialog::getSaveFileName(m_view.get(), "Export Log",
+                                                              defaultFileName, "CSV Files (*.csv)");
 
         if (!filePath.isEmpty())
         {
@@ -84,9 +107,48 @@ LoggingComponent::LoggingComponent(Core::IEventBroker& broker)
             &LoggingModel::onDbcSignalsReceived);
     connect(this, &LoggingComponent::dbcConfigurationChanged, m_model.get(),
             &LoggingModel::updateDbcConfig);
+
+    // Subscribe to DBC events (must be in constructor to receive updates even when tab is inactive)
+    m_parseSuccessConn =
+        m_eventBroker.subscribe<Core::DBCParsedEvent>([this](const Core::DBCParsedEvent& event) {
+            LOG_INFO("Received DBC configuration with {} messages - queuing to UI thread",
+                     event.config.messageDefinitions.size());
+
+            // Copy config to avoid dangling references when queued to UI thread
+            Core::DbcConfig configCopy = event.config;
+
+            // Use Qt::QueuedConnection to ensure UI updates happen on the main thread
+            // This is critical for thread-safety when updating Qt widgets
+            QMetaObject::invokeMethod(
+                this,
+                [this, configCopy]() {
+                    emit dbcConfigurationChanged(configCopy);
+
+                    // Update the message selection dialog with the new DBC config
+                    // This ensures the dialog always has the latest messages available
+                    m_selectionDialog->setDbcConfig(configCopy);
+                    LOG_DEBUG("Message selection dialog updated successfully on UI thread");
+                },
+                Qt::QueuedConnection);
+        });
+
+    // Listen for DBC parse errors
+    m_parseErrorConn = m_eventBroker.subscribe<Core::DBCParseErrorEvent>(
+        [](const Core::DBCParseErrorEvent& event) {
+            LOG_ERROR("DBC parse error occurred: {}", event.errorMessage);
+        });
+
+    LOG_INFO("LoggingComponent subscribed to DBC events");
 }
 
-LoggingComponent::~LoggingComponent() = default;
+LoggingComponent::~LoggingComponent()
+{
+    m_parseSuccessConn.release();
+    m_parseErrorConn.release();
+    m_rawMsgConn.release();
+    m_dbcMsgConn.release();
+    LOG_INFO("LoggingComponent destroyed");
+}
 
 // Returns the main logging view widget
 auto LoggingComponent::getView() -> QWidget*
@@ -99,22 +161,6 @@ auto LoggingComponent::getView() -> QWidget*
 void LoggingComponent::onStart()
 {
     LOG_INFO("Starting LoggingComponent");
-
-    // Listen for successful DBC parsing
-    m_parseSuccessConn =
-        m_eventBroker.subscribe<Core::DBCParsedEvent>([this](const Core::DBCParsedEvent& event) {
-            LOG_DEBUG("Received DBC configuration update");
-            emit dbcConfigurationChanged(event.config);
-
-            // Update the message selection dialog with the new DBC config
-            m_selectionDialog->setDbcConfig(event.config);
-        });
-
-    // Listen for DBC parse errors
-    m_parseErrorConn = m_eventBroker.subscribe<Core::DBCParseErrorEvent>(
-        [](const Core::DBCParseErrorEvent& event) {
-            LOG_ERROR("DBC parse error occurred: {}", event.errorMessage);
-        });
 }
 
 // Called when tab becomes inactive - cleans up resources
@@ -122,8 +168,6 @@ void LoggingComponent::onStop()
 {
     LOG_INFO("Stopping LoggingComponent");
     stopLogging();
-    m_parseSuccessConn.release();
-    m_parseErrorConn.release();
     Logger::instance().flush();
 }
 
@@ -137,6 +181,16 @@ void LoggingComponent::startLogging()
     }
 
     LOG_INFO("Initializing logging session");
+
+    // Ensure dialog is up-to-date before showing
+    // This handles edge cases where the dialog might not have received the DBC update
+    const auto& currentDbc = m_model->getCurrentDbcConfig();
+    if (currentDbc.has_value())
+    {
+        LOG_DEBUG("Synchronizing message selection dialog with current DBC config ({} messages)",
+                  currentDbc.value().messageDefinitions.size());
+        m_selectionDialog->setDbcConfig(currentDbc.value());
+    }
 
     // Show message selection dialog
     m_selectionDialog->setAvailableDevices({"vcan0", "can0", "can1"});
@@ -221,6 +275,9 @@ void LoggingComponent::exportLogSession(const QString& sessionId, const QString&
     {
         LOG_INFO("Successfully exported session {} to {}", sessionId.toStdString(),
                  filePath.toStdString());
+        QMessageBox::information(
+            m_view.get(), "Export Successful",
+            QString("Session log exported successfully to:\n%1").arg(filePath));
     }
 }
 
@@ -239,16 +296,9 @@ void LoggingComponent::onDetailRequested(const QModelIndex& index)
     m_view->showDetailView(detailWidget);
 }
 
-// Writes session metadata to CSV file
+// Writes session data to CSV file
 bool LoggingComponent::writeToCsv(const QString& sessionId, const QString& filePath)
 {
-    QFile file(filePath);
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
-    {
-        LOG_ERROR("Failed to open file for writing: {}", filePath.toStdString());
-        return false;
-    }
-
     const LogSession* session = m_model->getSession(sessionId);
     if (!session)
     {
@@ -256,11 +306,49 @@ bool LoggingComponent::writeToCsv(const QString& sessionId, const QString& fileP
         return false;
     }
 
-    QTextStream out(&file);
-    out << "Session ID,Start Time,Duration,Entry Count\n";
-    out << session->id << "," << session->startDateTime.toString(Qt::ISODate) << ","
-        << session->duration << "," << session->entryCount << "\n";
+    // Construct the source log file path
+    QString sourceLogPath = QString("logs/session_%1.csv").arg(sessionId);
+    QFile sourceFile(sourceLogPath);
 
+    // If the session log file exists, copy it to the destination
+    if (sourceFile.exists())
+    {
+        LOG_INFO("Copying log file from {} to {}", sourceLogPath.toStdString(),
+                 filePath.toStdString());
+
+        // Remove destination file if it exists
+        QFile::remove(filePath);
+
+        // Copy the log file
+        if (sourceFile.copy(filePath))
+        {
+            LOG_INFO("Successfully exported session log to {}", filePath.toStdString());
+            return true;
+        } else
+        {
+            LOG_ERROR("Failed to copy log file: {}", sourceFile.errorString().toStdString());
+            // Fall through to create metadata-only export
+        }
+    } else
+    {
+        LOG_WARN("Session log file not found: {}", sourceLogPath.toStdString());
+    }
+
+    // Fallback: Create a metadata-only CSV if log file doesn't exist or copy failed
+    QFile file(filePath);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
+    {
+        LOG_ERROR("Failed to open file for writing: {}", filePath.toStdString());
+        return false;
+    }
+
+    QTextStream out(&file);
+    out << "Session ID,Start Time,Duration,Entry Count,Device\n";
+    out << session->id << "," << session->startDateTime.toString(Qt::ISODate) << ","
+        << session->duration << "," << session->entryCount << "," << session->deviceName << "\n";
+
+    file.close();
+    LOG_INFO("Exported session metadata to {}", filePath.toStdString());
     return true;
 }
 
@@ -340,22 +428,21 @@ QWidget* LoggingComponent::createDetailWidget(const LogSession* session)
     // ===== Back Button =====
     auto* backBtn = new QPushButton("Back to History", detailView);
     backBtn->setFixedSize(200, 50);
-    backBtn->setStyleSheet(
+    backBtn->setStyleSheet(QString(
         "QPushButton {"
-        "   background-color: #f3f3f5;"
+        "   background-color: %1;"
         "   border: none;"
         "   border-radius: 25px;"
         "   color: black;"
         "   font-family: 'Roboto';"
         "   font-size: 18px;"
         "   font-weight: 500;"
-        "}"
         "QPushButton:hover {"
         "   background-color: #e8e8ea;"
         "}"
         "QPushButton:pressed {"
         "   background-color: #d8d8da;"
-        "}");
+        "}")).arg(THEME.colors().surfaceMain);
     connect(backBtn, &QPushButton::clicked, m_view.get(), &LoggingView::hideDetailView);
 
     auto* buttonLayout = new QHBoxLayout();

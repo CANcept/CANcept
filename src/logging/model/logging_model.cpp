@@ -45,8 +45,8 @@ QVariant LoggingModel::data(const QModelIndex& index, int role) const
         switch (index.column())
         {
             case Col_Timestamp:
-                return session.startDateTime.toString(
-                    "HH:mm:ss");  // Show start time in 24h format (fixed)
+                // Show timestamp as milliseconds since Unix epoch (system time)
+                return static_cast<qulonglong>(session.startDateTime.toMSecsSinceEpoch());
             case Col_Duration:
                 return session.duration;
             case Col_Signals:
@@ -88,7 +88,7 @@ QVariant LoggingModel::headerData(int section, Qt::Orientation orientation, int 
         case Col_Duration:
             return QString("Duration");
         case Col_Signals:
-            return QString("Message-Id Signal");
+            return QString("Message IDs");
         case Col_Actions:
             return QString("Actions");
         default:
@@ -126,10 +126,16 @@ QString LoggingModel::sessionIdAt(const QModelIndex& index) const
     return m_activeSessionIndex != -1;
 }
 
-// Updates the stored DBC configuration reference HIER
+// Updates the stored DBC configuration reference
 void LoggingModel::updateDbcConfig(const Core::DbcConfig& config)
 {
     m_currentDbc = config;  // Store a copy in std::optional
+}
+
+// Returns the current DBC configuration if available
+const std::optional<Core::DbcConfig>& LoggingModel::getCurrentDbcConfig() const
+{
+    return m_currentDbc;
 }
 
 // Creates and starts a new logging session with selected signals
@@ -162,9 +168,33 @@ void LoggingModel::startNewSession(const QString& deviceName,
         }
     }
 
-    m_sessions.push_back(newSession);
+    m_sessions.push_back(std::move(newSession));
     m_activeSessionIndex = static_cast<int>(m_sessions.size()) - 1;
     endInsertRows();
+
+    // Create log file for this session
+    LogSession& activeSession = m_sessions[m_activeSessionIndex];
+    QString logFileName = QString("logs/session_%1.csv").arg(activeSession.id);
+    activeSession.logFile = std::make_unique<QFile>(logFileName);
+
+    if (activeSession.logFile->open(QIODevice::WriteOnly | QIODevice::Text))
+    {
+        activeSession.logStream = std::make_unique<QTextStream>(activeSession.logFile.get());
+
+        // Write header based on whether DBC is loaded
+        if (m_currentDbc.has_value())
+        {
+            *activeSession.logStream << "Timestamp,Message ID,Message Name,Signal,Value\n";
+        } else
+        {
+            *activeSession.logStream << "Timestamp,CAN ID,DLC,Data\n";
+        }
+        activeSession.logStream->flush();
+        LOG_INFO("Log file created: {}", logFileName.toStdString());
+    } else
+    {
+        LOG_ERROR("Failed to create log file: {}", logFileName.toStdString());
+    }
 
     LOG_INFO("New logging session started - ID: {}, Device: {}, Messages with signals: {}",
              newSession.id.toStdString(), deviceName.toStdString(),
@@ -182,6 +212,19 @@ void LoggingModel::stopActiveSession()
     const QString sessionId = m_sessions[m_activeSessionIndex].id;
     const uint64_t entryCount = m_sessions[m_activeSessionIndex].entryCount;
     const QString duration = m_sessions[m_activeSessionIndex].duration;
+
+    // Close log file and clean up
+    LogSession& activeSession = m_sessions[m_activeSessionIndex];
+    if (activeSession.logStream)
+    {
+        activeSession.logStream->flush();
+        activeSession.logStream.reset();
+    }
+    if (activeSession.logFile)
+    {
+        activeSession.logFile->close();
+        LOG_INFO("Log file closed for session: {}", sessionId.toStdString());
+    }
 
     m_sessions[m_activeSessionIndex].isRecording = false;
     updateActiveDuration();
@@ -219,19 +262,40 @@ void LoggingModel::updateActiveDuration()
 // Handles incoming raw CAN frames and updates entry count
 void LoggingModel::onRawFrameReceived(const Core::RawCanMessage& msg)
 {
-    if (!isRecording())
+    if (!isRecording() || m_currentDbc.has_value())
     {
         return;
     }
-    m_sessions[m_activeSessionIndex].entryCount++;
+
+    LogSession& activeSession = m_sessions[m_activeSessionIndex];
+    activeSession.entryCount++;
+
+    // Write to log file
+    if (activeSession.logStream)
+    {
+        *activeSession.logStream << msg.receiveTime.count() << ","
+                                 << QString("0x%1").arg(msg.messageId, 3, 16, QChar('0')).toUpper()
+                                 << "," << static_cast<int>(msg.dlc) << ",\"";
+
+        // Write hex data
+        for (int i = 0; i < msg.dlc && i < 8; i++)
+        {
+            if (i > 0) *activeSession.logStream << " ";
+            *activeSession.logStream
+                << QString("%1")
+                       .arg(static_cast<uint8_t>(msg.data[i]), 2, 16, QChar('0'))
+                       .toUpper();
+        }
+        *activeSession.logStream << "\"\n";
+        activeSession.logStream->flush();
+    }
 
     // Add message ID to signals list if not already present
-    QString messageId =
-        QString("0x%1").arg(static_cast<uint8_t>(msg.messageId), 3, 16, QChar('0')).toUpper();
-    if (!m_sessions[m_activeSessionIndex].messageSignals.contains(messageId))
+    QString messageId = QString("0x%1").arg(msg.messageId, 3, 16, QChar('0')).toUpper();
+    if (!activeSession.messageSignals.contains(messageId))
     {
-        m_sessions[m_activeSessionIndex].messageSignals.append(messageId);
-        LOG_DEBUG("New message ID logged: {}", messageId.toStdString());
+        activeSession.messageSignals.append(messageId);
+        LOG_DEBUG("New raw message logged: {}", messageId.toStdString());
         emit dataChanged(index(m_activeSessionIndex, Col_Signals),
                          index(m_activeSessionIndex, Col_Signals));
     }
@@ -258,19 +322,43 @@ void LoggingModel::onDbcSignalsReceived(const Core::DbcCanMessage& msg)
 
     activeSession.entryCount++;
 
+    // Write to log file
+    if (activeSession.logStream)
+    {
+        // Find message name from DBC config
+        QString messageName = QString("0x%1").arg(messageId, 3, 16, QChar('0')).toUpper();
+        for (const auto& msgDef : m_currentDbc->messageDefinitions)
+        {
+            if (msgDef.messageId == messageId)
+            {
+                messageName = QString::fromStdString(msgDef.messageName);
+                break;
+            }
+        }
+
+        // Write each signal value
+        for (const auto& signal : msg.signalValues)
+        {
+            *activeSession.logStream
+                << msg.receiveTime.count() << ","
+                << QString("0x%1").arg(messageId, 3, 16, QChar('0')).toUpper() << "," << messageName
+                << "," << QString::fromStdString(signal.name) << "," << signal.value << "\n";
+        }
+        activeSession.logStream->flush();
+    }
+
     // Add message ID to signals list if not already present
-    QString signalName =
-        QString("0x%1").arg(static_cast<uint8_t>(msg.messageId), 3, 16, QChar('0')).toUpper();
+    QString signalName = QString("0x%1").arg(messageId, 3, 16, QChar('0')).toUpper();
+
     if (!activeSession.messageSignals.contains(signalName))
     {
         activeSession.messageSignals.append(signalName);
-        LOG_DEBUG("New DBC signal logged: {}", signalName.toStdString());
+        LOG_DEBUG("New DBC signal logged: {} | {}", signalName.toStdString(), msg.messageId);
         emit dataChanged(index(m_activeSessionIndex, Col_Signals),
                          index(m_activeSessionIndex, Col_Signals));
+    } else
+    {
+        LOG_DEBUG("Known DBC signal logged: {} | {}", signalName.toStdString(), msg.messageId);
     }
-
-    // TODO: Filter and store only the selected signals from the message
-    // The actual signal values would need to be extracted and stored based on
-    // the selected signal names in it->second (QStringList of signal names)
 }
 }  // namespace Logging

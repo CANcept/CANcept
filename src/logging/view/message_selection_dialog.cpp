@@ -1,6 +1,9 @@
 #include "message_selection_dialog.hpp"
 
+#include <stdio.h>
+
 #include <QIcon>
+#include <iostream>
 
 #include "core/macro/theme.hpp"
 #include "core/widgets/card_widget.hpp"
@@ -296,6 +299,9 @@ void MessageSelectionDialog::setDbcConfig(const Core::DbcConfig& config)
     // Create a card for each message in the DBC config
     for (const auto& msgDef : config.messageDefinitions)
     {
+        std::cout << "Adding message card for ID 0x" << std::hex << msgDef.messageId << ": "
+                  << msgDef.messageName << " with " << msgDef.signalDescriptions.size()
+                  << " signals" << std::endl;
         // Configure the card for logging/selection mode
         Core::DbcMessageCard::Config cardConfig;
         cardConfig.showCheckbox = true;

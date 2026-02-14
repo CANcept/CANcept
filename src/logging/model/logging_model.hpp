@@ -2,8 +2,11 @@
 
 #include <QAbstractTableModel>
 #include <QDateTime>
+#include <QFile>
 #include <QString>
+#include <QTextStream>
 #include <map>
+#include <memory>
 #include <optional>
 #include <vector>
 
@@ -24,6 +27,10 @@ struct LogSession {
     uint64_t entryCount = 0;
     QStringList messageSignals;  // List of message signals recorded in this session
     std::map<uint32_t, QStringList> selectedSignals;  // Map of message ID to selected signal names
+
+    // File logging members
+    std::unique_ptr<QFile> logFile;
+    std::unique_ptr<QTextStream> logStream;
 };
 
 /**
@@ -76,6 +83,12 @@ class LoggingModel final : public QAbstractTableModel
     [[nodiscard]] bool isRecording() const;
 
     void updateDbcConfig(const Core::DbcConfig& config);
+
+    /**
+     * @brief Gets the current DBC configuration if available.
+     * @return Optional containing the DBC config, or empty if no DBC is loaded.
+     */
+    [[nodiscard]] const std::optional<Core::DbcConfig>& getCurrentDbcConfig() const;
 
    public slots:
     /** @brief Triggered by Component's bridge signal */

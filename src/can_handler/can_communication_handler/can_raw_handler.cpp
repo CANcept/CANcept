@@ -1,5 +1,7 @@
 #include "can_raw_handler.hpp"
 
+#include <chrono>
+
 #include "core/macro/console_logging.hpp"
 namespace CanHandler {
 void CanRawHandler::parseReceivedMessage(const sockcanpp::CanMessage* canMessage)
@@ -7,7 +9,12 @@ void CanRawHandler::parseReceivedMessage(const sockcanpp::CanMessage* canMessage
     // Get message data
     Core::RawCanMessage message;
     message.messageId = static_cast<uint16_t>(canMessage->getRawFrame().can_id);
-    message.receiveTime = canMessage->getTimestampOffset();
+
+    // Use current system time as timestamp
+    auto now = std::chrono::system_clock::now();
+    auto duration = now.time_since_epoch();
+    message.receiveTime = std::chrono::duration_cast<std::chrono::milliseconds>(duration);
+
     message.dlc = static_cast<uint8_t>(canMessage->getFrameData().size());
 
     message.data.fill(0);

@@ -1,5 +1,7 @@
 #include "can_dbc_handler.hpp"
 
+#include <chrono>
+
 #include "core/macro/console_logging.hpp"
 
 namespace CanHandler {
@@ -33,9 +35,14 @@ void CanDbcHandler::parseReceivedMessage(const sockcanpp::CanMessage* canMessage
     std::list<Core::DbcSignalDescription> multiplexedSignals;
     int multiplexorValue = -1;
 
+    // Get current system time as timestamp
+    auto now = std::chrono::system_clock::now();
+    auto duration = now.time_since_epoch();
+    auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(duration);
+
     // Parsed can message initialization
     Core::DbcCanMessage receivedMessage{
-        .receiveTime = canMessage->getTimestampOffset(),
+        .receiveTime = timestamp,
         .messageId = static_cast<uint16_t>(canMessage->getRawFrame().can_id)};
 
     // Parse signals
