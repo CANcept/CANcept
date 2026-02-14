@@ -60,7 +60,7 @@ void MessageSelectionDialog::setupUi()
 
     // ===== Messages Card Widget =====
     m_messagesCard =
-        new Core::CardWidget("Messages", QString(), QString(":/assets/icon/messages.svg"), this);
+        new Core::CardWidget("Messages", QString(), QString(), this);
 
     if (auto* messagesCardLayout = m_messagesCard->contentLayout())
     {
@@ -97,6 +97,7 @@ void MessageSelectionDialog::setupUi()
     connect(startBtn, &QPushButton::clicked, this, &QDialog::accept);
     bottomLayout->addWidget(startBtn);
 
+    applyStyle();
     mainLayout->addWidget(bottomBar);
 }
 
