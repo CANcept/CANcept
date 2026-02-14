@@ -202,7 +202,7 @@ void LoggingComponent::startLogging()
                 {
                     if (signal.toStdString() == name)
                     {
-                        messageLine += fmt::format("{:.6f},", value);
+                        messageLine += fmt::format("{:.3f},", value);
                         containsValue = true;
                         break;
                     }

@@ -1,11 +1,16 @@
 #include "logging_delegate.hpp"
 
 #include <QApplication>
+#include <QIcon>
 #include <QMouseEvent>
+#include <QPaintDevice>
 #include <QPainter>
 #include <QPainterPath>
 #include <QStyle>
+#include <iostream>
 
+#include "core/macro/theme.hpp"
+#include "core/painters/item_painter.hpp"
 #include "logging/model/logging_model.hpp"
 
 namespace Logging {
@@ -17,6 +22,7 @@ LoggingDelegate::LoggingDelegate(QObject* parent) : QStyledItemDelegate(parent) 
 void LoggingDelegate::paint(QPainter* painter, const QStyleOptionViewItem& option,
                             const QModelIndex& index) const
 {
+    if (!painter->isActive()) return;
     painter->save();
     painter->setRenderHint(QPainter::Antialiasing);
 
@@ -64,78 +70,58 @@ void LoggingDelegate::paint(QPainter* painter, const QStyleOptionViewItem& optio
         QStringList signalsList = index.data(LoggingModel::SignalsListRole).toStringList();
 
         int x = option.rect.left() + 5;
-        int y = option.rect.top() + (option.rect.height() - 30) / 2;  // Center vertically
+        int y = option.rect.top() + option.rect.height() / 2;  // Center vertically
 
         QFont font = painter->font();
-        font.setPixelSize(16);
+        font.setPixelSize(THEME.spacing().fontSizeXs);
         font.setWeight(QFont::Normal);
         painter->setFont(font);
 
+        const auto& colors = THEME.colors();
+        Core::ItemPainter::BadgeStyle idStyle;
+        idStyle.background = colors.surfaceSecondary;
+        idStyle.text = colors.textPrimary;
+        idStyle.border = colors.borderSubtle;
+
         for (const QString& signal : signalsList)
         {
-            // Calculate tag width
-            QFontMetrics fm(font);
-            int textWidth = fm.horizontalAdvance(signal);
-            int tagWidth = textWidth + 16;  // 8px padding on each side
-            int tagHeight = 30;
+            QSize badgeSize = Core::ItemPainter::measureBadge(signal, QIcon());
+            Core::ItemPainter::paintBadge(
+                painter,
+                QRect(x, y - badgeSize.height() / 2, badgeSize.width(), badgeSize.height()), signal,
+                QIcon(), &idStyle);
 
-            // Don't overflow the column
-            if (x + tagWidth > option.rect.right() - 5) break;
-
-            // Draw tag background (gray rounded rectangle)
-            QPainterPath path;
-            path.addRoundedRect(QRectF(x, y, tagWidth, tagHeight), 5, 5);
-            painter->fillPath(path, QColor(226, 226, 226));  // #e2e2e2
-
-            // Draw text
-            painter->setPen(Qt::black);
-            painter->drawText(QRect(x, y, tagWidth, tagHeight), Qt::AlignCenter, signal);
-
-            x += tagWidth + 10;  // 10px spacing between tags
+            x += badgeSize.width() + THEME.spacing().spacingSm;
         }
     } else if (index.column() == LoggingModel::Col_Actions)
     {
+        auto& colors = THEME.colors();
+        auto& spacing = THEME.spacing();
         // Paint action icons
-        int iconSize = 24;
-        int spacing = 24;
         int x = option.rect.left() + 5;
-        int y = option.rect.top() + (option.rect.height() - iconSize) / 2;
+        int y = option.rect.top() + option.rect.height() / 2;
 
-        // Export/Download icon (simplified as a rectangle with download arrow)
-        QPainterPath downloadPath;
-        downloadPath.moveTo(x + 8, y + 8);
-        downloadPath.lineTo(x + 12, y + 8);
-        downloadPath.lineTo(x + 12, y + 4);
-        downloadPath.lineTo(x + 16, y + 10);
-        downloadPath.lineTo(x + 4, y + 10);
-        downloadPath.lineTo(x + 8, y + 4);
-        downloadPath.lineTo(x + 8, y + 8);
+        const QIcon exportIcon(":/assets/icon/logging/logging_export.svg");
+        exportIcon.paint(painter, QRect(x, y - spacing.IconSm / 2, spacing.IconSm, spacing.IconSm));
+        //QPixmap exportPixmap = exportIcon.pixmap(QSize(spacing.IconSm, spacing.IconSm))
+        //                           .scaled(spacing.IconSm, spacing.IconSm, Qt::KeepAspectRatio);
+        //painter->drawPixmap(QRect(x, y - spacing.IconSm / 2, spacing.IconSm, spacing.IconSm),
+        //                    exportPixmap);
+        x += spacing.IconSm + spacing.spacingMd;
 
-        // Draw document outline
-        painter->setPen(QPen(Qt::black, 1.5));
-        painter->setBrush(Qt::NoBrush);
-        painter->drawRect(QRectF(x + 2, y + 2, 16, 20));
-        painter->fillPath(downloadPath, Qt::black);
-
-        x += iconSize + spacing;
-
-        // Eye/View icon (simplified as an eye shape)
-        QPainterPath eyePath;
-        // Outer eye shape (ellipse)
-        eyePath.addEllipse(QRectF(x + 2, y + 8, 20, 10));
-        painter->drawPath(eyePath);
-
-        // Pupil (filled circle)
-        painter->setBrush(Qt::black);
-        painter->drawEllipse(QRectF(x + 9, y + 10, 6, 6));
+        const QIcon detailIcon(":/assets/icon/logging/logging_detail_view.svg");
+        detailIcon.paint(painter, QRect(x, y - spacing.IconSm / 2, spacing.IconSm, spacing.IconSm));
+        // QPixmap detailPixmap = detailIcon.pixmap(QSize(spacing.IconSm, spacing.IconSm));
+        // painter->drawPixmap(QRect(x, y - spacing.IconSm / 2, spacing.IconSm, spacing.IconSm),
+        //                    detailPixmap);
     } else
     {
         // Default rendering for other columns (Timestamp, Duration)
         QFont font = painter->font();
-        font.setPixelSize(20);
+        font.setPixelSize(THEME.spacing().fontSizeMd);
         font.setWeight(QFont::Normal);
         painter->setFont(font);
-        painter->setPen(Qt::black);
+        painter->setPen(THEME.colors().textPrimary);
 
         QString text = index.data(Qt::DisplayRole).toString();
         painter->drawText(option.rect.adjusted(5, 0, -5, 0), Qt::AlignLeft | Qt::AlignVCenter,
@@ -152,13 +138,11 @@ bool LoggingDelegate::editorEvent(QEvent* event, QAbstractItemModel* model,
     if (event->type() == QEvent::MouseButtonRelease && index.column() == LoggingModel::Col_Actions)
     {
         QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
-
-        int iconSize = 24;
-        int spacing = 24;
         int x = option.rect.left() + 5;
 
         // Export button area
-        QRect exportRect(x, option.rect.top(), iconSize + 10, option.rect.height());
+        QRect exportRect(x, option.rect.top() + option.rect.height() / 2 - THEME.spacing().IconSm,
+                         THEME.spacing().IconSm, THEME.spacing().IconSm);
         if (exportRect.contains(mouseEvent->pos()))
         {
             // Trigger export action
@@ -166,10 +150,11 @@ bool LoggingDelegate::editorEvent(QEvent* event, QAbstractItemModel* model,
             return true;
         }
 
-        x += iconSize + spacing;
+        x += THEME.spacing().IconSm + THEME.spacing().spacingMd;
 
         // Detail/View button area
-        QRect viewRect(x, option.rect.top(), iconSize + 10, option.rect.height());
+        QRect viewRect(x, option.rect.top() + option.rect.height() / 2 - THEME.spacing().IconSm,
+                       THEME.spacing().IconSm, THEME.spacing().IconSm);
         if (viewRect.contains(mouseEvent->pos()))
         {
             // Trigger detail view action
