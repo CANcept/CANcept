@@ -22,6 +22,8 @@
         <file>assets/icon/sending/can_frame.svg</file>
         <file>assets/icon/sending/messages.svg</file>
         <file>assets/icon/logging/logging_tab.svg</file>
+        <file>assets/icon/logging/logging_export.svg</file>
+        <file>assets/icon/logging/logging_detail_view.svg</file>
         <file>assets/icon/monitoring/monitoring_tab.svg</file>
         <file>assets/icon/monitoring/signal_graph.svg</file>
         <file>assets/icon/monitoring/bus_config.svg</file>

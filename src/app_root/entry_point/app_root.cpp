@@ -122,6 +122,7 @@ void AppRoot::bootstrap()
     initTab<DbcFile::DbcComponent>();
     initTab<Monitoring::MonitoringComponent>();
     initTab<Sending::SendingComponent>();
+    initTab<Logging::LoggingComponent>();
 
     for (const auto& tab : m_tabs)
     {

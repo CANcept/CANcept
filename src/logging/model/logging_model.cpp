@@ -51,8 +51,10 @@ QVariant LoggingModel::data(const QModelIndex& index, int role) const
                     return session.duration;
                 case Col_Signals: {
                     QStringList signalsList;
-                    for(auto it = session.selectedSignals.begin(); it != session.selectedSignals.end(); ++it) {
-                        signalsList.push_back(QString::number(it->first));
+                    for (auto it = session.selectedSignals.begin();
+                         it != session.selectedSignals.end(); ++it)
+                    {
+                        signalsList.push_back(QString("0x") + QString::number(it->first, 16));
                     }
                     return signalsList;
                 }
@@ -73,8 +75,10 @@ QVariant LoggingModel::data(const QModelIndex& index, int role) const
         }
         case SignalsListRole: {
             QStringList signalsList;
-            for(auto it = session.selectedSignals.begin(); it != session.selectedSignals.end(); ++it) {
-                signalsList.push_back(QString::number(it->first));
+            for (auto it = session.selectedSignals.begin(); it != session.selectedSignals.end();
+                 ++it)
+            {
+                signalsList.push_back(QString("0x") + QString::number(it->first, 16));
             }
             return signalsList;
         }

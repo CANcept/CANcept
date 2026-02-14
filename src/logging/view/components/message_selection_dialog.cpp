@@ -59,8 +59,7 @@ void MessageSelectionDialog::setupUi()
     mainLayout->addWidget(m_headerWidget);
 
     // ===== Messages Card Widget =====
-    m_messagesCard =
-        new Core::CardWidget("Messages", QString(), QString(), this);
+    m_messagesCard = new Core::CardWidget("Messages", QString(), QString(), this);
 
     if (auto* messagesCardLayout = m_messagesCard->contentLayout())
     {
