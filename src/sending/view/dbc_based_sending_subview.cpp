@@ -3,6 +3,7 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QScrollArea>
+#include <QScrollBar>
 #include <QVBoxLayout>
 
 #include "core/macro/theme.hpp"
@@ -13,6 +14,7 @@
 #include "core/widgets/dbc_signal_row.hpp"
 #include "sending/constants.hpp"
 #include "sending/model/sending_model.hpp"
+#include "sending/styles.hpp"
 
 namespace Sending {
 
@@ -123,6 +125,10 @@ void DbcSendingSubView::applyStyle() const
                                         .arg(spacing.fontSizeMd)
                                         .arg(spacing.spacingLg));
     }
+
+    // Apply vertical scrollbar style
+    if (m_scrollArea->verticalScrollBar())
+        m_scrollArea->verticalScrollBar()->setStyleSheet(Style::Common::verticalScrollBar());
 }
 
 bool DbcSendingSubView::event(QEvent* event)

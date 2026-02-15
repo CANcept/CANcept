@@ -3,6 +3,7 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QPushButton>
+#include <QScrollBar>
 #include <QVBoxLayout>
 
 #include "core/constants.hpp"
@@ -15,6 +16,7 @@
 #include "core/widgets/dbc_signal_row.hpp"
 #include "monitoring/constants.hpp"
 #include "monitoring/model/monitoring_model.hpp"
+#include "monitoring/styles.hpp"
 
 namespace Monitoring {
 SignalList::SignalList(QWidget* parent, MonitoringModel* model)
@@ -63,6 +65,10 @@ void SignalList::applyStyle()
     m_cardsLayout->setContentsMargins(0, 0, 0, 0);
     m_cardsLayout->setSpacing(spacing.spacingSm);
     m_cardsLayout->addStretch();
+
+    // Apply vertical scrollbar style
+    if (m_scrollArea->verticalScrollBar())
+        m_scrollArea->verticalScrollBar()->setStyleSheet(Style::Common::verticalScrollBar());
 }
 
 void SignalList::onDbcChange()
