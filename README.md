@@ -1,82 +1,139 @@
-# Can-Bus-Manager
+# CAN Bus Simulator
 
-![C++ Qt CI](https://github.com/Can-Bus-Manager/Can-Bus-Manager/actions/workflows/ci.yml/badge.svg)
+[![C++ Qt CI](https://github.com/Can-Bus-Manager/Can-Bus-Manager/actions/workflows/ci.yml/badge.svg)](https://github.com/Can-Bus-Manager/Can-Bus-Manager/actions/workflows/ci.yml)
+[![Qt 6.7.3+](https://img.shields.io/badge/Qt-6.7.3+-41CD52?logo=qt&logoColor=white)](https://www.qt.io/)
+[![C++20](https://img.shields.io/badge/C++-20-00599C?logo=cplusplus&logoColor=white)](https://isocpp.org/)
 
-#### **Core Tools**
-- **CMake ≥ 3.16**: Project configuration.
-- **Ninja**: Fast build generator (used in Dev Mode).
-- **C++17 Compiler**: `g++` or `clang` (installed via `build-essential`).
-- **Qt 6.7.3+**: Required modules: `qt6-base-dev`, `qt6-tools-dev`.
+A linux desktop application for CAN (Controller Area Network) bus communication, featuring real-time signal monitoring, message transmission, DBC file support, and comprehensive logging capabilities.
 
-#### **Documentation & Testing**
-- **Doxygen & Graphviz**: For generating API documentation and diagrams.
-- **QtTest**: Included with Qt development libraries.
+## Preview
 
-#### **IDE (Optional)**
-- **CLion** (Recommended for WSL integration) or **VS Code**.
+<p align="center">
+  <img src="doc/res/images/monitoring_mock.png" alt="Frame Monitoring" width="45%">
+  <img src="doc/res/images/send_mock.png" alt="Send CAN Signals" width="45%">
+</p>
 
+## Requirements
 
-## Quick Start
+| Component | Version                            |
+|-----------|------------------------------------|
+| CMake | 3.23+                              |
+| C++ Compiler | C++20 support (GCC 10+, Clang 12+) |
+| Qt | 6.7.3+                             |
+| Ninja | Latest (recommended)               |
 
-####  Quick Install 
-Run this command to install all dependencies at once:
+### Dependencies
+
+The following dependencies are managed as Git submodules:
+- [EnTT](https://github.com/skypjack/entt) - Event dispatcher
+- [spdlog](https://github.com/gabime/spdlog) - Logging library
+- [libsockcanpp](https://github.com/SimonCaworr/libsockcanpp) - CAN socket interface
+- [Qwt](https://qwt.sourceforge.io/) - Qt widgets for technical applications
+- [GoogleTest](https://github.com/google/googletest) - Testing framework
+- [RapidCSV](https://github.com/d99kris/rapidcsv) - CSV parsing
+
+## Installation
+
+### Ubuntu / Debian
+
 ```bash
-sudo apt update && sudo apt install -y build-essential cmake clang-tidy clang-format ninja-build qt6-base-dev qt6-tools-dev qt6-tools-dev-tools doxygen graphviz lcov
+# Install all dependencies
+sudo apt update && sudo apt install -y \
+            qt6-base-dev \
+            qt6-tools-dev \
+            qt6-tools-dev-tools \
+            libqt6svg6-dev \
+            cmake \
+            ninja-build \
+            build-essential \
+            clang-tidy \
+            clang-format \
+            doxygen \
+            graphviz \
+            lcov
+
+# Clone the repository
+git clone --recursive https://github.com/Can-Bus-Manager/Can-Bus-Manager.git
+cd Can-Bus-Manager
+
+# Build and run
+chmod +x start.sh
+./start.sh
 ```
-The project uses a unified control script to manage the build pipeline. Ensure the script is executable before first use:
-`chmod +x start.sh`
+## Usage
 
-### Common Commands
+### Build Commands
 
-| Goal | Command |
-|:--- |:--- |
-| **Standard Run** | `./start.sh` |
-| **Fast Dev Build** | `./start.sh -d` |
-| **Clean Rebuild** | `./start.sh -c` |
-| **Quick Launch** | `./start.sh -nt -nd` |
+| Command | Description |
+|---------|-------------|
+| `./start.sh` | Standard build (Release + tests + docs) |
+| `./start.sh -d` | Development mode (Debug + Ninja) |
+| `./start.sh -c` | Clean rebuild |
+| `./start.sh -nt -nd` | Quick build (skip tests and docs) |
+| `./start.sh -cov` | Generate coverage report |
 
----
+### Setting Up Virtual CAN
 
-##  Project Features & Functions
+```bash
+# Load the vcan kernel module
+sudo modprobe vcan
 
-### 1. Development & Build Pipeline (`-d`)
-Using the `--dev` flag switches the project into "High-Speed" mode:
-* **Generator:** Uses **Ninja** for lightning-fast incremental compiles.
-* **Build Type:** Sets to **Debug**, enabling detailed stack traces and JetBrains/GDB debugger support.
-* **Analysis:** Generates `compile_commands.json` for IDE intake and `clang-tidy` linting.
+# Create a virtual CAN interface
+sudo ip link add dev vcan0 type vcan
+sudo ip link set up vcan0
+```
 
-### 2. Automated Testing (`-nt` to skip)
-We utilize **QtTest** integrated with **CTest**.
-* Tests are located in the `tests/` directory.
-* The CI pipeline runs these automatically on every push.
-* **Manual Run:** `cd build && ctest --output-on-failure`
+### Project Structure
 
-### 3. Documentation (`-nd` to skip)
-API documentation is extracted from source comments using **Doxygen**.
-* **Configuration:** Managed via `doc/Doxygen.in`.
-* **Access:** After building, open `doc/html/index.html` in any browser.
+```
+src/
+├── app_root/       # Application kernel and main window
+├── core/           # Shared interfaces, events, DTOs, utilities
+├── event_broker/   # EnTT-based event broker implementation
+├── can_handler/    # CAN communication layer
+├── dbc_file/       # DBC file management tab
+├── logging/        # Message logging tab
+├── monitoring/     # Signal monitoring tab
+└── sending/        # CAN message sending tab
 
-## Branching Strategy
+tests/
+├── unit/           # Unit tests
+├── integration/    # Integration tests
+├── system/         # System tests
+└── performance/    # Performance benchmarks
+```
 
-| Branch | Prefix | Base From  | Purpose |
-| :--- | :--- | :---  | :--- |
-| **Feature** | `feature/` | `develop`  | New functionality |
+## Development
 
-### Workflow
-1. **Source:** Always branch from **`develop`** for active work.
-2. **Naming:** Use lowercase with hyphens (e.g., `feature/can-parser`).
-3. **Merging:** Create a Pull Request (PR) to `develop`.
-4. **Stable:** The `main` branch is reserved for verified releases only.
+### Code Style
 
-### Naming Convention
-- Branch: CBS-[number]-[branchname] , with number from jira
-  - example: CBS-4-setup-project
-- Pull-Request: CBS-[number] feat|fix|chore: [long description]
-  - example: CBS-4 feat: added basic setup
+This project uses Google C++ style with the following modifications:
+- 4-space indentation
+- 100-character line limit
+- Braces on new lines
 
-### Issue Tracking
-- [Jira](https://pse-can-bus-simulation.atlassian.net/jira/software/projects/KAN/pages)
-- [Confluence](https://pse-can-bus-simulation.atlassian.net/wiki/spaces/CA/pages/1015816/Definitionen)
+Run the formatter before committing:
 
-### Additional Information
-This project uses the Qt framework (LGPL v3).
+```bash
+cmake --build build --target format
+```
+
+### Branching Strategy
+
+| Branch | Purpose |
+|--------|---------|
+| `main` | Stable releases only |
+| `develop` | Active development |
+| `CBS-[number]-[description]` | Feature branches |
+
+**Commit Naming:** `CBS-[number] feat|fix|chore: [description]`
+
+### Documentation
+
+API documentation is generated with Doxygen. After building, open `doc/html/index.html` in your browser.
+
+## Acknowledgments
+
+- Built with [Qt](https://www.qt.io/) framework
+- Event system powered by [EnTT](https://github.com/skypjack/entt)
+- Plotting widgets by [Qwt](https://qwt.sourceforge.io/)
