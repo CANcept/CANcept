@@ -100,20 +100,33 @@ void LoggingDelegate::paint(QPainter* painter, const QStyleOptionViewItem& optio
         // Paint action icons
         int x = option.rect.left() + 5;
         int y = option.rect.top() + option.rect.height() / 2;
-        painter->setPen(THEME.colors().textPrimary);
-        const QIcon exportIcon(":/assets/icon/logging/logging_export.svg");
-        exportIcon.paint(painter, QRect(x, y - spacing.IconSm / 2, spacing.IconSm, spacing.IconSm));
-        // QPixmap exportPixmap = exportIcon.pixmap(QSize(spacing.IconSm, spacing.IconSm))
-        //                            .scaled(spacing.IconSm, spacing.IconSm, Qt::KeepAspectRatio);
-        // painter->drawPixmap(QRect(x, y - spacing.IconSm / 2, spacing.IconSm, spacing.IconSm),
-        //                     exportPixmap);
+
+        // Export icon
+        QPixmap exportPixmap(":/assets/icon/logging/logging_export.svg");
+        exportPixmap =
+            exportPixmap.scaled(QSize(spacing.IconSm, spacing.IconSm), Qt::KeepAspectRatio);
+        QPainter pixmapPainter(&exportPixmap);
+        pixmapPainter.setCompositionMode(QPainter::CompositionMode_SourceIn);
+        pixmapPainter.fillRect(exportPixmap.rect(), colors.surfaceForeground);
+        pixmapPainter.end();
+
+        painter->drawPixmap(
+            QRect(x, y - exportPixmap.height() / 2, exportPixmap.width(), exportPixmap.height()),
+            exportPixmap);
         x += spacing.IconSm + spacing.spacingMd;
 
-        const QIcon detailIcon(":/assets/icon/logging/logging_detail_view.svg");
-        detailIcon.paint(painter, QRect(x, y - spacing.IconSm / 2, spacing.IconSm, spacing.IconSm));
-        // QPixmap detailPixmap = detailIcon.pixmap(QSize(spacing.IconSm, spacing.IconSm));
-        // painter->drawPixmap(QRect(x, y - spacing.IconSm / 2, spacing.IconSm, spacing.IconSm),
-        //                    detailPixmap);
+        // Detail view icon
+        QPixmap detailPixmap(":/assets/icon/logging/logging_detail_view.svg");
+        detailPixmap =
+            detailPixmap.scaled(QSize(spacing.IconSm, spacing.IconSm), Qt::KeepAspectRatio);
+        QPainter detailPainter(&detailPixmap);
+        detailPainter.setCompositionMode(QPainter::CompositionMode_SourceIn);
+        detailPainter.fillRect(detailPixmap.rect(), colors.surfaceForeground);
+        detailPainter.end();
+
+        painter->drawPixmap(
+            QRect(x, y - detailPixmap.height() / 2, detailPixmap.width(), detailPixmap.height()),
+            detailPixmap);
     } else
     {
         // Default rendering for other columns (Timestamp, Duration)
