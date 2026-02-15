@@ -94,7 +94,7 @@ bool LogHistoryTable::event(QEvent* event)
         applyStyle();
         return true;
     }
-    return QWidget::event(event);
+    return QTreeView::event(event);
 }
 
 }  // namespace Logging

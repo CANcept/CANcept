@@ -103,10 +103,10 @@ void LoggingDelegate::paint(QPainter* painter, const QStyleOptionViewItem& optio
         painter->setPen(THEME.colors().textPrimary);
         const QIcon exportIcon(":/assets/icon/logging/logging_export.svg");
         exportIcon.paint(painter, QRect(x, y - spacing.IconSm / 2, spacing.IconSm, spacing.IconSm));
-        //QPixmap exportPixmap = exportIcon.pixmap(QSize(spacing.IconSm, spacing.IconSm))
-        //                           .scaled(spacing.IconSm, spacing.IconSm, Qt::KeepAspectRatio);
-        //painter->drawPixmap(QRect(x, y - spacing.IconSm / 2, spacing.IconSm, spacing.IconSm),
-        //                    exportPixmap);
+        // QPixmap exportPixmap = exportIcon.pixmap(QSize(spacing.IconSm, spacing.IconSm))
+        //                            .scaled(spacing.IconSm, spacing.IconSm, Qt::KeepAspectRatio);
+        // painter->drawPixmap(QRect(x, y - spacing.IconSm / 2, spacing.IconSm, spacing.IconSm),
+        //                     exportPixmap);
         x += spacing.IconSm + spacing.spacingMd;
 
         const QIcon detailIcon(":/assets/icon/logging/logging_detail_view.svg");

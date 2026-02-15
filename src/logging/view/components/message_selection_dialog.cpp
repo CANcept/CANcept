@@ -1,5 +1,6 @@
 #include "message_selection_dialog.hpp"
 
+#include <QMouseEvent>
 #include <QRadioButton>
 
 #include "core/macro/theme.hpp"
@@ -32,15 +33,23 @@ void MessageSelectionDialog::setupUi()
     // Remove window frame to show only the custom dialog
     setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint);
     setModal(true);  // Block interaction with parent window
-    setMinimumWidth(600);
-    setMinimumHeight(700);
-    setSizePolicy(QSizePolicy::Minimum, QSizePolicy::MinimumExpanding);
+    setMinimumWidth(400);
+    setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
 
-    // Main container layout
+    // Main container layout with extra margin for rounded border
     auto* mainLayout = new QVBoxLayout(this);
-    mainLayout->setContentsMargins(spacing.spacingMd, spacing.spacingMd, spacing.spacingMd,
-                                   spacing.spacingMd);
-    mainLayout->setSpacing(spacing.spacingMd);
+    mainLayout->setContentsMargins(spacing.borderThin, spacing.borderThin, spacing.borderThin,
+                                   spacing.borderThin);
+    mainLayout->setSpacing(0);
+
+    // Inner container with proper spacing
+    m_innerContainer = new QWidget(this);
+    m_innerContainer->setObjectName("innerContainer");
+    auto* innerLayout = new QVBoxLayout(m_innerContainer);
+    innerLayout->setContentsMargins(spacing.spacingMd, spacing.spacingMd, spacing.spacingMd,
+                                    spacing.spacingMd);
+    innerLayout->setSpacing(spacing.spacingMd);
+    mainLayout->addWidget(m_innerContainer);
 
     // ===== Header Section =====
     m_headerWidget = new QWidget(this);
@@ -60,7 +69,7 @@ void MessageSelectionDialog::setupUi()
     connect(m_closeButton, &QPushButton::clicked, this, &QDialog::reject);
     headerLayout->addWidget(m_closeButton);
 
-    mainLayout->addWidget(m_headerWidget);
+    innerLayout->addWidget(m_headerWidget);
 
     // Type
     m_buttonWidget = new QWidget();
@@ -76,9 +85,9 @@ void MessageSelectionDialog::setupUi()
     buttonLayout->addWidget(m_rawLabel);
     buttonLayout->addWidget(m_logTypeSwitch);
     buttonLayout->addWidget(m_dbcLabel);
-    mainLayout->addWidget(m_buttonWidget);
+    innerLayout->addWidget(m_buttonWidget);
     connect(m_logTypeSwitch, &Core::StyledSwitch::toggled, this,
-                &MessageSelectionDialog::onLogTypeToggle);
+            &MessageSelectionDialog::onLogTypeToggle);
 
     // ===== Messages Card Widget =====
     m_messagesCard = new Core::CardWidget("Messages", QString(), QString(), this);
@@ -91,6 +100,7 @@ void MessageSelectionDialog::setupUi()
         m_scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
         m_scrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
         m_scrollArea->setFrameShape(QFrame::NoFrame);
+        m_scrollArea->setMinimumHeight(600);
 
         m_scrollContent = new QWidget(m_scrollArea);
         m_scrollContent->setObjectName("scrollContent");
@@ -104,10 +114,7 @@ void MessageSelectionDialog::setupUi()
         messagesCardLayout->addWidget(m_scrollArea);
     }
 
-    mainLayout->addWidget(m_messagesCard, 1);
-    QSizePolicy sp_retain = m_messagesCard->sizePolicy();
-    sp_retain.setRetainSizeWhenHidden(true);
-    m_messagesCard->setSizePolicy(sp_retain);
+    innerLayout->addWidget(m_messagesCard, 1);
     m_messagesCard->setVisible(false);
 
     // ===== Bottom Bar with Start Button =====
@@ -123,7 +130,7 @@ void MessageSelectionDialog::setupUi()
     bottomLayout->addWidget(startBtn);
 
     applyStyle();
-    mainLayout->addWidget(bottomBar);
+    innerLayout->addWidget(bottomBar);
 }
 
 // Adds a message card widget to the scrollable list
@@ -241,10 +248,8 @@ std::map<uint32_t, QStringList> MessageSelectionDialog::getSelectedSignals() con
                 if (checkbox->isChecked())
                 {
                     // Get signal name from the row's name label
-                    const auto labels = signalRow->findChildren<QLabel*>();
-                    if (!labels.isEmpty())
+                    if (const auto labels = signalRow->findChildren<QLabel*>(); !labels.isEmpty())
                     {
-                        // First label is typically the signal name
                         selectedSignals.append(labels.first()->text());
                     }
                 }
@@ -264,6 +269,7 @@ void MessageSelectionDialog::applyStyle()
 {
     const auto& colors = THEME.colors();
     const auto& spacing = THEME.spacing();
+
     setStyleSheet(QString("QDialog {"
                           "   background-color: %1;"
                           "   border: %2px solid %3;"
@@ -271,7 +277,7 @@ void MessageSelectionDialog::applyStyle()
                           "}")
                       .arg(colors.surfaceMain.name())
                       .arg(spacing.borderThin)
-                      .arg(colors.borderStrong.name())
+                      .arg(colors.borderStrong.name(QColor::HexArgb))
                       .arg(spacing.radiusMd));
     if (m_titleLabel)
     {
@@ -359,16 +365,46 @@ LogSessionType MessageSelectionDialog::getSelectedLogSessionType() const
     return RAW;
 }
 
-void MessageSelectionDialog::onLogTypeToggle(bool checked)
+void MessageSelectionDialog::onLogTypeToggle(const bool checked)
 {
     if (checked)
     {
         m_messagesCard->setVisible(true);
-        //setMinimumHeight(600);
     } else
     {
         m_messagesCard->setVisible(false);
-        //setMinimumHeight(0);
+    }
+
+    // Force resize to content
+    if (checked)
+    {
+        setMinimumHeight(0);
+        setMaximumHeight(QWIDGETSIZE_MAX);
+    } else
+    {
+        setMinimumHeight(0);
+        setMaximumHeight(QWIDGETSIZE_MAX);
+    }
+
+    adjustSize();
+    resize(minimumSizeHint());
+}
+
+void MessageSelectionDialog::mousePressEvent(QMouseEvent* event)
+{
+    if (event->button() == Qt::LeftButton)
+    {
+        m_dragPosition = event->globalPosition().toPoint() - frameGeometry().topLeft();
+        event->accept();
+    }
+}
+
+void MessageSelectionDialog::mouseMoveEvent(QMouseEvent* event)
+{
+    if (event->buttons() & Qt::LeftButton)
+    {
+        move(event->globalPosition().toPoint() - m_dragPosition);
+        event->accept();
     }
 }
 
@@ -379,7 +415,7 @@ bool MessageSelectionDialog::event(QEvent* event)
         applyStyle();
         return true;
     }
-    return QWidget::event(event);
+    return QDialog::event(event);
 }
 
 }  // namespace Logging

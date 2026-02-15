@@ -62,6 +62,9 @@ class MessageSelectionDialog final : public QDialog
 
    protected:
     bool event(QEvent* event) override;
+    void mousePressEvent(QMouseEvent* event) override;
+    void mouseMoveEvent(QMouseEvent* event) override;
+
    private slots:
     void onLogTypeToggle(bool checked);
 
@@ -71,6 +74,7 @@ class MessageSelectionDialog final : public QDialog
     void applyStyle();
 
     QWidget* m_headerWidget;
+    QWidget* m_innerContainer;
 
     Core::CardWidget* m_messagesCard;
     QScrollArea* m_scrollArea;
@@ -85,6 +89,9 @@ class MessageSelectionDialog final : public QDialog
     QLabel* m_rawLabel;
     Core::StyledSwitch* m_logTypeSwitch;
     QLabel* m_dbcLabel;
+
+    // For dragging frameless dialog
+    QPoint m_dragPosition;
 };
 
 }  // namespace Logging
