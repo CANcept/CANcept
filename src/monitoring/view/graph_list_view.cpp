@@ -69,6 +69,12 @@ auto GraphListView::event(QEvent* event) -> bool
     {
         applyStyle();
         updateViewData();
+
+        for (SignalGraph* graph : m_signal_graphs)
+        {
+            graph->applyStyle();
+        }
+
         return true;
     }
     return QWidget::event(event);
@@ -155,7 +161,6 @@ void GraphListView::updateViewData()
         QString targetMsgId = graph->getMessageId();
         QString targetSignalName = graph->getSignalName();
         QModelIndex messageIndex;
-        graph->applyStyle();
 
         bool found = false;
         for (int i = 0; i < m_model->rowCount(QModelIndex()); ++i)
