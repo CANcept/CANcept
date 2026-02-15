@@ -3,6 +3,7 @@
 #include <QString>
 
 #include "core/macro/theme.hpp"
+#include "core/theme/style_event.hpp"
 
 namespace Logging {
 
@@ -41,6 +42,16 @@ void TimerLabel::updateTimer(qint64 elapsedMs)
                 .arg(minutes, 2, 10, QChar('0'))
                 .arg(seconds, 2, 10, QChar('0'))
                 .arg(centiseconds, 2, 10, QChar('0')));
+}
+
+bool TimerLabel::event(QEvent* event)
+{
+    if (event->type() == Core::StyleEvent::EventType)
+    {
+        applyStyle();
+        return true;
+    }
+    return QLabel::event(event);
 }
 
 }  // namespace Logging

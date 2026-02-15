@@ -26,6 +26,9 @@ class TimerLabel final : public QLabel
      */
     void updateTimer(qint64 elapsedMs);
 
+   protected:
+    bool event(QEvent* event) override;
+
    private:
     void applyStyle();
 };
