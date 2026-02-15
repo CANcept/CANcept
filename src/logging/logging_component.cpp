@@ -18,9 +18,9 @@ namespace Logging {
 // Constructs the logging component and wires up all connections
 LoggingComponent::LoggingComponent(Core::IEventBroker& broker)
     : Core::ITabComponent(broker,
-                          "logging",                          // unique internal ID
-                          "Logging",                          // tab title
-                          QIcon(":/assets/icon/logging.svg")  // tab icon
+                          "logging",                               // unique internal ID
+                          "Logging",                               // tab title
+                          QIcon(":/assets/icon/logging/icon.svg")  // tab icon
                           ),
       m_model(std::make_unique<LoggingModel>()),
       m_view(std::make_unique<LoggingView>())

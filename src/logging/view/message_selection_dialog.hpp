@@ -1,7 +1,6 @@
 #pragma once
 
 #include <QDialog>
-#include <QDialogButtonBox>
 #include <QScrollArea>
 #include <QStringList>
 #include <QVBoxLayout>
@@ -65,9 +64,6 @@ class MessageSelectionDialog final : public QDialog
    private:
     /** @brief Initializes the structural layout and styling. */
     void setupUi();
-
-    QWidget* m_headerWidget;
-    QDialogButtonBox* m_buttonBox;
 
     Core::CardWidget* m_messagesCard;
     QScrollArea* m_scrollArea;

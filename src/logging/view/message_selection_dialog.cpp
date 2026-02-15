@@ -16,7 +16,6 @@ namespace Logging {
 // Constructs the message selection dialog for logging configuration
 MessageSelectionDialog::MessageSelectionDialog(QWidget* parent)
     : QDialog(parent),
-      m_headerWidget(nullptr),
       m_messagesCard(nullptr),
       m_scrollArea(nullptr),
       m_scrollContent(nullptr),
@@ -31,9 +30,9 @@ void MessageSelectionDialog::setupUi()
     const auto& spacing = THEME.spacing();
     const auto& colors = THEME.colors();
 
-    // Remove window frame to show only the custom dialog
-    setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint);
-    setModal(false);
+    // Use standard dialog window with system frame
+    setWindowTitle("Select Messages to Log");
+    setModal(true);
     setMinimumSize(635, 517);
 
     // Main container layout
@@ -42,66 +41,13 @@ void MessageSelectionDialog::setupUi()
                                    spacing.spacingMd);
     mainLayout->setSpacing(spacing.spacingMd);
 
-    // Apply dialog styling
+    // Apply background styling
     const QString dialogStyle = QString(
                                     "QDialog {"
                                     "   background-color: %1;"
-                                    "   border: %2px solid %3;"
-                                    "   border-radius: %4px;"
                                     "}")
-                                    .arg(colors.surfaceMain.name())
-                                    .arg(spacing.borderThin)
-                                    .arg(colors.borderStrong.name())
-                                    .arg(spacing.radiusMd);
+                                    .arg(colors.surfaceMain.name());
     setStyleSheet(dialogStyle);
-
-    // ===== Header Section =====
-    m_headerWidget = new QWidget(this);
-    auto* headerLayout = new QHBoxLayout(m_headerWidget);
-    headerLayout->setContentsMargins(spacing.spacingMd, spacing.spacingMd, spacing.spacingMd,
-                                     spacing.spacingMd);
-    headerLayout->setSpacing(spacing.spacingMd);
-
-    // Title
-    auto* titleLabel = new QLabel("Select Messages to Log", m_headerWidget);
-    const QString titleStyle = QString(
-                                   "QLabel {"
-                                   "   font-weight: %1;"
-                                   "   color: %2;"
-                                   "}")
-                                   .arg(spacing.fontWeightMedium)
-                                   .arg(colors.textPrimary.name());
-    titleLabel->setStyleSheet(titleStyle);
-    headerLayout->addWidget(titleLabel);
-    headerLayout->addStretch();
-
-    // Close button
-    auto* closeBtn = new QPushButton("×", m_headerWidget);
-    closeBtn->setFixedSize(48, 48);
-    const QString closeBtnStyle = QString(
-                                      "QPushButton {"
-                                      "   background-color: transparent;"
-                                      "   border: none;"
-                                      "   font-size: 32px;"
-                                      "   font-weight: %1;"
-                                      "   color: %2;"
-                                      "}"
-                                      "QPushButton:hover {"
-                                      "   background-color: %3;"
-                                      "   border-radius: 24px;"
-                                      "}"
-                                      "QPushButton:pressed {"
-                                      "   background-color: %4;"
-                                      "}")
-                                      .arg(spacing.fontWeightBold)
-                                      .arg(colors.textPrimary.name())
-                                      .arg(QColor(0, 0, 0, 13).name(QColor::HexArgb))
-                                      .arg(QColor(0, 0, 0, 26).name(QColor::HexArgb));
-    closeBtn->setStyleSheet(closeBtnStyle);
-    connect(closeBtn, &QPushButton::clicked, this, &QDialog::reject);
-    headerLayout->addWidget(closeBtn);
-
-    mainLayout->addWidget(m_headerWidget);
 
     // ===== Messages Card Widget =====
     m_messagesCard = new Core::CardWidget("Messages", QString(),
