@@ -106,12 +106,11 @@ auto DbcModel::columnCount(const QModelIndex& parent) const -> int
         switch (parentItem->type())
         {
             case Core::DbcItemType::Message:
-                // Kinder einer Message sind Signale -> 12 Spalten
                 return Constants::Columns::SignalColumnCount;
 
             case Core::DbcItemType::Ecu:
-            case Core::DbcItemType::OrphanHolder: // <--- WICHTIGER FIX!
-                // Kinder einer ECU oder des OrphanHolders sind Messages -> 5 Spalten
+            case Core::DbcItemType::OrphanHolder:
+
                 return Constants::Columns::MsgColumnCount;
 
             default:
