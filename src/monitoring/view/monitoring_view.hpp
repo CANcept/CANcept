@@ -6,14 +6,11 @@
 
 #include "can_bus_config_card.hpp"
 #include "core/dto/dbc_dto.hpp"
+#include "core/widgets/tinted_icon_label.hpp"
 #include "graph_list_view.hpp"
 #include "monitoring/delegate/monitoring_delegate.hpp"
 #include "monitoring/model/monitoring_model.hpp"
 #include "signal_list.hpp"
-
-namespace Core {
-class TintedIconLabel;
-}
 
 /**
  * @namespace Monitoring
