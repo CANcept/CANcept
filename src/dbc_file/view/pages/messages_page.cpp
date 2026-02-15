@@ -117,8 +117,6 @@ void MessageDetailView::setupUi()
     m_detailLabel = new QLabel(Constants::MessagesPage::NoSignalsIndicator, m_stack);
     m_detailLabel->setAlignment(Qt::AlignCenter);
 
-    const auto& colors = THEME.colors();
-
     // Add label as page 1
     m_stack->addWidget(m_detailLabel);
 

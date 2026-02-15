@@ -181,8 +181,8 @@ class MessagesPage : public QWidget
     bool event(QEvent* event) override;
 
     /**
- * @brief Updates the empty state label visibility depending on tree contents.
- */
+     * @brief Updates the empty state label visibility depending on tree contents.
+     */
     void updateEmptyState();
 
    signals:
@@ -241,6 +241,6 @@ class MessagesPage : public QWidget
     QSplitter* m_splitter = nullptr; /**< Splitter dividing master and detail panes */
     Core::SearchableFilterTable* m_messagesTable = nullptr; /**< Table widget with search/filter */
     MessageDetailView* m_detailView = nullptr; /**< Detail view of the selected message */
-    QLabel* m_emptyLabel = nullptr; /**< Label shown when no messages are found; */
+    QLabel* m_emptyLabel = nullptr;            /**< Label shown when no messages are found; */
 };
 }  // namespace DbcFile

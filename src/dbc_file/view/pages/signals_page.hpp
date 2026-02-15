@@ -108,8 +108,8 @@ class SignalsPage : public QWidget
     void setupUi();
 
     /**
- * @brief Updates the empty state label visibility depending on tree contents.
- */
+     * @brief Updates the empty state label visibility depending on tree contents.
+     */
     void updateEmptyState();
 
     /**
@@ -126,8 +126,7 @@ class SignalsPage : public QWidget
    private:
     /// Searchable and filterable table widget
     Core::SearchableFilterTable* m_tableWidget{nullptr};
-    QLabel* m_emptyLabel{nullptr}; /// Label shown when no signals are found.
-
+    QLabel* m_emptyLabel{nullptr};  /// Label shown when no signals are found.
 };
 
 }  // namespace DbcFile
