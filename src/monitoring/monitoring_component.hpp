@@ -106,6 +106,7 @@ class MonitoringComponent final : public Core::ITabComponent
 
    private:
     void connectSignals();
+    void checkDeviceReadiness() const;
 
     /** @brief Model holding CAN sending configuration and data */
     std::unique_ptr<MonitoringModel> m_model;
@@ -128,8 +129,14 @@ class MonitoringComponent final : public Core::ITabComponent
     /** @brief RAII Handle for incoming CAN frames subscription. */
     Core::Connection m_decodedFrameReceivedConn;
 
+    /** @brief RAII Handle for CAN driver change event subscription. */
+    Core::Connection m_canDriverChangeConn;
+
     /** @brief Tracks whether a CAN interface is currently selected */
     bool m_interfaceSelected = false;
+
+    /** @brief Tracks if a DBC file is currently loaded. */
+    mutable bool m_dbcLoaded = false;
 
     QTimer m_updateTimer;
 };

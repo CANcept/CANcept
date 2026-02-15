@@ -27,12 +27,8 @@ void GraphListView::setupUi()
     m_scrollArea = new QScrollArea(this);
     m_scrollContent = new QWidget(m_scrollArea);
     m_layout = new QVBoxLayout(m_scrollContent);
-    m_dbcLabel = new QLabel(this);
-    m_dbcLabel->setText(QString("Select DBC file first."));
-    m_dbcLabel->show();
 
     m_scrollArea->setWidget(m_scrollContent);
-    m_mainLayout->addWidget(m_dbcLabel);
     m_mainLayout->addWidget(m_scrollArea);
 
     applyStyle();
@@ -59,9 +55,6 @@ void GraphListView::applyStyle()
     m_layout->setContentsMargins(0, 0, 0, 0);
     m_layout->setSpacing(spacing.spacingSm);
     m_layout->addStretch();
-
-    if (!m_dbcLabel) return;
-    m_dbcLabel->setStyleSheet(QString("color: %1;").arg(colors.textSecondary.name()));
 }
 
 auto GraphListView::event(QEvent* event) -> bool
@@ -145,7 +138,6 @@ void GraphListView::onDbcChange()
         deleteGraph(graph->getMessageId(), graph->getSignalName());
     }
     m_signal_graphs.clear();
-    m_dbcLabel->hide();
 }
 
 void GraphListView::updateViewData()
