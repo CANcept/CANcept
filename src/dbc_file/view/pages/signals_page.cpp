@@ -112,9 +112,7 @@ void SignalsPage::setupUi()
 
     // --- Vertical Scrollbar Setup -------------------------------------------
     table->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-    table->verticalScrollBar()->setStyleSheet(Style::Common::verticalScrollBar());
 }
-
 void SignalsPage::updateEmptyState()
 {
     if (!m_tableWidget || !m_emptyLabel) return;

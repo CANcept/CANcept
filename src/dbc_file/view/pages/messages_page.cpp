@@ -209,6 +209,7 @@ void MessagesPage::configureMasterTable()
     table->setItemDelegate(new MessageTableDelegate(table));
     table->setSelectionBehavior(QAbstractItemView::SelectRows);
     table->setSelectionMode(QAbstractItemView::SingleSelection);
+    table->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
 
     m_messagesTable->setSearchPlaceholder(Constants::MessagesPage::SearchbarText);
 }
@@ -216,12 +217,12 @@ void MessagesPage::applyStyle()
 {
     // --- Style Master Table ---
     if (auto* table = m_messagesTable->tableView())
-        table->verticalScrollBar()->setStyleSheet(DbcFile::Style::Common::verticalScrollBar());
+        table->verticalScrollBar()->setStyleSheet(Style::Common::verticalScrollBar());
 
     // --- Style Detail View ---
     if (m_detailView && m_detailView->getSignalList())
         m_detailView->getSignalList()->verticalScrollBar()->setStyleSheet(
-            DbcFile::Style::Common::verticalScrollBar());
+            Style::Common::verticalScrollBar());
 
     // --- Forward style refresh to child widgets ---
     if (m_messagesTable) m_messagesTable->applyStyle();
