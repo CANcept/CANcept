@@ -39,6 +39,10 @@ void MonitoringComponent::connectSignals()
             &SignalList::onDbcChange);
     connect(this, &MonitoringComponent::dbcConfigurationChanged, m_view->getGraphListView(),
             &GraphListView::onDbcChange);
+    connect(this, &MonitoringComponent::dbcConfigurationChanged, this, [this]() {
+        m_dbcLoaded = true;
+        checkDeviceReadiness();
+    });
 
     connect(this, &MonitoringComponent::dbcFrameReceived, m_model.get(),
             &MonitoringModel::onIncomingDbcFrame);
@@ -60,6 +64,13 @@ void MonitoringComponent::onStart()
             emit dbcFrameReceived(event.canMessage);
         });
 
+    m_canDriverChangeConn = m_eventBroker.subscribe<Core::CanDriverChangeEvent>(
+        [this](const Core::CanDriverChangeEvent&) {
+            QMetaObject::invokeMethod(
+                this, [this]() { checkDeviceReadiness(); }, Qt::QueuedConnection);
+        });
+
+    checkDeviceReadiness();
     m_updateTimer.start(Constants::REFRESH_INTERVAL_MS);
 }
 
@@ -72,12 +83,36 @@ void MonitoringComponent::onStop()
     m_parseSuccessConn = {};
     m_parseErrorConn = {};
     m_decodedFrameReceivedConn = {};
+    m_canDriverChangeConn = {};
 }
 
 void MonitoringComponent::onDeviceChanged(const std::string& deviceName) const
 {
     LOG_INF("MonitoringComponent", "CAN device changed to: {}", deviceName);
     m_eventBroker.publish<Core::CanDriverChangeEvent>(Core::CanDriverChangeEvent(deviceName));
+}
+
+void MonitoringComponent::checkDeviceReadiness() const
+{
+    bool isReady = false;
+    m_eventBroker.publish<Core::CheckCanDeviceReadyEvent>(Core::CheckCanDeviceReadyEvent(isReady));
+
+    if (!isReady || !m_dbcLoaded)
+    {
+        m_view->showNoDbcOverlay();
+        if (!isReady)
+        {
+            LOG_WRN("MonitoringComponent", "CAN device not configured");
+        }
+        if (!m_dbcLoaded)
+        {
+            LOG_INF("MonitoringComponent", "DBC file not loaded");
+        }
+    } else
+    {
+        m_view->hideNoDbcOverlay();
+        LOG_INF("MonitoringComponent", "CAN device ready and DBC loaded");
+    }
 }
 
 }  // namespace Monitoring

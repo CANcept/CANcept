@@ -33,6 +33,9 @@ inline const QString ARROW_RIGHT_BUTTON_ICON_PATH = ":/assets/icon/monitoring/ar
 /** @brief Icon used for the message card in expanded state */
 inline const QString ARROW_DOWN_BUTTON_ICON_PATH = ":/assets/icon/monitoring/arrow_down.svg";
 
+/** @brief Path to the settings Logo. */
+inline const QString SETTINGS_ICON_PATH = ":/assets/icon/settings.svg";
+
 /** @brief Identifier used by the module to communicate with the system */
 inline const QString MODULE_IDENTIFIER = "MonitoringComponent";
 
@@ -74,6 +77,10 @@ inline const QString SIGNAL_GRAPH_TITLE = "Signal Value";
 
 /** @brief Label for messages list in view */
 inline const QString MESSAGES_LABEL = "Message";
+
+/** @brief Text for when a dbc file isn't loaded. */
+inline const QString DBC_FILE_NOT_LOADED_MESSAGE =
+    "DBC file isn't loaded. Connection first has to be configured in ";
 
 const int REFRESH_INTERVAL_MS = 1000;
 

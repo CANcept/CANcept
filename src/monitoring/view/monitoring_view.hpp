@@ -1,10 +1,12 @@
 #pragma once
 
+#include <QLabel>
 #include <QSortFilterProxyModel>
 #include <QSplitter>
 
 #include "can_bus_config_card.hpp"
 #include "core/dto/dbc_dto.hpp"
+#include "core/widgets/tinted_icon_label.hpp"
 #include "graph_list_view.hpp"
 #include "monitoring/delegate/monitoring_delegate.hpp"
 #include "monitoring/model/monitoring_model.hpp"
@@ -56,10 +58,18 @@ class MonitoringView : public QWidget
     void refreshDataView();
 
    public slots:
-    void onUpdateMessages();
+    void onUpdateMessages() const;
+
+    void showNoDbcOverlay() const;
+    void hideNoDbcOverlay() const;
+
+   protected:
+    void resizeEvent(QResizeEvent* event) override;
+    bool event(QEvent* event) override;
 
    private:
     void setupUi();
+    void applyStyle() const;
 
     /**
      * @brief Proxy model used to filter and sort the signal tree data.
@@ -77,5 +87,8 @@ class MonitoringView : public QWidget
     MonitoringDelegate* m_delegate;
 
     Core::DbcConfig m_dbcConfig;
+
+    QWidget* m_noDbcOverlay;
+    Core::TintedIconLabel* m_settingsIconLabel;
 };
 }  // namespace Monitoring
