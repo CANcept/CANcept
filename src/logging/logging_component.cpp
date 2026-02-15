@@ -1,10 +1,16 @@
 #include "logging_component.hpp"
 
+#include <QDialog>
 #include <QFile>
 #include <QFileDialog>
 #include <QMessageBox>
+#include <QPushButton>
 #include <QTextStream>
+#include <QVBoxLayout>
 #include <core/event/dbc_event.hpp>
+
+#include "core/macro/theme.hpp"
+#include "core/widgets/card_widget.hpp"
 #
 
 namespace Logging {
@@ -77,6 +83,12 @@ LoggingComponent::LoggingComponent(Core::IEventBroker& broker)
     connect(m_view.get(), &LoggingView::stopRequested, this, &LoggingComponent::stopLogging);
     connect(m_view.get(), &LoggingView::detailRequested, this,
             &LoggingComponent::onDetailRequested);
+
+    // Handle logging mode changes
+    connect(m_view.get(), &LoggingView::loggingModeChanged, this, [this](bool dbcBased) {
+        m_isDbcLogging = dbcBased;
+        LOG_INFO("Logging mode changed to: {}", dbcBased ? "DBC-based" : "Raw");
+    });
 
     connect(m_view.get(), &LoggingView::exportRequested, this, [this](const QModelIndex& index) {
         const QString sessionId = m_model->sessionIdAt(index);
@@ -182,35 +194,76 @@ void LoggingComponent::startLogging()
 
     LOG_INFO("Initializing logging session");
 
-    // Ensure dialog is up-to-date before showing
-    // This handles edge cases where the dialog might not have received the DBC update
-    const auto& currentDbc = m_model->getCurrentDbcConfig();
-    if (currentDbc.has_value())
+    // CAN interface is configured in global settings, so we use a descriptive placeholder
+    const QString selectedDevice = "Global CAN Interface";
+    std::map<uint32_t, QStringList> selectedSignals;
+
+    // Check if DBC-based logging is enabled
+    if (m_view->isDbcLoggingEnabled())
     {
+        // DBC-based logging: show message selection dialog
+        const auto& currentDbc = m_model->getCurrentDbcConfig();
+
+        if (!currentDbc.has_value())
+        {
+            LOG_WARN("DBC-based logging requested but no valid DBC file is parsed");
+
+            // Create a dialog with a styled card widget
+            auto* dialog = new QDialog(m_view.get());
+            dialog->setModal(true);
+            dialog->setMinimumWidth(400);
+
+            auto* layout = new QVBoxLayout(dialog);
+            layout->setContentsMargins(20, 20, 20, 20);
+            layout->setSpacing(16);
+
+            // Create warning card
+            auto* card =
+                new Core::CardWidget("No DBC Loaded",
+                                     "DBC-based logging requires a valid DBC file to be loaded.\n"
+                                     "Please load a DBC file or switch to raw logging mode.",
+                                     ":/assets/icon/dbc_file/load_new.svg", dialog);
+            layout->addWidget(card);
+
+            // Add OK button
+            auto* okButton = new QPushButton("OK", dialog);
+            okButton->setDefault(true);
+            connect(okButton, &QPushButton::clicked, dialog, &QDialog::accept);
+            layout->addWidget(okButton, 0, Qt::AlignRight);
+
+            dialog->exec();
+            delete dialog;
+            return;
+        }
+
+        // Ensure dialog is up-to-date before showing
         LOG_DEBUG("Synchronizing message selection dialog with current DBC config ({} messages)",
                   currentDbc.value().messageDefinitions.size());
         m_selectionDialog->setDbcConfig(currentDbc.value());
-    }
 
-    // Show message selection dialog
-    m_selectionDialog->setAvailableDevices({"vcan0", "can0", "can1"});
+        // Show message selection dialog
+        if (m_selectionDialog->exec() != QDialog::Accepted)
+        {
+            LOG_DEBUG("User cancelled logging session");
+            return;  // User cancelled
+        }
 
-    if (m_selectionDialog->exec() != QDialog::Accepted)
+        selectedSignals = m_selectionDialog->getSelectedSignals();
+
+        LOG_INFO("Starting new DBC-based logging session on device: {}",
+                 selectedDevice.toStdString());
+        LOG_INFO("Selected signals for {} messages", selectedSignals.size());
+
+        // Log details of selected signals
+        for (const auto& [messageId, signalList] : selectedSignals)
+        {
+            LOG_DEBUG("Message 0x{:X}: {} signals selected", messageId, signalList.size());
+        }
+    } else
     {
-        LOG_DEBUG("User cancelled logging session");
-        return;  // User cancelled
-    }
-
-    const QString selectedDevice = m_selectionDialog->getSelectedDevice();
-    std::map<uint32_t, QStringList> selectedSignals = m_selectionDialog->getSelectedSignals();
-
-    LOG_INFO("Starting new logging session on device: {}", selectedDevice.toStdString());
-    LOG_INFO("Selected signals for {} messages", selectedSignals.size());
-
-    // Log details of selected signals
-    for (const auto& [messageId, signalList] : selectedSignals)
-    {
-        LOG_DEBUG("Message 0x{:X}: {} signals selected", messageId, signalList.size());
+        // Raw logging: skip dialog and start immediately
+        LOG_INFO("Starting new raw logging session on device: {}", selectedDevice.toStdString());
+        LOG_INFO("Raw logging mode - no signal selection required");
     }
 
     m_model->startNewSession(selectedDevice, selectedSignals);
@@ -220,19 +273,28 @@ void LoggingComponent::startLogging()
     m_view->updateTimer(0);
     m_timer->start();  // Starts with 10ms interval set in constructor
 
-    m_rawMsgConn = m_eventBroker.subscribe<Core::ReceivedCanRawEvent>(
-        [this](const Core::ReceivedCanRawEvent& event) {
-            LOG_TRACE("Received raw CAN frame - ID: 0x{:X}",
-                      static_cast<uint8_t>(event.canMessage.messageId));
-            emit receiveRawFrame(event.canMessage);
-        });
-
-    m_dbcMsgConn = m_eventBroker.subscribe<Core::ReceivedCanDbcEvent>(
-        [this](const Core::ReceivedCanDbcEvent& event) {
-            LOG_TRACE("Received DBC CAN message - ID: 0x{:X}",
-                      static_cast<uint8_t>(event.canMessage.messageId));
-            emit receiveDbcSignals(event.canMessage);
-        });
+    // Subscribe based on logging mode
+    if (m_isDbcLogging)
+    {
+        // DBC-based logging: subscribe to decoded messages
+        LOG_INFO("Starting DBC-based logging");
+        m_dbcMsgConn = m_eventBroker.subscribe<Core::ReceivedCanDbcEvent>(
+            [this](const Core::ReceivedCanDbcEvent& event) {
+                LOG_TRACE("Received DBC CAN message - ID: 0x{:X}",
+                          static_cast<uint8_t>(event.canMessage.messageId));
+                emit receiveDbcSignals(event.canMessage);
+            });
+    } else
+    {
+        // Raw logging: subscribe to raw CAN frames
+        LOG_INFO("Starting raw logging");
+        m_rawMsgConn = m_eventBroker.subscribe<Core::ReceivedCanRawEvent>(
+            [this](const Core::ReceivedCanRawEvent& event) {
+                LOG_TRACE("Received raw CAN frame - ID: 0x{:X}",
+                          static_cast<uint8_t>(event.canMessage.messageId));
+                emit receiveRawFrame(event.canMessage);
+            });
+    }
 
     m_view->setRecordingState(true);
     LOG_INFO("Logging session started successfully");
@@ -428,21 +490,22 @@ QWidget* LoggingComponent::createDetailWidget(const LogSession* session)
     // ===== Back Button =====
     auto* backBtn = new QPushButton("Back to History", detailView);
     backBtn->setFixedSize(200, 50);
-    backBtn->setStyleSheet(QString(
-        "QPushButton {"
-        "   background-color: %1;"
-        "   border: none;"
-        "   border-radius: 25px;"
-        "   color: black;"
-        "   font-family: 'Roboto';"
-        "   font-size: 18px;"
-        "   font-weight: 500;"
-        "QPushButton:hover {"
-        "   background-color: #e8e8ea;"
-        "}"
-        "QPushButton:pressed {"
-        "   background-color: #d8d8da;"
-        "}")).arg(THEME.colors().surfaceMain);
+    backBtn->setStyleSheet(QString("QPushButton {"
+                                   "   background-color: %1;"
+                                   "   border: none;"
+                                   "   border-radius: 25px;"
+                                   "   color: black;"
+                                   "   font-family: 'Roboto';"
+                                   "   font-size: 18px;"
+                                   "   font-weight: 500;"
+                                   "}"
+                                   "QPushButton:hover {"
+                                   "   background-color: #e8e8ea;"
+                                   "}"
+                                   "QPushButton:pressed {"
+                                   "   background-color: #d8d8da;"
+                                   "}")
+                               .arg(THEME.colors().surfaceMain.name()));
     connect(backBtn, &QPushButton::clicked, m_view.get(), &LoggingView::hideDetailView);
 
     auto* buttonLayout = new QHBoxLayout();

@@ -17,7 +17,6 @@ namespace Logging {
 MessageSelectionDialog::MessageSelectionDialog(QWidget* parent)
     : QDialog(parent),
       m_headerWidget(nullptr),
-      m_deviceSelector(nullptr),
       m_messagesCard(nullptr),
       m_scrollArea(nullptr),
       m_scrollContent(nullptr),
@@ -67,8 +66,6 @@ void MessageSelectionDialog::setupUi()
     auto* titleLabel = new QLabel("Select Messages to Log", m_headerWidget);
     const QString titleStyle = QString(
                                    "QLabel {"
-                                   "   font-family: 'Roboto';"
-                                   "   font-size: 24px;"
                                    "   font-weight: %1;"
                                    "   color: %2;"
                                    "}")
@@ -106,101 +103,9 @@ void MessageSelectionDialog::setupUi()
 
     mainLayout->addWidget(m_headerWidget);
 
-    // ===== Interface Selector =====
-    auto* interfaceContainer = new QWidget(this);
-    interfaceContainer->setMinimumHeight(94);
-    auto* interfaceLayout = new QVBoxLayout(interfaceContainer);
-    interfaceLayout->setContentsMargins(spacing.spacingLg + 1, spacing.spacingLg + 1,
-                                        spacing.spacingLg + 1, spacing.spacingMd);
-    interfaceLayout->setSpacing(spacing.spacingSm);
-
-    // Interface label
-    auto* interfaceLabel = new QLabel("Interface", interfaceContainer);
-    const QString interfaceLabelStyle = QString(
-                                            "QLabel {"
-                                            "   border: none;"
-                                            "   font-family: 'Roboto';"
-                                            "   font-size: %1px;"
-                                            "   font-weight: %2;"
-                                            "   color: %3;"
-                                            "}")
-                                            .arg(spacing.fontSizeLg)
-                                            .arg(spacing.fontWeightNormal)
-                                            .arg(colors.textPrimary.name());
-    interfaceLabel->setStyleSheet(interfaceLabelStyle);
-    interfaceLayout->addWidget(interfaceLabel);
-
-    // Device selector (combo box styled as filter bar)
-    m_deviceSelector = new QComboBox(interfaceContainer);
-    m_deviceSelector->setMinimumHeight(34);
-    const QString comboStyle = QString(
-                                   "QComboBox {"
-                                   "   background-color: %1;"
-                                   "   border: none;"
-                                   "   border-radius: 17px;"
-                                   "   padding: 1px %2px;"
-                                   "   font-family: 'Roboto';"
-                                   "   font-size: %3px;"
-                                   "   font-weight: %4;"
-                                   "   color: %5;"
-                                   "   min-width: 200px;"
-                                   "}"
-                                   "QComboBox:hover {"
-                                   "   background-color: %6;"
-                                   "}"
-                                   "QComboBox::drop-down {"
-                                   "   border: none;"
-                                   "   width: %7px;"
-                                   "}"
-                                   "QComboBox::down-arrow {"
-                                   "   image: none;"
-                                   "   border: none;"
-                                   "   width: %2px;"
-                                   "   height: 9px;"
-                                   "}"
-                                   "QComboBox QAbstractItemView {"
-                                   "   background-color: %8;"
-                                   "   border: %9px solid %10;"
-                                   "   border-radius: %11px;"
-                                   "   padding: %12px;"
-                                   "   selection-background-color: %1;"
-                                   "   font-family: 'Roboto';"
-                                   "   font-size: %3px;"
-                                   "}")
-                                   .arg(colors.surfacePrimary.name())
-                                   .arg(spacing.spacingLg)
-                                   .arg(spacing.fontSizeMd)
-                                   .arg(spacing.fontWeightNormal)
-                                   .arg(colors.textSecondary.name())
-                                   .arg(colors.surfaceHover.name())
-                                   .arg(spacing.spacingXl)
-                                   .arg(colors.surfaceMain.name())
-                                   .arg(spacing.borderThin)
-                                   .arg(colors.borderSubtle.name())
-                                   .arg(spacing.radiusMd)
-                                   .arg(spacing.spacingXs + 1);
-    m_deviceSelector->setStyleSheet(comboStyle);
-    m_deviceSelector->setPlaceholderText("Select interface...");
-    interfaceLayout->addWidget(m_deviceSelector);
-
-    // Add border to interface container
-    const QString containerStyle = QString(
-                                       "QWidget {"
-                                       "   border: %1px solid %2;"
-                                       "   border-radius: %3px;"
-                                       "   background-color: %4;"
-                                       "}")
-                                       .arg(spacing.borderThin)
-                                       .arg(colors.borderSubtle.name())
-                                       .arg(spacing.radiusMd)
-                                       .arg(colors.surfaceMain.name());
-    interfaceContainer->setStyleSheet(containerStyle);
-
-    mainLayout->addWidget(interfaceContainer);
-
     // ===== Messages Card Widget =====
-    m_messagesCard =
-        new Core::CardWidget("Messages", QString(), QString(":/assets/icon/messages.svg"), this);
+    m_messagesCard = new Core::CardWidget("Messages", QString(),
+                                          QString(":/assets/icon/sending/messages.svg"), this);
 
     if (auto* messagesCardLayout = m_messagesCard->contentLayout())
     {
@@ -240,19 +145,6 @@ void MessageSelectionDialog::setupUi()
     bottomLayout->addWidget(startBtn);
 
     mainLayout->addWidget(bottomBar);
-}
-
-// Populates the device selector dropdown with available CAN interfaces
-void MessageSelectionDialog::setAvailableDevices(const QStringList& devices)
-{
-    m_deviceSelector->clear();
-    m_deviceSelector->addItems(devices);
-}
-
-// Returns the currently selected CAN device/interface
-QString MessageSelectionDialog::getSelectedDevice() const
-{
-    return m_deviceSelector->currentText();
 }
 
 // Adds a message card widget to the scrollable list

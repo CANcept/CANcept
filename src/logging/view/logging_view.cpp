@@ -37,6 +37,12 @@ void LoggingView::setupUi()
 
     headerLayout->addStretch();
 
+    // DBC Checkbox
+    m_dbcCheckbox = new Core::StyledCheckBox("DBC-based", m_headerBox);
+    m_dbcCheckbox->setChecked(true);  // Default to DBC-based logging
+    m_dbcCheckbox->setToolTip("Enable DBC-based logging (checked) or raw logging (unchecked)");
+    headerLayout->addWidget(m_dbcCheckbox);
+
     mainLayout->addWidget(m_headerBox);
 
     // ===== Main Frame (bordered container) =====
@@ -94,6 +100,9 @@ void LoggingView::setupUi()
             emit startRequested();
         }
     });
+
+    connect(m_dbcCheckbox, &QCheckBox::stateChanged, this,
+            [this](int state) { emit loggingModeChanged(state == Qt::Checked); });
 }
 
 void LoggingView::setModel(LoggingModel* model)
@@ -179,6 +188,7 @@ void LoggingView::setRecordingState(bool isRecording)
     m_btnAction->setRecordingState(isRecording);
     m_timerLabel->setVisible(isRecording);
     m_statusContainer->setVisible(isRecording);
+    m_dbcCheckbox->setEnabled(!isRecording);  // Disable checkbox during recording
 }
 
 void LoggingView::updateTimer(qint64 elapsedMs)
@@ -189,6 +199,11 @@ void LoggingView::updateTimer(qint64 elapsedMs)
 void LoggingView::updateStatusTags(const QStringList& messages)
 {
     m_statusContainer->updateStatusTags(messages);
+}
+
+bool LoggingView::isDbcLoggingEnabled() const
+{
+    return m_dbcCheckbox->isChecked();
 }
 
 }  // namespace Logging

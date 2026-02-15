@@ -1,6 +1,5 @@
 #pragma once
 
-#include <QComboBox>
 #include <QDialog>
 #include <QDialogButtonBox>
 #include <QScrollArea>
@@ -19,10 +18,12 @@ namespace Logging {
 
 /**
  * @class MessageSelectionDialog
- * @brief A standalone modal window for configuring hardware and message selection.
- * * @details
+ * @brief A standalone modal window for message selection.
+ *
+ * @details
  * This dialog provides a blocking configuration interface before a log session starts.
- * It features a device selector at the top and a scrollable area for DBC message cards.
+ * It features a scrollable area for DBC message cards where users can select which
+ * messages and signals to log. The CAN interface is configured in global settings.
  */
 class MessageSelectionDialog final : public QDialog
 {
@@ -37,18 +38,6 @@ class MessageSelectionDialog final : public QDialog
 
     /** @brief Virtual destructor. */
     ~MessageSelectionDialog() override = default;
-
-    /**
-     * @brief Populates the hardware interface dropdown.
-     * @param devices List of available CAN channels (e.g., "can0", "vcan1").
-     */
-    void setAvailableDevices(const QStringList& devices);
-
-    /**
-     * @brief Retrieves the user-selected hardware interface.
-     * @return The string identifier of the selected device.
-     */
-    auto getSelectedDevice() const -> QString;
 
     /**
      * @brief Injects a DBC message card into the scrollable selection list.
@@ -78,7 +67,6 @@ class MessageSelectionDialog final : public QDialog
     void setupUi();
 
     QWidget* m_headerWidget;
-    QComboBox* m_deviceSelector;
     QDialogButtonBox* m_buttonBox;
 
     Core::CardWidget* m_messagesCard;

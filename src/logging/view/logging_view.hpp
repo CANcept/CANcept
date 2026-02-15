@@ -15,6 +15,7 @@
 #include "components/history_table.hpp"
 #include "components/status_tags_container.hpp"
 #include "components/timer_label.hpp"
+#include "core/widgets/common/styled_checkbox.hpp"
 #include "logging/model/logging_model.hpp"
 
 namespace Logging {
@@ -74,11 +75,19 @@ class LoggingView final : public QWidget
      */
     void updateStatusTags(const QStringList& messages);
 
+    /**
+     * @brief Returns whether DBC-based logging is enabled.
+     * @return true if DBC-based logging is enabled, false for raw logging.
+     */
+    bool isDbcLoggingEnabled() const;
+
    signals:
     /** @brief Emitted when user wants to start; triggers the Modal Selection Dialog. */
     void startRequested();
     /** @brief Emitted to stop the active session and finalize the log. */
     void stopRequested();
+    /** @brief Emitted when logging mode changes (DBC-based vs raw). */
+    void loggingModeChanged(bool dbcBased);
 
     /** @brief Triggered by an 'Export' button within a specific table row. */
     void exportRequested(const QModelIndex& index);
@@ -92,6 +101,7 @@ class LoggingView final : public QWidget
     QWidget* m_headerBox;
     TimerLabel* m_timerLabel;               /**< Displays elapsed time during recording. */
     ActionButton* m_btnAction;              /**< The Start/Stop toggle button. */
+    Core::StyledCheckBox* m_dbcCheckbox;    /**< Checkbox to toggle DBC-based logging. */
     StatusTagsContainer* m_statusContainer; /**< Container for message status tags. */
 
     EmptyStateLabel* m_emptyLabel; /**< Empty state placeholder when no sessions exist. */

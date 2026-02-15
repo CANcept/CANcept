@@ -83,6 +83,9 @@ class LoggingComponent final : public Core::ITabComponent
     Core::Connection m_dbcMsgConn;
     Core::Connection m_parseSuccessConn;
     Core::Connection m_parseErrorConn;
+
+    /** @brief Tracks whether logging is DBC-based (true) or raw (false) */
+    bool m_isDbcLogging{true};
 };
 
 }  // namespace Logging
