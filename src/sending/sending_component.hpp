@@ -2,6 +2,7 @@
 
 #include <QPointer>
 #include <QWidget>
+#include <chrono>
 #include <memory>
 #include <mutex>
 
@@ -94,6 +95,11 @@ class SendingComponent final : public Core::ITabComponent
     void setupBrokerSubscriptions();
 
     /**
+     * @brief Checks if the CAN device is ready and updates the view overlay accordingly.
+     */
+    void checkDeviceReadiness() const;
+
+    /**
      * @brief Publishes a raw CAN message in a worker thread.
      * Thread-safe: copies message before spawning thread.
      */
@@ -137,11 +143,20 @@ class SendingComponent final : public Core::ITabComponent
     /** @brief RAII Handle for error event subscription. */
     Core::Connection m_parseErrorConn;
 
+    /** @brief RAII Handle for CAN driver change event subscription. */
+    Core::Connection m_canDriverChangeConn;
+
     /** @brief Mutex protecting event broker access from multiple threads. */
     mutable std::mutex m_brokerMutex;
 
     /** @brief Worker thread for repeated (cyclic) CAN message transmission. */
     std::unique_ptr<RepeatedSendingWorker> m_sendingWorker;
+
+    /** @brief Timestamp when the component started, used for diagnostics. */
+    std::chrono::steady_clock::time_point m_startTime;
+
+    /** @brief Cached state of device readiness to avoid redundant overlay updates. */
+    mutable bool m_lastDeviceReadyState = true;
 };
 
 }  // namespace Sending

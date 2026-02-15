@@ -1,7 +1,7 @@
 <!DOCTYPE RCC><RCC version="1.0">
     <qresource prefix="/">
         <file>assets/icon/app_root/can_bus.svg</file>
-        <file>assets/icon/app_root/settings.svg</file>
+        <file>assets/icon/settings.svg</file>
         <file>assets/icon/app_root/palette.svg</file>
         <file>assets/icon/can_handler/configuration.svg</file>
         <file>assets/icon/dbc_file/upload.svg</file>

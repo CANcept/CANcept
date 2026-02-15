@@ -7,7 +7,10 @@
 
 namespace Sending {
 
-RepeatedSendingWorker::RepeatedSendingWorker(QObject* parent) : QThread(parent) {}
+RepeatedSendingWorker::RepeatedSendingWorker(QObject* parent) : QThread(parent)
+{
+    setObjectName(Constants::REPEATED_SENDING_THREAD_NAME);
+}
 
 RepeatedSendingWorker::~RepeatedSendingWorker()
 {
