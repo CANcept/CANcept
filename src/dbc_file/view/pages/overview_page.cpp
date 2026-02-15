@@ -33,7 +33,7 @@ void OverviewPage::updateLabels(const QAbstractItemModel* model) const
     auto* overviewItem = static_cast<DbcItem*>(idx.internalPointer());
     if (!overviewItem || overviewItem->type() != Core::DbcItemType::Overview) return;
 
-    // Hilfsfunktion zum Abrufen der Daten
+    // Helper for data retrieval
     auto getData = [&](int col) -> QString {
         const QVariant val = overviewItem->data(col);
         return val.isValid() ? val.toString() : QString{};
@@ -241,7 +241,7 @@ void OverviewPage::applyStyle() const
         if (iconLabel) iconLabel->setColor(THEME.colors().textPrimary);
 }
 
-bool OverviewPage::event(QEvent* event)
+auto OverviewPage::event(QEvent* event) -> bool
 {
     if (event->type() == Core::StyleEvent::EventType)
     {

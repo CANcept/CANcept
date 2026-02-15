@@ -37,6 +37,10 @@ void SignalsPage::setModel(QAbstractItemModel* model) const
 
     table->setModel(model);
     configureColumns(table, model);
+
+    connect(model, &QAbstractItemModel::modelReset, this, &SignalsPage::updateEmptyState);
+    connect(model, &QAbstractItemModel::rowsInserted, this, &SignalsPage::updateEmptyState);
+    connect(model, &QAbstractItemModel::rowsRemoved, this, &SignalsPage::updateEmptyState);
 }
 
 void SignalsPage::setAvailableUnits(const QStringList& units) const
@@ -80,12 +84,25 @@ void SignalsPage::setupUi()
     m_tableWidget->setSearchPlaceholder(Constants::SignalsPage::SearchbarText);
 
     m_tableWidget->configureTableBasics();  // setup table basics
-    card->layout()->addWidget(m_tableWidget);
+    const auto cardLayout = card->layout();
+    cardLayout->addWidget(m_tableWidget);
 
     auto* table = m_tableWidget->tableView();
     table->setItemDelegate(new SignalTableDelegate(table));
     table->setSelectionMode(QAbstractItemView::NoSelection);
     table->setFocusPolicy(Qt::NoFocus);
+
+    // Empty label
+    m_emptyLabel = new QLabel(Constants::SignalsPage::EmptyLabelText, m_tableWidget);
+    m_emptyLabel->setAlignment(Qt::AlignCenter);
+    m_emptyLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    m_emptyLabel->hide();
+    m_emptyLabel->setStyleSheet(Style::Common::emptyLabel());
+
+    if (auto* layout = qobject_cast<QVBoxLayout*>(m_tableWidget->layout()))
+        layout->addWidget(m_emptyLabel, 1);
+
+    cardLayout->addWidget(m_tableWidget);
 
     // --- Signal Forwarding ---------------------------------------------------
     connect(m_tableWidget, &Core::SearchableFilterTable::filterTextChanged, this,
@@ -95,7 +112,18 @@ void SignalsPage::setupUi()
 
     // --- Vertical Scrollbar Setup -------------------------------------------
     table->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-    table->verticalScrollBar()->setStyleSheet(Style::Common::verticalScrollBar());
+}
+void SignalsPage::updateEmptyState()
+{
+    if (!m_tableWidget || !m_emptyLabel) return;
+
+    QTableView* view = m_tableWidget->tableView();
+    if (!view || !view->model()) return;
+
+    bool isEmpty = (view->model()->rowCount() == 0);
+
+    view->setVisible(!isEmpty);
+    m_emptyLabel->setVisible(isEmpty);
 }
 
 // ============================================================================
@@ -158,7 +186,7 @@ void SignalsPage::onFilterIndexChanged(int)
     emit filterUnitChanged(unit);
 }
 
-bool SignalsPage::event(QEvent* event)
+auto SignalsPage::event(QEvent* event) -> bool
 {
     if (event->type() == Core::StyleEvent::EventType)
     {

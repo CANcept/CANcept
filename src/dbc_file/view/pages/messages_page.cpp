@@ -117,8 +117,6 @@ void MessageDetailView::setupUi()
     m_detailLabel = new QLabel(Constants::MessagesPage::NoSignalsIndicator, m_stack);
     m_detailLabel->setAlignment(Qt::AlignCenter);
 
-    const auto& colors = THEME.colors();
-
     // Add label as page 1
     m_stack->addWidget(m_detailLabel);
 
@@ -127,7 +125,7 @@ void MessageDetailView::setupUi()
 
     layout->addWidget(m_card);
 }
-bool MessageDetailView::event(QEvent* event)
+auto MessageDetailView::event(QEvent* event) -> bool
 {
     if (event->type() == Core::StyleEvent::EventType)
     {
@@ -169,6 +167,18 @@ void MessagesPage::setupUi()
     configureMasterTable();
     messageTableCard->layout()->addWidget(m_messagesTable);
 
+    // Empty label
+    m_emptyLabel = new QLabel(Constants::MessagesPage::EmptyLabelText, m_messagesTable);
+    m_emptyLabel->setAlignment(Qt::AlignCenter);
+    m_emptyLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    m_emptyLabel->hide();
+    m_emptyLabel->setStyleSheet(Style::Common::emptyLabel());
+
+    if (auto* layout = qobject_cast<QVBoxLayout*>(m_messagesTable->layout()))
+        layout->addWidget(m_emptyLabel, 1);
+
+    messageTableCard->layout()->addWidget(m_messagesTable);
+
     if (auto* table = m_messagesTable->tableView())
     {
         table->viewport()->installEventFilter(this);
@@ -199,6 +209,7 @@ void MessagesPage::configureMasterTable()
     table->setItemDelegate(new MessageTableDelegate(table));
     table->setSelectionBehavior(QAbstractItemView::SelectRows);
     table->setSelectionMode(QAbstractItemView::SingleSelection);
+    table->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
 
     m_messagesTable->setSearchPlaceholder(Constants::MessagesPage::SearchbarText);
 }
@@ -206,12 +217,12 @@ void MessagesPage::applyStyle()
 {
     // --- Style Master Table ---
     if (auto* table = m_messagesTable->tableView())
-        table->verticalScrollBar()->setStyleSheet(DbcFile::Style::Common::verticalScrollBar());
+        table->verticalScrollBar()->setStyleSheet(Style::Common::verticalScrollBar());
 
     // --- Style Detail View ---
     if (m_detailView && m_detailView->getSignalList())
         m_detailView->getSignalList()->verticalScrollBar()->setStyleSheet(
-            DbcFile::Style::Common::verticalScrollBar());
+            Style::Common::verticalScrollBar());
 
     // --- Forward style refresh to child widgets ---
     if (m_messagesTable) m_messagesTable->applyStyle();
@@ -237,6 +248,10 @@ void MessagesPage::setMasterModel(QAbstractItemModel* model)
         connect(table->selectionModel(), &QItemSelectionModel::currentRowChanged, this,
                 &MessagesPage::onSelectionChanged);
     }
+
+    connect(model, &QAbstractItemModel::modelReset, this, &MessagesPage::updateEmptyState);
+    connect(model, &QAbstractItemModel::rowsInserted, this, &MessagesPage::updateEmptyState);
+    connect(model, &QAbstractItemModel::rowsRemoved, this, &MessagesPage::updateEmptyState);
 }
 
 void MessagesPage::configureMasterColumns(QTableView* table, const QAbstractItemModel* model)
@@ -365,7 +380,7 @@ void MessagesPage::mousePressEvent(QMouseEvent* event)
     // Standard handling
     QWidget::mousePressEvent(event);
 }
-bool MessagesPage::eventFilter(QObject* watched, QEvent* event)
+auto MessagesPage::eventFilter(QObject* watched, QEvent* event) -> bool
 {
     auto* table = m_messagesTable->tableView();
 
@@ -395,7 +410,7 @@ bool MessagesPage::eventFilter(QObject* watched, QEvent* event)
     return QWidget::eventFilter(watched, event);
 }
 
-bool MessagesPage::event(QEvent* event)
+auto MessagesPage::event(QEvent* event) -> bool
 {
     if (event->type() == Core::StyleEvent::EventType)
     {
@@ -404,6 +419,19 @@ bool MessagesPage::event(QEvent* event)
     }
 
     return QWidget::event(event);
+}
+
+void MessagesPage::updateEmptyState()
+{
+    if (!m_messagesTable || !m_emptyLabel) return;
+
+    QTableView* view = m_messagesTable->tableView();
+    if (!view || !view->model()) return;
+
+    bool isEmpty = (view->model()->rowCount() == 0);
+
+    view->setVisible(!isEmpty);
+    m_emptyLabel->setVisible(isEmpty);
 }
 
 }  // namespace DbcFile
