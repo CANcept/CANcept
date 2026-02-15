@@ -1,9 +1,8 @@
-#ifndef CANBUSMANAGER_MONITORING_DELEGATE_HPP
-#define CANBUSMANAGER_MONITORING_DELEGATE_HPP
+#pragma once
 
 #include <QStyledItemDelegate>
 
-#include "monitoring/view/monitoring_view.hpp"
+#include "monitoring/model/monitoring_model.hpp"
 
 /**
  * @namespace Monitoring
@@ -16,15 +15,14 @@ namespace Monitoring {
  * * Owns the transmission logic, including the cyclic timer. It bridges
  * the passive Model/View to the Component's broker slots.
  */
-class MonitoringDelegate : QStyledItemDelegate
+class MonitoringDelegate : public QStyledItemDelegate
 {
+    Q_OBJECT
    public:
     /**
      * @brief Constructs the monitoring delegate.
-     *
-     * @param parent Optional Qt parent object.
      */
-    explicit MonitoringDelegate(QObject* parent = nullptr);
+    explicit MonitoringDelegate(MonitoringModel* model);
 
     /**
      * @brief Default destructor.
@@ -67,8 +65,13 @@ class MonitoringDelegate : QStyledItemDelegate
      * @caller Qt View layout system.
      * @return A fixed size (e.g., 200x50px) to ensure proper grid alignment.
      */
-    QSize sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const override;
+    [[nodiscard]] auto sizeHint(const QStyleOptionViewItem& option,
+                                const QModelIndex& index) const -> QSize override;
+
+   private:
+    void drawMessageNode(QPainter* painter, const QRect& rect, const QModelIndex& index) const;
+    void drawSignalLeaf(QPainter* painter, const QRect& rect, const QModelIndex& index) const;
+
+    MonitoringModel* m_model;
 };
 }  // namespace Monitoring
-
-#endif  // CANBUSMANAGER_MONITORING_DELEGATE_HPP

@@ -48,3 +48,34 @@ All notable changes to this project will be documented in this file.
 - DBC config DTOs restructured to better reflect DBC file structure (CBS-81)
 - Time values in CAN DTOs updated for consistency (CBS-81)
 - DBC config storage optimized for performance (CBS-81)
+
+## [0.2.0] - 2026-02-13
+
+### Added
+
+#### Monitoring Module
+- **Live Monitoring** - Real-time CAN frame tracking with graph visualization and auto-pruning (60s window) (CBS-88, CBS-103).
+- **Signal Tracking** - Added minimum and maximum value roles for monitored signals (CBS-103).
+
+#### Sending Module
+- **Cyclic Transmission** - Added repeated sending functionality with configurable intervals (CBS-116).
+- **Interface Selection** - Improved mechanism for selecting CAN interfaces (CBS-106).
+
+#### DBC Module
+- **Extended Support** - Added handling for ECUs (CBS-111), Signals/Messages (CBS-115), and Big Endian formats (CBS-114).
+- **Overview Page** - New dashboard view for file statistics and summary (CBS-103, CBS-104).
+- **Config Persistence** - Implemented configuration management for DBC settings (CBS-113).
+
+#### Core & UI
+- **Device Discovery** - Event-driven architecture for querying available CAN hardware (CBS-105).
+- **UI Components** - Added `CardListDelegate`, `ItemPainter`, and `TintedIconLabel` for complex list rendering (CBS-104).
+
+### Changed
+- **Refactoring** - Restructured `core/ui` into dedicated subdirectories (widgets, delegates, painters) (CBS-104).
+- **Sidebar** - Outsourced tab creation to `SidebarDelegate` for better separation of concerns (CBS-98).
+- **Theming** - Updated spacing and color themes with new card and badge metrics (CBS-104).
+
+### Fixed
+- **Stability** - Resolved deadlocks, memory leaks, and race conditions in `CanDbcHandler` and `CanCommunicationHandler` (CBS-95).
+- **Crashes** - Fixed segmentation faults during DBC loading, parsing, and rapid toggle interactions (CBS-88, CBS-96).
+- **Parser Logic** - Corrected regex errors and whitespace handling in DBC file parsing (CBS-96).

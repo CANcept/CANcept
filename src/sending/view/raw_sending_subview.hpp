@@ -1,14 +1,15 @@
 #pragma once
 
+#include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
+#include <QScrollArea>
 #include <QWidget>
 
-#include "components/can_bus_config_card.hpp"
 #include "components/hex_id_line_edit.hpp"
+#include "components/repeated_sending_card.hpp"
 #include "components/send_message_button.hpp"
 #include "core/widgets/card_widget.hpp"
-#include "core/widgets/common/styled_combo_box.hpp"
 #include "sending/view/formatter/hex_data_formatter.hpp"
 
 namespace Sending {
@@ -21,7 +22,7 @@ namespace Sending {
  * The view uses a card-based design matching the Figma mockups:
  * 1. CAN-Bus Configuration Card: Interface and Baud Rate selection
  * 2. CAN Frame Card: Single-line hex inputs for ID and Message Data
- * 3. Repeat Settings Card: (Optional - not yet implemented)
+ * 3. Repeated Sending Card: Configure cyclic message transmission
  * 4. Floating Send Message button at bottom right
  */
 class RawSendingSubView final : public QWidget
@@ -31,20 +32,6 @@ class RawSendingSubView final : public QWidget
    public:
     explicit RawSendingSubView(QWidget* parent = nullptr);
     ~RawSendingSubView() override = default;
-
-    /**
-     * @name Configuration Accessors
-     * @{
-     */
-    [[nodiscard]] auto interfaceSelector() const -> QComboBox*
-    {
-        return m_configCard ? m_configCard->interfaceSelector() : nullptr;
-    }
-    [[nodiscard]] auto baudRateSelector() const -> QComboBox*
-    {
-        return m_configCard ? m_configCard->baudRateSelector() : nullptr;
-    }
-    /** @} */
 
     /**
      * @name Frame Data Accessors
@@ -68,27 +55,35 @@ class RawSendingSubView final : public QWidget
     {
         return m_sendButton;
     }
+
+    [[nodiscard]] auto repeatedSendingCard() const -> RepeatedSendingCard*
+    {
+        return m_repeatedSendingCard;
+    }
     /** @} */
 
-    /**
-     * @brief Populates the interface dropdown.
-     * @param interfaces List of available CAN interface names (e.g., "can0", "vcan0").
-     */
-    void setAvailableInterfaces(const std::vector<std::string>& interfaces) const;
+   protected:
+    bool event(QEvent* event) override;
 
    private:
     void setupUi();
+    void applyStyle();
     void setupCanIdInput() const;
     void setupMessageDataInput();
 
-    // CAN-Bus Configuration Card
-    CanBusConfigCard* m_configCard;
+    // Scroll area
+    QScrollArea* m_scrollArea;
 
     // CAN Frame Card
     Core::CardWidget* m_frameCard;
     HexIdLineEdit* m_canIdEditor;
     QLineEdit* m_messageDataEditor;
     HexDataFormatter* m_messageDataFormatter;
+    QLabel* m_canIdLabel;
+    QLabel* m_messageDataLabel;
+
+    // Repeated Sending Card
+    RepeatedSendingCard* m_repeatedSendingCard;
 
     // Floating Send Button
     QPushButton* m_sendButton;

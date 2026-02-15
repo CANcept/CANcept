@@ -1,6 +1,3 @@
-//
-// Created by Adrian Rupp on 24.12.25.
-//
 #pragma once
 
 #include <QVariant>
@@ -46,6 +43,13 @@ class DbcItem
      * @param parent The new parent.
      */
     auto setParent(DbcItem* parent) -> void;
+
+    /**
+     * @brief Setter for data of the item at given column
+     * @param column Column to insert data at
+     * @param value data to add.
+     */
+    auto setData(int column, const QVariant& value) -> void;
 
     /**
      * Getter for the items children items.

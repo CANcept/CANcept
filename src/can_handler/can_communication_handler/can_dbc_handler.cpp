@@ -1,6 +1,3 @@
-//
-// Created by Florian on 14.01.2026.
-//
 #include "can_dbc_handler.hpp"
 
 #include "core/macro/console_logging.hpp"
@@ -92,11 +89,11 @@ auto CanDbcHandler::parseReceivedSignal(const Core::DbcSignalDescription& signal
                                                  // data ( +signal.startBit)
     } else                                       // big endian
     {
-        rawValue =
-            dataBigEndian << (64 - signal.startBit)  // remove all data in front of data
-            >>
-            (64 - signal.signalSize);  // shift back (sizeof(int64_t) - signal.startBit), remove all
-                                       // data behind data ( +signal.startBit - signal.signalSize)
+        rawValue = dataBigEndian << (64 - signal.startBit -
+                                     signal.signalSize)  // remove all data in front of data
+                   >> (64 - signal.signalSize);  // shift back (sizeof(int64_t) - signal.startBit
+                                                 // - signal.signalSize), remove all data behind
+                                                 // data ( +signal.startBit)
     }
     if (signal.valueType)  // signed
     {
@@ -210,8 +207,7 @@ void CanDbcHandler::parseSendSignal(const Core::DbcSignalDescription& signal,
         // Decode: rawValue = dataBE << (64 - startBit) >> (64 - signalSize)
         // This extracts signal from bits [startBit - signalSize + 1, startBit]
         // Encode (inverse): place value at those bits
-        const int shift = signal.startBit - signal.signalSize + 1;
-        dataBigEndian |= (maskedRawValue << shift);
+        dataBigEndian |= (maskedRawValue << signal.startBit);
     }
 }
 

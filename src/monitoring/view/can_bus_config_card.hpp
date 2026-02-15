@@ -1,5 +1,8 @@
 #pragma once
 
+#include <QCheckBox>
+#include <QLabel>
+#include <QPushButton>
 #include <QWidget>
 #include <cstdint>
 #include <string>
@@ -7,9 +10,9 @@
 
 #include "core/widgets/card_widget.hpp"
 #include "core/widgets/common/styled_combo_box.hpp"
+#include "monitoring/model/monitoring_model.hpp"
 
-namespace Sending {
-
+namespace Monitoring {
 /**
  * @class CanBusConfigCard
  * @brief Reusable CAN-Bus configuration card with optional interface and baud rate selection.
@@ -24,10 +27,9 @@ class CanBusConfigCard final : public QWidget
    public:
     /**
      * @brief Constructs the CAN-Bus Configuration card.
-     * @param showInterface Whether to show the interface selection card
      * @param parent Parent widget
      */
-    explicit CanBusConfigCard(bool showInterface = true, QWidget* parent = nullptr);
+    explicit CanBusConfigCard(QWidget* parent = nullptr, MonitoringModel* model = nullptr);
     ~CanBusConfigCard() override = default;
 
     /**
@@ -39,13 +41,9 @@ class CanBusConfigCard final : public QWidget
         return m_interfaceCombo;
     }
 
-    /**
-     * @brief Returns the baud rate selector combo box.
-     * @return Pointer to the baud rate combo box (may be nullptr if showBaudRate=false)
-     */
-    [[nodiscard]] auto baudRateSelector() const -> Core::StyledComboBox*
+    [[nodiscard]] auto modeToggle() const -> QPushButton*
     {
-        return m_baudRateCombo;
+        return m_dbcToggleButton;
     }
 
     /**
@@ -55,13 +53,23 @@ class CanBusConfigCard final : public QWidget
     void setAvailableInterfaces(const std::vector<std::string>& interfaces) const;
 
    private:
-    void setupUi(bool showInterface);
+    void setupUi();
 
     Core::CardWidget* m_configCard;
+    QLabel* m_titleIcon;
     Core::CardWidget* m_interfaceCard;
-    Core::CardWidget* m_baudRateCard;
     Core::StyledComboBox* m_interfaceCombo;
-    Core::StyledComboBox* m_baudRateCombo;
+
+    Core::CardWidget* m_statusCard;
+    QPushButton* m_dbcToggleButton;
+    QLabel* m_statusValueLabel;
+
+    Core::CardWidget* m_frameRateCard;
+    QLabel* m_fpsValueLabel;
+
+    Core::CardWidget* m_messageCountCard;
+    QLabel* m_msgCountValueLabel;
+    MonitoringModel* m_model;
 };
 
-}  // namespace Sending
+}  // namespace Monitoring

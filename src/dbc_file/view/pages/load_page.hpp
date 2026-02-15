@@ -1,10 +1,10 @@
-//
-// Created by Adrian Rupp on 21.01.26.
-//
 #pragma once
 #include <QLabel>
 #include <QVBoxLayout>
 #include <QWidget>
+
+#include "core/widgets/tinted_icon_label.hpp"
+
 namespace DbcFile {
 /**
  * @class LoadPage
@@ -95,6 +95,11 @@ class LoadPage : public QWidget
      */
     auto eventFilter(QObject* watched, QEvent* event) -> bool override;
 
+    /**
+     * @brief Handles QEvent to catch StyleEvent for theme changes.
+     */
+    bool event(QEvent* event) override;
+
    private slots:
     /**
      * @brief Opens the system file dialog.
@@ -106,15 +111,11 @@ class LoadPage : public QWidget
     /**
      * @brief Creates and styles the load card frame container.
      * @param parentLayout The main layout where the card should be added.
+     * @param parent
      * @return The internal layout of the created card, used to add further content.
      */
-    auto createCardFrame(QVBoxLayout* parentLayout) -> QVBoxLayout*;
-
-    /**
-     * @brief Adds the Title and Subtitle labels to the card layout.
-     * @param layout The layout of the card frame.
-     */
-    static void setupHeader(QVBoxLayout* layout);
+    static auto createCardLayout(QVBoxLayout* parentLayout,
+                                 QWidget* parent = nullptr) -> QVBoxLayout*;
 
     /**
      * @brief Creates the interactive Upload Zone frame.
@@ -131,9 +132,18 @@ class LoadPage : public QWidget
      */
     void setupUi();
 
+    /**
+     * @brief Applies current theme styles to all widgets.
+     */
+    void applyStyle() const;
+
     /** @brief The interactive frame for dropping files and opening file browser. */
     QFrame* m_uploadBoxFrame;
     /** @brief Hidden label used to show parsing status or error messages. */
     QLabel* m_statusLabel;
+    /** @brief Instruction label in upload zone */
+    QLabel* m_instructionLabel;
+    /** @brief Icon label in upload zone */
+    Core::TintedIconLabel* m_iconLabel;
 };
 }  // namespace DbcFile

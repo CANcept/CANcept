@@ -1,6 +1,3 @@
-//
-// Created by flori on 21.01.2026.
-//
 #include "dbc_handler.hpp"
 
 #include <algorithm>

@@ -1,9 +1,4 @@
-//
-// Created by Lino on 17.12.2025.
-//
-
-#ifndef CANBUSSIMULATOR_EVENTBROKER_HPP
-#define CANBUSSIMULATOR_EVENTBROKER_HPP
+#pragma once
 
 #include <entt/entt.hpp>
 
@@ -82,5 +77,3 @@ class EventBroker final : public Core::IEventBroker
     std::unordered_map<std::type_index, std::unique_ptr<Channel>> channels;
 };
 }  // namespace EventBroker
-
-#endif  // CANBUSSIMULATOR_EVENTBROKER_HPP

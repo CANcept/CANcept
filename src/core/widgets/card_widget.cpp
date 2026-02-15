@@ -2,37 +2,34 @@
 
 #include <QHBoxLayout>
 #include <QIcon>
-#include <QLabel>
 #include <QPainter>
 
 #include "core/macro/theme.hpp"
+#include "core/theme/style_event.hpp"
 
 namespace Core {
 
 CardWidget::CardWidget(const QString& title, const QString& subtitle, const QString& iconPath,
                        QWidget* parent)
-    : QFrame(parent), m_contentLayout(nullptr)
+    : QFrame(parent), m_contentLayout(nullptr), m_iconPath(iconPath)
 {
     setupUi(title, subtitle, iconPath);
+}
+
+void CardWidget::setTitle(const QString& title)
+{
+    if (m_titleLabel) m_titleLabel->setText(title);
+}
+void CardWidget::setSubtitle(const QString& subtitle)
+{
+    if (m_subtitleLabel) m_subtitleLabel->setText(subtitle);
 }
 
 void CardWidget::setupUi(const QString& title, const QString& subtitle, const QString& iconPath)
 {
     const auto& spacing = THEME.spacing();
-    const auto& colors = THEME.colors();
 
     setObjectName("card");
-
-    // Apply card styling/paddding
-    setStyleSheet(QString("QFrame#card {"
-                          "  background-color: %1;"
-                          "  border: %2px solid %3;"
-                          "  border-radius: %4px;"
-                          "}")
-                      .arg(colors.surfaceMain.name(QColor::HexArgb))
-                      .arg(spacing.borderThin)
-                      .arg(colors.borderSubtle.name(QColor::HexArgb))
-                      .arg(spacing.radiusSm));
 
     m_contentLayout = new QVBoxLayout(this);
     m_contentLayout->setContentsMargins(spacing.spacingLg, spacing.spacingLg, spacing.spacingLg,
@@ -47,33 +44,19 @@ void CardWidget::setupUi(const QString& title, const QString& subtitle, const QS
         // Icon
         if (!iconPath.isEmpty())
         {
-            auto* iconLabel = new QLabel(this);
-            constexpr int iconHeight = 20;
-            const qreal dpr = devicePixelRatioF();
-
-            const QIcon icon(iconPath);
-            const QSize actualSize = icon.actualSize(QSize(iconHeight * 2, iconHeight));
-            QPixmap pixmap = icon.pixmap(actualSize, dpr);
-
-            QPainter painter(&pixmap);
-            painter.setCompositionMode(QPainter::CompositionMode_SourceIn);
-            painter.fillRect(pixmap.rect(), colors.surfaceForeground);
-            painter.end();
-
-            iconLabel->setPixmap(pixmap);
-            headerLayout->addWidget(iconLabel, 0, Qt::AlignVCenter);
+            m_iconLabel = new QLabel(this);
+            headerLayout->addWidget(m_iconLabel, 0, Qt::AlignVCenter);
         }
 
         // Title
         if (!title.isEmpty())
         {
-            auto* titleLabel = new QLabel(title, this);
-            QFont titleFont = titleLabel->font();
-            titleFont.setPointSize(spacing.fontSizeMd);
+            m_titleLabel = new QLabel(title, this);
+            QFont titleFont = m_titleLabel->font();
+            titleFont.setPointSize(spacing.fontSizeSm);
             titleFont.setWeight(static_cast<QFont::Weight>(spacing.fontWeightNormal));
-            titleLabel->setFont(titleFont);
-            titleLabel->setStyleSheet(QString("color: %1;").arg(colors.textPrimary.name()));
-            headerLayout->addWidget(titleLabel);
+            m_titleLabel->setFont(titleFont);
+            headerLayout->addWidget(m_titleLabel);
         }
 
         headerLayout->addStretch();
@@ -83,14 +66,72 @@ void CardWidget::setupUi(const QString& title, const QString& subtitle, const QS
     // Subtitle
     if (!subtitle.isEmpty())
     {
-        auto* subtitleLabel = new QLabel(subtitle, this);
-        QFont subtitleFont = subtitleLabel->font();
+        m_subtitleLabel = new QLabel(subtitle, this);
+        QFont subtitleFont = m_subtitleLabel->font();
         subtitleFont.setPointSize(spacing.fontSizeXs);
         subtitleFont.setWeight(static_cast<QFont::Weight>(spacing.fontWeightMedium));
-        subtitleLabel->setFont(subtitleFont);
-        subtitleLabel->setStyleSheet(QString("color: %1;").arg(colors.textSecondary.name()));
-        m_contentLayout->addWidget(subtitleLabel);
+        m_subtitleLabel->setFont(subtitleFont);
+        m_contentLayout->addWidget(m_subtitleLabel);
     }
+
+    applyStyle();
+}
+
+void CardWidget::applyStyle()
+{
+    const auto& spacing = THEME.spacing();
+    const auto& colors = THEME.colors();
+
+    setStyleSheet(QString("QFrame#card {"
+                          "  background-color: %1;"
+                          "  border: %2px solid %3;"
+                          "  border-radius: %4px;"
+                          "}"
+                          "QLabel {"
+                          "  color: %5;"
+                          "}")
+                      .arg(colors.surfaceMain.name(QColor::HexArgb))
+                      .arg(spacing.borderThin)
+                      .arg(colors.borderSubtle.name(QColor::HexArgb))
+                      .arg(spacing.radiusSm)
+                      .arg(colors.textPrimary.name()));
+
+    if (m_iconLabel && !m_iconPath.isEmpty())
+    {
+        constexpr int iconHeight = 20;
+        const qreal dpr = devicePixelRatioF();
+
+        const QIcon icon(m_iconPath);
+        const QSize actualSize = icon.actualSize(QSize(iconHeight * 2, iconHeight));
+        QPixmap pixmap = icon.pixmap(actualSize, dpr);
+
+        QPainter painter(&pixmap);
+        painter.setCompositionMode(QPainter::CompositionMode_SourceIn);
+        painter.fillRect(pixmap.rect(), colors.surfaceForeground);
+        painter.end();
+
+        m_iconLabel->setPixmap(pixmap);
+    }
+
+    if (m_titleLabel)
+    {
+        m_titleLabel->setStyleSheet(QString("color: %1;").arg(colors.textPrimary.name()));
+    }
+
+    if (m_subtitleLabel)
+    {
+        m_subtitleLabel->setStyleSheet(QString("color: %1;").arg(colors.textSecondary.name()));
+    }
+}
+
+bool CardWidget::event(QEvent* event)
+{
+    if (event->type() == StyleEvent::EventType)
+    {
+        applyStyle();
+        return true;
+    }
+    return QFrame::event(event);
 }
 
 }  // namespace Core

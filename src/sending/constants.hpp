@@ -32,14 +32,14 @@ inline const QString RAW_SENDING_ICON_PATH = ":/assets/icon/sending/raw_based_se
 /** @brief Icon used for the DBC-based sending sub-tab */
 inline const QString DBC_SENDING_ICON_PATH = ":/assets/icon/sending/dbc_based_send_icon.svg";
 
-/** @brief Icon used for CAN-Bus configuration cards */
-inline const QString CONFIGURATION_ICON_PATH = ":/assets/icon/sending/configuration.svg";
-
 /** @brief Icon used for CAN frame input cards */
 inline const QString CAN_FRAME_ICON_PATH = ":/assets/icon/sending/can_frame.svg";
 
 /** @brief Icon used for CAN frame input cards */
 inline const QString MESSAGES_ICON_PATH = ":/assets/icon/sending/messages.svg";
+
+/** @brief Icon used for stop Sending Button */
+inline const QString STOP_SENDING_ICON_PATH = ":/assets/icon/sending/stop.svg";
 
 // MODULE IDENTIFICATION
 
@@ -114,12 +114,6 @@ inline constexpr int MAX_CAN_ID_HEX_LENGTH = 3;
 
 // NETWORK CONFIGURATION
 
-/** @brief Default list of CAN interfaces to populate in device selectors */
-inline const std::vector<std::string> DEFAULT_CAN_INTERFACES = {"vcan0", "can0", "can1"};
-
-/** @brief Standard CAN bit rates supported by most hardware (in bps) */
-inline const std::vector<uint32_t> STANDARD_BIT_RATES = {125000, 250000, 500000, 1000000};
-
 /** @brief Default cyclic transmission interval in milliseconds */
 inline constexpr int DEFAULT_CYCLE_INTERVAL_MS = 100;
 
@@ -188,6 +182,42 @@ inline constexpr double SIGNAL_VALUE_MIN = -1e9;
 
 /** @brief Maximum value for signal value spin box editor */
 inline constexpr double SIGNAL_VALUE_MAX = 1e9;
+
+// REPEATED SENDING
+
+/** @brief Title for the repeated sending card */
+inline const QString REPEATED_SENDING_TITLE = "Repeated Sending";
+
+/** @brief Subtitle for the repeated sending card */
+inline const QString REPEATED_SENDING_SUBTITLE = "Configure automatic message repitition";
+
+/** @brief Maximum value for Frequency edit */
+inline constexpr int REPEATED_SENDING_MAX_FREQUENCY = 10000;
+
+/** @brief Template for the repeated sending input title */
+inline const QString REPEATED_SENDING_TRANSMISSION_INPUT_TITLE =
+    QString("Transmission Interval (0 - %1 ms)").arg(REPEATED_SENDING_MAX_FREQUENCY);
+
+/** @brief Time to wait (in ms) for the thread to stop gracefully before forcing termination. */
+inline constexpr int THREAD_TERMINATION_WAIT_MS = 5000;
+
+/** @brief The sleep slice (in ms) used to check for the stop signal during a long interval. */
+inline constexpr int POLLING_CHECK_INTERVAL_MS = 50;
+
+/** @brief Error message when startSending is called on an already active worker. */
+inline const QString ERR_WORKER_ALREADY_RUNNING = "Worker is already running";
+
+/** @brief Error message when a null or invalid callback is passed. */
+inline const QString ERR_INVALID_CALLBACK = "Invalid callback provided";
+
+/** @brief Error message when the provided interval is zero or negative. */
+inline const QString ERR_INVALID_INTERVAL = "Invalid interval: must be positive";
+
+/** @brief Template string for reporting exceptions caught during the send callback. */
+inline const QString ERR_CALLBACK_EXCEPTION_TEMPLATE = "Send callback error: %1";
+
+/** @brief Generic error message for unknown/unhandled exceptions in the worker loop. */
+inline const QString ERR_UNKNOWN_CALLBACK_ERROR = "Unknown error in send callback";
 
 }  // namespace Constants
 

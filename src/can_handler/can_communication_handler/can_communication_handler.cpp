@@ -1,6 +1,3 @@
-//
-// Created by Florian on 14.01.2026.
-//
 #include "can_communication_handler.hpp"
 namespace CanHandler {
 void CanCommunicationHandler::checkCanDeviceForMessages() const
@@ -55,4 +52,10 @@ void CanCommunicationHandler::onStop()
     }
     deviceHandler.reset();
 }
+
+void CanCommunicationHandler::registerSettings(Core::ISettingsRegistry &registry)
+{
+    deviceHandler->registerSettings(registry);
+}
+
 }  // namespace CanHandler

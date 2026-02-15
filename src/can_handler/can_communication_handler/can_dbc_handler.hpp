@@ -1,9 +1,4 @@
-//
-// Created by flori on 28.12.2025.
-//
-
-#ifndef CANBUSMANAGER_CAN_DBC_HANDLER_HPP
-#define CANBUSMANAGER_CAN_DBC_HANDLER_HPP
+#pragma once
 #include "core/event/can_event.hpp"
 #include "core/event/dbc_event.hpp"
 #include "i_can_parser.hpp"
@@ -22,7 +17,7 @@ class CanDbcHandler final : public ICanParser
    public:
     explicit CanDbcHandler(Core::IEventBroker& eventBroker,
                            const std::function<bool(const CanMessage&)>& sendFunction)
-        : ICanParser(eventBroker, sendFunction)
+        : ICanParser(eventBroker, sendFunction), dbcMessages{}
     {
         dbcSendEventConnection = eventBroker.subscribe<Core::SendCanMessageDbcEvent>(
             [this](const Core::SendCanMessageDbcEvent& event) -> void {
@@ -30,6 +25,8 @@ class CanDbcHandler final : public ICanParser
             });
         dbcConfigChangeConnection = eventBroker.subscribe<Core::DBCParsedEvent>(
             [this](const Core::DBCParsedEvent& event) -> void { handleNewDbc(event); });
+
+        dbcMessages.fill(nullptr);
     };
     ~CanDbcHandler() override;
 
@@ -93,5 +90,3 @@ class CanDbcHandler final : public ICanParser
     std::mutex dbcMutex;
 };
 }  // namespace CanHandler
-
-#endif  // CANBUSMANAGER_CAN_DBC_HANDLER_HPP

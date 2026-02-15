@@ -1,28 +1,83 @@
 #include "monitoring_component.hpp"
 
+#include "constants.hpp"
+#include "core/event/can_driver_event.hpp"
+#include "core/event/can_event.hpp"
+#include "core/event/dbc_event.hpp"
+#include "core/macro/console_logging.hpp"
+#include "dbc_file/dbc_component.hpp"
+#include "monitoring/delegate/monitoring_delegate.hpp"
+#include "monitoring/model/monitoring_model.hpp"
+#include "monitoring/view/graph_list_view.hpp"
+#include "monitoring/view/monitoring_view.hpp"
+
 namespace Monitoring {
 
-// Constructor / destructor
 MonitoringComponent::MonitoringComponent(Core::IEventBroker& broker)
-    : ITabComponent(broker, "stub", "stub"), m_model(nullptr), m_view(nullptr), m_delegate(nullptr)
+    : Core::ITabComponent(broker, Constants::MODULE_IDENTIFIER, Constants::TAB_TITLE,
+                          QIcon(Constants::TAB_ICON_PATH)),
+      m_model(std::make_unique<MonitoringModel>()),
+      m_delegate(std::make_unique<MonitoringDelegate>(m_model.get())),
+      m_view(std::make_unique<MonitoringView>(m_model.get(), m_delegate.get())),
+      m_updateTimer(this)
 {
+    connectSignals();
 }
 
 MonitoringComponent::~MonitoringComponent() = default;
 
-// Return a dummy QWidget pointer (nullptr for now)
 auto MonitoringComponent::getView() -> QWidget*
 {
-    return nullptr;
+    return m_view.get();
 }
 
-// Empty lifecycle methods
-void MonitoringComponent::onStart() {}
-void MonitoringComponent::onStop() {}
+void MonitoringComponent::connectSignals()
+{
+    connect(this, &MonitoringComponent::dbcConfigurationChanged, m_model.get(),
+            &MonitoringModel::onDbcChange);
+    connect(this, &MonitoringComponent::dbcConfigurationChanged, m_view->getSignalListView(),
+            &SignalList::onDbcChange);
+    connect(this, &MonitoringComponent::dbcConfigurationChanged, m_view->getGraphListView(),
+            &GraphListView::onDbcChange);
 
-// Dummy slots
-void MonitoringComponent::onSourceChanged(const std::string&) {}
-void MonitoringComponent::onSignalChecked(char, const std::string&) {}
-void MonitoringComponent::onSignalUnchecked(char, const std::string&) {}
+    connect(this, &MonitoringComponent::dbcFrameReceived, m_model.get(),
+            &MonitoringModel::onIncomingDbcFrame);
+
+    connect(&m_updateTimer, &QTimer::timeout, m_view.get(), &MonitoringView::onUpdateMessages);
+}
+
+void MonitoringComponent::onStart()
+{
+    // subscribe to DBC Parsing successes
+    m_parseSuccessConn = m_eventBroker.subscribe<Core::DBCParsedEvent>(
+        [this](const Core::DBCParsedEvent& event) -> void {
+            emit dbcConfigurationChanged(event.config);
+        });
+
+    // subscribe to incoming dbc decoded CAN traffic
+    m_decodedFrameReceivedConn = m_eventBroker.subscribe<Core::ReceivedCanDbcEvent>(
+        [this](const Core::ReceivedCanDbcEvent& event) -> void {
+            emit dbcFrameReceived(event.canMessage);
+        });
+
+    m_updateTimer.start(Constants::REFRESH_INTERVAL_MS);
+}
+
+void MonitoringComponent::onStop()
+{
+    if (m_updateTimer.isActive())
+    {
+        m_updateTimer.stop();
+    }
+    m_parseSuccessConn = {};
+    m_parseErrorConn = {};
+    m_decodedFrameReceivedConn = {};
+}
+
+void MonitoringComponent::onDeviceChanged(const std::string& deviceName) const
+{
+    LOG_INF("MonitoringComponent", "CAN device changed to: {}", deviceName);
+    m_eventBroker.publish<Core::CanDriverChangeEvent>(Core::CanDriverChangeEvent(deviceName));
+}
 
 }  // namespace Monitoring

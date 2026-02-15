@@ -1,211 +1,207 @@
-//
-// Created by Adrian Rupp on 20.01.26.
 #include "dbc_view.hpp"
 
-#include <QList>
-#include <QStandardItemModel>
 #include <QVBoxLayout>
 
-#include "core/constants.hpp"
-#include "core/theme/theme_manager.hpp"
+#include "core/widgets/sidebar.hpp"
 #include "dbc_file/constants.hpp"
-#include "dbc_file/delegate/page_delegates.hpp"
 
 namespace DbcFile {
-DbcFile::DbcView::DbcView(QWidget* parent) : QWidget(parent)
+
+namespace {
+constexpr int kLoadPageIndex = 0;
+
+// Creates, configures and rebuilds a flat proxy for a given item type.
+auto makeFlatProxy(Core::DbcItemType type, QObject* parent,
+                   QAbstractItemModel* source) -> std::unique_ptr<FlatListProxy>
+{
+    auto proxy = std::make_unique<FlatListProxy>(type, parent);
+    proxy->setSourceModel(source);
+    proxy->rebuildMapping();
+    return proxy;
+}
+
+}  // namespace
+
+DbcView::DbcView(QWidget* parent) : QWidget(parent)
 {
     setupUi();
 }
-DbcFile::DbcView::~DbcView() = default;
+
+DbcView::~DbcView() = default;
+
 auto DbcView::getLoadPage() const -> LoadPage&
 {
     return *m_loadPage;
 }
-void DbcFile::DbcView::setSourceModel(QAbstractItemModel* model) {}
-void DbcFile::DbcView::setDataItemDelegate(QAbstractItemDelegate* delegate) {}
-void DbcFile::DbcView::setNavigationEnabled(const bool enabled) const
-{
-    // Get Model of m_sideBar (QListView)
-    const auto* sidebarModel = static_cast<QStandardItemModel*>(m_sidebarList->model());
 
-    // Enable (or disable) all items (~pages)
-    for (int i = 1; i < sidebarModel->rowCount(); i++)
-    {
-        if (auto* item = sidebarModel->item(i))
-        {
-            item->setEnabled(enabled);
-            item->setSelectable(enabled);
-        }
-    }
-}
-void DbcFile::DbcView::onSidebarSelectionChanged(const QModelIndex& index)
+void DbcView::setSignalUnits(const QStringList& units) const
 {
-    if (!index.isValid())
-    {
-        return;
-    }
-    if (!(index.flags() & Qt::ItemIsEnabled))  // do nothing if item is already enabled
-    {
-        return;
-    }
-    if (m_contentStack->currentIndex() == 0 && index.row() != 0)
+    if (m_signalsPage) m_signalsPage->setAvailableUnits(units);
+}
+
+void DbcView::setAvailableSenders(const QStringList& senders) const
+{
+    if (m_messagesPage) m_messagesPage->setAvailableSenders(senders);
+}
+
+void DbcView::setSourceModel(QAbstractItemModel* model)
+{
+    if (!model) return;
+
+    m_model = model;
+
+    // Keep overview labels in sync whenever the model is rebuilt.
+    connect(model, &QAbstractItemModel::modelReset, this,
+            [this, model]() { m_overviewPage->updateLabels(model); });
+
+    // --- Overview proxies (flat lists) ---
+    m_ecuOverviewProxy = makeFlatProxy(Core::DbcItemType::Ecu, this, model);
+    m_overviewPage->getEcuList()->setModel(m_ecuOverviewProxy.get());
+
+    m_messageOverviewProxy = makeFlatProxy(Core::DbcItemType::Message, this, model);
+    m_overviewPage->getMessageList()->setModel(m_messageOverviewProxy.get());
+
+    // --- ECU page proxy (tree) ---
+    m_ecuTreeProxy = std::make_unique<EcuTreeProxy>(this);
+    m_ecuTreeProxy->setSourceModel(model);
+    m_ecuPage->setModel(m_ecuTreeProxy.get());
+
+    // --- Messages page proxies ---
+    m_messagesProxy = makeFlatProxy(Core::DbcItemType::Message, this, model);
+    m_messagesPage->setMasterModel(m_messagesProxy.get());
+    m_messagesPage->setDetailModel(m_model);
+
+    // --- Signals page proxy (flat list) ---
+    m_signalsProxy = makeFlatProxy(Core::DbcItemType::Signal, this, model);
+    m_signalsPage->setModel(m_signalsProxy.get());
+}
+
+void DbcView::setNavigationEnabled(bool enabled) const
+{
+    m_sidebar->setNavigationEnabled(enabled);
+}
+
+void DbcView::onSidebarSelectionChanged(int index) const
+{
+    if (index < 0 || index >= m_contentStack->count()) return;
+    if (m_contentStack->currentIndex() == index) return;
+
+    // Reset load page UI state when leaving the load page.
+    if (m_contentStack->currentIndex() == kLoadPageIndex && index != kLoadPageIndex)
     {
         m_loadPage->resetStatus();
     }
-    m_contentStack->setCurrentIndex(index.row());
-}
-void DbcFile::DbcView::onEcuFilterTextChanged(const QString& text) {}
-void DbcFile::DbcView::onEcuFilterTypeChanged(int index) {}
-void DbcFile::DbcView::onMessageFilterTextChanged(const QString& text) {}
-void DbcFile::DbcView::onMessageFilterTypeChanged(int index) {}
-void DbcFile::DbcView::onMessageSelected(const QModelIndex& proxyIndex) {}
-void DbcFile::DbcView::onSignalFilterTextChanged(const QString& text) {}
-void DbcFile::DbcView::onSignalFilterTypeChanged(int index) {}
 
-void DbcView::disableSidebarDeselection()
-{
-    // Get selection model of m_sidebarList
-    auto* selectionModel = m_sidebarList->selectionModel();
-    connect(selectionModel, &QItemSelectionModel::selectionChanged, this,
-            [selectionModel](const QItemSelection& selected, const QItemSelection& deselected) {
-                // Check: is new selection empty? (~ click in empty space)
-                if (selected.indexes().isEmpty())
-                {
-                    // Reselect previous selection again
-                    if (!deselected.indexes().isEmpty())
-                    {
-                        selectionModel->select(
-                            deselected, QItemSelectionModel::Select | QItemSelectionModel::Rows);
-                        selectionModel->setCurrentIndex(deselected.indexes().first(),
-                                                        QItemSelectionModel::NoUpdate);
-                    }
-                }
-            });
+    m_contentStack->setCurrentIndex(index);
 }
 
-void DbcView::setupSidebarList()
+void DbcView::onEcuFilterTextChanged(const QString& text) const
 {
-    const auto& THEME = Core::ThemeManager::getInstance();
-    const auto& colors = THEME.colors();
-    const auto& spacing = THEME.spacing();
-
-    m_sidebarList = new QListView(this);
-    m_sidebarList->setSelectionMode(QAbstractItemView::SingleSelection);
-    m_sidebarList->setSelectionBehavior(QAbstractItemView::SelectRows);
-    m_sidebarList->setMaximumWidth(200);
-    m_sidebarList->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    m_sidebarList->setFrameShape(QFrame::NoFrame);
-    m_sidebarList->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    m_sidebarList->setSelectionRectVisible(false);
-    m_sidebarList->setStyleSheet(QString(R"(
-                                                QListView {
-                                                    background-color: %1;
-                                                    border-right: %2px solid %3;
-                                                    color: %4;
-                                                    font-size: %5px;
-                                                    outline: 0;
-                                                }
-
-                                                QListView::item {
-                                                    border-radius: %6px;
-                                                    padding: %7px;
-                                                    margin-right: %8px;
-                                                    margin-left: %8px;
-                                                }
-
-                                                QListView::item:selected {
-                                                    background-color: %9;
-                                                    color: %10;
-                                                }
-                                            )")
-                                     .arg(colors.surfaceMain.name(QColor::HexArgb))
-                                     .arg(spacing.borderThick)
-                                     .arg(colors.borderSubtle.name(QColor::HexArgb))
-                                     .arg(colors.textSecondary.name(QColor::HexArgb))
-                                     .arg(spacing.fontSizeMd)
-                                     .arg(spacing.radiusSm)
-                                     .arg(spacing.spacingXl)
-                                     .arg(spacing.spacingMd)
-                                     .arg(colors.surfacePrimary.name(QColor::HexArgb))
-                                     .arg(colors.textPrimary.name(QColor::HexArgb)));
+    if (m_ecuTreeProxy) m_ecuTreeProxy->setSearchText(text);
 }
 
-void DbcView::setSidebarModel()
+void DbcView::onEcuFilterIndexChanged(int index) const
 {
-    auto* sidebarModel = new QStandardItemModel(this);
-    const QList<SidebarEntry> sidebarEntries = {
-        {.iconPath = Constants::Sidebar::IconLoadNew,
-         .title = Constants::Sidebar::TitleLoadNew,
-         .enabled = true},
-        {.iconPath = Constants::Sidebar::IconOverview,
-         .title = Constants::Sidebar::TitleOverview,
-         .enabled = false},
-        {.iconPath = Constants::Sidebar::IconEcus,
-         .title = Constants::Sidebar::TitleEcus,
-         .enabled = false},
-        {.iconPath = Constants::Sidebar::IconMessages,
-         .title = Constants::Sidebar::TitleMessages,
-         .enabled = false},
-        {.iconPath = Constants::Sidebar::IconSignals,
-         .title = Constants::Sidebar::TitleSignals,
-         .enabled = false},
-    };
-
-    for (const auto& entry : sidebarEntries)
-    {
-        auto* item = new QStandardItem(QIcon(entry.iconPath), entry.title);
-        item->setEnabled(entry.enabled);
-        item->setSelectable(entry.enabled);
-        sidebarModel->appendRow(item);
-    }
-
-    m_sidebarList->setModel(sidebarModel);
-    disableSidebarDeselection();
-    const QModelIndex firstIndex = sidebarModel->index(0, 0);
-    m_sidebarList->setCurrentIndex(firstIndex);  // set "Load New" button selected at start
+    if (m_ecuTreeProxy) m_ecuTreeProxy->setFilterCategory(index);
 }
-void DbcFile::DbcView::setupUi()
+
+void DbcView::onMessageFilterTextChanged(const QString& text)
 {
-    // Create main layout
+    if (m_messagesProxy) m_messagesProxy->setSearchFilter(text);
+}
+
+void DbcView::onMessageSenderChanged(const QString& sender)
+{
+    if (m_messagesProxy) m_messagesProxy->setFilterMessageSender(sender);
+}
+
+void DbcView::onMessageSelected(const QModelIndex& proxyIndex)
+{
+    if (!m_messagesProxy) return;
+
+    const QModelIndex sourceIndex = m_messagesProxy->mapToSource(proxyIndex);
+    if (!sourceIndex.isValid()) return;
+
+    // Ensure the detail view receives the row at column 0.
+    m_messagesPage->selectMessageIndex(sourceIndex.siblingAtColumn(0));
+}
+
+void DbcView::onSignalFilterTextChanged(const QString& text)
+{
+    if (m_signalsProxy) m_signalsProxy->setSearchFilter(text);
+}
+
+void DbcView::onSignalUnitChanged(const QString& unit) const
+{
+    if (m_signalsProxy) m_signalsProxy->setSignalFilterUnit(unit);
+}
+
+void DbcView::addPage(QWidget* page, const QString& title, const QString& iconPath,
+                      bool enabled) const
+{
+    m_contentStack->addWidget(page);
+    m_sidebar->addTab(QIcon(iconPath), title, enabled);
+}
+
+void DbcView::setupSidebarTabs()
+{
+    // Pages are added in the same order as the sidebar tabs.
+    m_loadPage = new LoadPage(this);
+    addPage(m_loadPage, Constants::Sidebar::TitleLoadNew, Constants::Sidebar::IconLoadNew, true);
+
+    m_overviewPage = new OverviewPage(this);
+    addPage(m_overviewPage, Constants::Sidebar::TitleOverview, Constants::Sidebar::IconOverview,
+            false);
+
+    m_ecuPage = new EcusPage(this);
+    addPage(m_ecuPage, Constants::Sidebar::TitleEcus, Constants::Sidebar::IconEcus, false);
+
+    m_messagesPage = new MessagesPage(this);
+    addPage(m_messagesPage, Constants::Sidebar::TitleMessages, Constants::Sidebar::IconMessages,
+            false);
+
+    m_signalsPage = new SignalsPage(this);
+    addPage(m_signalsPage, Constants::Sidebar::TitleSignals, Constants::Sidebar::IconSignals,
+            false);
+}
+
+void DbcView::setupUi()
+{
     auto* mainLayout = new QHBoxLayout(this);
     mainLayout->setContentsMargins(0, 0, 0, 0);
     mainLayout->setSpacing(0);
 
-    // Sidebar setup
-    setupSidebarList();
-    setSidebarModel();
-    m_sidebarList->setItemDelegate(new SidebarDelegate(m_sidebarList));
-    mainLayout->addWidget(m_sidebarList);
+    m_sidebar = new Core::Sidebar(this);
+    m_sidebar->setToolTipText(Constants::Sidebar::HoverText);
+    mainLayout->addWidget(m_sidebar);
 
-    // Content setup
     m_contentStack = new QStackedWidget(this);
     mainLayout->addWidget(m_contentStack);
-    createSubViews();
 
-    // Signal connections
+    setupSidebarTabs();
     setupConnections();
 }
-void DbcFile::DbcView::createSubViews()
+
+void DbcView::setupConnections()
 {
-    m_loadPage = new LoadPage(this);
-    m_contentStack->addWidget(m_loadPage);
+    connect(m_sidebar, &Core::Sidebar::tabSelected, this, &DbcView::onSidebarSelectionChanged);
 
-    m_overviewPage = new OverviewPage(this);
-    m_contentStack->addWidget(m_overviewPage);
-
-    m_ecuPage = new EcusPage(this);
-    m_contentStack->addWidget(m_ecuPage);
-
-    m_messagesPage = new MessagesPage(this);
-    m_contentStack->addWidget(m_messagesPage);
-
-    m_signalsPage = new SignalsPage(this);
-    m_contentStack->addWidget(m_signalsPage);
-}
-void DbcFile::DbcView::setupConnections()
-{
-    connect(m_sidebarList, &QListView::clicked, this, &DbcFile::DbcView::onSidebarSelectionChanged);
     connect(m_loadPage, &LoadPage::fileSelected, this,
             [this](const QString& path) { emit fileLoadRequested(path); });
+
+    connect(m_ecuPage, &EcusPage::filterTextChanged, this, &DbcView::onEcuFilterTextChanged);
+    connect(m_ecuPage, &EcusPage::filterIndexChanged, this, &DbcView::onEcuFilterIndexChanged);
+
+    connect(m_messagesPage, &MessagesPage::messageSelectionChanged, this,
+            &DbcView::onMessageSelected);
+    connect(m_messagesPage, &MessagesPage::masterFilterTextChanged, this,
+            &DbcView::onMessageFilterTextChanged);
+    connect(m_messagesPage, &MessagesPage::filterSenderChanged, this,
+            &DbcView::onMessageSenderChanged);
+
+    connect(m_signalsPage, &SignalsPage::filterTextChanged, this,
+            &DbcView::onSignalFilterTextChanged);
+    connect(m_signalsPage, &SignalsPage::filterUnitChanged, this, &DbcView::onSignalUnitChanged);
 }
+
 }  // namespace DbcFile

@@ -2,7 +2,9 @@
 
 #include <linux/if_arp.h>
 #include <sys/ioctl.h>
+#include <unistd.h>
 
+#include "can_handler/constants.hpp"
 #include "core/macro/console_logging.hpp"
 
 namespace CanHandler {
@@ -15,7 +17,7 @@ auto CanDeviceHandler::checkForCanMessage() const -> std::list<CanMessage>
         {
             return {};
         }
-        if (!canDriver->waitForMessages(std::chrono::milliseconds(50)))
+        if (!canDriver->waitForMessages(std::chrono::milliseconds(0)))
         {
             break;
         }
@@ -51,7 +53,9 @@ void CanDeviceHandler::updateCanDevice(const Core::CanDriverChangeEvent& event)
     {
         canDriver.reset(new CanDriver{event.driverName, CAN_RAW});
         LOG_INF("CanDeviceHandler", "CAN driver initialized successfully on {}", event.driverName);
-        // canDriver->setReceiveOwnMessages(true);
+        canDriver->setReceiveOwnMessages(true);
+        canDriver->setReturnRelativeTimestamps(false);
+        canDriver->setCollectTelemetry(true);
     } catch (const std::exception& e)
     {
         LOG_ERR("CanDeviceHandler", "Failed to initialize CAN driver: {}", e.what());
@@ -72,6 +76,8 @@ void CanDeviceHandler::getAvailableCanDevices(const Core::GetAvailableCanDrivers
     if (sock < 0)
     {
         freeifaddrs(firstInterface);
+        LOG_ERR("CanHandler", "Failed to create socket for CAN device detection");
+        return;
     }
 
     for (const ifaddrs* interface = firstInterface; interface != nullptr;
@@ -86,10 +92,25 @@ void CanDeviceHandler::getAvailableCanDevices(const Core::GetAvailableCanDrivers
         {
             if (requestedInterface.ifr_ifru.ifru_hwaddr.sa_family == ARPHRD_CAN)
             {
-                event.driversNames->push_back(std::string(interface->ifa_name));
+                event.options->push_back(Core::SelectOption{std::string(interface->ifa_name),
+                                                            std::string(interface->ifa_name)});
             }
         }
     }
     freeifaddrs(firstInterface);
+    close(sock);
 }
+
+void CanDeviceHandler::registerSettings(Core::ISettingsRegistry& registry)
+{
+    registry.registerSetting(
+        std::make_unique<
+            Core::SettingDefinition<Core::SettingType::Select, Core::GetAvailableCanDriversEvent,
+                                    Core::CanDriverChangeEvent>>(
+            Core::SettingKey{Constants::DEVICE_SELECTION_SETTING_ID, Constants::MODULE_ID},
+            Constants::DEVICE_SELECTION_ICON_PATH,
+            Core::TypeTraits<Core::SettingType::Select, Core::GetAvailableCanDriversEvent>{
+                "Select Interface"}));
+}
+
 };  // namespace CanHandler

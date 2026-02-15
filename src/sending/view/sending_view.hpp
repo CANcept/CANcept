@@ -1,10 +1,9 @@
 #pragma once
 
-#include <QComboBox>
-#include <QListView>
 #include <QStackedWidget>
 #include <QWidget>
 
+#include "core/widgets/sidebar.hpp"
 #include "dbc_based_sending_subview.hpp"
 #include "raw_sending_subview.hpp"
 #include "sending/model/sending_model.hpp"
@@ -40,56 +39,31 @@ class SendingView final : public QWidget
      */
     void setModel(SendingModel* model);
 
-    // UI Interaction API
-    void setAvailableDevices(const std::vector<std::string>& devices) const;
-
    signals:
     /** @brief Emitted when the sidebar selection changes (0=Raw, 1=DBC) */
     void modeChanged(bool isDbcMode);
 
-    /** @brief Emitted when the device dropdown changes */
-    void deviceSelectionChanged(const std::string& deviceName);
+    /** @brief Emitted when user requests to start repeated sending */
+    void startRepeatedSendingRequested(int intervalMs);
 
-    /** @brief Emitted when an interface dropdown is about to open, allowing refresh of available
-     * interfaces */
-    void interfaceDropdownOpening();
+    /** @brief Emitted when user requests to stop repeated sending */
+    void stopRepeatedSendingRequested();
+
+    /** @brief Emitted when user requests a single send */
+    void sendOnceRequested();
 
    public slots:
     /** @brief Switches the visible sub-view (0 for Raw, 1 for DBC) */
     void displayMode(int index);
 
-   private slots:
-    /**
-     * @brief Handles sidebar navigation to switch between Raw and DBC views.
-     */
-    void onSidebarSelectionChanged(const QModelIndex& index);
-
    private:
-    /**
-     * @brief Describes a single entry in the sidebar model.
-     */
-    struct SidebarEntry {
-        QString iconPath;
-        QString title;
-        bool enabled;
-    };
-
-    /** @brief Prevents deselection of items in the sidebar list. */
-    void disableSidebarDeselection();
-
-    /** @brief Initializes and configures the sidebar list view. */
-    void setupSidebarList();
-
-    /** @brief Sets up the model for the sidebar list. */
-    void setSidebarModel();
-
     void setupUi();
 
     /** @brief Updates send button enabled states based on current selections */
     void updateSendButtonStates() const;
 
     // Sidebar
-    QListView* m_sidebarList;
+    Core::Sidebar* m_sidebar;
 
     QStackedWidget* m_contentStack;
     RawSendingSubView* m_rawView;
@@ -97,10 +71,6 @@ class SendingView final : public QWidget
 
     // Model reference for button state checks
     SendingModel* m_model = nullptr;
-
-    // Interface selection tracking
-    bool m_rawInterfaceSelected = false;
-    bool m_dbcInterfaceSelected = false;
 };
 
 }  // namespace Sending

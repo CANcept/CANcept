@@ -26,6 +26,9 @@ class StyledCheckBox final : public QCheckBox
      */
     explicit StyledCheckBox(const QString& text, QWidget* parent = nullptr);
 
+   protected:
+    bool event(QEvent* event) override;
+
    private:
     /**
      * @brief Applies the application theme via Qt Stylesheets.

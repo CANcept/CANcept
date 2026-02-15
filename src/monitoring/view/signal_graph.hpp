@@ -1,8 +1,12 @@
 #pragma once
-#include <QWidget>
+#include <qwt_plot_curve.h>
 
-#include "monitoring/model/signal_graph_model.hpp"
+#include <QVariant>
+
+#include "core/dto/can_dto.hpp"
+#include "core/widgets/card_widget.hpp"
 #include "qwt_plot.h"
+#include "qwt_plot_grid.h"
 
 /**
  * @namespace Monitoring
@@ -26,19 +30,20 @@ namespace Monitoring {
  * - Update graphical representation on data changes
  * - Handle removal of a signal from visualization
  */
-class SignalGraph : QWidget
+class SignalGraph : public QWidget
 {
     Q_OBJECT
    public:
     /**
      * @brief Constructs a graph widget for a specific CAN signal.
      *
-     * @param signal Rvalue reference to the CAN signal used to initialize
+     * @param messageId Id reference to the CAN signal used to initialize
      *               the graph. Ownership of the initial signal data is
      *               transferred to the internal model.
+     * @param signalName signal name reference to the name of the CAN signal for
      * @param parent Optional Qt parent widget.
      */
-    explicit SignalGraph(const Core::DbcCanSignal&& signal, QWidget* parent = nullptr);
+    explicit SignalGraph(QString messageId, QString signalName, QWidget* parent = nullptr);
 
     /**
      * @brief Destroys the SignalGraph widget and releases associated
@@ -52,29 +57,44 @@ class SignalGraph : QWidget
      * This method is typically called when a new CAN message for the
      * corresponding signal is received.
      *
-     * @param signal Rvalue reference containing the latest signal value
+     * @param signalValues QVariant reference containing the latest signal value
      *               to be appended.
+     * @param timestamps QVariant reference containing the timestamp of the new
      */
-    void appendDataToGraph(Core::DbcCanSignal&& signal);
+    void updateGraphData(QVariant timestamps, QVariant signalValues);
 
-    /**
-     * @brief Removes the graph corresponding to the given signal.
-     *
-     * Used when a signal is deselected or removed from monitoring.
-     *
-     * @param signal Reference to the signal identifying the graph to remove.
-     */
-    void deleteGraph(Core::DbcCanSignal& signal);
+    // Getters for identification in the list
+    [[nodiscard]] auto getSignalName() const -> QString
+    {
+        return m_signalName;
+    }
+
+    [[nodiscard]] auto getMessageId() const -> QString
+    {
+        return m_messageId;
+    }
+
+    [[nodiscard]] auto getContainer() const -> Core::CardWidget*
+    {
+        return m_container;
+    }
+
+    void setContainer(Core::CardWidget* container)
+    {
+        m_container = container;
+    }
+
+    void applyStyle();
 
    private:
-    QwtPlot graph;
+    void setupPlot();
 
-    /**
-     * @brief Model holding the time-series data and graph state.
-     *
-     * Responsible for managing signal samples, scaling, and any
-     * preprocessing required for visualization.
-     */
-    SignalGraphModel model;
+    QwtPlot* m_plot;
+    QwtPlotCurve* m_curve;
+    QwtPlotGrid* m_grid;
+    Core::CardWidget* m_container;
+
+    QString m_messageId;
+    QString m_signalName;
 };
 }  // namespace Monitoring

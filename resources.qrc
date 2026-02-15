@@ -1,20 +1,33 @@
 <!DOCTYPE RCC><RCC version="1.0">
     <qresource prefix="/">
-        <file>assets/icon/can_bus.svg</file>
-        <file>assets/icon/upload.svg</file>
-        <file>assets/icon/overview.svg</file>
-        <file>assets/icon/ecus.svg</file>
-        <file>assets/icon/messages.svg</file>
-        <file>assets/icon/signals.svg</file>
-        <file>assets/icon/load_new.svg</file>
-        <file>assets/icon/dbc_file_tab.svg</file>
+        <file>assets/icon/app_root/can_bus.svg</file>
+        <file>assets/icon/app_root/settings.svg</file>
+        <file>assets/icon/app_root/palette.svg</file>
+        <file>assets/icon/can_handler/configuration.svg</file>
+        <file>assets/icon/dbc_file/upload.svg</file>
+        <file>assets/icon/dbc_file/overview.svg</file>
+        <file>assets/icon/dbc_file/ecus.svg</file>
+        <file>assets/icon/dbc_file/messages.svg</file>
+        <file>assets/icon/dbc_file/signals.svg</file>
+        <file>assets/icon/dbc_file/load_new.svg</file>
+        <file>assets/icon/dbc_file/dbc_file_tab.svg</file>
         <file>assets/icon/core/arrow_down.svg</file>
+        <file>assets/icon/core/arrow_left.svg</file>
+        <file>assets/icon/core/arrow_right.svg</file>
+        <file>assets/icon/core/search.svg</file>
         <file>assets/icon/sending/sending.svg</file>
         <file>assets/icon/sending/raw_based_send_icon.svg</file>
         <file>assets/icon/sending/dbc_based_send_icon.svg</file>
         <file>assets/icon/sending/send.svg</file>
-        <file>assets/icon/sending/configuration.svg</file>
         <file>assets/icon/sending/can_frame.svg</file>
         <file>assets/icon/sending/messages.svg</file>
+        <file>assets/icon/monitoring/monitoring_tab.svg</file>
+        <file>assets/icon/monitoring/signal_graph.svg</file>
+        <file>assets/icon/monitoring/bus_config.svg</file>
+        <file>assets/icon/monitoring/bus_connected.svg</file>
+        <file>assets/icon/monitoring/bus_disconnected.svg</file>
+        <file>assets/icon/monitoring/arrow_right.svg</file>
+        <file>assets/icon/monitoring/arrow_down.svg</file>
+        <file>assets/icon/sending/stop.svg</file>
     </qresource>
 </RCC>

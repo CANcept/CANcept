@@ -1,9 +1,15 @@
 #pragma once
 
+#include <QAbstractItemDelegate>
 #include <QScrollArea>
 #include <QVBoxLayout>
+#include <QWidget>
 
+#include "monitoring/delegate/monitoring_delegate.hpp"
+#include "monitoring/model/monitoring_model.hpp"
 #include "signal_graph.hpp"
+
+class MonitoringDelegate;
 
 /**
  * @namespace Monitoring
@@ -34,30 +40,51 @@ class GraphListView : public QWidget
     /**
      * @brief Constructs the graph list view widget.
      *
-     * @param parent Optional Qt parent widget.
+     * @param m_model model storing the data to be displayed.
+     * @param m_delegate delegate responsible for handling user interactions and data updates.
      */
-    explicit GraphListView(QWidget* parent = nullptr);
+    explicit GraphListView(MonitoringModel* m_model, MonitoringDelegate* m_delegate);
 
     /**
-     * @brief Appends new signal data to the corresponding graph.
+     * @brief Adds new signal to graph list.
      *
-     * If a graph for the given signal already exists, the data is forwarded
-     * to that graph. Otherwise, a new graph is created and initialized.
+     * If a graph for the given signal already exists, nothing happens, otherwise the signal will
+     * be appended to the list of plotted signals.
      *
-     * @param signal Reference to the CAN signal containing the latest value.
+     * @param messageId the id of the message the to be plotted signal belongs to
+     * @param signalName the name of the to be plotted signal
      */
-    void appendDataToGraph(Core::DbcCanSignal& signal);
+    void addGraph(const QString& messageId, const QString& signalName);
+
+    void updateViewData();
 
     /**
      * @brief Removes the graph associated with the given signal.
      *
      * Called when a signal is deselected or no longer monitored.
      *
-     * @param signal Reference to the CAN signal identifying the graph to remove.
+     * @param messageId the id of the message the plotted signal belongs to
+     * @param signalName the name of the plotted signal
      */
-    void deleteGraph(Core::DbcCanSignal& signal);
+    void deleteGraph(const QString& messageId, const QString& signalName);
+
+   public slots:
+    void signalChecked(bool enabled, const QString& messageId, const QString& signalId);
+
+    void onDbcChange();
+
+   protected:
+    /**
+     * @brief Handles the rerender of the AppRootView.
+     * @param event The received event.
+     */
+    auto event(QEvent* event) -> bool override;
 
    private:
+    void setupUi();
+
+    void applyStyle();
+    QVBoxLayout* m_mainLayout;
     /**
      * @brief Layout arranging SignalGraph widgets vertically.
      */
@@ -68,6 +95,8 @@ class GraphListView : public QWidget
      */
     QScrollArea* m_scrollArea;
 
+    QWidget* m_scrollContent;
+
     /**
      * @brief Collection of active SignalGraph widgets.
      *
@@ -75,11 +104,6 @@ class GraphListView : public QWidget
      */
     QList<SignalGraph*> m_signal_graphs;
 
-    /**
-     * @brief Creates and inserts a new SignalGraph for the given signal.
-     *
-     * @param signal Reference to the CAN signal used to initialize the graph.
-     */
-    void newGraph(Core::DbcCanSignal& signal);
+    MonitoringModel* m_model;
 };
 }  // namespace Monitoring

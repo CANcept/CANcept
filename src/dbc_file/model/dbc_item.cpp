@@ -1,6 +1,3 @@
-//
-// Created by Adrian Rupp on 13.01.26.
-//
 #include "dbc_item.hpp"
 
 namespace DbcFile {
@@ -12,6 +9,12 @@ DbcFile::DbcItem::DbcItem(const QList<QVariant>& data, Core::DbcItemType type, D
 auto DbcItem::setParent(DbcItem* parent) -> void
 {
     m_parent = parent;
+}
+void DbcItem::setData(int column, const QVariant& value)
+{
+    if (column < 0) return;
+    if (column >= m_data.size()) m_data.resize(column + 1);
+    m_data[column] = value;
 }
 
 const std::vector<std::unique_ptr<DbcItem>>& DbcItem::getChildren() const

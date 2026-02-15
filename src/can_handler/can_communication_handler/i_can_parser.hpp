@@ -1,9 +1,4 @@
-//
-// Created by flori on 28.12.2025.
-//
-
-#ifndef CANBUSMANAGER_I_CAN_HANDLER_HPP
-#define CANBUSMANAGER_I_CAN_HANDLER_HPP
+#pragma once
 #include <CanDriver.hpp>
 using sockcanpp::CanMessage;
 #include "core/interface/i_event_broker.hpp"
@@ -42,5 +37,3 @@ class ICanParser
     std::function<bool(const CanMessage&)> sendFunction;
 };
 }  // namespace CanHandler
-
-#endif  // CANBUSMANAGER_I_CAN_HANDLER_HPP
