@@ -78,13 +78,14 @@ class DbcSendingSubView final : public QWidget
 
    private:
     void setupUi();
-    void applyStyle();
+    void applyStyle() const;
 
     QScrollArea* m_outerScrollArea;
     Core::CardWidget* m_messagesCard;
     QScrollArea* m_scrollArea;
     QWidget* m_scrollContent;
     QVBoxLayout* m_cardsLayout;
+    QLabel* m_noDbcLabel;
 
     RepeatedSendingCard* m_repeatedSendingCard;
     QPushButton* m_sendButton;

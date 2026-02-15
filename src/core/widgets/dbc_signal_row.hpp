@@ -2,6 +2,7 @@
 
 #include <QCheckBox>
 #include <QLabel>
+#include <QTimer>
 #include <QWidget>
 
 #include "card_widget.hpp"
@@ -96,6 +97,7 @@ class DbcSignalRowWidget final : public QWidget
     StyledLineEdit* m_valueEditor;
     QLabel* m_unitLabel;
     QCheckBox* m_funcToggle;
+    QTimer* m_clampTimer;
 
     double m_minValue;
     double m_maxValue;

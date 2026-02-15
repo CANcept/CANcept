@@ -23,6 +23,7 @@ DbcSignalRowWidget::DbcSignalRowWidget(const QString& name, const QString& unit,
       m_valueEditor(nullptr),
       m_unitLabel(nullptr),
       m_funcToggle(nullptr),
+      m_clampTimer(nullptr),
       m_minValue(min),
       m_maxValue(max)
 {
@@ -39,6 +40,7 @@ DbcSignalRowWidget::DbcSignalRowWidget(const QString& name, const QString& unit,
       m_valueEditor(nullptr),
       m_unitLabel(nullptr),
       m_funcToggle(nullptr),
+      m_clampTimer(nullptr),
       m_minValue(min),
       m_maxValue(max)
 {
@@ -132,8 +134,12 @@ void DbcSignalRowWidget::setupFullMode(const QString& name, const QString& unit,
     validator->setLocale(QLocale::C);
     m_valueEditor->setValidator(validator);
 
-    // Connect real-time clamping - prevent values outside range
-    connect(m_valueEditor, &QLineEdit::textChanged, this, &DbcSignalRowWidget::clampInput);
+    // Create debounce timer for clamping
+    m_clampTimer = new QTimer(this);
+    m_clampTimer->setSingleShot(true);
+    m_clampTimer->setInterval(800);
+    connect(m_clampTimer, &QTimer::timeout, this, &DbcSignalRowWidget::clampInput);
+    connect(m_valueEditor, &QLineEdit::textChanged, this, [this]() { m_clampTimer->start(); });
 
     secondRow->addWidget(m_valueEditor, 1);
 

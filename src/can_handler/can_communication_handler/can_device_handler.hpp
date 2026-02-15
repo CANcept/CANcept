@@ -22,6 +22,10 @@ class CanDeviceHandler
                 [this](const Core::GetAvailableCanDriversEvent& event) -> void {
                     getAvailableCanDevices(event);
                 });
+        checkCanDeviceReadyEventConnection = event_broker.subscribe<Core::CheckCanDeviceReadyEvent>(
+            [this](const Core::CheckCanDeviceReadyEvent& event) -> void {
+                event.isReady = (canDriver != nullptr);
+            });
     };
 
     /**
@@ -70,5 +74,9 @@ class CanDeviceHandler
      * @brief A connection conatining the subscription to the get available van devices event
      */
     Core::Connection getAvailableCanDevicesEventConnection;
+    /**
+     * @brief A connection containing the subscription to the check can device ready event
+     */
+    Core::Connection checkCanDeviceReadyEventConnection;
 };
 }  // namespace CanHandler

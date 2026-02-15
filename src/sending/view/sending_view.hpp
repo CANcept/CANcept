@@ -4,6 +4,7 @@
 #include <QWidget>
 
 #include "core/widgets/sidebar.hpp"
+#include "core/widgets/tinted_icon_label.hpp"
 #include "dbc_based_sending_subview.hpp"
 #include "raw_sending_subview.hpp"
 #include "sending/model/sending_model.hpp"
@@ -56,8 +57,19 @@ class SendingView final : public QWidget
     /** @brief Switches the visible sub-view (0 for Raw, 1 for DBC) */
     void displayMode(int index);
 
+    /** @brief Shows the device not configured overlay */
+    void showDeviceNotConfiguredOverlay() const;
+
+    /** @brief Hides the device not configured overlay */
+    void hideDeviceNotConfiguredOverlay() const;
+
+   protected:
+    void resizeEvent(QResizeEvent* event) override;
+    bool event(QEvent* event) override;
+
    private:
     void setupUi();
+    void applyStyle() const;
 
     /** @brief Updates send button enabled states based on current selections */
     void updateSendButtonStates() const;
@@ -68,6 +80,10 @@ class SendingView final : public QWidget
     QStackedWidget* m_contentStack;
     RawSendingSubView* m_rawView;
     DbcSendingSubView* m_dbcView;
+
+    // Overlay for device not configured
+    QWidget* m_deviceNotConfiguredOverlay;
+    Core::TintedIconLabel* m_settingsIconLabel;
 
     // Model reference for button state checks
     SendingModel* m_model = nullptr;

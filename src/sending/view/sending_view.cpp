@@ -1,10 +1,14 @@
 #include "sending_view.hpp"
 
 #include <QHBoxLayout>
+#include <QLabel>
 #include <QList>
 #include <QRegularExpression>
 #include <QVBoxLayout>
 
+#include "core/macro/theme.hpp"
+#include "core/theme/style_event.hpp"
+#include "core/widgets/tinted_icon_label.hpp"
 #include "sending/constants.hpp"
 #include "sending/view/components/repeated_sending_card.hpp"
 #include "sending/view/components/send_message_button.hpp"
@@ -16,7 +20,9 @@ SendingView::SendingView(QWidget* parent)
       m_sidebar(nullptr),
       m_contentStack(nullptr),
       m_rawView(nullptr),
-      m_dbcView(nullptr)
+      m_dbcView(nullptr),
+      m_deviceNotConfiguredOverlay(nullptr),
+      m_settingsIconLabel(nullptr)
 {
     setupUi();
 }
@@ -44,12 +50,79 @@ void SendingView::setupUi()
     mainLayout->addWidget(m_contentStack, 1);
 
     connect(m_sidebar, &Core::Sidebar::tabSelected, this, &SendingView::displayMode);
+
+    m_deviceNotConfiguredOverlay = new QWidget(this);
+    m_deviceNotConfiguredOverlay->setObjectName("deviceNotConfiguredOverlay");
+
+    auto* overlayLayout = new QVBoxLayout(m_deviceNotConfiguredOverlay);
+
+    overlayLayout->addStretch(2);
+
+    auto* messageContainer = new QWidget(m_deviceNotConfiguredOverlay);
+    auto* messageLayout = new QHBoxLayout(messageContainer);
+    messageLayout->setAlignment(Qt::AlignCenter);
+
+    auto* messageLabel = new QLabel(Constants::NO_DEVICE_CONFIGURED_TEXT, messageContainer);
+    messageLabel->setAlignment(Qt::AlignCenter);
+    messageLayout->addWidget(messageLabel);
+
+    const auto& colors = THEME.colors();
+    m_settingsIconLabel = new Core::TintedIconLabel(Constants::SETTINGS_ICON_PATH, 24,
+                                                    colors.textPrimary, messageContainer);
+    messageLayout->addWidget(m_settingsIconLabel);
+
+    overlayLayout->addWidget(messageContainer, 0, Qt::AlignCenter);
+
+    overlayLayout->addStretch(3);
+
+    m_deviceNotConfiguredOverlay->hide();
+    m_deviceNotConfiguredOverlay->raise();
+
+    applyStyle();
 }
 
 void SendingView::displayMode(const int index)
 {
     m_contentStack->setCurrentIndex(index);
     emit modeChanged(index == 1);
+}
+
+void SendingView::applyStyle() const
+{
+    const auto& colors = THEME.colors();
+    const auto& spacing = THEME.spacing();
+
+    if (m_deviceNotConfiguredOverlay)
+    {
+        m_deviceNotConfiguredOverlay->setStyleSheet(
+            QString("QWidget#deviceNotConfiguredOverlay { "
+                    "background-color: rgba(%1, %2, %3, 140); "
+                    "}"
+                    "QLabel { "
+                    "color: %4; "
+                    "font-size: %5px; "
+                    "}")
+                .arg(colors.surfaceMain.red())
+                .arg(colors.surfaceMain.green())
+                .arg(colors.surfaceMain.blue())
+                .arg(colors.textPrimary.name())
+                .arg(spacing.fontSizeLg));
+    }
+
+    if (m_settingsIconLabel)
+    {
+        m_settingsIconLabel->setColor(colors.textPrimary);
+    }
+}
+
+bool SendingView::event(QEvent* event)
+{
+    if (event->type() == Core::StyleEvent::EventType)
+    {
+        applyStyle();
+        return true;
+    }
+    return QWidget::event(event);
 }
 
 void SendingView::setModel(SendingModel* model)
@@ -255,6 +328,33 @@ void SendingView::updateSendButtonStates() const
         }
 
         dbcSendBtn->setEnabled(anySignalSelected);
+    }
+}
+
+void SendingView::showDeviceNotConfiguredOverlay() const
+{
+    if (m_deviceNotConfiguredOverlay)
+    {
+        m_deviceNotConfiguredOverlay->setGeometry(0, 0, width(), height());
+        m_deviceNotConfiguredOverlay->show();
+        m_deviceNotConfiguredOverlay->raise();
+    }
+}
+
+void SendingView::hideDeviceNotConfiguredOverlay() const
+{
+    if (m_deviceNotConfiguredOverlay)
+    {
+        m_deviceNotConfiguredOverlay->hide();
+    }
+}
+
+void SendingView::resizeEvent(QResizeEvent* event)
+{
+    QWidget::resizeEvent(event);
+    if (m_deviceNotConfiguredOverlay)
+    {
+        m_deviceNotConfiguredOverlay->setGeometry(0, 0, width(), height());
     }
 }
 

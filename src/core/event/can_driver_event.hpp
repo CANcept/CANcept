@@ -23,4 +23,15 @@ struct GetAvailableCanDriversEvent final : public SelectProviderOptionEvent {
     explicit GetAvailableCanDriversEvent(std::list<SelectOption>* options)
         : SelectProviderOptionEvent(options){};
 };
+/**
+ * @brief Event to check if the CAN device is ready for sending messages.
+ */
+struct CheckCanDeviceReadyEvent final : public Event {
+    /**
+     * @brief Reference to boolean that will be set to true if device is ready, false otherwise.
+     */
+    bool& isReady;
+
+    explicit CheckCanDeviceReadyEvent(bool& ready) : isReady(ready) {}
+};
 }  // namespace Core

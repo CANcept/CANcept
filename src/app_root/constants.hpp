@@ -13,7 +13,7 @@ namespace AppRoot::Constants {
 inline const QString CAN_BUS_ICON_PATH = ":/assets/icon/app_root/can_bus.svg";
 
 /** @brief Path to the settings Logo. */
-inline const QString SETTINGS_ICON_PATH = ":/assets/icon/app_root/settings.svg";
+inline const QString SETTINGS_ICON_PATH = ":/assets/icon/settings.svg";
 
 /** @brief Minimum width for tab items in the tab bar */
 inline constexpr int MIN_TAB_WIDTH = 120;

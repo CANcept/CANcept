@@ -41,6 +41,9 @@ inline const QString MESSAGES_ICON_PATH = ":/assets/icon/sending/messages.svg";
 /** @brief Icon used for stop Sending Button */
 inline const QString STOP_SENDING_ICON_PATH = ":/assets/icon/sending/stop.svg";
 
+/** @brief Path to the settings Logo. */
+inline const QString SETTINGS_ICON_PATH = ":/assets/icon/settings.svg";
+
 // MODULE IDENTIFICATION
 
 /** @brief Unique identifier used by the module for event broker communication */
@@ -74,6 +77,12 @@ inline const QString BAUD_RATE_LABEL = "Baud Rate";
 
 /** @brief Label for messages list in DBC-based view */
 inline const QString MESSAGES_LABEL = "Messages";
+
+/** @brief Text displayed when no DBC file is loaded */
+inline const QString NO_DBC_LOADED_TEXT = "No DBC file loaded. Load a DBC file to view messages.";
+
+/** @brief Text displayed when CAN device is not configured */
+inline const QString NO_DEVICE_CONFIGURED_TEXT = "Connection first has to be configured in ";
 
 /** @brief Text for raw sending mode button */
 inline const QString RAW_MODE_BUTTON_TEXT = "Raw";
@@ -218,6 +227,9 @@ inline const QString ERR_CALLBACK_EXCEPTION_TEMPLATE = "Send callback error: %1"
 
 /** @brief Generic error message for unknown/unhandled exceptions in the worker loop. */
 inline const QString ERR_UNKNOWN_CALLBACK_ERROR = "Unknown error in send callback";
+
+/** @brief Name for the repeated sending worker thread. */
+inline const QString REPEATED_SENDING_THREAD_NAME = "RepeatedSendingWorker";
 
 }  // namespace Constants
 

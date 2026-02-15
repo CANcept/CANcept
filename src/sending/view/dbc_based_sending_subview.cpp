@@ -23,6 +23,7 @@ DbcSendingSubView::DbcSendingSubView(QWidget* parent)
       m_scrollArea(nullptr),
       m_scrollContent(nullptr),
       m_cardsLayout(nullptr),
+      m_noDbcLabel(nullptr),
       m_repeatedSendingCard(nullptr),
       m_sendButton(nullptr)
 {
@@ -64,6 +65,11 @@ void DbcSendingSubView::setupUi()
         m_cardsLayout = new QVBoxLayout(m_scrollContent);
         m_cardsLayout->setContentsMargins(0, 0, 0, 0);
         m_cardsLayout->setSpacing(spacing.spacingSm);
+
+        m_noDbcLabel = new QLabel(Constants::NO_DBC_LOADED_TEXT, m_scrollContent);
+        m_noDbcLabel->setAlignment(Qt::AlignCenter);
+        m_noDbcLabel->setWordWrap(true);
+        m_cardsLayout->addWidget(m_noDbcLabel);
         m_cardsLayout->addStretch();
 
         m_scrollArea->setWidget(m_scrollContent);
@@ -96,14 +102,27 @@ void DbcSendingSubView::setupUi()
     applyStyle();
 }
 
-void DbcSendingSubView::applyStyle()
+void DbcSendingSubView::applyStyle() const
 {
     const auto& colors = THEME.colors();
+    const auto& spacing = THEME.spacing();
 
     m_outerScrollArea->setStyleSheet(
         QString("background-color: %1;").arg(colors.surfaceMain.name()));
     m_scrollContent->setStyleSheet(
         QString("QWidget#scrollContent { background-color: %1; }").arg(colors.surfaceMain.name()));
+
+    if (m_noDbcLabel)
+    {
+        m_noDbcLabel->setStyleSheet(QString("QLabel {"
+                                            "color: %1;"
+                                            "font-size: %2px;"
+                                            "padding: %3px;"
+                                            "}")
+                                        .arg(colors.textSecondary.name())
+                                        .arg(spacing.fontSizeMd)
+                                        .arg(spacing.spacingLg));
+    }
 }
 
 bool DbcSendingSubView::event(QEvent* event)
@@ -129,7 +148,16 @@ void DbcSendingSubView::populateFromModel(const SendingModel* model)
     const Core::DbcConfig* dbc = model->currentDbcConfig();
     if (!dbc)
     {
+        if (m_noDbcLabel)
+        {
+            m_noDbcLabel->setVisible(true);
+        }
         return;
+    }
+
+    if (m_noDbcLabel)
+    {
+        m_noDbcLabel->setVisible(false);
     }
 
     // Create a card for each message in the DBC (View reads from Model)
@@ -200,9 +228,10 @@ void DbcSendingSubView::clearMessages() const
     {
         return;
     }
-    while (m_cardsLayout->count() > 1)
+
+    while (m_cardsLayout->count() > 2)
     {
-        const QLayoutItem* item = m_cardsLayout->takeAt(0);
+        const QLayoutItem* item = m_cardsLayout->takeAt(1);
         if (QWidget* widget = item->widget())
         {
             widget->blockSignals(true);
@@ -210,6 +239,11 @@ void DbcSendingSubView::clearMessages() const
             widget->deleteLater();
         }
         delete item;
+    }
+
+    if (m_noDbcLabel)
+    {
+        m_noDbcLabel->setVisible(true);
     }
 }
 
