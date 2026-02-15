@@ -5,7 +5,7 @@
 
 #include "core/macro/theme.hpp"
 #include "core/theme/style_event.hpp"
-
+#include "logging/constants.hpp"
 namespace Logging {
 
 StartStopButton::StartStopButton(QWidget* parent) : QPushButton(parent)
@@ -71,11 +71,13 @@ void StartStopButton::setRecordingState(bool isRecording)
     {
         // Recording state - Red Stop button
         setProperty("recording", true);
+        setIcon(QIcon(Logging::Constants::STOP_ICON_PATH));
         setText(" Stop");
     } else
     {
         // Idle state - Start button
         setProperty("recording", false);
+        setIcon(QIcon(Logging::Constants::START_ICON_PATH));
         setText(" Start");
     }
 
