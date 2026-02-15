@@ -1,6 +1,5 @@
 #pragma once
 
-#include <QStringList>
 #include <QWidget>
 
 class QAbstractItemModel;
@@ -57,6 +56,13 @@ class SignalsPage : public QWidget
      */
     void setAvailableUnits(const QStringList& units) const;
 
+    /**
+     * @brief Applies theme updates and refreshes the styling of all child widgets.
+     *
+     * Should be called when the application theme or style changes.
+     */
+    void applyStyle();
+
    signals:
     /**
      * @brief Emitted when the search text changes.
@@ -85,6 +91,7 @@ class SignalsPage : public QWidget
      * @param index The newly selected index.
      */
     void onFilterIndexChanged(int index);
+    bool event(QEvent* event);
 
    private:
     // =========================================================================
@@ -94,40 +101,13 @@ class SignalsPage : public QWidget
     /**
      * @brief Creates and initializes the full UI layout.
      *
-     * Builds the card container, search/filter table and connects signals.
+     * Builds the card container, search/filter table, configures delegates,
+     * and connects relevant signals.
      */
     void setupUi();
 
     /**
-     * @brief Applies general table configuration independent of the model.
-     *
-     * Configures scrollbars, selection behavior, grid visibility
-     * and vertical header.
-     *
-     * @param table Target table view.
-     */
-    static void configureTableBasics(QTableView* table);
-
-    /**
-     * @brief Applies visual styling to the table.
-     *
-     * Sets border radius, background colors and theme-based styling.
-     *
-     * @param table Target table view.
-     */
-    static void applyTableStyle(QTableView* table);
-
-    /**
-     * @brief Configures the horizontal header appearance.
-     *
-     * Applies resize mode and custom stylesheet styling.
-     *
-     * @param table Target table view.
-     */
-    static void configureHeaderStyle(const QTableView* table);
-
-    /**
-     * @brief Configures column visibility, width and stretch behavior.
+     * @brief Configures column visibility, width, and stretch behavior.
      *
      * This method is model-dependent and should be called after
      * setting the model.

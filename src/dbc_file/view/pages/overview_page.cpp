@@ -1,19 +1,21 @@
 #include "overview_page.hpp"
 
 #include <QLineEdit>
-#include <QPainter>
 #include <QScrollArea>
 #include <QTimer>
 #include <QVBoxLayout>
 
 #include "core/delegates/card_list_delegate.hpp"
+#include "core/enum/dbc_itemtype.hpp"
 #include "core/macro/theme.hpp"
 #include "core/theme/style_event.hpp"
 #include "core/theme/theme_manager.hpp"
 #include "core/widgets/card_widget.hpp"
 #include "core/widgets/tinted_icon_label.hpp"
 #include "dbc_file/constants.hpp"
+#include "dbc_file/model/dbc_item.hpp"
 #include "dbc_file/model/dbc_roles.hpp"
+#include "dbc_file/styles.hpp"
 #include "spdlog/fmt/bundled/os.h"
 namespace DbcFile {
 OverviewPage::OverviewPage(QWidget* parent) : QWidget(parent)
@@ -24,26 +26,33 @@ OverviewPage::OverviewPage(QWidget* parent) : QWidget(parent)
 void OverviewPage::updateLabels(const QAbstractItemModel* model) const
 {
     if (!model || model->rowCount() == 0) return;
-    if (const QModelIndex overviewIndex = model->index(0, 0, QModelIndex());
-        !overviewIndex.isValid())
-        return;
 
-    auto getData = [&](const int col) {
-        return model->data(model->index(0, col), Qt::DisplayRole).toString();
+    const QModelIndex idx = model->index(0, 0);
+    if (!idx.isValid()) return;
+
+    auto* overviewItem = static_cast<DbcItem*>(idx.internalPointer());
+    if (!overviewItem || overviewItem->type() != Core::DbcItemType::Overview) return;
+
+    // Hilfsfunktion zum Abrufen der Daten
+    auto getData = [&](int col) -> QString {
+        const QVariant val = overviewItem->data(col);
+        return val.isValid() ? val.toString() : QString{};
     };
 
-    if (!getData(Constants::Columns::OvFilename).isEmpty())
-    {
-        m_lblFileName->setText(getData(Constants::Columns::OvFilename));
-    }
-    if (!getData(Constants::Columns::OvVersion).isEmpty())
-    {
-        m_lblVersion->setText(getData(Constants::Columns::OvVersion));
-    }
-    m_lblEcuCount->setText(getData(Constants::Columns::OvEcuCount));
-    m_lblMessageCount->setText(getData(Constants::Columns::OvMsgCount));
-    m_lblSignalCount->setText(getData(Constants::Columns::OvSigCount));
-    m_lblOrphanCount->setText(getData(Constants::Columns::OvOrphans));
+    // Set Labels
+    const QString fileName = getData(Constants::Columns::OvFilename);
+    const QString version = getData(Constants::Columns::OvVersion);
+    const QString ecuCount = getData(Constants::Columns::OvEcuCount);
+    const QString msgCount = getData(Constants::Columns::OvMsgCount);
+    const QString sigCount = getData(Constants::Columns::OvSigCount);
+    const QString orphanCount = getData(Constants::Columns::OvOrphans);
+
+    if (!fileName.isEmpty()) m_lblFileName->setText(fileName);
+    if (!version.isEmpty()) m_lblVersion->setText(version);
+    m_lblEcuCount->setText(ecuCount);
+    m_lblMessageCount->setText(msgCount);
+    m_lblSignalCount->setText(sigCount);
+    m_lblOrphanCount->setText(orphanCount);
 }
 void OverviewPage::setupFileInfoSection(QVBoxLayout* parentLayout)
 {
@@ -153,7 +162,8 @@ void OverviewPage::setupUi()
     const auto& spacing = THEME.spacing();
 
     auto* mainLayout = new QVBoxLayout(this);
-    mainLayout->setContentsMargins(0, 0, 0, 0);
+    mainLayout->setContentsMargins(spacing.spacingMd, spacing.spacingMd, spacing.spacingMd,
+                                   spacing.spacingMd);
 
     // ScrollArea
     m_scrollArea = new QScrollArea(this);
@@ -162,6 +172,7 @@ void OverviewPage::setupUi()
 
     auto* contentWidget = new QWidget(this);
     auto* contentLayout = new QVBoxLayout(contentWidget);
+    contentLayout->setContentsMargins(0, 0, 0, 0);
     contentLayout->setSpacing(spacing.spacingSm);
 
     setupFileInfoSection(contentLayout);
@@ -205,59 +216,29 @@ auto OverviewPage::createStatCard(const QString& title, QLabel*& valueLabelPtr,
 
     return card;
 }
-
 void OverviewPage::applyStyle() const
 {
-    const auto& colors = THEME.colors();
-    const auto& spacing = THEME.spacing();
+    if (m_scrollArea) m_scrollArea->setStyleSheet(Style::OverviewPage::scrollArea());
 
-    if (m_scrollArea)
-    {
-        m_scrollArea->setStyleSheet(
-            QString("background-color: %1; width: 0px;").arg(colors.surfaceMain.name()));
-    }
+    if (m_fileNameTitle) m_fileNameTitle->setStyleSheet(Style::OverviewPage::secondaryLabel());
 
-    if (m_fileNameTitle)
-    {
-        m_fileNameTitle->setStyleSheet(QString("color: %1;").arg(colors.textSecondary.name()));
-    }
-    if (m_lblFileName)
-    {
-        m_lblFileName->setStyleSheet(QString("color: %1;").arg(colors.textSecondary.name()));
-    }
+    if (m_lblFileName) m_lblFileName->setStyleSheet(Style::OverviewPage::secondaryLabel());
+
     if (m_fileVersionTitle)
-    {
-        m_fileVersionTitle->setStyleSheet(QString("color: %1;").arg(colors.textSecondary.name()));
-    }
-    if (m_lblVersion)
-    {
-        m_lblVersion->setStyleSheet(QString("color: %1;").arg(colors.textSecondary.name()));
-    }
+        m_fileVersionTitle->setStyleSheet(Style::OverviewPage::secondaryLabel());
+
+    if (m_lblVersion) m_lblVersion->setStyleSheet(Style::OverviewPage::secondaryLabel());
 
     for (size_t i = 0; i < m_statTitleLabels.size(); ++i)
     {
         if (i % 2 == 0)
-        {
-            m_statTitleLabels[i]->setStyleSheet(QString("color: %1; font-size: %2px;")
-                                                    .arg(colors.textPrimary.name())
-                                                    .arg(spacing.fontSizeMd));
-        } else
-        {
-            m_statTitleLabels[i]->setStyleSheet(
-                QString("color: %1; font-weight: %2; font-size: %3px;")
-                    .arg(colors.textPrimary.name())
-                    .arg(spacing.fontWeightNormal)
-                    .arg(spacing.fontSizeLg));
-        }
+            m_statTitleLabels[i]->setStyleSheet(Style::OverviewPage::statTitle());
+        else
+            m_statTitleLabels[i]->setStyleSheet(Style::OverviewPage::statValue());
     }
 
     for (auto* iconLabel : m_statIconLabels)
-    {
-        if (iconLabel)
-        {
-            iconLabel->setColor(colors.textPrimary);
-        }
-    }
+        if (iconLabel) iconLabel->setColor(THEME.colors().textPrimary);
 }
 
 bool OverviewPage::event(QEvent* event)

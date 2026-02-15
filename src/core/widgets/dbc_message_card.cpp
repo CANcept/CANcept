@@ -6,6 +6,7 @@
 #include "common/styled_checkbox.hpp"
 #include "core/macro/theme.hpp"
 #include "core/theme/style_event.hpp"
+#include "core/util/dbc_utils.hpp"
 #include "dbc_signal_row.hpp"
 
 namespace Core {
@@ -78,7 +79,7 @@ void DbcMessageCard::setupUi(const QString& name, const uint32_t id, const int s
     headerRow->addWidget(m_nameLabel);
 
     // CAN ID with 0x prefix
-    m_idLabel = new QLabel(QString("0x%1").arg(id, 3, 16, QChar('0')).toUpper(), card);
+    m_idLabel = new QLabel(Util::formatId(id), card);
     headerRow->addWidget(m_idLabel);
 
     headerRow->addStretch();

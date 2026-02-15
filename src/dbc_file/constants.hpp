@@ -59,7 +59,7 @@ static const QString SigRange = "Range";
 static const QString SigFactor = "Factor";
 static const QString SigOffset = "Offset";
 static const QString SigByteOrder = "Byte Order";
-static const QString SigType = "Signed";
+static const QString SigType = "Type";
 static const QString SigReceivers = "Receivers: ";
 static const QString SigMin = "Min";
 static const QString SigMax = "Max";
@@ -168,13 +168,14 @@ static const QString OverviewDescription = QStringLiteral("All defined %1 in the
 
 // --- ECUs Page Specifics ---
 namespace EcusPage {
-const QString PageHeaderTitle = "ECU / Control Unit View";
-const QString PageHeaderSubtitle =
+static const QString PageHeaderTitle = "ECU / Control Unit View";
+static const QString PageHeaderSubtitle =
     "Detailed overview of all defined control units and their messages";
-const QString SearchbarText = "Search ECU by name...";
-const QString FilterAllText = "All ECUs";
-const QString FilterActive = "Only Sending ECUs";
-const QString FilterPassive = "Only receiving ECUs";
+static const QString SearchbarText = "Search ECU by name...";
+static const QString FilterAllText = "All ECUs";
+static const QString FilterActive = "Only Sending ECUs";
+static const QString FilterPassive = "Only receiving ECUs";
+static const QString EmptyLabelText = "No ECUs found";
 constexpr int FilterActiveIndex = 1;
 }  // namespace EcusPage
 
@@ -182,7 +183,7 @@ constexpr int FilterActiveIndex = 1;
 namespace MessagesPage {
 static const QString PageHeaderTitle = "Message View";
 static const QString PageHeaderSubtitle = "All CAN Messages with detailed information";
-static const QString SearchbarText = "Search Message (Name or ID)";
+static const QString SearchbarText = "Search Messages by name";
 static const QString FilterAllText = "All Senders";
 static const QString DetailTitle = "Message Details: %1";
 static const QString DetailSubtitle = "ID: %1    Sender: %2    DLC: %3 bytes";
@@ -190,6 +191,7 @@ static const QString DetailTitlePlaceholder = "No Message Selected";
 static const QString DetailSubtitlePlaceholder =
     "Select a message from the list above to view signals.";
 static const QString DefaultValue = "/";
+static const QString NoSignalsIndicator = "No Signals defined";
 }  // namespace MessagesPage
 
 // --- Signals Page Specifics ---
@@ -201,9 +203,9 @@ static const QString FilterAllText = "All units";
 
 static const QString BigEndIndicator = "Big Endian";
 static const QString LittleEndIndicator = "Little Endian";
-static const QString UnsignedIndicator = "X";
-static const QString SignedIndicator = "✓";
-static const QString LengthUnit = "bit";
+static const QString UnsignedIndicator = "Unsigned";
+static const QString SignedIndicator = "Signed";
+static const QString LengthUnit = " Bit";
 static const QString DefaultUnit = "/";
 }  // namespace SignalsPage
 }  // namespace DbcFile::Constants

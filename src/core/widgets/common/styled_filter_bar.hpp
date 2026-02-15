@@ -123,6 +123,8 @@ class StyledFilterBar : public QWidget
      * sets up layout and connects internal signals.
      */
     void setupUi();
+    void applyStyle();
+    bool event(QEvent* event);
 
     /**
      * @brief Applies theme-based styles to search field and combo box.

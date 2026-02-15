@@ -12,6 +12,7 @@
 
 #pragma once
 
+#include <QFrame>
 #include <QWidget>
 
 class QTableView;
@@ -75,17 +76,30 @@ class SearchableFilterTable : public QWidget
     void setSearchText(const QString& text) const;
 
     /**
-     * @brief Applies themed styling to the horizontal header.
+     * @brief Applies theme-dependent styling to the table and frame.
+     *
+     * The outer frame is responsible for rendering background,
+     * border, and rounded corners.
+     *
+     * The internal QTableView, viewport, and header are rendered
+     * fully transparent to prevent them from painting over the
+     * frame's rounded edges.
+     *
+     * This method is re-invoked on theme changes via StyleEvent.
      */
-    void configureHeaderStyle();
+    void applyStyle();
 
     /**
-     * @brief Applies themed styling to the table view.
-     */
-    void applyTableStyle();
-
-    /**
-     * @brief Configures base table behavior (scrollbars, grid, headers).
+     * @brief Configures structural and behavioral table settings.
+     *
+     * Applies non-visual configuration such as:
+     * - Scrollbar policies
+     * - Grid visibility
+     * - Header visibility
+     * - Frame removal
+     * - Background transparency attributes
+     *
+     * This method intentionally contains no styling logic.
      */
     void configureTableBasics();
 
@@ -102,13 +116,28 @@ class SearchableFilterTable : public QWidget
 
    private:
     /**
-     * @brief Builds the widget layout and connects filter signals.
+     * @brief Builds and initializes the widget UI structure.
+     *
+     * Creates the main layout, filter bar, outer frame container,
+     * and the internal QTableView. No styling logic is applied here.
+     *
+     * Styling is handled exclusively in applyStyle() to ensure
+     * proper theme reactivity.
      */
     void setupUi();
+
+    /**
+     * @brief Handles custom StyleEvent for dynamic theme updates.
+     *
+     * When a StyleEvent is received, the widget reapplies its
+     * stylesheet to reflect updated theme colors and spacing.
+     */
+    bool event(QEvent* event) override;
 
    private:
     StyledFilterBar* m_filterBar = nullptr;
     QTableView* m_tableView = nullptr;
+    QFrame* m_tableFrame = nullptr;
 };
 
 // ============================================================================
