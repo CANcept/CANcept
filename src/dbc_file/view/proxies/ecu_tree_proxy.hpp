@@ -56,9 +56,9 @@ class EcuTreeProxy : public QSortFilterProxyModel
      */
     [[nodiscard]] auto filterAcceptsRow(int sourceRow,
                                         const QModelIndex& sourceParent) const -> bool override;
-/**
- * @brief Returns always 1 so there is only on column.
-*/
+    /**
+     * @brief Returns always 1 so there is only on column.
+     */
     int columnCount(const QModelIndex& parent) const override;
 
    private:

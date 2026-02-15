@@ -42,7 +42,7 @@ void SignalTableDelegate::paint(QPainter* painter, const QStyleOptionViewItem& o
         int textHeight = fm.height();
         painter->restore();
 
-        const int spacingBetween = padding; // distance between badge and text
+        const int spacingBetween = padding;  // distance between badge and text
 
         // --- Total width of (badge + spacing + text) ---
         int totalWidth = badgeSize.width() + spacingBetween + textWidth;
@@ -52,12 +52,8 @@ void SignalTableDelegate::paint(QPainter* painter, const QStyleOptionViewItem& o
         int centerY = cellRect.center().y();
 
         // --- Badge rect ---
-        QRect badgeRect(
-            startX,
-            centerY - badgeSize.height() / 2,
-            badgeSize.width(),
-            badgeSize.height()
-        );
+        QRect badgeRect(startX, centerY - badgeSize.height() / 2, badgeSize.width(),
+                        badgeSize.height());
 
         // Custom badge style
         Core::ItemPainter::BadgeStyle badgeStyle;
@@ -68,21 +64,11 @@ void SignalTableDelegate::paint(QPainter* painter, const QStyleOptionViewItem& o
         Core::ItemPainter::paintBadge(painter, badgeRect, idText, QIcon(), &badgeStyle);
 
         // --- Text rect ---
-        QRect textRect(
-            badgeRect.right() + spacingBetween,
-            centerY - textHeight / 2,
-            textWidth,
-            textHeight
-        );
+        QRect textRect(badgeRect.right() + spacingBetween, centerY - textHeight / 2, textWidth,
+                       textHeight);
 
-        Core::ItemPainter::paintText(
-            painter,
-            textRect,
-            msgName,
-            false,
-            QColor(),
-            Qt::AlignLeft | Qt::AlignVCenter
-        );
+        Core::ItemPainter::paintText(painter, textRect, msgName, false, QColor(),
+                                     Qt::AlignLeft | Qt::AlignVCenter);
     }
     // if (index.column() == Constants::Columns::SigMessage)
     // {

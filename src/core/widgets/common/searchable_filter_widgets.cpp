@@ -11,6 +11,7 @@
 
 #include "core/constants.hpp"
 #include "core/macro/theme.hpp"
+#include "core/theme/style_event.hpp"
 #include "core/widgets/common/styled_filter_bar.hpp"
 
 namespace Core {
@@ -44,144 +45,150 @@ void SearchableFilterTable::setSearchText(const QString& text) const
 {
     m_filterBar->setSearchText(text);
 }
-void SearchableFilterTable::configureHeaderStyle()
+
+void SearchableFilterTable::applyStyle()
 {
     const auto& spacing = THEME.spacing();
     const auto& colors = THEME.colors();
 
-    auto* header = m_tableView->horizontalHeader();
-    if (!header) return;
+    // === FRAME handles radius + border + background ===
+    const QString frameQss = QString(R"(
+        QFrame#tableFrame {
+            background-color: %1;
+            border: %2px solid %3;
+            border-radius: %4px;
+        }
+    )")
+                                 .arg(colors.surfaceMain.name(QColor::HexArgb))
+                                 .arg(spacing.borderThin)
+                                 .arg(colors.borderSubtle.name(QColor::HexArgb))
+                                 .arg(spacing.radiusSm);
 
-    header->setSectionResizeMode(QHeaderView::Interactive);
-    header->setStretchLastSection(false);
+    m_tableFrame->setStyleSheet(frameQss);
 
-    header->setStyleSheet(QString("QHeaderView::section {"
-                                  "   background-color: %1;"
-                                  "   border: none;"
-                                  "   border-bottom: %2px solid %3;"
-                                  "   padding: %4px;"
-                                  "   font-weight: bold;"
-                                  "   color: %5;"
-                                  "}")
-                              .arg(colors.surfaceMain.name())
-                              .arg(spacing.borderThick)
-                              .arg(colors.borderSubtle.name(QColor::HexArgb))
-                              .arg(spacing.spacingXs)
-                              .arg(colors.textPrimary.name()));
-}
-void SearchableFilterTable::applyTableStyle()
-{
-    const auto& spacing = THEME.spacing();
-    const auto& colors  = THEME.colors();
+    // === TABLE completely transparent ===
+    const QString tableQss = QString(R"(
 
-    // Wichtig bei Qt: verhindert weißes Viewport-Fallback
-    m_tableView->viewport()->setAutoFillBackground(true);
-
-    QString tableStyle = QString(R"(
-
-        /* === TABLE ROOT === */
         QTableView {
             border: none;
-            border-radius: %1px;
-            background-color: %2;
-            color: %3;
-            gridline-color: %4;
-            selection-background-color: %5;
-            selection-color: %3;
+            background: transparent;
+            color: %1;
+            selection-background-color: %2;
+            selection-color: %1;
         }
 
-        /* === VIEWPORT (leerer Bereich unten!) === */
         QTableView::viewport {
-            background-color: %2;
+            background: transparent;
         }
 
-        /* === ITEMS === */
         QTableView::item {
-            background-color: %2;
-            padding: %6px;
+            background: transparent;
+            padding: %3px;
         }
 
         QTableView::item:selected {
-            background-color: %5;
-            color: %3;
+            background-color: %2;
+            color: %1;
         }
 
-        /* === HEADER ROOT === */
         QHeaderView {
-            background-color: %2;
+            background: transparent;
         }
 
-        /* === HEADER SECTIONS === */
         QHeaderView::section {
-            background-color: %2;
-            color: %3;
+            background: transparent;
+            color: %1;
             border: none;
-            border-bottom: %7px solid %4;
-            padding: %6px;
+            border-bottom: %4px solid %5;
+            padding: %3px;
             font-weight: bold;
         }
 
     )")
-        .arg(spacing.radiusSm)                                   // %1
-        .arg(colors.surfaceMain.name(QColor::HexArgb))                           // %2
-        .arg(colors.textPrimary.name())                           // %3
-        .arg(colors.borderSubtle.name(QColor::HexArgb))           // %4
-        .arg(colors.surfaceHover.name())                          // %5
-        .arg(spacing.spacingXs)                                   // %6
-        .arg(spacing.borderThick);                               // %7
-    m_tableView->setStyleSheet(tableStyle);
+                                 .arg(colors.textPrimary.name())
+                                 .arg(colors.surfaceSelected.name())
+                                 .arg(spacing.spacingXs)
+                                 .arg(spacing.borderThick)
+                                 .arg(colors.borderSubtle.name(QColor::HexArgb));
+
+    m_tableView->setStyleSheet(tableQss);
+
+    update();
 }
 void SearchableFilterTable::configureTableBasics()
 {
+    // Scrollbars
     m_tableView->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     m_tableView->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
+    // Remove default frame & grid
+    m_tableView->setFrameStyle(QFrame::NoFrame);
     m_tableView->setShowGrid(false);
     m_tableView->setAlternatingRowColors(false);
 
+    // Hide vertical header
     if (m_tableView->verticalHeader()) m_tableView->verticalHeader()->hide();
+
+    // VERY IMPORTANT:
+    // Prevent header from painting opaque background
+    m_tableView->horizontalHeader()->setAutoFillBackground(false);
+    m_tableView->horizontalHeader()->setAttribute(Qt::WA_NoSystemBackground);
+    m_tableView->horizontalHeader()->setAttribute(Qt::WA_TranslucentBackground);
+
+    // Prevent table from painting over frame
+    m_tableView->setAttribute(Qt::WA_NoSystemBackground);
+    m_tableView->setAttribute(Qt::WA_TranslucentBackground);
+    m_tableView->viewport()->setAttribute(Qt::WA_NoSystemBackground);
+    m_tableView->viewport()->setAttribute(Qt::WA_TranslucentBackground);
 }
 
 void SearchableFilterTable::setupUi()
 {
     const auto& spacing = THEME.spacing();
-    const auto& colors = THEME.colors();
 
-    // --- Main Layout setup ---
+    // --- Main Layout ---
     auto* mainLayout = new QVBoxLayout(this);
     mainLayout->setContentsMargins(0, 0, 0, 0);
     mainLayout->setSpacing(spacing.spacingLg);
 
-    // --- Top bar setup ---
+    // --- Filter Bar ---
     m_filterBar = new Core::StyledFilterBar(this);
 
+    // --- Outer Frame (handles border + radius + background) ---
+    m_tableFrame = new QFrame(this);
+    m_tableFrame->setObjectName("tableFrame");
+
     // --- Table View ---
-    auto* borderFrame = new QFrame(this);
-    borderFrame->setObjectName("tableFrame");
-
-    borderFrame->setStyleSheet(QString("QFrame#tableFrame {"
-                                       "background: transparent;"
-                                       "border: %1px solid %2;"
-                                       "border-radius: %3px;"
-                                       "}")
-                                   .arg(spacing.borderThin)
-                                   .arg(colors.borderSubtle.name(QColor::HexArgb))
-                                   .arg(spacing.radiusSm));
-
-    m_tableView = new QTableView(borderFrame);
+    m_tableView = new QTableView(m_tableFrame);
     m_tableView->setFrameStyle(QFrame::NoFrame);
 
-    auto* borderLayout = new QVBoxLayout(borderFrame);
-    borderLayout->addWidget(m_tableView);
+    auto* frameLayout = new QVBoxLayout(m_tableFrame);
+    frameLayout->setContentsMargins(0, 0, 0, 0);
+    frameLayout->addWidget(m_tableView);
 
     mainLayout->addWidget(m_filterBar);
-    mainLayout->addWidget(borderFrame);
-    // Signal forwarding
+    mainLayout->addWidget(m_tableFrame);
+
+    configureTableBasics();
+
+    // --- Forward filter signals ---
     connect(m_filterBar, &StyledFilterBar::searchTextChanged, this,
             &SearchableFilterTable::filterTextChanged);
 
     connect(m_filterBar, &StyledFilterBar::filterIndexChanged, this,
             &SearchableFilterTable::filterIndexChanged);
+
+    applyStyle();
+}
+bool SearchableFilterTable::event(QEvent* event)
+{
+    if (event->type() == StyleEvent::EventType)
+    {
+        applyStyle();
+        return true;
+    }
+
+    return QWidget::event(event);
 }
 
 // --- SearchableFilterTree ---

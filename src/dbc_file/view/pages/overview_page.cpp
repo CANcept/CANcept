@@ -153,7 +153,8 @@ void OverviewPage::setupUi()
     const auto& spacing = THEME.spacing();
 
     auto* mainLayout = new QVBoxLayout(this);
-    mainLayout->setContentsMargins(spacing.spacingMd, spacing.spacingMd, spacing.spacingMd, spacing.spacingMd);
+    mainLayout->setContentsMargins(spacing.spacingMd, spacing.spacingMd, spacing.spacingMd,
+                                   spacing.spacingMd);
 
     // ScrollArea
     m_scrollArea = new QScrollArea(this);
@@ -208,34 +209,27 @@ auto OverviewPage::createStatCard(const QString& title, QLabel*& valueLabelPtr,
 }
 void OverviewPage::applyStyle() const
 {
-    if (m_scrollArea)
-        m_scrollArea->setStyleSheet(Style::OverviewPage::scrollArea());
+    if (m_scrollArea) m_scrollArea->setStyleSheet(Style::OverviewPage::scrollArea());
 
-    if (m_fileNameTitle)
-        m_fileNameTitle->setStyleSheet(Style::OverviewPage::secondaryLabel());
+    if (m_fileNameTitle) m_fileNameTitle->setStyleSheet(Style::OverviewPage::secondaryLabel());
 
-    if (m_lblFileName)
-        m_lblFileName->setStyleSheet(Style::OverviewPage::secondaryLabel());
+    if (m_lblFileName) m_lblFileName->setStyleSheet(Style::OverviewPage::secondaryLabel());
 
     if (m_fileVersionTitle)
         m_fileVersionTitle->setStyleSheet(Style::OverviewPage::secondaryLabel());
 
-    if (m_lblVersion)
-        m_lblVersion->setStyleSheet(Style::OverviewPage::secondaryLabel());
+    if (m_lblVersion) m_lblVersion->setStyleSheet(Style::OverviewPage::secondaryLabel());
 
     for (size_t i = 0; i < m_statTitleLabels.size(); ++i)
     {
         if (i % 2 == 0)
-            m_statTitleLabels[i]->setStyleSheet(
-                Style::OverviewPage::statTitle());
+            m_statTitleLabels[i]->setStyleSheet(Style::OverviewPage::statTitle());
         else
-            m_statTitleLabels[i]->setStyleSheet(
-                Style::OverviewPage::statValue());
+            m_statTitleLabels[i]->setStyleSheet(Style::OverviewPage::statValue());
     }
 
     for (auto* iconLabel : m_statIconLabels)
-        if (iconLabel)
-            iconLabel->setColor(THEME.colors().textPrimary);
+        if (iconLabel) iconLabel->setColor(THEME.colors().textPrimary);
 }
 // void OverviewPage::applyStyle() const
 // {
@@ -258,7 +252,8 @@ void OverviewPage::applyStyle() const
 //     }
 //     if (m_fileVersionTitle)
 //     {
-//         m_fileVersionTitle->setStyleSheet(QString("color: %1;").arg(colors.textSecondary.name()));
+//         m_fileVersionTitle->setStyleSheet(QString("color:
+//         %1;").arg(colors.textSecondary.name()));
 //     }
 //     if (m_lblVersion)
 //     {

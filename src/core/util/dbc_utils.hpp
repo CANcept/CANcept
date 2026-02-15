@@ -1,7 +1,7 @@
 
 #pragma once
-#include <QString>
 #include <QModelIndex>
+#include <QString>
 
 namespace Core::Util {
 
@@ -27,7 +27,7 @@ inline QString formatNumber(double value)
  * @brief Formats min and max values to a range string.
  * Example: min = 0, max = 100 -> [0, 100]
  */
-inline QString formatRange(const uint min,const uint max)
+inline QString formatRange(const uint min, const uint max)
 {
     return QString("[%1, %2]").arg(min).arg(max);
 }
@@ -37,4 +37,4 @@ inline auto siblingAtColumnQt5(const QModelIndex& idx, int column) -> QModelInde
     return idx.sibling(idx.row(), column);
 }
 
-} // namespace DbcFile::Utils
+}  // namespace Core::Util

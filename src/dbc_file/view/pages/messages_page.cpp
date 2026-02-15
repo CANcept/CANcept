@@ -7,8 +7,10 @@
 
 // Project Includes
 #include <qevent.h>
+#include <qscrollbar.h>
 
 #include "core/macro/theme.hpp"
+#include "core/theme/style_event.hpp"
 #include "core/util/dbc_utils.hpp"
 #include "core/widgets/card_widget.hpp"
 #include "core/widgets/common/searchable_filter_widgets.hpp"
@@ -28,6 +30,7 @@ namespace DbcFile {
 MessageDetailView::MessageDetailView(QWidget* parent) : QWidget(parent)
 {
     setupUi();
+    applyStyle();
 }
 
 auto MessageDetailView::getSignalList() const -> QListView*
@@ -40,15 +43,27 @@ void MessageDetailView::setRootIndex(const QModelIndex& index)
     m_signalList->setRootIndex(index);
 
     int signalCount = 0;
-    if (index.isValid() && m_signalList->model()) {
+    if (index.isValid() && m_signalList->model())
+    {
         signalCount = m_signalList->model()->rowCount(index);
     }
 
-    if (signalCount > 0) {
+    if (signalCount > 0)
+    {
         m_stack->setCurrentIndex(0);
-    } else {
+    } else
+    {
         m_stack->setCurrentIndex(1);
     }
+}
+void MessageDetailView::applyStyle()
+{
+    if (!m_detailLabel) return;
+
+    // Apply stylesheet provided by styles.cpp
+    m_detailLabel->setStyleSheet(Style::Common::emptyLabel());
+
+    update();
 }
 
 void MessageDetailView::updateHeaderInfo(const QString& name, uint id, const QString& sender,
@@ -103,7 +118,6 @@ void MessageDetailView::setupUi()
     m_detailLabel->setAlignment(Qt::AlignCenter);
 
     const auto& colors = THEME.colors();
-    m_detailLabel->setStyleSheet(Style::MessagesPage::detailLabel());
 
     // Add label as page 1
     m_stack->addWidget(m_detailLabel);
@@ -113,6 +127,16 @@ void MessageDetailView::setupUi()
 
     layout->addWidget(m_card);
 }
+bool MessageDetailView::event(QEvent* event)
+{
+    if (event->type() == Core::StyleEvent::EventType)
+    {
+        applyStyle();
+        return true;
+    }
+
+    return QWidget::event(event);
+}
 
 // =============================================================================
 // MessagesPage
@@ -121,6 +145,7 @@ void MessageDetailView::setupUi()
 MessagesPage::MessagesPage(QWidget* parent) : QWidget(parent)
 {
     setupUi();
+    applyStyle();
 }
 
 void MessagesPage::setupUi()
@@ -144,7 +169,8 @@ void MessagesPage::setupUi()
     configureMasterTable();
     messageTableCard->layout()->addWidget(m_messagesTable);
 
-    if (auto* table = m_messagesTable->tableView()) {
+    if (auto* table = m_messagesTable->tableView())
+    {
         table->viewport()->installEventFilter(this);
     }
     // Table filter signals.
@@ -169,13 +195,29 @@ void MessagesPage::setupUi()
 void MessagesPage::configureMasterTable()
 {
     auto* table = m_messagesTable->tableView();
+
     table->setItemDelegate(new MessageTableDelegate(table));
     table->setSelectionBehavior(QAbstractItemView::SelectRows);
     table->setSelectionMode(QAbstractItemView::SingleSelection);
 
     m_messagesTable->setSearchPlaceholder(Constants::MessagesPage::SearchbarText);
-    m_messagesTable->configureTableBasics();
-    m_messagesTable->applyTableStyle();
+}
+void MessagesPage::applyStyle()
+{
+    // --- Style Master Table ---
+    if (auto* table = m_messagesTable->tableView())
+        table->verticalScrollBar()->setStyleSheet(DbcFile::Style::Common::verticalScrollBar());
+
+    // --- Style Detail View ---
+    if (m_detailView && m_detailView->getSignalList())
+        m_detailView->getSignalList()->verticalScrollBar()->setStyleSheet(
+            DbcFile::Style::Common::verticalScrollBar());
+
+    // --- Forward style refresh to child widgets ---
+    if (m_messagesTable) m_messagesTable->applyStyle();
+    if (m_detailView) m_detailView->applyStyle();
+
+    update();
 }
 
 void MessagesPage::setMasterModel(QAbstractItemModel* model)
@@ -314,7 +356,8 @@ auto MessagesPage::setAvailableSenders(const QStringList& senders) -> void
 void MessagesPage::mousePressEvent(QMouseEvent* event)
 {
     // Click out of table -> deselect
-    if (m_messagesTable && m_messagesTable->tableView()) {
+    if (m_messagesTable && m_messagesTable->tableView())
+    {
         m_messagesTable->tableView()->clearSelection();
         m_messagesTable->tableView()->setCurrentIndex(QModelIndex());
     }
@@ -341,8 +384,7 @@ bool MessagesPage::eventFilter(QObject* watched, QEvent* event)
                 table->setCurrentIndex(QModelIndex());
                 return true;
             }
-        }
-        else
+        } else
         {
             // Case B: Click in white space below rows
             table->clearSelection();
@@ -351,6 +393,17 @@ bool MessagesPage::eventFilter(QObject* watched, QEvent* event)
     }
 
     return QWidget::eventFilter(watched, event);
+}
+
+bool MessagesPage::event(QEvent* event)
+{
+    if (event->type() == Core::StyleEvent::EventType)
+    {
+        applyStyle();
+        return true;
+    }
+
+    return QWidget::event(event);
 }
 
 }  // namespace DbcFile

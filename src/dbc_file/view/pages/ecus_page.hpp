@@ -24,7 +24,7 @@ class EcusPage : public QWidget
 {
     Q_OBJECT
 
-public:
+   public:
     /**
      * @brief Constructs an EcusPage.
      * @param parent Optional parent widget.
@@ -42,7 +42,16 @@ public:
      */
     void updateEmptyState();
 
-signals:
+    /**
+     * @brief Handles custom events for styling.
+     *
+     * Refreshes style for child widgets if a Core::StyleEvent is received.
+     * @param event The event object.
+     * @return True if the event was handled.
+     */
+    bool event(QEvent* event) override;
+
+   signals:
     /**
      * @brief Emitted when the search text in the filter bar changes.
      * @param text Current search string.
@@ -55,7 +64,7 @@ signals:
      */
     void filterIndexChanged(int index);
 
-protected:
+   protected:
     /**
      * @brief Sets up the page UI.
      *
@@ -64,7 +73,7 @@ protected:
      */
     void setupUi();
 
-private:
+   private:
     // --- UI Setup Helpers ---
 
     /**
@@ -98,20 +107,23 @@ private:
     void configureTreeView();
 
     /**
-     * @brief Applies custom stylesheet to the tree view.
-     * @param view Pointer to the tree view to style.
+     * @brief Updates styles for the tree view and scrollbars.
+     *
+     * This method applies the current theme to the tree, including
+     * the vertical scrollbar, and should be called whenever the
+     * theme is updated at runtime.
      */
-    static void applyTreeStyle(QTreeView* view);
+    void applyStyle();
 
     /**
      * @brief Connects signals from m_treeWidget to this page.
      */
     void connectSignals();
 
-private:
-    QLayout* m_cardLayout{nullptr};                 ///< Layout of the card header for tree placement
+   private:
+    QLayout* m_cardLayout{nullptr};  ///< Layout of the card header for tree placement
     Core::SearchableFilterTree* m_treeWidget{nullptr};  ///< Searchable/filterable tree of ECUs
-    QLabel* m_emptyLabel{nullptr};                  ///< Label shown when no ECUs are available
+    QLabel* m_emptyLabel{nullptr};                      ///< Label shown when no ECUs are available
 };
 
 }  // namespace DbcFile

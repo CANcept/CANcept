@@ -26,7 +26,7 @@ class MessageDetailView : public QWidget
 {
     Q_OBJECT
 
-public:
+   public:
     /**
      * @brief Constructs the detail view UI.
      * @param parent Optional parent widget.
@@ -51,6 +51,13 @@ public:
     void setRootIndex(const QModelIndex& index);
 
     /**
+     * @brief Applies the style from the stylesheet.
+     *
+     * Updates the detail label's stylesheet from Style::MessagesPage.
+     */
+    void applyStyle();
+
+    /**
      * @brief Updates the header metadata for the selected message.
      *
      * @param name   Message name.
@@ -60,15 +67,30 @@ public:
      */
     void updateHeaderInfo(const QString& name, uint id, const QString& sender, int dlc);
 
-private:
-    /** @brief Builds the widget layout. */
+   private:
+    /**
+     * @brief Sets up the UI elements of the detail view.
+     *
+     * Creates the card widget, stacked widget, signal list, "no signals" label,
+     * and adds them to the layout.
+     */
     void setupUi();
 
-private:
-    Core::CardWidget* m_card = nullptr;     /**< Card widget containing the detail header */
-    QListView* m_signalList = nullptr;      /**< List view showing the signals of the selected message */
-    QStackedWidget* m_stack = nullptr;      /**< Stack to switch between signal list and "No Signals" label */
-    QLabel* m_detailLabel = nullptr;        /**< Label displayed when there are no signals */
+    /**
+     * @brief Handles custom events for styling.
+     *
+     * Refreshes styles if a Core::StyleEvent is received.
+     * @param event The event object.
+     * @return True if the event was handled.
+     */
+    bool event(QEvent* event) override;
+
+   private:
+    Core::CardWidget* m_card = nullptr; /**< Card widget containing the detail header */
+    QListView* m_signalList = nullptr; /**< List view showing the signals of the selected message */
+    QStackedWidget* m_stack =
+        nullptr; /**< Stack to switch between signal list and "No Signals" label */
+    QLabel* m_detailLabel = nullptr; /**< Label displayed when there are no signals */
 };
 
 // =============================================================================
@@ -97,7 +119,7 @@ class MessagesPage : public QWidget
 {
     Q_OBJECT
 
-public:
+   public:
     /**
      * @brief Constructs the Messages page UI.
      * @param parent Optional parent widget.
@@ -149,11 +171,20 @@ public:
      */
     bool eventFilter(QObject* watched, QEvent* event) override;
 
-    signals:
-        /**
-         * @brief Emitted when the user selects a message in the master table.
-         */
-        void messageSelectionChanged(const QModelIndex& proxyIndex);
+    /**
+     * @brief Handles custom events for styling.
+     *
+     * Refreshes style for child widgets if a Core::StyleEvent is received.
+     * @param event The event object.
+     * @return True if the event was handled.
+     */
+    bool event(QEvent* event) override;
+
+   signals:
+    /**
+     * @brief Emitted when the user selects a message in the master table.
+     */
+    void messageSelectionChanged(const QModelIndex& proxyIndex);
 
     /**
      * @brief Forwarded search text change from the filter table.
@@ -165,7 +196,7 @@ public:
      */
     void filterSenderChanged(const QString& sender);
 
-private slots:
+   private slots:
     /**
      * @brief Handles selection changes in the master table.
      *
@@ -178,16 +209,32 @@ private slots:
      */
     void onFilterIndexChanged(int index);
 
-private:
-    /** @brief Builds the page layout. */
+   private:
+    /**
+     * @brief Sets up the UI for the MessagesPage.
+     *
+     * Creates the master/detail layout with table card on top
+     * and detail view at the bottom.
+     */
     void setupUi();
 
-    /** @brief Applies base configuration to the master table. */
+    /**
+     * @brief Configures the master messages table.
+     *
+     * Sets the item delegate, selection behavior, and search placeholder.
+     */
     void configureMasterTable();
 
-private:
-    QSplitter* m_splitter = nullptr;                  /**< Splitter dividing master and detail panes */
-    Core::SearchableFilterTable* m_messagesTable = nullptr;  /**< Table widget with search/filter */
-    MessageDetailView* m_detailView = nullptr;        /**< Detail view of the selected message */
+    /**
+     * @brief Applies style updates to child widgets.
+     *
+     * Propagates style refresh to messages table and detail view.
+     */
+    void applyStyle();
+
+   private:
+    QSplitter* m_splitter = nullptr; /**< Splitter dividing master and detail panes */
+    Core::SearchableFilterTable* m_messagesTable = nullptr; /**< Table widget with search/filter */
+    MessageDetailView* m_detailView = nullptr; /**< Detail view of the selected message */
 };
-}
+}  // namespace DbcFile
