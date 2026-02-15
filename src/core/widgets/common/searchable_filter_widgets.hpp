@@ -132,7 +132,7 @@ class SearchableFilterTable : public QWidget
      * When a StyleEvent is received, the widget reapplies its
      * stylesheet to reflect updated theme colors and spacing.
      */
-    bool event(QEvent* event) override;
+    auto event(QEvent* event) -> bool override;
 
    private:
     StyledFilterBar* m_filterBar = nullptr;

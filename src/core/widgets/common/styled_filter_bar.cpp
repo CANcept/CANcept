@@ -229,7 +229,7 @@ QComboBox#FilterCombo QAbstractItemView::item:selected {
 
     update();
 }
-bool StyledFilterBar::event(QEvent* event)
+auto StyledFilterBar::event(QEvent* event) -> bool
 {
     if (event->type() == StyleEvent::EventType)
     {

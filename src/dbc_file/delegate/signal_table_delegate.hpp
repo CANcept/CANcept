@@ -1,6 +1,5 @@
 #pragma once
 
-#include <QModelIndex>
 #include <QPainter>
 #include <QStyledItemDelegate>
 

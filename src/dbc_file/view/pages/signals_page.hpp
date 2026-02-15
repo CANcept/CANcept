@@ -92,7 +92,15 @@ class SignalsPage : public QWidget
      * @param index The newly selected index.
      */
     void onFilterIndexChanged(int index);
-    bool event(QEvent* event);
+
+    /**
+     * @brief Handles custom events for styling.
+     *
+     * Refreshes style for child widgets if a Core::StyleEvent is received.
+     * @param event The event object.
+     * @return True if the event was handled.
+     */
+    bool event(QEvent* event) override;
 
    private:
     // =========================================================================

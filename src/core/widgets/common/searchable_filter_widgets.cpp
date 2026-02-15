@@ -180,7 +180,7 @@ void SearchableFilterTable::setupUi()
 
     applyStyle();
 }
-bool SearchableFilterTable::event(QEvent* event)
+auto SearchableFilterTable::event(QEvent* event) -> bool
 {
     if (event->type() == StyleEvent::EventType)
     {

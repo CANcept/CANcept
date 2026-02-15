@@ -1,7 +1,5 @@
 #pragma once
-#include <QLabel>
 #include <QVBoxLayout>
-#include <QWidget>
 
 #include "core/widgets/tinted_icon_label.hpp"
 
@@ -98,7 +96,7 @@ class LoadPage : public QWidget
     /**
      * @brief Handles QEvent to catch StyleEvent for theme changes.
      */
-    bool event(QEvent* event) override;
+    auto event(QEvent* event) -> bool override;
 
    private slots:
     /**

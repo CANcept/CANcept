@@ -125,7 +125,7 @@ void MessageDetailView::setupUi()
 
     layout->addWidget(m_card);
 }
-bool MessageDetailView::event(QEvent* event)
+auto MessageDetailView::event(QEvent* event) -> bool
 {
     if (event->type() == Core::StyleEvent::EventType)
     {
@@ -379,7 +379,7 @@ void MessagesPage::mousePressEvent(QMouseEvent* event)
     // Standard handling
     QWidget::mousePressEvent(event);
 }
-bool MessagesPage::eventFilter(QObject* watched, QEvent* event)
+auto MessagesPage::eventFilter(QObject* watched, QEvent* event) -> bool
 {
     auto* table = m_messagesTable->tableView();
 
@@ -409,7 +409,7 @@ bool MessagesPage::eventFilter(QObject* watched, QEvent* event)
     return QWidget::eventFilter(watched, event);
 }
 
-bool MessagesPage::event(QEvent* event)
+auto MessagesPage::event(QEvent* event) -> bool
 {
     if (event->type() == Core::StyleEvent::EventType)
     {

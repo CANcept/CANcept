@@ -49,7 +49,7 @@ class EcusPage : public QWidget
      * @param event The event object.
      * @return True if the event was handled.
      */
-    bool event(QEvent* event) override;
+    auto event(QEvent* event) -> bool override;
 
    signals:
     /**

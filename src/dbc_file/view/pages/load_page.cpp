@@ -60,11 +60,8 @@ auto createUploadInstruction(QWidget* parent) -> QLabel*
 
 void LoadPage::showStatusMessage(const QString& message, const bool isError) const
 {
-    const auto& colors = THEME.colors();
-    const auto& spacing = THEME.spacing();
     m_statusLabel->setText(message);
     m_statusLabel->show();
-    const QString color = isError ? colors.statusError.name() : colors.statusSuccess.name();
     m_statusLabel->setStyleSheet(Style::LoadPage::statusLabel(isError));
     // updateDragStyle(m_uploadBoxFrame, DragStateNone);
 }
@@ -186,7 +183,6 @@ void LoadPage::onBrowseButtonClicked()
 
 auto LoadPage::createCardLayout(QVBoxLayout* parentLayout, QWidget* parent) -> QVBoxLayout*
 {
-    const auto& colors = THEME.colors();
     const auto& spacing = THEME.spacing();
 
     auto* loadCard = new Core::CardWidget(Constants::LoadPage::CardTitle,
@@ -254,7 +250,6 @@ void LoadPage::setupUi()
 void LoadPage::applyStyle() const
 {
     const auto& colors = THEME.colors();
-    const auto& spacing = THEME.spacing();
 
     m_uploadBoxFrame->setStyleSheet(Style::LoadPage::uploadZone());
 
@@ -269,7 +264,7 @@ void LoadPage::applyStyle() const
     }
 }
 
-bool LoadPage::event(QEvent* event)
+auto LoadPage::event(QEvent* event) -> bool
 {
     if (event->type() == Core::StyleEvent::EventType)
     {

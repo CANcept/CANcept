@@ -189,7 +189,7 @@ void EcusPage::updateEmptyState()
     m_emptyLabel->setVisible(isEmpty);
 }
 
-bool EcusPage::event(QEvent* event)
+auto EcusPage::event(QEvent* event) -> bool
 {
     if (event->type() == Core::StyleEvent::EventType)
     {

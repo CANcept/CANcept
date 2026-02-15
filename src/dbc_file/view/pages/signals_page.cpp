@@ -188,7 +188,7 @@ void SignalsPage::onFilterIndexChanged(int)
     emit filterUnitChanged(unit);
 }
 
-bool SignalsPage::event(QEvent* event)
+auto SignalsPage::event(QEvent* event) -> bool
 {
     if (event->type() == Core::StyleEvent::EventType)
     {

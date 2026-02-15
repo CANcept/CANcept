@@ -13,7 +13,7 @@ namespace {
 /**
  * @brief Returns the display text for a role, falling back to a default value.
  */
-QString textOrDefault(const QModelIndex& index, int role, const QString& fallback)
+auto textOrDefault(const QModelIndex& index, int role, const QString& fallback) -> QString
 {
     const QString value = index.data(role).toString();
     return value.isEmpty() ? fallback : value;

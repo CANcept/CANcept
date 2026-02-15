@@ -1,7 +1,5 @@
 #pragma once
 
-#include <QStackedWidget>
-#include <QWidget>
 #include <memory>
 
 #include "core/widgets/sidebar.hpp"

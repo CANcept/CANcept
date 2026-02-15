@@ -83,7 +83,7 @@ class MessageDetailView : public QWidget
      * @param event The event object.
      * @return True if the event was handled.
      */
-    bool event(QEvent* event) override;
+    auto event(QEvent* event) -> bool override;
 
    private:
     Core::CardWidget* m_card = nullptr; /**< Card widget containing the detail header */
@@ -144,7 +144,7 @@ class MessagesPage : public QWidget
     /**
      * @brief Configures column visibility and resize behavior of the master table.
      */
-    void configureMasterColumns(QTableView* table, const QAbstractItemModel* model);
+    static void configureMasterColumns(QTableView* table, const QAbstractItemModel* model);
 
     /**
      * @brief Sets the model for the detail view (bottom section).
@@ -169,7 +169,7 @@ class MessagesPage : public QWidget
      * Used to implement toggle deselection when clicking the same row
      * or clicks in the empty space below rows.
      */
-    bool eventFilter(QObject* watched, QEvent* event) override;
+    auto eventFilter(QObject* watched, QEvent* event) -> bool override;
 
     /**
      * @brief Handles custom events for styling.
@@ -178,7 +178,7 @@ class MessagesPage : public QWidget
      * @param event The event object.
      * @return True if the event was handled.
      */
-    bool event(QEvent* event) override;
+    auto event(QEvent* event) -> bool override;
 
     /**
      * @brief Updates the empty state label visibility depending on tree contents.
