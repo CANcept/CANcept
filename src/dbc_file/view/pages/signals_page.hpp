@@ -2,6 +2,7 @@
 
 #include <QWidget>
 
+class QLabel;
 class QAbstractItemModel;
 class QTableView;
 
@@ -107,6 +108,11 @@ class SignalsPage : public QWidget
     void setupUi();
 
     /**
+ * @brief Updates the empty state label visibility depending on tree contents.
+ */
+    void updateEmptyState();
+
+    /**
      * @brief Configures column visibility, width, and stretch behavior.
      *
      * This method is model-dependent and should be called after
@@ -120,6 +126,8 @@ class SignalsPage : public QWidget
    private:
     /// Searchable and filterable table widget
     Core::SearchableFilterTable* m_tableWidget{nullptr};
+    QLabel* m_emptyLabel{nullptr}; /// Label shown when no signals are found.
+
 };
 
 }  // namespace DbcFile

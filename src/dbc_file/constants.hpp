@@ -192,6 +192,7 @@ static const QString DetailSubtitlePlaceholder =
     "Select a message from the list above to view signals.";
 static const QString DefaultValue = "/";
 static const QString NoSignalsIndicator = "No Signals defined";
+static const QString EmptyLabelText = "No Messages found";
 }  // namespace MessagesPage
 
 // --- Signals Page Specifics ---
@@ -200,6 +201,7 @@ static const QString PageHeaderTitle = "Signal View";
 static const QString PageHeaderSubtitle = "All signals from all messages";
 static const QString SearchbarText = "Search signal by name";
 static const QString FilterAllText = "All units";
+static const QString EmptyLabelText = "No Signals found";
 
 static const QString BigEndIndicator = "Big Endian";
 static const QString LittleEndIndicator = "Little Endian";

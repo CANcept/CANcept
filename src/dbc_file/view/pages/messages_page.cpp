@@ -169,6 +169,18 @@ void MessagesPage::setupUi()
     configureMasterTable();
     messageTableCard->layout()->addWidget(m_messagesTable);
 
+    // Empty label
+    m_emptyLabel = new QLabel(Constants::MessagesPage::EmptyLabelText, m_messagesTable);
+    m_emptyLabel->setAlignment(Qt::AlignCenter);
+    m_emptyLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    m_emptyLabel->hide();
+    m_emptyLabel->setStyleSheet(Style::Common::emptyLabel());
+
+    if (auto* layout = qobject_cast<QVBoxLayout*>(m_messagesTable->layout()))
+        layout->addWidget(m_emptyLabel, 1);
+
+    messageTableCard->layout()->addWidget(m_messagesTable);
+
     if (auto* table = m_messagesTable->tableView())
     {
         table->viewport()->installEventFilter(this);
@@ -237,6 +249,10 @@ void MessagesPage::setMasterModel(QAbstractItemModel* model)
         connect(table->selectionModel(), &QItemSelectionModel::currentRowChanged, this,
                 &MessagesPage::onSelectionChanged);
     }
+
+    connect(model, &QAbstractItemModel::modelReset, this, &MessagesPage::updateEmptyState);
+    connect(model, &QAbstractItemModel::rowsInserted, this, &MessagesPage::updateEmptyState);
+    connect(model, &QAbstractItemModel::rowsRemoved, this, &MessagesPage::updateEmptyState);
 }
 
 void MessagesPage::configureMasterColumns(QTableView* table, const QAbstractItemModel* model)
@@ -404,6 +420,19 @@ bool MessagesPage::event(QEvent* event)
     }
 
     return QWidget::event(event);
+}
+
+void MessagesPage::updateEmptyState()
+{
+    if (!m_messagesTable || !m_emptyLabel) return;
+
+    QTableView* view = m_messagesTable->tableView();
+    if (!view || !view->model()) return;
+
+    bool isEmpty = (view->model()->rowCount() == 0);
+
+    view->setVisible(!isEmpty);
+    m_emptyLabel->setVisible(isEmpty);
 }
 
 }  // namespace DbcFile
