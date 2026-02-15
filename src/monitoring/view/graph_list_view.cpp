@@ -1,6 +1,7 @@
 #include "graph_list_view.hpp"
 
 #include <QScrollArea>
+#include <QScrollBar>
 #include <QVBoxLayout>
 
 #include "core/macro/console_logging.hpp"
@@ -8,6 +9,7 @@
 #include "core/theme/style_event.hpp"
 #include "core/widgets/card_widget.hpp"
 #include "monitoring/constants.hpp"
+#include "monitoring/styles.hpp"
 #include "signal_graph.hpp"
 
 namespace Monitoring {
@@ -55,6 +57,10 @@ void GraphListView::applyStyle()
     m_layout->setContentsMargins(0, 0, 0, 0);
     m_layout->setSpacing(spacing.spacingSm);
     m_layout->addStretch();
+
+    // Apply vertical scrollbar style
+    if (m_scrollArea->verticalScrollBar())
+        m_scrollArea->verticalScrollBar()->setStyleSheet(Style::Common::verticalScrollBar());
 }
 
 auto GraphListView::event(QEvent* event) -> bool
