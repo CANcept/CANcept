@@ -100,7 +100,7 @@ void SignalList::populateDecodedFromModel()
 
         const QString messageName =
             m_model->data(messageIndex, MonitoringModel::MonitoringRoles::Role_Name).toString();
-        auto* messageCard = new Core::CardWidget(messageName, QString(), nullptr, this);
+        auto* messageCard = new Core::CardWidget(QString(), QString(), nullptr, this);
 
         auto* horizontalLayout = new QHBoxLayout();
         horizontalLayout->setSpacing(THEME.spacing().spacingSm);
@@ -112,6 +112,12 @@ void SignalList::populateDecodedFromModel()
         expandButton->setCheckable(true);
         expandButton->setChecked(false);
         horizontalLayout->addWidget(expandButton);
+
+        auto* messageNameLabel = new QLabel(messageCard);
+        messageNameLabel->setText(messageName);
+        horizontalLayout->addWidget(messageNameLabel);
+
+        horizontalLayout->addStretch();
 
         const QString idText =
             m_model->data(messageIndex, MonitoringModel::MonitoringRoles::Role_ID).toString();
@@ -136,16 +142,20 @@ void SignalList::populateDecodedFromModel()
                 m_model->data(signalIndex, MonitoringModel::MonitoringRoles::Role_Name).toString();
 
             auto* signalCard =
-                new Core::CardWidget(signalName, QString(), nullptr, m_signalLists.last());
+                new Core::CardWidget(QString(), QString(), nullptr, m_signalLists.last());
 
             if (auto* contentLayout = signalCard->contentLayout())
             {
                 auto* horizontalLayout = new QHBoxLayout();
-                horizontalLayout->setSpacing(THEME.spacing().spacingLg);
+                horizontalLayout->setSpacing(THEME.spacing().spacingSm);
                 horizontalLayout->setContentsMargins(0, 0, 0, 0);
 
                 auto* signalCheckbox = new Core::StyledCheckBox(signalCard);
                 horizontalLayout->addWidget(signalCheckbox);
+
+                auto* signalNameLabel = new QLabel(signalCard);
+                signalNameLabel->setText(signalName);
+                horizontalLayout->addWidget(signalNameLabel);
 
                 horizontalLayout->addStretch();
 
@@ -170,6 +180,7 @@ void SignalList::populateDecodedFromModel()
             }
 
             signalsLayout->addWidget(signalCard);
+            signalCard->updateGeometry();
         }
 
         m_signalLists.last()->hide();
@@ -192,10 +203,13 @@ void SignalList::populateDecodedFromModel()
             contentLayout->addWidget(m_signalLists.last());
         }
 
-        int insertIndex = m_cardsLayout->count() - 1;
-        if (insertIndex < 0) insertIndex = 0;
+        if (int insertIndex = m_cardsLayout->count() - 1; insertIndex < 0) insertIndex = 0;
         m_cardsLayout->addWidget(messageCard);
+
+        messageCard->updateGeometry();
     }
+    applyStyle();
+    if (m_scrollContent) m_scrollContent->updateGeometry();
 
     LOG_INF("MonitoringComponent", "Signal List view built...");
 }
