@@ -13,8 +13,6 @@ namespace Core {
 // Private constructor - initializes spdlog async thread pool
 LogService::LogService()
 {
-    // Initialize async thread pool optimized for high-frequency logging
-    // 65536 queue slots (handles bursts), 2 worker threads for better throughput
     spdlog::init_thread_pool(65536, 2);
 }
 
@@ -26,7 +24,7 @@ LogService::~LogService()
 }
 
 // Retrieves or creates a logger for a specific context and session
-std::shared_ptr<spdlog::logger> LogService::getLogger(LogContext context,
+std::shared_ptr<spdlog::logger> LogService::getLogger(const LogContext context,
                                                       const std::string& sessionId)
 {
     std::lock_guard<std::mutex> lock(m_registryMutex);
@@ -34,17 +32,15 @@ std::shared_ptr<spdlog::logger> LogService::getLogger(LogContext context,
     std::string key = createRegistryKey(context, sessionId);
 
     // Return existing logger if already registered
-    auto it = m_loggers.find(key);
-    if (it != m_loggers.end())
+    if (const auto it = m_loggers.find(key); it != m_loggers.end())
     {
         return it->second;
     }
 
     // Create new logger based on context
-    std::shared_ptr<spdlog::logger> logger;
-
     try
     {
+        std::shared_ptr<spdlog::logger> logger;
         if (context == LogContext::CanLogging)
         {
             // Session-specific CAN data logger (file only)

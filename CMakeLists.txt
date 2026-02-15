@@ -14,25 +14,6 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
-# Temporary until implementation -----------------------------------
-set(SKIP_AUTOMOC_DIRS
-)
-
-foreach(dir IN LISTS SKIP_AUTOMOC_DIRS)
-    file(GLOB_RECURSE DIR_FILES
-            ${dir}/*.hpp
-            ${dir}/*.cpp
-    )
-
-    if(DIR_FILES)
-        set_source_files_properties(
-                ${DIR_FILES}
-                PROPERTIES SKIP_AUTOMOC ON
-        )
-    endif()
-endforeach()
-#----------------------------------------------------------------------
-
 # 2. Options
 option(ENABLE_TESTS "Build tests using GoogleTest and Benchmark" ON)
 option(ENABLE_CLANG_TIDY "Enable static analysis with Clang-Tidy" OFF)

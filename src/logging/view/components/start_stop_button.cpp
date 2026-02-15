@@ -91,7 +91,7 @@ bool StartStopButton::event(QEvent* event)
         applyStyle();
         return true;
     }
-    return QWidget::event(event);
+    return QPushButton::event(event);
 }
 
 }  // namespace Logging
