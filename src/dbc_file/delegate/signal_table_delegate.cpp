@@ -70,30 +70,7 @@ void SignalTableDelegate::paint(QPainter* painter, const QStyleOptionViewItem& o
         Core::ItemPainter::paintText(painter, textRect, msgName, false, QColor(),
                                      Qt::AlignLeft | Qt::AlignVCenter);
     }
-    // if (index.column() == Constants::Columns::SigMessage)
-    // {
-    //     uint msgId = index.data(DbcRoles::Role_Id).toUInt();
-    //     QString idText = Core::Util::formatId(msgId);
-    //     QString msgName = index.data(Qt::DisplayRole).toString();
-    //
-    //     QSize badgeSize = Core::ItemPainter::measureBadge(idText);
-    //     QRect badgeRect(cellRect.left(), cellRect.center().y() - badgeSize.height() / 2 + 1,
-    //                     badgeSize.width(), badgeSize.height());
-    //
-    //     // Custom ID badge style
-    //     Core::ItemPainter::BadgeStyle badgeStyle;
-    //     badgeStyle.background = Qt::transparent;
-    //     badgeStyle.text = colors.textSecondary;
-    //     badgeStyle.border = colors.borderSubtle;
-    //     Core::ItemPainter::paintBadge(painter, badgeRect, idText, QIcon(), &badgeStyle);
-    //
-    //     // Paint text next to badge
-    //     int textOffset = badgeSize.width() + padding;
-    //     QRect textRect = cellRect.adjusted(textOffset, 0, 0, 0);
-    //
-    //     Core::ItemPainter::paintText(painter, textRect, msgName);
-    // }
-    // Range Column
+
     else if (index.column() == Constants::Columns::SigMin)
     {
         double min = index.data(Qt::DisplayRole).toDouble();

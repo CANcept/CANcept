@@ -77,7 +77,7 @@ void SignalsPage::setupUi()
 
     // --- Searchable Table ----------------------------------------------------
     m_tableWidget = new Core::SearchableFilterTable(this);
-    m_tableWidget->setSearchPlaceholder(Constants::EcusPage::SearchbarText);
+    m_tableWidget->setSearchPlaceholder(Constants::SignalsPage::SearchbarText);
 
     m_tableWidget->configureTableBasics();  // setup table basics
     card->layout()->addWidget(m_tableWidget);

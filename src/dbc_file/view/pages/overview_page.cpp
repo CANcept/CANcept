@@ -240,60 +240,6 @@ void OverviewPage::applyStyle() const
     for (auto* iconLabel : m_statIconLabels)
         if (iconLabel) iconLabel->setColor(THEME.colors().textPrimary);
 }
-// void OverviewPage::applyStyle() const
-// {
-//     const auto& colors = THEME.colors();
-//     const auto& spacing = THEME.spacing();
-//
-//     if (m_scrollArea)
-//     {
-//         m_scrollArea->setStyleSheet(
-//             QString("background-color: %1; width: 0px;").arg(colors.surfaceMain.name()));
-//     }
-//
-//     if (m_fileNameTitle)
-//     {
-//         m_fileNameTitle->setStyleSheet(QString("color: %1;").arg(colors.textSecondary.name()));
-//     }
-//     if (m_lblFileName)
-//     {
-//         m_lblFileName->setStyleSheet(QString("color: %1;").arg(colors.textSecondary.name()));
-//     }
-//     if (m_fileVersionTitle)
-//     {
-//         m_fileVersionTitle->setStyleSheet(QString("color:
-//         %1;").arg(colors.textSecondary.name()));
-//     }
-//     if (m_lblVersion)
-//     {
-//         m_lblVersion->setStyleSheet(QString("color: %1;").arg(colors.textSecondary.name()));
-//     }
-//
-//     for (size_t i = 0; i < m_statTitleLabels.size(); ++i)
-//     {
-//         if (i % 2 == 0)
-//         {
-//             m_statTitleLabels[i]->setStyleSheet(QString("color: %1; font-size: %2px;")
-//                                                     .arg(colors.textPrimary.name())
-//                                                     .arg(spacing.fontSizeMd));
-//         } else
-//         {
-//             m_statTitleLabels[i]->setStyleSheet(
-//                 QString("color: %1; font-weight: %2; font-size: %3px;")
-//                     .arg(colors.textPrimary.name())
-//                     .arg(spacing.fontWeightNormal)
-//                     .arg(spacing.fontSizeLg));
-//         }
-//     }
-//
-//     for (auto* iconLabel : m_statIconLabels)
-//     {
-//         if (iconLabel)
-//         {
-//             iconLabel->setColor(colors.textPrimary);
-//         }
-//     }
-// }
 
 bool OverviewPage::event(QEvent* event)
 {
