@@ -2,10 +2,12 @@
 
 #include <QHeaderView>
 #include <QIcon>
+#include <QLabel>
 #include <QSpacerItem>
 
 #include "core/macro/theme.hpp"
 #include "core/theme/style_event.hpp"
+#include "core/widgets/tinted_icon_label.hpp"
 
 namespace Logging {
 
@@ -77,6 +79,34 @@ void LoggingView::setupUi()
     frameLayout->addWidget(m_contentStack);
     mainLayout->addWidget(m_mainFrame, 1);
 
+    // ===== Device Not Configured Overlay =====
+    m_deviceNotConfiguredOverlay = new QWidget(this);
+    m_deviceNotConfiguredOverlay->setObjectName("deviceNotConfiguredOverlay");
+
+    auto* overlayLayout = new QVBoxLayout(m_deviceNotConfiguredOverlay);
+
+    overlayLayout->addStretch(2);
+
+    auto* messageContainer = new QWidget(m_deviceNotConfiguredOverlay);
+    auto* messageLayout = new QHBoxLayout(messageContainer);
+    messageLayout->setAlignment(Qt::AlignCenter);
+
+    auto* messageLabel = new QLabel("Connection first has to be configured in ", messageContainer);
+    messageLabel->setAlignment(Qt::AlignCenter);
+    messageLayout->addWidget(messageLabel);
+
+    const auto& colors = THEME.colors();
+    m_settingsIconLabel = new Core::TintedIconLabel(":/assets/icon/settings.svg", 24,
+                                                    colors.textPrimary, messageContainer);
+    messageLayout->addWidget(m_settingsIconLabel);
+
+    overlayLayout->addWidget(messageContainer, 0, Qt::AlignCenter);
+
+    overlayLayout->addStretch(3);
+
+    m_deviceNotConfiguredOverlay->hide();
+    m_deviceNotConfiguredOverlay->raise();
+
     applyStyle();
     // ===== Connections =====
     connect(m_btnAction, &QPushButton::clicked, this, [this]() {
@@ -96,6 +126,13 @@ void LoggingView::setModel(LoggingModel* model)
     {
         return;
     }
+
+    // Disconnect from old model if exists
+    if (m_currentModel)
+    {
+        disconnect(m_currentModel, nullptr, this, nullptr);
+    }
+    m_currentModel = model;
 
     m_historyTable->setModel(model);
 
@@ -137,13 +174,14 @@ void LoggingView::showDetailView(QWidget* detailWidget)
         QLayoutItem* item = m_detailLayout->takeAt(0);
         if (item->widget())
         {
-            item->widget()->setParent(nullptr);
+            item->widget()->deleteLater();
         }
         delete item;
     }
 
     // Add new detail widget
     m_detailLayout->addWidget(detailWidget);
+    detailWidget->setParent(m_detailPage);
 
     // Switch to detail view
     m_contentStack->setCurrentWidget(m_detailPage);
@@ -160,7 +198,7 @@ void LoggingView::hideDetailView()
         QLayoutItem* item = m_detailLayout->takeAt(0);
         if (item->widget())
         {
-            item->widget()->setParent(nullptr);
+            item->widget()->deleteLater();
         }
         delete item;
     }
@@ -196,6 +234,28 @@ void LoggingView::applyStyle()
                                        .arg(spacing.radiusMd)
                                        .arg(color.surfaceMain.name(QColor::HexArgb)));
     }
+
+    if (m_deviceNotConfiguredOverlay)
+    {
+        m_deviceNotConfiguredOverlay->setStyleSheet(
+            QString("QWidget#deviceNotConfiguredOverlay { "
+                    "background-color: rgba(%1, %2, %3, 140); "
+                    "}"
+                    "QLabel { "
+                    "color: %4; "
+                    "font-size: %5px; "
+                    "}")
+                .arg(color.surfaceMain.red())
+                .arg(color.surfaceMain.green())
+                .arg(color.surfaceMain.blue())
+                .arg(color.textPrimary.name())
+                .arg(spacing.fontSizeLg));
+    }
+
+    if (m_settingsIconLabel)
+    {
+        m_settingsIconLabel->setColor(color.textPrimary);
+    }
 }
 
 bool LoggingView::event(QEvent* event)
@@ -206,6 +266,33 @@ bool LoggingView::event(QEvent* event)
         return true;
     }
     return QWidget::event(event);
+}
+
+void LoggingView::showDeviceNotConfiguredOverlay() const
+{
+    if (m_deviceNotConfiguredOverlay)
+    {
+        m_deviceNotConfiguredOverlay->setGeometry(0, 0, width(), height());
+        m_deviceNotConfiguredOverlay->show();
+        m_deviceNotConfiguredOverlay->raise();
+    }
+}
+
+void LoggingView::hideDeviceNotConfiguredOverlay() const
+{
+    if (m_deviceNotConfiguredOverlay)
+    {
+        m_deviceNotConfiguredOverlay->hide();
+    }
+}
+
+void LoggingView::resizeEvent(QResizeEvent* event)
+{
+    QWidget::resizeEvent(event);
+    if (m_deviceNotConfiguredOverlay)
+    {
+        m_deviceNotConfiguredOverlay->setGeometry(0, 0, width(), height());
+    }
 }
 
 }  // namespace Logging

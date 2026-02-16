@@ -62,6 +62,9 @@ class LoggingComponent final : public Core::ITabComponent
     /** @brief Builds a detail widget for a specific session */
     QWidget* createDetailWidget(const LogSession* session);
 
+    /** @brief Checks if CAN device is ready and updates overlay accordingly */
+    void checkDeviceReadiness() const;
+
    private:
     std::unique_ptr<LoggingModel> m_model;
     std::unique_ptr<LoggingView> m_view;
@@ -89,6 +92,10 @@ class LoggingComponent final : public Core::ITabComponent
     Core::Connection m_dbcMsgConn;
     Core::Connection m_parseSuccessConn;
     Core::Connection m_parseErrorConn;
+    Core::Connection m_canDriverChangeConn;
+
+    /** @brief Cached device ready state to prevent redundant UI updates */
+    mutable std::atomic<bool> m_lastDeviceReadyState{true};
 };
 
 }  // namespace Logging

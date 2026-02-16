@@ -5,6 +5,7 @@
 #include <QMessageBox>
 #include <QProgressDialog>
 #include <QTextStream>
+#include <core/event/can_driver_event.hpp>
 #include <core/event/dbc_event.hpp>
 #include <core/macro/console_logging.hpp>
 #include <core/macro/theme.hpp>
@@ -108,6 +109,14 @@ void LoggingComponent::onStart()
         [](const Core::DBCParseErrorEvent& event) {
             // Error already logged by DBC handler
         });
+
+    m_canDriverChangeConn = m_eventBroker.subscribe<Core::CanDriverChangeEvent>(
+        [this](const Core::CanDriverChangeEvent&) {
+            QMetaObject::invokeMethod(
+                this, [this]() { checkDeviceReadiness(); }, Qt::QueuedConnection);
+        });
+
+    checkDeviceReadiness();
 }
 
 // Called when tab becomes inactive - cleans up resources
@@ -116,6 +125,7 @@ void LoggingComponent::onStop()
     stopLogging();
     m_parseSuccessConn.release();
     m_parseErrorConn.release();
+    m_canDriverChangeConn.release();
 }
 
 // Initiates a new logging session with user-selected signals
@@ -190,7 +200,11 @@ void LoggingComponent::startLogging()
                         return;
                     }
                     auto* logSession =
-                        m_model->getSession(QString().fromStdString(m_currentSessionId));
+                        m_model->getSession(QString::fromStdString(m_currentSessionId));
+                    if (!logSession) [[unlikely]]
+                    {
+                        return;
+                    }
                     if (logSession->type != DBC_BASED ||
                         !logSession->selectedSignals.contains(event.canMessage.messageId))
                     {
@@ -257,7 +271,11 @@ void LoggingComponent::startLogging()
                         return;
                     }
                     auto* logSession =
-                        m_model->getSession(QString().fromStdString(m_currentSessionId));
+                        m_model->getSession(QString::fromStdString(m_currentSessionId));
+                    if (!logSession) [[unlikely]]
+                    {
+                        return;
+                    }
                     if (logSession->type != RAW)
                     {
                         return;
@@ -352,7 +370,7 @@ QWidget* LoggingComponent::createDetailWidget(const LogSession* session)
     const auto& colors = THEME.colors();
     const auto& spacing = THEME.spacing();
 
-    auto* detailView = new QWidget(m_view.get());
+    auto* detailView = new QWidget(nullptr);
     auto* layout = new QVBoxLayout(detailView);
     layout->setContentsMargins(spacing.spacingLg, spacing.spacingLg, spacing.spacingLg,
                                spacing.spacingLg);
@@ -459,6 +477,27 @@ QWidget* LoggingComponent::createDetailWidget(const LogSession* session)
     layout->addLayout(buttonLayout);
 
     return detailView;
+}
+
+void LoggingComponent::checkDeviceReadiness() const
+{
+    bool isReady = false;
+    m_eventBroker.publish<Core::CheckCanDeviceReadyEvent>(Core::CheckCanDeviceReadyEvent(isReady));
+
+    if (isReady == m_lastDeviceReadyState.load(std::memory_order_relaxed))
+    {
+        return;
+    }
+
+    m_lastDeviceReadyState.store(isReady, std::memory_order_relaxed);
+
+    if (isReady)
+    {
+        m_view->hideDeviceNotConfiguredOverlay();
+    } else
+    {
+        m_view->showDeviceNotConfiguredOverlay();
+    }
 }
 
 }  // namespace Logging

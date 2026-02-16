@@ -131,10 +131,9 @@ void LogService::closeLogger(LogContext context, const std::string& sessionId)
 {
     std::lock_guard<std::mutex> lock(m_registryMutex);
 
-    std::string key = createRegistryKey(context, sessionId);
+    const std::string key = createRegistryKey(context, sessionId);
 
-    auto it = m_loggers.find(key);
-    if (it != m_loggers.end())
+    if (auto it = m_loggers.find(key); it != m_loggers.end())
     {
         // Flush before closing
         it->second->flush();

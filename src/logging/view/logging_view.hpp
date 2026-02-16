@@ -14,6 +14,7 @@
 #include "components/no_logs_label.hpp"
 #include "components/start_stop_button.hpp"
 #include "components/timer_label.hpp"
+#include "core/widgets/tinted_icon_label.hpp"
 #include "logging/model/logging_model.hpp"
 
 namespace Logging {
@@ -78,8 +79,15 @@ class LoggingView final : public QWidget
     /** @brief Triggered by a 'Details' button within a specific table row. */
     void detailRequested(const QModelIndex& index);
 
+   public:
+    /** @brief Shows the device not configured overlay. */
+    void showDeviceNotConfiguredOverlay() const;
+    /** @brief Hides the device not configured overlay. */
+    void hideDeviceNotConfiguredOverlay() const;
+
    protected:
     bool event(QEvent* event) override;
+    void resizeEvent(QResizeEvent* event) override;
 
    private:
     /** @brief Initializes the persistent header and the swappable content frame. */
@@ -101,6 +109,11 @@ class LoggingView final : public QWidget
 
     QWidget* m_detailPage;
     QVBoxLayout* m_detailLayout;
+
+    QWidget* m_deviceNotConfiguredOverlay;
+    Core::TintedIconLabel* m_settingsIconLabel;
+
+    LoggingModel* m_currentModel{nullptr};
 };
 
 }  // namespace Logging
