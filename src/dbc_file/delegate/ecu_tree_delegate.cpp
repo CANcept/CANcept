@@ -34,7 +34,7 @@ auto EcuTreeDelegate::getCardRect(const QStyleOptionViewItem& option,
     rect.setLeft(rect.left() + spacing.spacingXl * indentLevel);
 
     // right margin (identical for all cards)
-    rect.setRight(rect.right() - spacing.spacingXl);
+    rect.setRight(rect.right());
 
     return rect;
 }

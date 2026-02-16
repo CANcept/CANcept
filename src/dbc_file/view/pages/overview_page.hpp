@@ -2,7 +2,6 @@
 #include <qboxlayout.h>
 
 #include <QDataWidgetMapper>
-#include <QLabel>
 #include <QListView>
 #include <QScrollArea>
 #include <QWidget>
@@ -96,10 +95,10 @@ class OverviewPage : public QWidget
      *
      * @return Pointer to the created statistic card widget.
      */
-    auto createStatCard(const QString& title, QLabel*& valueLabelPtr, const QString& iconPath,
-                        std::vector<QLabel*>& titleLabelsOut,
-                        std::vector<Core::TintedIconLabel*>& iconLabelsOut,
-                        QWidget* parent = nullptr) -> QWidget*;
+    static auto createStatCard(const QString& title, QLabel*& valueLabelPtr,
+                               const QString& iconPath, std::vector<QLabel*>& titleLabelsOut,
+                               std::vector<Core::TintedIconLabel*>& iconLabelsOut,
+                               QWidget* parent = nullptr) -> QWidget*;
 
     /**
      * @brief Creates the statistics section.
@@ -150,7 +149,14 @@ class OverviewPage : public QWidget
     void applyStyle() const;
 
    protected:
-    bool event(QEvent* event) override;
+    /**
+     * @brief Handles custom events for styling.
+     *
+     * Refreshes style for child widgets if a Core::StyleEvent is received.
+     * @param event The event object.
+     * @return True if the event was handled.
+     */
+    auto event(QEvent* event) -> bool override;
 
    private:
     // --- 1. Labels for File Info Card ---

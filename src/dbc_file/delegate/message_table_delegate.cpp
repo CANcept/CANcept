@@ -2,6 +2,7 @@
 
 #include "core/macro/theme.hpp"
 #include "core/painters/item_painter.hpp"
+#include "core/util/dbc_utils.hpp"
 #include "dbc_file/constants.hpp"
 #include "dbc_file/model/dbc_roles.hpp"
 
@@ -12,22 +13,11 @@ namespace {
 /**
  * @brief Returns the display text for a role, falling back to a default value.
  */
-QString textOrDefault(const QModelIndex& index, int role, const QString& fallback)
+auto textOrDefault(const QModelIndex& index, int role, const QString& fallback) -> QString
 {
     const QString value = index.data(role).toString();
     return value.isEmpty() ? fallback : value;
 }
-
-/**
- * @brief Builds an uppercase hex string for the message ID (e.g. "0x01A").
- *
- * Note: Width is kept consistent with the previous implementation (3 hex digits).
- */
-QString formatMessageIdHex(uint id)
-{
-    return QStringLiteral("0x%1").arg(id, 3, 16, QChar('0')).toUpper();
-}
-
 }  // namespace
 
 MessageTableDelegate::MessageTableDelegate(QObject* parent) : QStyledItemDelegate(parent) {}
@@ -37,8 +27,7 @@ void MessageTableDelegate::paint(QPainter* painter, const QStyleOptionViewItem& 
 {
     // Paint row background and separators.
     const bool selected = option.state & QStyle::State_Selected;
-    const bool hovered = option.state & QStyle::State_MouseOver;
-    Core::ItemPainter::paintRow(painter, option.rect, selected, hovered);
+    Core::ItemPainter::paintRow(painter, option.rect, selected, false);
 
     const auto& spacing = THEME.spacing();
     const auto& colors = THEME.colors();
@@ -50,14 +39,14 @@ void MessageTableDelegate::paint(QPainter* painter, const QStyleOptionViewItem& 
     {
         case Constants::Columns::MsgName: {
             const QString text = index.data(Qt::DisplayRole).toString();
-            Core::ItemPainter::paintText(painter, cellRect, text, true, QColor(),
+            Core::ItemPainter::paintText(painter, cellRect, text, false, QColor(),
                                          Qt::AlignHCenter | Qt::AlignVCenter);
             return;
         }
 
         case Constants::Columns::MsgId: {
-            const uint id = index.data(DbcRoles::Role_Id).toUInt();
-            const QString text = formatMessageIdHex(id);
+            const uint id = index.data(Role_Id).toUInt();
+            const QString text = Core::Util::formatId(id);
 
             const QSize badgeSize = Core::ItemPainter::measureBadge(text);
 

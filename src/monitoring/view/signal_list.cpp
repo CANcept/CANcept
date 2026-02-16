@@ -3,6 +3,7 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QPushButton>
+#include <QScrollBar>
 #include <QVBoxLayout>
 
 #include "core/constants.hpp"
@@ -15,6 +16,7 @@
 #include "core/widgets/dbc_signal_row.hpp"
 #include "monitoring/constants.hpp"
 #include "monitoring/model/monitoring_model.hpp"
+#include "monitoring/styles.hpp"
 
 namespace Monitoring {
 SignalList::SignalList(QWidget* parent, MonitoringModel* model)
@@ -63,6 +65,10 @@ void SignalList::applyStyle()
     m_cardsLayout->setContentsMargins(0, 0, 0, 0);
     m_cardsLayout->setSpacing(spacing.spacingSm);
     m_cardsLayout->addStretch();
+
+    // Apply vertical scrollbar style
+    if (m_scrollArea->verticalScrollBar())
+        m_scrollArea->verticalScrollBar()->setStyleSheet(Style::Common::verticalScrollBar());
 }
 
 void SignalList::onDbcChange()
@@ -94,7 +100,7 @@ void SignalList::populateDecodedFromModel()
 
         const QString messageName =
             m_model->data(messageIndex, MonitoringModel::MonitoringRoles::Role_Name).toString();
-        auto* messageCard = new Core::CardWidget(messageName, QString(), nullptr, this);
+        auto* messageCard = new Core::CardWidget(QString(), QString(), nullptr, this);
 
         auto* horizontalLayout = new QHBoxLayout();
         horizontalLayout->setSpacing(THEME.spacing().spacingSm);
@@ -106,6 +112,12 @@ void SignalList::populateDecodedFromModel()
         expandButton->setCheckable(true);
         expandButton->setChecked(false);
         horizontalLayout->addWidget(expandButton);
+
+        auto* messageNameLabel = new QLabel(messageCard);
+        messageNameLabel->setText(messageName);
+        horizontalLayout->addWidget(messageNameLabel);
+
+        horizontalLayout->addStretch();
 
         const QString idText =
             m_model->data(messageIndex, MonitoringModel::MonitoringRoles::Role_ID).toString();
@@ -130,16 +142,20 @@ void SignalList::populateDecodedFromModel()
                 m_model->data(signalIndex, MonitoringModel::MonitoringRoles::Role_Name).toString();
 
             auto* signalCard =
-                new Core::CardWidget(signalName, QString(), nullptr, m_signalLists.last());
+                new Core::CardWidget(QString(), QString(), nullptr, m_signalLists.last());
 
             if (auto* contentLayout = signalCard->contentLayout())
             {
                 auto* horizontalLayout = new QHBoxLayout();
-                horizontalLayout->setSpacing(THEME.spacing().spacingLg);
+                horizontalLayout->setSpacing(THEME.spacing().spacingSm);
                 horizontalLayout->setContentsMargins(0, 0, 0, 0);
 
                 auto* signalCheckbox = new Core::StyledCheckBox(signalCard);
                 horizontalLayout->addWidget(signalCheckbox);
+
+                auto* signalNameLabel = new QLabel(signalCard);
+                signalNameLabel->setText(signalName);
+                horizontalLayout->addWidget(signalNameLabel);
 
                 horizontalLayout->addStretch();
 
@@ -164,6 +180,7 @@ void SignalList::populateDecodedFromModel()
             }
 
             signalsLayout->addWidget(signalCard);
+            signalCard->updateGeometry();
         }
 
         m_signalLists.last()->hide();
@@ -186,10 +203,13 @@ void SignalList::populateDecodedFromModel()
             contentLayout->addWidget(m_signalLists.last());
         }
 
-        int insertIndex = m_cardsLayout->count() - 1;
-        if (insertIndex < 0) insertIndex = 0;
+        if (int insertIndex = m_cardsLayout->count() - 1; insertIndex < 0) insertIndex = 0;
         m_cardsLayout->addWidget(messageCard);
+
+        messageCard->updateGeometry();
     }
+    applyStyle();
+    if (m_scrollContent) m_scrollContent->updateGeometry();
 
     LOG_INF("MonitoringComponent", "Signal List view built...");
 }

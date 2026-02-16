@@ -1,6 +1,5 @@
 #pragma once
 
-#include <QRect>
 #include <QStyledItemDelegate>
 #include <QTreeView>
 

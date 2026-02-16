@@ -4,8 +4,10 @@
 #include <QtConcurrent/QtConcurrentRun>
 
 #include "constants.hpp"
+#include "core/event/can_driver_event.hpp"
 #include "core/event/can_event.hpp"
 #include "core/event/dbc_event.hpp"
+#include "core/event/lifecycle_event.hpp"
 #include "core/macro/console_logging.hpp"
 
 namespace Sending {
@@ -35,8 +37,12 @@ void SendingComponent::onStart()
 {
     LOG_INF(Constants::MODULE_IDENTIFIER, "Starting Sending Component...");
 
+    m_startTime = std::chrono::steady_clock::now();
+
     setupConnections();
     setupBrokerSubscriptions();
+
+    checkDeviceReadiness();
 
     m_eventBroker.publish<Core::ModuleStartedEvent>(
         Core::ModuleStartedEvent(std::type_index(typeid(*this))));
@@ -137,6 +143,14 @@ void SendingComponent::setupConnections()
             LOG_ERR(Constants::MODULE_IDENTIFIER, "Repeated sending error: {}",
                     error.toStdString());
             stopRepeatedSending();
+
+            const auto runtime = std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::steady_clock::now() - m_startTime);
+
+            m_eventBroker.publish<Core::ModuleStoppedEvent>(Core::ModuleStoppedEvent(
+                std::type_index(typeid(*this)),
+                Core::ModuleDiagnostics{
+                    .runtime = runtime, .wasError = true, .errorMessage = error.toStdString()}));
         },
         Qt::QueuedConnection);
 }
@@ -187,8 +201,6 @@ void SendingComponent::sendOnce() const
 
 void SendingComponent::setupBrokerSubscriptions()
 {
-    // Subscribe to DBC parsing success events
-    // Use Qt::QueuedConnection to defer UI updates to the main thread
     m_parseSuccessConn =
         m_eventBroker.subscribe<Core::DBCParsedEvent>([this](const Core::DBCParsedEvent& event) {
             LOG_INF(Constants::MODULE_IDENTIFIER, "DBC parse succeeded, queuing to UI thread");
@@ -198,8 +210,6 @@ void SendingComponent::setupBrokerSubscriptions()
                 Qt::QueuedConnection);
         });
 
-    // Subscribe to DBC parse error events
-    // Use Qt::QueuedConnection to defer UI updates to the main thread
     m_parseErrorConn = m_eventBroker.subscribe<Core::DBCParseErrorEvent>(
         [this](const Core::DBCParseErrorEvent& event) {
             LOG_ERR(Constants::MODULE_IDENTIFIER, "DBC parse failed: {}", event.errorMessage);
@@ -207,6 +217,35 @@ void SendingComponent::setupBrokerSubscriptions()
             QMetaObject::invokeMethod(this, &SendingComponent::onDbcParseError,
                                       Qt::QueuedConnection);
         });
+
+    m_canDriverChangeConn = m_eventBroker.subscribe<Core::CanDriverChangeEvent>(
+        [this](const Core::CanDriverChangeEvent&) {
+            QMetaObject::invokeMethod(
+                this, [this]() { checkDeviceReadiness(); }, Qt::QueuedConnection);
+        });
+}
+
+void SendingComponent::checkDeviceReadiness() const
+{
+    bool isReady = false;
+    m_eventBroker.publish<Core::CheckCanDeviceReadyEvent>(Core::CheckCanDeviceReadyEvent(isReady));
+
+    if (isReady == m_lastDeviceReadyState)
+    {
+        return;
+    }
+
+    m_lastDeviceReadyState = isReady;
+
+    if (isReady)
+    {
+        m_view->hideDeviceNotConfiguredOverlay();
+        LOG_INF(Constants::MODULE_IDENTIFIER, "CAN device is ready");
+    } else
+    {
+        m_view->showDeviceNotConfiguredOverlay();
+        LOG_WRN(Constants::MODULE_IDENTIFIER, "CAN device not configured");
+    }
 }
 
 }  // namespace Sending

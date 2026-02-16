@@ -1,8 +1,8 @@
 #pragma once
 
-#include <QStringList>
 #include <QWidget>
 
+class QLabel;
 class QAbstractItemModel;
 class QTableView;
 
@@ -57,6 +57,13 @@ class SignalsPage : public QWidget
      */
     void setAvailableUnits(const QStringList& units) const;
 
+    /**
+     * @brief Applies theme updates and refreshes the styling of all child widgets.
+     *
+     * Should be called when the application theme or style changes.
+     */
+    void applyStyle();
+
    signals:
     /**
      * @brief Emitted when the search text changes.
@@ -86,6 +93,15 @@ class SignalsPage : public QWidget
      */
     void onFilterIndexChanged(int index);
 
+    /**
+     * @brief Handles custom events for styling.
+     *
+     * Refreshes style for child widgets if a Core::StyleEvent is received.
+     * @param event The event object.
+     * @return True if the event was handled.
+     */
+    bool event(QEvent* event) override;
+
    private:
     // =========================================================================
     // UI Setup
@@ -94,40 +110,18 @@ class SignalsPage : public QWidget
     /**
      * @brief Creates and initializes the full UI layout.
      *
-     * Builds the card container, search/filter table and connects signals.
+     * Builds the card container, search/filter table, configures delegates,
+     * and connects relevant signals.
      */
     void setupUi();
 
     /**
-     * @brief Applies general table configuration independent of the model.
-     *
-     * Configures scrollbars, selection behavior, grid visibility
-     * and vertical header.
-     *
-     * @param table Target table view.
+     * @brief Updates the empty state label visibility depending on tree contents.
      */
-    static void configureTableBasics(QTableView* table);
+    void updateEmptyState();
 
     /**
-     * @brief Applies visual styling to the table.
-     *
-     * Sets border radius, background colors and theme-based styling.
-     *
-     * @param table Target table view.
-     */
-    static void applyTableStyle(QTableView* table);
-
-    /**
-     * @brief Configures the horizontal header appearance.
-     *
-     * Applies resize mode and custom stylesheet styling.
-     *
-     * @param table Target table view.
-     */
-    static void configureHeaderStyle(const QTableView* table);
-
-    /**
-     * @brief Configures column visibility, width and stretch behavior.
+     * @brief Configures column visibility, width, and stretch behavior.
      *
      * This method is model-dependent and should be called after
      * setting the model.
@@ -140,6 +134,7 @@ class SignalsPage : public QWidget
    private:
     /// Searchable and filterable table widget
     Core::SearchableFilterTable* m_tableWidget{nullptr};
+    QLabel* m_emptyLabel{nullptr};  /// Label shown when no signals are found.
 };
 
 }  // namespace DbcFile

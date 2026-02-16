@@ -50,8 +50,8 @@ class MessagesDetailDelegate final : public QStyledItemDelegate
      * @param index Model index (unused for sizing).
      * @return Size hint with a fixed height and view-defined width.
      */
-    [[nodiscard]] QSize sizeHint(const QStyleOptionViewItem& option,
-                                 const QModelIndex& index) const override;
+    [[nodiscard]] auto sizeHint(const QStyleOptionViewItem& option,
+                                const QModelIndex& index) const -> QSize override;
 
     /**
      * @brief Paints the card layout for the given model index.
@@ -67,7 +67,7 @@ class MessagesDetailDelegate final : public QStyledItemDelegate
     static void drawHeader(QPainter* painter, const QRect& rect, const QModelIndex& index);
 
     /** @brief Draws the attribute grid (two rows, four columns). */
-    void drawGrid(QPainter* painter, const QRect& rect, const QModelIndex& index) const;
+    static void drawGrid(QPainter* painter, const QRect& rect, const QModelIndex& index);
 
     /**
      * @brief Draws a single label/value pair within a grid cell.
@@ -80,7 +80,7 @@ class MessagesDetailDelegate final : public QStyledItemDelegate
                                   const QString& value);
 
     /** @brief Draws the footer (receiver list) if available. */
-    void drawFooter(QPainter* painter, const QRect& rect, const QModelIndex& index) const;
+    static void drawFooter(QPainter* painter, const QRect& rect, const QModelIndex& index);
 };
 
 }  // namespace DbcFile

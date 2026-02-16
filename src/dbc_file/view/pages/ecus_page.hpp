@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QAbstractItemModel>
+#include <QLabel>
 #include <QVBoxLayout>
 
 #include "core/widgets/common/searchable_filter_widgets.hpp"
@@ -8,11 +9,16 @@
 namespace DbcFile {
 
 /**
- * @brief Page widget displaying the list of ECUs in a searchable and filterable tree view.
+ * @class EcusPage
+ * @brief Page widget displaying a list of ECUs in a searchable and filterable tree view.
  *
- * The EcusPage provides a card-style header with title/subtitle,
- * a search bar, and a filter combo integrated with a tree view of ECUs.
- * It supports filtering by active/all ECUs and forwards filter/search events.
+ * The EcusPage consists of:
+ * - A card-style header with title and subtitle.
+ * - A search bar and filter combo integrated with a tree view of ECUs.
+ * - A placeholder label shown when no ECUs are available.
+ *
+ * It supports filtering by active/all ECUs and emits signals when
+ * the search text or filter index changes.
  */
 class EcusPage : public QWidget
 {
@@ -29,7 +35,21 @@ class EcusPage : public QWidget
      * @brief Sets the model for the internal tree view.
      * @param model The item model to display in the tree.
      */
-    void setModel(QAbstractItemModel* model) const;
+    void setModel(QAbstractItemModel* model);
+
+    /**
+     * @brief Updates the empty state label visibility depending on tree contents.
+     */
+    void updateEmptyState();
+
+    /**
+     * @brief Handles custom events for styling.
+     *
+     * Refreshes style for child widgets if a Core::StyleEvent is received.
+     * @param event The event object.
+     * @return True if the event was handled.
+     */
+    auto event(QEvent* event) -> bool override;
 
    signals:
     /**
@@ -46,7 +66,7 @@ class EcusPage : public QWidget
 
    protected:
     /**
-     * @brief Sets up the UI elements.
+     * @brief Sets up the page UI.
      *
      * Orchestrates the creation of layout, header card,
      * tree section, tree view configuration, styling, and signal connections.
@@ -54,42 +74,46 @@ class EcusPage : public QWidget
     void setupUi();
 
    private:
-    // --- Modular UI setup helpers ---
+    // --- UI Setup Helpers ---
 
     /**
-     * @brief Creates the main layout for the page.
+     * @brief Creates the main vertical layout for the page.
      *
-     * Initializes the QVBoxLayout for the page and sets margins and spacing.
+     * Initializes QVBoxLayout and sets default margins and spacing.
      */
     void createLayout();
 
     /**
-     * @brief Creates the header card widget.
+     * @brief Creates the card header widget.
      *
      * Adds a Core::CardWidget with title and subtitle to the main layout.
      */
     void createHeaderCard();
 
     /**
-     * @brief Creates the searchable and filterable tree section.
+     * @brief Creates the searchable/filterable tree section.
      *
-     * Initializes m_treeWidget, sets placeholder text, and sets default filter options.
+     * Initializes m_treeWidget, sets placeholder text, default filter options,
+     * and the empty-state label.
      */
     void createTreeSection();
 
     /**
      * @brief Configures the internal QTreeView.
      *
-     * Applies selection behavior, row expansion, delegate assignment,
-     * and hides the header/vertical headers as required.
+     * Assigns delegate, sets selection behavior, expands/collapses rows,
+     * hides the header, and applies other view settings.
      */
     void configureTreeView();
 
     /**
-     * @brief Applies custom styling to the tree view branches and background.
-     * @param view Pointer to the tree view to style.
+     * @brief Updates styles for the tree view and scrollbars.
+     *
+     * This method applies the current theme to the tree, including
+     * the vertical scrollbar, and should be called whenever the
+     * theme is updated at runtime.
      */
-    static void applyTreeStyle(QTreeView* view);
+    void applyStyle();
 
     /**
      * @brief Connects signals from m_treeWidget to this page.
@@ -97,8 +121,9 @@ class EcusPage : public QWidget
     void connectSignals();
 
    private:
-    QLayout* m_cardLayout{nullptr};  ///< Layout of the card widget for tree placement
-    Core::SearchableFilterTree* m_treeWidget{nullptr};  ///< Searchable and filterable tree widget
+    QLayout* m_cardLayout{nullptr};  ///< Layout of the card header for tree placement
+    Core::SearchableFilterTree* m_treeWidget{nullptr};  ///< Searchable/filterable tree of ECUs
+    QLabel* m_emptyLabel{nullptr};                      ///< Label shown when no ECUs are available
 };
 
 }  // namespace DbcFile

@@ -108,7 +108,7 @@ void CardListDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
     if (contentRight > contentLeft)
     {
         QRect titleRect(contentLeft, cardRect.top(), contentRight - contentLeft, cardRect.height());
-        ItemPainter::paintText(painter, titleRect, title, true);
+        ItemPainter::paintText(painter, titleRect, title, false);
     }
 }
 

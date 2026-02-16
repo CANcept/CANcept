@@ -1,9 +1,8 @@
 #include "message_detail_delegate.hpp"
 
-#include <QPainter>
-
 #include "core/macro/theme.hpp"
 #include "core/painters/item_painter.hpp"
+#include "core/util/dbc_utils.hpp"
 #include "dbc_file/constants.hpp"
 #include "dbc_file/model/dbc_roles.hpp"
 
@@ -65,18 +64,6 @@ inline auto totalHeightPx() -> int
 }
 
 }  // namespace Layout
-
-namespace {
-
-/**
- * @brief Formats numeric values consistently for detail cards.
- */
-inline auto formatNumber(double value) -> QString
-{
-    return QString::number(value, 'g', 12);
-}
-
-}  // namespace
 
 MessagesDetailDelegate::MessagesDetailDelegate(QObject* parent) : QStyledItemDelegate(parent) {}
 
@@ -156,7 +143,7 @@ void MessagesDetailDelegate::drawHeader(QPainter* painter, const QRect& rect,
 }
 
 void MessagesDetailDelegate::drawGrid(QPainter* painter, const QRect& rect,
-                                      const QModelIndex& index) const
+                                      const QModelIndex& index)
 {
     const int colWidth = rect.width() / 4;
 
@@ -168,10 +155,10 @@ void MessagesDetailDelegate::drawGrid(QPainter* painter, const QRect& rect,
     const QString valueType = index.data(Role_ValueType).toString();
 
     // Row 1
-    const QString factor = formatNumber(index.data(Role_Factor).toDouble());
-    const QString offset = formatNumber(index.data(Role_Offset).toDouble());
-    const QString minVal = formatNumber(index.data(Role_Min).toDouble());
-    const QString maxVal = formatNumber(index.data(Role_Max).toDouble());
+    const QString factor = Core::Util::formatNumber(index.data(Role_Factor).toDouble());
+    const QString offset = Core::Util::formatNumber(index.data(Role_Offset).toDouble());
+    const QString minVal = Core::Util::formatNumber(index.data(Role_Min).toDouble());
+    const QString maxVal = Core::Util::formatNumber(index.data(Role_Max).toDouble());
 
     const int rowH = Layout::gridRowHeightPx();
     const int y0 = rect.top();
@@ -228,7 +215,7 @@ void MessagesDetailDelegate::drawAttributePair(QPainter* painter, const QRect& r
 }
 
 void MessagesDetailDelegate::drawFooter(QPainter* painter, const QRect& rect,
-                                        const QModelIndex& index) const
+                                        const QModelIndex& index)
 {
     const QString receivers = index.data(DbcRoles::Role_Receivers).toString();
     if (receivers.isEmpty()) return;

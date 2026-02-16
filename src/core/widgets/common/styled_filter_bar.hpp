@@ -1,6 +1,5 @@
 #pragma once
 
-#include <QVariant>
 #include <QWidget>
 
 class QLineEdit;
@@ -36,7 +35,7 @@ class StyledFilterBar : public QWidget
 
     /**
      * @brief Returns the current search text.
-     * @return Text entered in the search field.
+     * @return Text entered the search field.
      */
     [[nodiscard]] auto searchText() const -> QString;
 
@@ -125,11 +124,17 @@ class StyledFilterBar : public QWidget
     void setupUi();
 
     /**
-     * @brief Applies theme-based styles to search field and combo box.
-     *
-     * Uses THEME spacing and color values to ensure consistent styling.
+     * @brief Applies theme-dependent styling to the search bar and filter combo box.
      */
-    void setupStyles() const;
+    void applyStyle();
+    /**
+     * @brief Handles custom events for styling.
+     *
+     * Refreshes style for child widgets if a Core::StyleEvent is received.
+     * @param event The event object.
+     * @return True if the event was handled.
+     */
+    auto event(QEvent* event) -> bool override;
 
    private:
     QLineEdit* m_searchBar = nullptr;  ///< Search input field
