@@ -27,7 +27,7 @@ class DbcExamples
      * @brief Simple motor controller DBC.
      *
      * Messages:
-     * - 0x100 MotorStatus: Speed  Temperature 
+     * - 0x100 MotorStatus: Speed  Temperature
      * - 0x101 MotorCommand: TargetSpeed (rpm), Enable
      *
      * Nodes: MotorController, Dashboard
