@@ -44,9 +44,6 @@ jobs:
       - name: Build
         run: cmake --build build --config Release -j$(nproc)
 
-      - name: Generate Documentation
-        run: cmake --build build --target docs
-
       - name: Run unit tests
         run: |
           cd build

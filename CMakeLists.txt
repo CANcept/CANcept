@@ -40,7 +40,7 @@ if(ENABLE_CLANG_TIDY)
 endif()
 
 # 4. Dependencies (Runtime Libraries)
-find_package(Qt6 COMPONENTS Widgets PrintSupport OpenGL Svg REQUIRED)
+find_package(Qt6 COMPONENTS Widgets PrintSupport OpenGL Svg Test REQUIRED)
 find_package(Threads REQUIRED)
 
 add_subdirectory(external/spdlog)
@@ -108,7 +108,9 @@ if(ENABLE_TESTS)
         file(GLOB_RECURSE TEST_SOURCES "${TEST_DIR}/*.cpp")
         if(TEST_SOURCES)
             add_executable(${TEST_NAME} ${TEST_SOURCES})
-            target_link_libraries(${TEST_NAME} PRIVATE ${PROJECT_NAME}Lib ${LINK_LIB})
+            target_link_libraries(${TEST_NAME} PRIVATE ${PROJECT_NAME}Lib ${LINK_LIB} GTest::gmock Qt6::Test)
+            # Add project root to include path so tests can find helpers
+            target_include_directories(${TEST_NAME} PRIVATE ${CMAKE_SOURCE_DIR})
             add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
         endif()
     endfunction()
@@ -136,8 +138,11 @@ if(ENABLE_TESTS)
 
         if(LCOV_PATH AND GENHTML_PATH)
             add_custom_target(coverage_report
-                    COMMAND ${LCOV_PATH} --directory . --capture --output-file coverage.info --ignore-errors mismatch,empty
-                    COMMAND ${LCOV_PATH} --remove coverage.info '/usr/*' '${CMAKE_SOURCE_DIR}/external/*' '${CMAKE_SOURCE_DIR}/tests/*' --output-file coverage.info --ignore-errors empty
+                    COMMAND find . -name '*.gcda' -delete
+                    COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure
+                    COMMAND find . -path '*_autogen*' -name '*.gcda' -delete
+                    COMMAND ${LCOV_PATH} --directory . --capture --output-file coverage_raw.info --ignore-errors gcov,mismatch,empty --rc branch_coverage=0
+                    COMMAND ${LCOV_PATH} --extract coverage_raw.info '${CMAKE_SOURCE_DIR}/src/*' --output-file coverage.info --ignore-errors empty
                     COMMAND ${GENHTML_PATH} coverage.info --output-directory coverage_html --ignore-errors empty
                     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
                     COMMENT "Processing coverage data into HTML..."
@@ -161,3 +166,12 @@ if(CLANG_FORMAT_EXE)
 else()
     message(WARNING "clang-format not found. 'format' target will not be available.")
 endif()
+
+include(GNUInstallDirs)
+install(TARGETS CanBusManager
+        DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(FILES "assets/icon/app_root/can_bus.svg"
+        DESTINATION "${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps"
+        RENAME "CanBusManager.svg")
+install(FILES "can_bus_manager.desktop"
+        DESTINATION "${CMAKE_INSTALL_DATADIR}/applications")
