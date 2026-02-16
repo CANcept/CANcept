@@ -65,6 +65,8 @@ class LogService
      */
     void closeLogger(LogContext context, const std::string& sessionId);
 
+    static auto getLogFilePath(LogContext context, const std::string& sessionId) -> std::string;
+
    private:
     /**
      * @brief Private constructor to initialize the spdlog thread pool.
@@ -79,7 +81,7 @@ class LogService
     /**
      * @brief Helper to generate a unique key for the internal registry map.
      */
-    std::string createRegistryKey(LogContext context, const std::string& sessionId);
+    auto createRegistryKey(LogContext context, const std::string& sessionId) -> std::string;
 
     std::mutex m_registryMutex;
     std::unordered_map<std::string, std::shared_ptr<spdlog::logger>> m_loggers;
