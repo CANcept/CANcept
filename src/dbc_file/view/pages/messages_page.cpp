@@ -252,6 +252,11 @@ void MessagesPage::setMasterModel(QAbstractItemModel* model)
     connect(model, &QAbstractItemModel::modelReset, this, &MessagesPage::updateEmptyState);
     connect(model, &QAbstractItemModel::rowsInserted, this, &MessagesPage::updateEmptyState);
     connect(model, &QAbstractItemModel::rowsRemoved, this, &MessagesPage::updateEmptyState);
+
+    table->clearSelection();
+    table->setCurrentIndex(QModelIndex());
+
+    m_detailView->setVisible(false);
 }
 
 void MessagesPage::configureMasterColumns(QTableView* table, const QAbstractItemModel* model)
