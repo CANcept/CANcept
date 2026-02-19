@@ -58,6 +58,14 @@ class SignalsPage : public QWidget
     void setAvailableUnits(const QStringList& units) const;
 
     /**
+     * @brief Resets the visual filter state.
+     *
+     * Clears the search bar text and resets the unit filter dropdown
+     * to the first index ("All Units").
+     */
+    void resetFilters();
+
+    /**
      * @brief Applies theme updates and refreshes the styling of all child widgets.
      *
      * Should be called when the application theme or style changes.

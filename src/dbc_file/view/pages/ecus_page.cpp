@@ -8,6 +8,7 @@
 #include "core/theme/style_event.hpp"
 #include "core/widgets/card_widget.hpp"
 #include "core/widgets/common/searchable_filter_widgets.hpp"
+#include "core/widgets/common/styled_filter_bar.hpp"
 #include "dbc_file/constants.hpp"
 #include "dbc_file/delegate/ecu_tree_delegate.hpp"
 #include "dbc_file/styles.hpp"
@@ -47,6 +48,19 @@ void EcusPage::setModel(QAbstractItemModel* model)
     connect(model, &QAbstractItemModel::rowsRemoved, this, &EcusPage::updateEmptyState);
 
     updateEmptyState();
+}
+
+void EcusPage::resetFilters()
+{
+    if (m_treeWidget && m_treeWidget->filterBar())
+    {
+        const bool wasBlocked = m_treeWidget->filterBar()->blockSignals(true);
+
+        m_treeWidget->filterBar()->setSearchText("");
+        m_treeWidget->filterBar()->setCurrentFilterIndex(0); // Select "All"
+
+        m_treeWidget->filterBar()->blockSignals(wasBlocked);
+    }
 }
 
 // ============================================================================
