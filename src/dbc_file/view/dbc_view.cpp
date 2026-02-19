@@ -74,6 +74,27 @@ void DbcView::setSourceModel(QAbstractItemModel* model)
     // --- Signals page proxy (flat list) ---
     m_signalsProxy = makeFlatProxy(Core::DbcItemType::Signal, this, model);
     m_signalsPage->setModel(m_signalsProxy.get());
+
+    connect(model, &QAbstractItemModel::modelReset, this, [this]() {
+    // A) Reset UI elements
+    if (m_messagesPage) m_messagesPage->resetFilters();
+    if (m_signalsPage) m_signalsPage->resetFilters();
+    if (m_ecuPage) m_ecuPage->resetFilters();
+
+    // B) Reset Proxy logic
+    if (m_messagesProxy) {
+        m_messagesProxy->setFilterMessageSender(QString());
+        m_messagesProxy->setSearchFilter(QString());
+    }
+    if (m_signalsProxy) {
+        m_signalsProxy->setSignalFilterUnit(QString());
+        m_signalsProxy->setSearchFilter(QString());
+    }
+    if (m_ecuTreeProxy) {
+        m_ecuTreeProxy->setSearchText(QString());
+        m_ecuTreeProxy->setFilterCategory(0);
+    }
+});
 }
 
 void DbcView::setNavigationEnabled(bool enabled) const

@@ -62,15 +62,17 @@ class DbcView final : public QWidget
     void setAvailableSenders(const QStringList& senders) const;
 
     /**
-     * @brief Injects a source model and wires all proxies/pages to it.
-     * @param model Source model providing the DBC item hierarchy.
-     *
-     * This method:
-     * - Creates the required proxy models (flat proxies and tree proxy).
-     * - Assigns the source model to each proxy.
-     * - Assigns proxies to the corresponding pages.
-     * - Connects model reset events to UI updates where needed.
-     */
+         * @brief Injects a source model and wires all proxies/pages to it.
+         * @param model Source model providing the DBC item hierarchy.
+         *
+         * This method:
+         * - Resets all active filters (search text, categories) in both proxies and UI pages
+         *   to ensure data from the new file is immediately visible.
+         * - Creates the required proxy models (flat proxies and tree proxy).
+         * - Assigns the source model to each proxy.
+         * - Assigns proxies to the corresponding pages.
+         * - Connects model reset events to UI updates where needed.
+         */
     void setSourceModel(QAbstractItemModel* model);
 
     /**
