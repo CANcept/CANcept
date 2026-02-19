@@ -48,20 +48,35 @@ auto EcuTreeProxy::filterAcceptsRow(int sourceRow, const QModelIndex& sourcePare
 
     auto type = static_cast<Core::DbcItemType>(sourceModel()->data(index, Role_ItemType).toInt());
 
-    // Skip overview/orphan holder nodes
+    // 1. Always hide metadata nodes (Overview/Orphans)
     if (type == Core::DbcItemType::Overview || type == Core::DbcItemType::OrphanHolder)
         return false;
 
-    // Apply category filter
+    // 2. Apply category filter
     if (m_filterCategory == Constants::EcusPage::FilterActiveIndex)
     {
         if (type == Core::DbcItemType::Ecu && index.data(Role_ChildCount).toInt() == 0)
             return false;
     }
 
-    // Apply text search filter (contains, case insensitive)
-    const QString name = sourceModel()->data(index, Qt::DisplayRole).toString();
-    if (name.contains(m_filterText, Qt::CaseInsensitive)) return true;
+    // 3. Apply text search filter
+    if (m_filterText.isEmpty()) return true;
+
+    // Case A: It's an ECU
+    // We strictly check if the ECU name matches
+    if (type == Core::DbcItemType::Ecu)
+    {
+        const QString name = sourceModel()->data(index, Qt::DisplayRole).toString();
+        return name.contains(m_filterText, Qt::CaseInsensitive);
+    }
+
+    // Case B: It's a Message (Child of an ECU)
+    if (type == Core::DbcItemType::Message)
+    {
+        // sourceParent corresponds to the ECU node
+        const QString parentName = sourceModel()->data(sourceParent, Qt::DisplayRole).toString();
+        return parentName.contains(m_filterText, Qt::CaseInsensitive);
+    }
 
     return false;
 }
