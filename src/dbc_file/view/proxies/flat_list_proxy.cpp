@@ -141,7 +141,7 @@ void FlatListProxy::rebuildMapping()
 
     scanNode(QModelIndex{});
 
-    // Build lookup table for O(1) mapFromSource.
+    // Build lookup table for O(1) mapFromSource
     for (int row = 0; row < m_mapping.size(); ++row)
     {
         m_indexLookup[m_mapping[row]] = row;

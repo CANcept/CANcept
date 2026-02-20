@@ -185,7 +185,19 @@ void MessagesPage::setupUi()
     }
     // Table filter signals.
     connect(m_messagesTable, &Core::SearchableFilterTable::filterTextChanged, this,
-            &MessagesPage::masterFilterTextChanged);
+            [this](const QString& text) {
+                emit masterFilterTextChanged(text);
+
+                if (auto* table = m_messagesTable->tableView())
+                {
+                    table->clearSelection();
+                    table->setCurrentIndex(QModelIndex());
+                }
+                if (m_detailView)
+                {
+                    m_detailView->setVisible(false);
+                }
+            });
 
     connect(m_messagesTable, &Core::SearchableFilterTable::filterIndexChanged, this,
             &MessagesPage::onFilterIndexChanged);
@@ -249,9 +261,26 @@ void MessagesPage::setMasterModel(QAbstractItemModel* model)
                 &MessagesPage::onSelectionChanged);
     }
 
-    connect(model, &QAbstractItemModel::modelReset, this, &MessagesPage::updateEmptyState);
+    disconnect(model, &QAbstractItemModel::modelReset, this, &MessagesPage::updateEmptyState);
+    connect(model, &QAbstractItemModel::modelReset, this, [this, table]() {
+        updateEmptyState();
+
+        table->clearSelection();
+        table->setCurrentIndex(QModelIndex());
+
+        if (m_detailView)
+        {
+            m_detailView->setVisible(false);
+        }
+    });
+
     connect(model, &QAbstractItemModel::rowsInserted, this, &MessagesPage::updateEmptyState);
     connect(model, &QAbstractItemModel::rowsRemoved, this, &MessagesPage::updateEmptyState);
+
+    table->clearSelection();
+    table->setCurrentIndex(QModelIndex());
+
+    m_detailView->setVisible(false);
 }
 
 void MessagesPage::configureMasterColumns(QTableView* table, const QAbstractItemModel* model)
@@ -343,6 +372,10 @@ void MessagesPage::onFilterIndexChanged(int index)
 {
     if (index < 0 || !m_messagesTable) return;
 
+    auto* table = m_messagesTable->tableView();
+    table->clearSelection();
+    table->setCurrentIndex(QModelIndex());
+    m_detailView->setVisible(false);
     const QString sender = m_messagesTable->filterBar()->currentFilterData().toString();
     emit filterSenderChanged(sender);
 }
@@ -434,4 +467,17 @@ void MessagesPage::updateEmptyState()
     m_emptyLabel->setVisible(isEmpty);
 }
 
+void MessagesPage::resetFilters()
+{
+    if (m_messagesTable && m_messagesTable->filterBar())
+    {
+        // Block signals to prevent double-triggering logic during reset
+        const bool wasBlocked = m_messagesTable->filterBar()->blockSignals(true);
+
+        m_messagesTable->filterBar()->setSearchText("");
+        m_messagesTable->filterBar()->setCurrentFilterIndex(0);  // Select "All"
+
+        m_messagesTable->filterBar()->blockSignals(wasBlocked);
+    }
+}
 }  // namespace DbcFile
