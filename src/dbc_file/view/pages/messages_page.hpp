@@ -135,16 +135,16 @@ class MessagesPage : public QWidget
     void selectMessageIndex(const QModelIndex& index);
 
     /**
-         * @brief Sets the model for the master table (top section) and configures lifecycle logic.
-         *
-         * @details
-         * - Binds the model to the table view and configures column resizing.
-         * - Establishes connections to handle model resets (e.g. file reloading) by
-         *   automatically clearing selections and hiding the detail view to prevent
-         *   stale data display.
-         *
-         * @param model Pointer to the abstract item model (usually a FlatListProxy).
-         */
+     * @brief Sets the model for the master table (top section) and configures lifecycle logic.
+     *
+     * @details
+     * - Binds the model to the table view and configures column resizing.
+     * - Establishes connections to handle model resets (e.g. file reloading) by
+     *   automatically clearing selections and hiding the detail view to prevent
+     *   stale data display.
+     *
+     * @param model Pointer to the abstract item model (usually a FlatListProxy).
+     */
     void setMasterModel(QAbstractItemModel* model);
 
     /**
@@ -192,12 +192,12 @@ class MessagesPage : public QWidget
     void updateEmptyState();
 
     /**
-         * @brief Resets the visual filter state.
-         *
-         * Clears the search bar text and resets the sender filter dropdown
-         * to the first index ("All Senders"). This ensures the UI reflects
-         * an unfiltered state when loading a new file.
-         */
+     * @brief Resets the visual filter state.
+     *
+     * Clears the search bar text and resets the sender filter dropdown
+     * to the first index ("All Senders"). This ensures the UI reflects
+     * an unfiltered state when loading a new file.
+     */
     void resetFilters();
 
    signals:

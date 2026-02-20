@@ -188,11 +188,13 @@ void MessagesPage::setupUi()
             [this](const QString& text) {
                 emit masterFilterTextChanged(text);
 
-                if (auto* table = m_messagesTable->tableView()) {
+                if (auto* table = m_messagesTable->tableView())
+                {
                     table->clearSelection();
                     table->setCurrentIndex(QModelIndex());
                 }
-                if (m_detailView) {
+                if (m_detailView)
+                {
                     m_detailView->setVisible(false);
                 }
             });
@@ -266,7 +268,8 @@ void MessagesPage::setMasterModel(QAbstractItemModel* model)
         table->clearSelection();
         table->setCurrentIndex(QModelIndex());
 
-        if (m_detailView) {
+        if (m_detailView)
+        {
             m_detailView->setVisible(false);
         }
     });
@@ -472,7 +475,7 @@ void MessagesPage::resetFilters()
         const bool wasBlocked = m_messagesTable->filterBar()->blockSignals(true);
 
         m_messagesTable->filterBar()->setSearchText("");
-        m_messagesTable->filterBar()->setCurrentFilterIndex(0); // Select "All"
+        m_messagesTable->filterBar()->setCurrentFilterIndex(0);  // Select "All"
 
         m_messagesTable->filterBar()->blockSignals(wasBlocked);
     }

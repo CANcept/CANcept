@@ -69,7 +69,7 @@ void SignalsPage::resetFilters()
         const bool wasBlocked = m_tableWidget->filterBar()->blockSignals(true);
 
         m_tableWidget->filterBar()->setSearchText("");
-        m_tableWidget->filterBar()->setCurrentFilterIndex(0); // Select "All"
+        m_tableWidget->filterBar()->setCurrentFilterIndex(0);  // Select "All"
 
         m_tableWidget->filterBar()->blockSignals(wasBlocked);
     }

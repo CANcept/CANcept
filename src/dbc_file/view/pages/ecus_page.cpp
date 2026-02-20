@@ -57,7 +57,7 @@ void EcusPage::resetFilters()
         const bool wasBlocked = m_treeWidget->filterBar()->blockSignals(true);
 
         m_treeWidget->filterBar()->setSearchText("");
-        m_treeWidget->filterBar()->setCurrentFilterIndex(0); // Select "All"
+        m_treeWidget->filterBar()->setCurrentFilterIndex(0);  // Select "All"
 
         m_treeWidget->filterBar()->blockSignals(wasBlocked);
     }
