@@ -3,6 +3,7 @@
 #include <QIcon>
 
 #include "core/macro/console_logging.hpp"
+#include "core/util/dbc_utils.hpp"
 #include "dbc_file/constants.hpp"
 #include "dbc_roles.hpp"
 
@@ -20,7 +21,6 @@ namespace {
  */
 auto itemFromIndex(const QModelIndex& idx) -> DbcItem*
 {
-    if (!idx.isValid()) return nullptr;
     return static_cast<DbcItem*>(idx.internalPointer());
 }
 
@@ -37,7 +37,6 @@ auto parentItemFromIndex(const QModelIndex& parent, DbcItem* root) -> DbcItem*
 {
     return parent.isValid() ? itemFromIndex(parent) : root;
 }
-
 }  // namespace
 
 DbcModel::DbcModel(Core::IEventBroker& broker, QObject* parent)
@@ -58,13 +57,7 @@ auto DbcModel::index(int row, int column, const QModelIndex& parent) const -> QM
     }
 
     auto* parentItem = parentItemFromIndex(parent, m_rootItem.get());
-    if (!parentItem) return {};
-
-    if (DbcItem* childItem = parentItem->child(row))
-    {
-        return createIndex(row, column, childItem);
-    }
-    return {};
+    return createIndex(row, column, parentItem->child(row));
 }
 
 auto DbcModel::parent(const QModelIndex& child) const -> QModelIndex
@@ -72,12 +65,11 @@ auto DbcModel::parent(const QModelIndex& child) const -> QModelIndex
     if (!child.isValid()) return {};
 
     const auto* childItem = itemFromIndex(child);
-    if (!childItem) return {};
 
     const DbcItem* parentItem = childItem->parent();
 
     // Root has no parent in the model.
-    if (!parentItem || parentItem == m_rootItem.get())
+    if (parentItem == m_rootItem.get())
     {
         return {};
     }
@@ -101,7 +93,6 @@ auto DbcModel::columnCount(const QModelIndex& parent) const -> int
     if (parent.isValid())
     {
         const auto* parentItem = itemFromIndex(parent);
-        if (!parentItem) return 0;
 
         switch (parentItem->type())
         {
@@ -119,127 +110,109 @@ auto DbcModel::columnCount(const QModelIndex& parent) const -> int
     }
 
     // Root level
-    return Constants::Columns::MsgColumnCount;
+    return std::max(Constants::Columns::EcuColumnCount,Constants::Columns::OvColumnCount);
 }
+
 auto DbcModel::data(const QModelIndex& index, int role) const -> QVariant
 {
-    if (!index.isValid()) return {};
+    // 1. Basic Validity Check
+    if (!index.isValid())
+    {
+        return {};
+    }
 
-    const auto* item = itemFromIndex(index);
-    if (!item) return {};
-
+    const auto* item = static_cast<DbcItem*>(index.internalPointer());
     const auto type = item->type();
 
     // -------------------------------------------------------------------------
-    // Message-specific roles and display
+    // DisplayRole (Text Content for the View)
     // -------------------------------------------------------------------------
-    if (type == Core::DbcItemType::Message)
+    if (role == Qt::DisplayRole)
     {
-        if (index.column() >= Constants::Columns::MsgColumnCount) return {};
-
-        if (role == Qt::DisplayRole)
+        // Special Case: The Signal Count column for Messages is calculated dynamically.
+        if (type == Core::DbcItemType::Message &&
+            index.column() == Constants::Columns::MsgSigCount)
         {
-            // Signal count is derived from the number of child signal items.
-            if (index.column() == Constants::Columns::MsgSigCount)
-            {
-                return item->childCount();
-            }
-            return item->data(index.column());
+            return item->childCount();
         }
 
-        switch (role)
-        {
-            case Role_Id:
-                return item->data(Constants::Columns::MsgId);
-            case Role_Dlc:
-                return item->data(Constants::Columns::MsgDlc);
-            case Role_Sender:
-                return item->data(Constants::Columns::MsgSender);
-            case Role_ChildCount:
-                return item->childCount();
-            default:
-                break;
-        }
+        // Standard Case: Retrieve data stored in the item at the specific column.
+        return item->data(index.column());
     }
 
     // -------------------------------------------------------------------------
-    // Signal-specific roles
+    // DecorationRole (Icons)
     // -------------------------------------------------------------------------
-    if (type == Core::DbcItemType::Signal)
+    if (role == Qt::DecorationRole)
     {
-        if (role == Role_Unit)
-        {
-            return item->data(Constants::Columns::SigUnit);
-        }
-
-        // Signals do not have an ID; retrieve the ID from the parent message.
-        if (role == Role_Id)
-        {
-            if (auto* parent = item->parent())
-            {
-                return parent->data(Constants::Columns::MsgId);
-            }
-            return 0;  // Fallback if the hierarchy is unexpected.
-        }
-
-        switch (role)
-        {
-            case Role_StartBit:
-                return item->data(Constants::Columns::SigStartBit);
-            case Role_BitLength:
-                return item->data(Constants::Columns::SigLength);
-            case Role_Factor:
-                return item->data(Constants::Columns::SigFactor);
-            case Role_Offset:
-                return item->data(Constants::Columns::SigOffset);
-            case Role_Min:
-                return item->data(Constants::Columns::SigMin);
-            case Role_Max:
-                return item->data(Constants::Columns::SigMax);
-            case Role_ByteOrder:
-                return item->data(Constants::Columns::SigByteOrder);
-            case Role_ValueType:
-                return item->data(Constants::Columns::SigValueType);
-            case Role_Receivers:
-                return item->data(Constants::Columns::SigReceivers);
-            default:
-                break;
-        }
+        if (type == Core::DbcItemType::Ecu) return QIcon(Constants::Sidebar::IconEcus);
+        if (type == Core::DbcItemType::Message) return QIcon(Constants::Sidebar::IconMessages);
+        if (type == Core::DbcItemType::Signal) return QIcon(Constants::Sidebar::IconSignals);
+        return {};
     }
 
     // -------------------------------------------------------------------------
-    // ECU-specific roles (kept small and explicit)
-    // -------------------------------------------------------------------------
-    if (type == Core::DbcItemType::Ecu && role == Role_EcuTotalSignals)
-    {
-        return item->data(Constants::Columns::EcuTotalSignals);
-    }
-
-    // -------------------------------------------------------------------------
-    // Global fallbacks (applies to all types)
+    // Custom Roles
     // -------------------------------------------------------------------------
     switch (role)
     {
+        // --- Generic Roles ---
         case Role_ItemType:
             return QVariant::fromValue(type);
 
         case Role_ChildCount:
             return item->childCount();
 
-        case Qt::DisplayRole:
-            return item->data(index.column());
+        // --- Message Specific Roles ---
+        case Role_Dlc:
+            return (type == Core::DbcItemType::Message) ? item->data(Constants::Columns::MsgDlc) : QVariant{};
 
-        case Qt::DecorationRole:
-            if (type == Core::DbcItemType::Ecu) return QIcon(Constants::Sidebar::IconEcus);
-            if (type == Core::DbcItemType::Message) return QIcon(Constants::Sidebar::IconMessages);
-            if (type == Core::DbcItemType::Signal) return QIcon(Constants::Sidebar::IconSignals);
-            break;
+        case Role_Sender:
+            return (type == Core::DbcItemType::Message) ? item->data(Constants::Columns::MsgSender) : QVariant{};
+
+        // --- ECU Specific Roles ---
+        case Role_EcuTotalSignals:
+            return (type == Core::DbcItemType::Ecu) ? item->data(Constants::Columns::EcuTotalSignals) : QVariant{};
+
+        // --- ID Handling (Message ID or Parent Message ID for signals) ---
+        case Role_Id:
+            if (type == Core::DbcItemType::Message) return item->data(Constants::Columns::MsgId);
+            if (type == Core::DbcItemType::Signal)
+            {
+                // Signals are always children of Messages in this model structure.
+                if (auto* parent = item->parent())
+                {
+                    return parent->data(Constants::Columns::MsgId);
+                }
+            }
+            return {};
+
+        // --- Signal Specific Roles (Direct Column Access) ---
+
+        case Role_Unit:
+            return (type == Core::DbcItemType::Signal) ? item->data(Constants::Columns::SigUnit) : QVariant{};
+        case Role_StartBit:
+            return (type == Core::DbcItemType::Signal) ? item->data(Constants::Columns::SigStartBit) : QVariant{};
+        case Role_BitLength:
+            return (type == Core::DbcItemType::Signal) ? item->data(Constants::Columns::SigLength) : QVariant{};
+        case Role_Factor:
+            return (type == Core::DbcItemType::Signal) ? item->data(Constants::Columns::SigFactor) : QVariant{};
+        case Role_Offset:
+            return (type == Core::DbcItemType::Signal) ? item->data(Constants::Columns::SigOffset) : QVariant{};
+        case Role_Min:
+            return (type == Core::DbcItemType::Signal) ? item->data(Constants::Columns::SigMin) : QVariant{};
+        case Role_Max:
+            return (type == Core::DbcItemType::Signal) ? item->data(Constants::Columns::SigMax) : QVariant{};
+        case Role_ByteOrder:
+            return (type == Core::DbcItemType::Signal) ? item->data(Constants::Columns::SigByteOrder) : QVariant{};
+        case Role_ValueType:
+            return (type == Core::DbcItemType::Signal) ? item->data(Constants::Columns::SigValueType) : QVariant{};
+        case Role_Receivers:
+            return (type == Core::DbcItemType::Signal) ? item->data(Constants::Columns::SigReceivers) : QVariant{};
 
         default:
-            break;
+            return {};
     }
-
-    return {};
 }
 
 void DbcModel::onDbcParsed(const Core::DBCParsedEvent& event)
@@ -354,7 +327,6 @@ auto DbcModel::createMessageItems(const Core::DbcConfig& data,
         {
             parent = orphanHolder.get();
             ++orphanCount;
-            LOG_WRN("Debug", "Msg '{}' is Orphan! Parent is OrphanHolder.", msg.messageName);
         }
 
         auto messageItem =
@@ -404,8 +376,8 @@ void DbcModel::createSignalItems(const std::list<Core::DbcSignalDescription>& si
         signalData[Constants::Columns::SigMax] = sig.maximum;
 
         // Keep numeric formatting stable and readable.
-        signalData[Constants::Columns::SigFactor] = QString::number(sig.factor, 'g', 12);
-        signalData[Constants::Columns::SigOffset] = QString::number(sig.offset, 'g', 12);
+        signalData[Constants::Columns::SigFactor] = Core::Util::formatNumber(sig.factor);
+        signalData[Constants::Columns::SigOffset] = Core::Util::formatNumber(sig.offset);
 
         signalData[Constants::Columns::SigByteOrder] =
             sig.byteOrder ? Constants::SignalsPage::BigEndIndicator
@@ -420,7 +392,7 @@ void DbcModel::createSignalItems(const std::list<Core::DbcSignalDescription>& si
         {
             receiverNames.append(QString::fromStdString(receiverName));
         }
-        signalData[Constants::Columns::SigReceivers] = receiverNames.join(QStringLiteral(", "));
+        signalData[Constants::Columns::SigReceivers] = QVariant(QStringList(receiverNames).join(", "));
 
         auto signalItem =
             std::make_unique<DbcItem>(signalData, Core::DbcItemType::Signal, messageItem);

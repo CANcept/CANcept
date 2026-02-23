@@ -24,25 +24,9 @@ enum DbcRoles {
      */
     Role_ItemType = Qt::UserRole + 1,
 
-    // ==============================================================================
-    // 2. Formatting Roles
-    // Used by DbcDelegate in standard QTableViews to format cell text.
-    // ==============================================================================
-
-    /**
-     * @brief Indicates if the value should be displayed in Hexadecimal format.
-     * @return bool - True for Hex (e.g. 0x123), False for Decimal.
-     */
-    Role_IsHex = Qt::UserRole + 2,
-
-    /**
-     * @brief The unit suffix to append to the value.
-     * @return QString - e.g., "km/h", "rpm", "%".
-     */
-    Role_Unit = Qt::UserRole + 3,
 
     // ==============================================================================
-    // 3. Semantic Data Roles
+    // 2. Semantic Data Roles
     // Used by EcuTreeDelegate and SignalCardDelegate to paint complex items
     // independently of the column structure.
     // ==============================================================================
@@ -82,7 +66,9 @@ enum DbcRoles {
     /** @brief The value type definition. @return QString ("Signed"/"Unsigned") */
     Role_ValueType = Qt::UserRole + 27,
     /** @brief The name of the receiving Node/ECU. @return QString */
-    Role_Receivers = Qt::UserRole + 28
+    Role_Receivers = Qt::UserRole + 28,
+    /** @brief The unit of the signal value */
+    Role_Unit = Qt::UserRole + 29
 };
 
 }  // namespace DbcFile

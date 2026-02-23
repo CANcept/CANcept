@@ -44,6 +44,8 @@ constexpr int SigValueType = 10;
 constexpr int SigReceivers = 11;
 
 // Helper
+constexpr int EcuColumnCount = 2;
+constexpr int OvColumnCount = 6;
 constexpr int MsgColumnCount = 5;
 constexpr int SignalColumnCount = 12;
 }  // namespace Columns
