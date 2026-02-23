@@ -1,20 +1,25 @@
 #include <gtest/gtest.h>
-#include <memory>
+
 #include <QList>
+#include <memory>
 
 #include "dbc_file/model/dbc_item.hpp"
 
 using namespace DbcFile;
 
-class DbcItemTest : public ::testing::Test {
-protected:
+class DbcItemTest : public ::testing::Test
+{
+   protected:
     // Helper to quickly create an item with a name and type
-    std::unique_ptr<DbcItem> createItem(const QString& name, Core::DbcItemType type = Core::DbcItemType::Ecu) {
+    std::unique_ptr<DbcItem> createItem(const QString& name,
+                                        Core::DbcItemType type = Core::DbcItemType::Ecu)
+    {
         return std::make_unique<DbcItem>(QList<QVariant>{name}, type);
     }
 };
 
-TEST_F(DbcItemTest, InitialState_IsCorrect) {
+TEST_F(DbcItemTest, InitialState_IsCorrect)
+{
     QList<QVariant> data = {"MyItem", 42};
     auto item = std::make_unique<DbcItem>(data, Core::DbcItemType::Message);
 
@@ -29,7 +34,8 @@ TEST_F(DbcItemTest, InitialState_IsCorrect) {
     EXPECT_EQ(item->parent(), nullptr);
 }
 
-TEST_F(DbcItemTest, SetData_ResizesVector) {
+TEST_F(DbcItemTest, SetData_ResizesVector)
+{
     auto item = createItem("Test");
 
     // Initial size is 1 column
@@ -51,7 +57,8 @@ TEST_F(DbcItemTest, SetData_ResizesVector) {
     EXPECT_FALSE(item->data(1).isValid());
 }
 
-TEST_F(DbcItemTest, SetData_IgnoresNegativeIndex) {
+TEST_F(DbcItemTest, SetData_IgnoresNegativeIndex)
+{
     auto item = createItem("Test");
 
     // Logic: if (column < 0) return;
@@ -61,7 +68,8 @@ TEST_F(DbcItemTest, SetData_IgnoresNegativeIndex) {
     EXPECT_EQ(item->columnCount(), 1);
 }
 
-TEST_F(DbcItemTest, Data_BoundaryChecks) {
+TEST_F(DbcItemTest, Data_BoundaryChecks)
+{
     auto item = createItem("Test");
 
     // Logic: if (column < 0 || column >= m_data.size()) return QVariant();
@@ -73,18 +81,19 @@ TEST_F(DbcItemTest, Data_BoundaryChecks) {
     EXPECT_FALSE(item->data(99).isValid());
 }
 
-TEST_F(DbcItemTest, AppendChild_SetsParentAndOrder) {
+TEST_F(DbcItemTest, AppendChild_SetsParentAndOrder)
+{
     auto root = createItem("Root");
 
     // Create and append first child
     auto child1 = createItem("Child1");
-    DbcItem* ptr1 = child1.get(); // Store raw pointer for verification
+    DbcItem* ptr1 = child1.get();  // Store raw pointer for verification
     root->appendChild(std::move(child1));
 
     // Verify linkage
     ASSERT_EQ(root->childCount(), 1);
     EXPECT_EQ(root->child(0), ptr1);
-    EXPECT_EQ(ptr1->parent(), root.get()); // Verify m_parent assignment
+    EXPECT_EQ(ptr1->parent(), root.get());  // Verify m_parent assignment
 
     // Create and append second child
     auto child2 = createItem("Child2");
@@ -97,7 +106,8 @@ TEST_F(DbcItemTest, AppendChild_SetsParentAndOrder) {
     EXPECT_EQ(ptr2->parent(), root.get());
 }
 
-TEST_F(DbcItemTest, PrependChild_InsertsAtFront) {
+TEST_F(DbcItemTest, PrependChild_InsertsAtFront)
+{
     auto root = createItem("Root");
 
     // Add an initial child
@@ -121,7 +131,8 @@ TEST_F(DbcItemTest, PrependChild_InsertsAtFront) {
     EXPECT_EQ(ptrNew->parent(), root.get());
 }
 
-TEST_F(DbcItemTest, Row_CalculatesIndexInParent) {
+TEST_F(DbcItemTest, Row_CalculatesIndexInParent)
+{
     auto root = createItem("Root");
 
     // Add 3 children
@@ -142,9 +153,10 @@ TEST_F(DbcItemTest, Row_CalculatesIndexInParent) {
     EXPECT_EQ(ptr2->row(), 1);
     EXPECT_EQ(ptr3->row(), 2);
 }
-TEST_F(DbcItemTest, Row_ReturnsZero_IfItemNotFoundInParent) {
+TEST_F(DbcItemTest, Row_ReturnsZero_IfItemNotFoundInParent)
+{
     auto parent = createItem("Parent");
-    parent->appendChild(createItem("RealChild")); // Index 0
+    parent->appendChild(createItem("RealChild"));  // Index 0
 
     auto stranger = createItem("Stranger");
 
@@ -152,7 +164,8 @@ TEST_F(DbcItemTest, Row_ReturnsZero_IfItemNotFoundInParent) {
     EXPECT_EQ(stranger->row(), 0);
 }
 
-TEST_F(DbcItemTest, Row_ReturnsZeroWithoutParent) {
+TEST_F(DbcItemTest, Row_ReturnsZeroWithoutParent)
+{
     auto orphan = createItem("Orphan");
 
     // Logic: if (m_parent) ... else return 0;
@@ -160,7 +173,8 @@ TEST_F(DbcItemTest, Row_ReturnsZeroWithoutParent) {
     EXPECT_EQ(orphan->row(), 0);
 }
 
-TEST_F(DbcItemTest, Child_BoundaryChecks) {
+TEST_F(DbcItemTest, Child_BoundaryChecks)
+{
     auto root = createItem("Root");
     root->appendChild(createItem("Child"));
 
@@ -180,7 +194,8 @@ TEST_F(DbcItemTest, Child_BoundaryChecks) {
     EXPECT_EQ(emptyItem->child(0), nullptr);
 }
 
-TEST_F(DbcItemTest, GetChildren_ReturnsConstReference) {
+TEST_F(DbcItemTest, GetChildren_ReturnsConstReference)
+{
     auto root = createItem("Root");
     root->appendChild(createItem("C1"));
 
@@ -190,7 +205,8 @@ TEST_F(DbcItemTest, GetChildren_ReturnsConstReference) {
     EXPECT_EQ(children[0]->data(0).toString(), "C1");
 }
 
-TEST_F(DbcItemTest, SetParent_ExplicitCall) {
+TEST_F(DbcItemTest, SetParent_ExplicitCall)
+{
     auto child = createItem("Child");
     auto dad = createItem("Dad");
 

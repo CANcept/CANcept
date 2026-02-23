@@ -314,26 +314,23 @@ class DbcExamples
             .node("ECU1")
             .node("ECU2")
             .node("ECU3")
-                .message(DbcMessageBuilder(0x100, "TestMesssage")
-                    .size(8)
-                    .transmitter("ECU1")
-                    .signal(DbcSignalBuilder("UnsignedLittleEndSignal")
-                        .startBit(7)
-                        .size(16)
-                        .littleEndian()
-                        .unsigned_()
-                        .factor(0.5)
-                        .offset(-10.0)
-                        .unit("km/h")
-                        .range(-100,100)
-                        .receiver("ECU1")
-                        .receiver("ECU2")
-                        .receiver("ECU3"))
-                    .signal(DbcSignalBuilder("SignedBigEndSignal")
-                        .bigEndian()
-                        .signed_())
-                    )
-        .build();
+            .message(DbcMessageBuilder(0x100, "TestMesssage")
+                         .size(8)
+                         .transmitter("ECU1")
+                         .signal(DbcSignalBuilder("UnsignedLittleEndSignal")
+                                     .startBit(7)
+                                     .size(16)
+                                     .littleEndian()
+                                     .unsigned_()
+                                     .factor(0.5)
+                                     .offset(-10.0)
+                                     .unit("km/h")
+                                     .range(-100, 100)
+                                     .receiver("ECU1")
+                                     .receiver("ECU2")
+                                     .receiver("ECU3"))
+                         .signal(DbcSignalBuilder("SignedBigEndSignal").bigEndian().signed_()))
+            .build();
     }
 
     /**
@@ -368,9 +365,9 @@ class DbcExamples
     [[nodiscard]] static Core::DbcConfig orphanTest()
     {
         return DbcConfigBuilder()
-        .node("KnownECU")
-        .message(DbcMessageBuilder(0x100, "GhostMsg").transmitter("Ghost"))
-        .build();
+            .node("KnownECU")
+            .message(DbcMessageBuilder(0x100, "GhostMsg").transmitter("Ghost"))
+            .build();
     }
 
     /**
