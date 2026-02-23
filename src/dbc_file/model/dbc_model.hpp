@@ -113,64 +113,63 @@ class DbcModel : public QAbstractItemModel
     [[nodiscard]] auto data(const QModelIndex& index, int role) const -> QVariant override;
 
    private:
-
     /**
- * @brief Returns the display text for the given item and column.
- *
- * Provides special handling for message items, where the signal count column
- * is derived dynamically from the number of child signal items.
- * For all other item types, the stored column data is returned.
- *
- * If the column index exceeds the available column count, an invalid QVariant
- * is returned.
- *
- * @param item  Pointer to the underlying DbcItem.
- * @param index Model index containing column information.
- * @return Display value for the specified column, or invalid QVariant.
- */
+     * @brief Returns the display text for the given item and column.
+     *
+     * Provides special handling for message items, where the signal count column
+     * is derived dynamically from the number of child signal items.
+     * For all other item types, the stored column data is returned.
+     *
+     * If the column index exceeds the available column count, an invalid QVariant
+     * is returned.
+     *
+     * @param item  Pointer to the underlying DbcItem.
+     * @param index Model index containing column information.
+     * @return Display value for the specified column, or invalid QVariant.
+     */
     static QVariant displayData(const DbcItem* item, const QModelIndex& index);
 
     /**
- * @brief Returns the decoration (icon) associated with a specific item type.
- *
- * Maps DbcItemType values to their corresponding sidebar icons.
- * If the item type does not have an associated icon, an invalid QVariant
- * is returned.
- *
- * @param type The DbcItemType of the item.
- * @return QIcon wrapped in a QVariant, or invalid QVariant if not applicable.
- */
+     * @brief Returns the decoration (icon) associated with a specific item type.
+     *
+     * Maps DbcItemType values to their corresponding sidebar icons.
+     * If the item type does not have an associated icon, an invalid QVariant
+     * is returned.
+     *
+     * @param type The DbcItemType of the item.
+     * @return QIcon wrapped in a QVariant, or invalid QVariant if not applicable.
+     */
     static QVariant decorationData(Core::DbcItemType type);
 
     /**
- * @brief Returns the message identifier associated with an item.
- *
- * For message items, the ID is returned directly.
- * For signal items, the ID is retrieved from the parent message.
- * For all other item types, an invalid QVariant is returned.
- *
- * This method centralizes ID resolution logic and ensures consistent
- * behavior across message and signal nodes.
- *
- * @param item Pointer to the underlying DbcItem.
- * @return Message ID as QVariant, or invalid QVariant if not applicable.
- */
+     * @brief Returns the message identifier associated with an item.
+     *
+     * For message items, the ID is returned directly.
+     * For signal items, the ID is retrieved from the parent message.
+     * For all other item types, an invalid QVariant is returned.
+     *
+     * This method centralizes ID resolution logic and ensures consistent
+     * behavior across message and signal nodes.
+     *
+     * @param item Pointer to the underlying DbcItem.
+     * @return Message ID as QVariant, or invalid QVariant if not applicable.
+     */
     static QVariant idData(const DbcItem* item);
 
     /**
- * @brief Returns signal-specific data from a given column.
- *
- * If the item is of type Signal, the value stored in the specified
- * column is returned. For all other item types, an invalid QVariant
- * is returned.
- *
- * This helper prevents duplication of type checks for signal-related roles.
- *
- * @param item   Pointer to the underlying DbcItem.
- * @param type   The item's DbcItemType.
- * @param column Column index corresponding to a signal property.
- * @return Column value as QVariant, or invalid QVariant if not a signal item.
- */
+     * @brief Returns signal-specific data from a given column.
+     *
+     * If the item is of type Signal, the value stored in the specified
+     * column is returned. For all other item types, an invalid QVariant
+     * is returned.
+     *
+     * This helper prevents duplication of type checks for signal-related roles.
+     *
+     * @param item   Pointer to the underlying DbcItem.
+     * @param type   The item's DbcItemType.
+     * @param column Column index corresponding to a signal property.
+     * @return Column value as QVariant, or invalid QVariant if not a signal item.
+     */
     static QVariant signalColumn(const DbcItem* item, Core::DbcItemType type, int column);
     /**
      * @brief Handles Core::DBCParsedEvent and rebuilds the model contents.

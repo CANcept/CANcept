@@ -24,7 +24,6 @@ enum DbcRoles {
      */
     Role_ItemType = Qt::UserRole + 1,
 
-
     // ==============================================================================
     // 2. Semantic Data Roles
     // Used by EcuTreeDelegate and SignalCardDelegate to paint complex items
