@@ -306,6 +306,36 @@ class DbcExamples
             .build();
     }
 
+    [[nodiscard]] static Core::DbcConfig fullSignalTest()
+    {
+        return DbcConfigBuilder()
+            .version("1.0")
+            .fileName("full_signal_test.dbc")
+            .node("ECU1")
+            .node("ECU2")
+            .node("ECU3")
+                .message(DbcMessageBuilder(0x100, "TestMesssage")
+                    .size(8)
+                    .transmitter("ECU1")
+                    .signal(DbcSignalBuilder("UnsignedLittleEndSignal")
+                        .startBit(7)
+                        .size(16)
+                        .littleEndian()
+                        .unsigned_()
+                        .factor(0.5)
+                        .offset(-10.0)
+                        .unit("km/h")
+                        .range(-100,100)
+                        .receiver("ECU1")
+                        .receiver("ECU2")
+                        .receiver("ECU3"))
+                    .signal(DbcSignalBuilder("SignedBigEndSignal")
+                        .bigEndian()
+                        .signed_())
+                    )
+        .build();
+    }
+
     /**
      * @brief DBC with signals using scaling (factor and offset).
      *
@@ -333,6 +363,14 @@ class DbcExamples
                                      .range(10.0, 6563.5)
                                      .unit("units")))
             .build();
+    }
+
+    [[nodiscard]] static Core::DbcConfig orphanTest()
+    {
+        return DbcConfigBuilder()
+        .node("KnownECU")
+        .message(DbcMessageBuilder(0x100, "GhostMsg").transmitter("Ghost"))
+        .build();
     }
 
     /**
