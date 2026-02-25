@@ -76,7 +76,8 @@ void RepeatedSendingCard::setupUi()
 
     m_frequencyEditor = new Core::StyledLineEdit(m_card);
     m_frequencyEditor->setPlaceholderText(QString::number(Constants::DEFAULT_CYCLE_INTERVAL_MS));
-    const auto* validator = new QIntValidator(0, Constants::REPEATED_SENDING_MAX_FREQUENCY, this);
+    const auto* validator =
+        new QIntValidator(Constants::MIN_CYCLE_INTERVAL_MS, Constants::MAX_CYCLE_INTERVAL_MS, this);
     m_frequencyEditor->setValidator(validator);
     m_frequencyEditor->setVisible(false);
     cardLayout->addWidget(m_frequencyEditor);

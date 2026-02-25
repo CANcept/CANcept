@@ -3,6 +3,7 @@
 
 #include <QSignalSpy>
 
+#include "sending/constants.hpp"
 #include "sending/model/sending_model.hpp"
 #include "tests/helpers/can_test_matchers.hpp"
 #include "tests/helpers/dbc_config_builder.hpp"
@@ -538,12 +539,12 @@ TEST_F(SendingModelTestBase, CurrentDbcConfigReturnsConfig)
     EXPECT_EQ(model->currentDbcConfig(), nullptr);
 
     // Load config
-    auto config = DbcExamples::motorController();
+    const auto config = DbcExamples::motorController();
     model->updateDbcConfig(config);
 
     // Should return valid config
     const auto* currentConfig = model->currentDbcConfig();
-    ASSERT_NE(currentConfig, nullptr);
+    EXPECT_NE(currentConfig, nullptr);
     EXPECT_EQ(currentConfig->metaData.fileName, "motor_controller.dbc");
     EXPECT_EQ(currentConfig->messageDefinitions.size(), 2);
 }
@@ -579,4 +580,299 @@ TEST_F(SendingModelTestBase, DataMethodReturnsCyclicState)
     {
         EXPECT_FALSE(sending.toBool());
     }
+}
+
+/**
+ * @brief Test data() returns DisplayRole and Role_CanId for message-level indices.
+ */
+TEST_F(SendingModelTestBase, DataMethodReturnsMessageDisplayAndCanId)
+{
+    model->updateDbcConfig(DbcExamples::motorController());
+    const QModelIndex msgIdx = model->index(0, 0, QModelIndex());
+    ASSERT_TRUE(msgIdx.isValid());
+    const QVariant displayValue = model->data(msgIdx, Qt::DisplayRole);
+    EXPECT_TRUE(displayValue.isValid());
+    EXPECT_TRUE(displayValue.toString().length() > 0);
+    const QVariant canIdValue = model->data(msgIdx, Sending::SendingModel::Role_CanId);
+    EXPECT_TRUE(canIdValue.isValid());
+    const uint16_t canId = canIdValue.toUInt();
+    EXPECT_TRUE(canId == 0x100 || canId == 0x101);
+}
+
+/**
+ * @brief Test data() returns empty QVariant for unknown roles on signal indices.
+ */
+TEST_F(SendingModelTestBase, DataMethodReturnsEmptyForUnknownRoleOnSignal)
+{
+    model->updateDbcConfig(DbcExamples::motorController());
+
+    const QModelIndex msgIdx = model->index(0, 0, QModelIndex());
+    ASSERT_TRUE(msgIdx.isValid());
+
+    const QModelIndex sigIdx = model->index(0, 0, msgIdx);
+    ASSERT_TRUE(sigIdx.isValid());
+
+    constexpr int unknownRole = 9999;
+    const QVariant result = model->data(sigIdx, unknownRole);
+
+    EXPECT_FALSE(result.isValid());
+}
+
+/**
+ * @brief Test data() returns signal minimum when value not in m_dynamicSignalValues.
+ */
+TEST_F(SendingModelTestBase, DataMethodReturnsSignalMinimumWhenNotSet)
+{
+    model->updateDbcConfig(DbcExamples::motorController());
+
+    const QModelIndex msgIdx = model->index(0, 0, QModelIndex());
+    ASSERT_TRUE(msgIdx.isValid());
+
+    const QModelIndex sigIdx = model->index(0, 0, msgIdx);
+    ASSERT_TRUE(sigIdx.isValid());
+
+    const QVariant signalValue = model->data(sigIdx, Sending::SendingModel::Role_SignalValue);
+    EXPECT_TRUE(signalValue.isValid());
+
+    const double value = signalValue.toDouble();
+    EXPECT_GE(value, 0.0);  // Speed minimum is 0
+}
+
+/**
+ * @brief Test setData() with Role_ActiveMode.
+ * Covers lines 195-198 in sending_model.cpp.
+ */
+TEST_F(SendingModelTestBase, SetDataModifiesActiveMode)
+{
+    model->updateDbcConfig(DbcExamples::simple());
+
+    const QModelIndex idx = model->index(0, 0);
+    ASSERT_TRUE(idx.isValid());
+
+    const bool result = model->setData(idx, 1, Sending::SendingModel::Role_ActiveMode);
+    EXPECT_TRUE(result);
+
+    const QVariant mode = model->data(idx, Sending::SendingModel::Role_ActiveMode);
+    EXPECT_EQ(mode.toInt(), 1);
+}
+
+/**
+ * @brief Test setData() with Role_IsCyclicEnabled.
+ */
+TEST_F(SendingModelTestBase, SetDataModifiesCyclicEnabled)
+{
+    model->updateDbcConfig(DbcExamples::simple());
+
+    const QModelIndex idx = model->index(0, 0);
+    ASSERT_TRUE(idx.isValid());
+
+    const bool result = model->setData(idx, true, Sending::SendingModel::Role_IsCyclicEnabled);
+    EXPECT_TRUE(result);
+
+    const QVariant cyclicEnabled = model->data(idx, Sending::SendingModel::Role_IsCyclicEnabled);
+    EXPECT_TRUE(cyclicEnabled.toBool());
+}
+
+/**
+ * @brief Test setData() with Role_CycleIntervalMs - value within valid range.
+ */
+TEST_F(SendingModelTestBase, SetDataModifiesCycleIntervalWithinRange)
+{
+    model->updateDbcConfig(DbcExamples::simple());
+
+    const QModelIndex idx = model->index(0, 0);
+    ASSERT_TRUE(idx.isValid());
+
+    const bool result = model->setData(idx, 500, Sending::SendingModel::Role_CycleIntervalMs);
+    EXPECT_TRUE(result);
+
+    const QVariant interval = model->data(idx, Sending::SendingModel::Role_CycleIntervalMs);
+    EXPECT_EQ(interval.toInt(), 500);
+}
+
+/**
+ * @brief Test setData() with Role_CycleIntervalMs - clamping to minimum.
+ */
+TEST_F(SendingModelTestBase, SetDataClampsCycleIntervalToMinimum)
+{
+    model->updateDbcConfig(DbcExamples::simple());
+
+    const QModelIndex idx = model->index(0, 0);
+    ASSERT_TRUE(idx.isValid());
+
+    const bool result = model->setData(idx, 0, Sending::SendingModel::Role_CycleIntervalMs);
+    EXPECT_TRUE(result);
+
+    const QVariant interval = model->data(idx, Sending::SendingModel::Role_CycleIntervalMs);
+    EXPECT_EQ(interval.toInt(), Sending::Constants::MIN_CYCLE_INTERVAL_MS);
+}
+
+/**
+ * @brief Test setData() with Role_CycleIntervalMs - clamping to maximum.
+ */
+TEST_F(SendingModelTestBase, SetDataClampsCycleIntervalToMaximum)
+{
+    model->updateDbcConfig(DbcExamples::simple());
+
+    const QModelIndex idx = model->index(0, 0);
+    ASSERT_TRUE(idx.isValid());
+
+    const bool result = model->setData(idx, 15000, Sending::SendingModel::Role_CycleIntervalMs);
+    EXPECT_TRUE(result);
+
+    const QVariant interval = model->data(idx, Sending::SendingModel::Role_CycleIntervalMs);
+    EXPECT_EQ(interval.toInt(), Sending::Constants::MAX_CYCLE_INTERVAL_MS);
+}
+
+/**
+ * @brief Test setData() with Role_SignalValue - clamping to minimum.
+ */
+TEST_F(SendingModelTestBase, SetDataClampsSignalValueToMinimum)
+{
+    model->updateDbcConfig(DbcExamples::motorController());
+
+    const QModelIndex msgIdx = model->index(0, 0, QModelIndex());
+    ASSERT_TRUE(msgIdx.isValid());
+
+    const QModelIndex sigIdx = model->index(0, 0, msgIdx);
+    ASSERT_TRUE(sigIdx.isValid());
+
+    // Speed signal has minimum 0, maximum 65535
+    const bool result = model->setData(sigIdx, -100.0, Sending::SendingModel::Role_SignalValue);
+    EXPECT_TRUE(result);
+
+    const QVariant value = model->data(sigIdx, Sending::SendingModel::Role_SignalValue);
+    EXPECT_EQ(value.toDouble(), 0.0);
+}
+
+/**
+ * @brief Test setData() with Role_SignalValue - clamping to maximum.
+ */
+TEST_F(SendingModelTestBase, SetDataClampsSignalValueToMaximum)
+{
+    model->updateDbcConfig(DbcExamples::motorController());
+
+    const QModelIndex msgIdx = model->index(0, 0, QModelIndex());
+    ASSERT_TRUE(msgIdx.isValid());
+
+    const QModelIndex sigIdx = model->index(0, 0, msgIdx);
+    ASSERT_TRUE(sigIdx.isValid());
+
+    // Speed signal has minimum 0, maximum 65535
+    const bool result = model->setData(sigIdx, 100000.0, Sending::SendingModel::Role_SignalValue);
+    EXPECT_TRUE(result);
+
+    const QVariant value = model->data(sigIdx, Sending::SendingModel::Role_SignalValue);
+    EXPECT_EQ(value.toDouble(), 65535.0);
+}
+
+/**
+ * @brief Test forEachPendingMessage builds DBC messages correctly.
+ */
+TEST_F(SendingModelTestBase, ForEachPendingMessageBuildsDcbMessagesCorrectly)
+{
+    model->updateDbcConfig(DbcExamples::motorController());
+
+    model->setData(model->index(0, 0), 1, Sending::SendingModel::Role_ActiveMode);
+
+    model->setSignalSelected(0x100, "Speed", true);
+    model->setSignalSelected(0x100, "Temperature", true);
+    model->setSignalValue(0x100, "Speed", 1000.0);
+    model->setSignalValue(0x100, "Temperature", 25.0);
+
+    bool dbcHandlerCalled = false;
+    int signalCount = 0;
+
+    model->forEachPendingMessage(
+        [](const Core::RawCanMessage&) {
+            FAIL() << "Raw handler should not be called in DBC mode";
+        },
+        [&](const Core::DbcCanMessage& msg) {
+            dbcHandlerCalled = true;
+            EXPECT_EQ(msg.messageId, 0x100);
+            signalCount = static_cast<int>(msg.signalValues.size());
+
+            for (const auto& [name, value] : msg.signalValues)
+            {
+                if (name == "Speed")
+                {
+                    EXPECT_EQ(value, 1000.0);
+                } else if (name == "Temperature")
+                {
+                    EXPECT_EQ(value, 25.0);
+                }
+            }
+        });
+
+    EXPECT_TRUE(dbcHandlerCalled);
+    EXPECT_EQ(signalCount, 2);
+}
+
+/**
+ * @brief Test forEachPendingMessage uses minimum value when signal not set.
+ */
+TEST_F(SendingModelTestBase, ForEachPendingMessageUsesMinimumForUnsetSignals)
+{
+    model->updateDbcConfig(DbcExamples::motorController());
+
+    model->setData(model->index(0, 0), 1, Sending::SendingModel::Role_ActiveMode);
+
+    model->setMessageSelected(0x100, true);
+    model->setSignalSelected(0x100, "Speed", true);
+
+    bool dbcHandlerCalled = false;
+
+    model->forEachPendingMessage(
+        [](const Core::RawCanMessage&) {
+            FAIL() << "Raw handler should not be called in DBC mode";
+        },
+        [&](const Core::DbcCanMessage& msg) {
+            dbcHandlerCalled = true;
+            EXPECT_EQ(msg.messageId, 0x100);
+            EXPECT_FALSE(msg.signalValues.empty());
+            for (const auto& [name, value] : msg.signalValues)
+            {
+                if (name == "Speed")
+                {
+                    EXPECT_EQ(value, 0.0);
+                }
+            }
+        });
+
+    EXPECT_TRUE(dbcHandlerCalled);
+}
+
+/**
+ * @brief Test forEachPendingMessage handles no DBC config.
+ */
+TEST_F(SendingModelTestBase, ForEachPendingMessageHandlesNoDbc)
+{
+    model->setData(model->index(0, 0), 1, Sending::SendingModel::Role_ActiveMode);
+
+    bool rawHandlerCalled = false;
+    bool dbcHandlerCalled = false;
+
+    model->forEachPendingMessage([&](const Core::RawCanMessage&) { rawHandlerCalled = true; },
+                                 [&](const Core::DbcCanMessage&) { dbcHandlerCalled = true; });
+
+    EXPECT_FALSE(rawHandlerCalled);
+    EXPECT_FALSE(dbcHandlerCalled);
+}
+
+/**
+ * @brief Test forEachPendingMessage skips messages with no selected signals.
+ */
+TEST_F(SendingModelTestBase, ForEachPendingMessageSkipsMessagesWithNoSelectedSignals)
+{
+    model->updateDbcConfig(DbcExamples::motorController());
+
+    model->setData(model->index(0, 0), 1, Sending::SendingModel::Role_ActiveMode);
+
+    int messageCount = 0;
+
+    model->forEachPendingMessage(
+        [](const Core::RawCanMessage&) { FAIL() << "Raw handler should not be called"; },
+        [&](const Core::DbcCanMessage&) { ++messageCount; });
+
+    EXPECT_EQ(messageCount, 0);
 }

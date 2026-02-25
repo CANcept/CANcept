@@ -19,6 +19,7 @@ option(ENABLE_TESTS "Build tests using GoogleTest and Benchmark" ON)
 option(ENABLE_CLANG_TIDY "Enable static analysis with Clang-Tidy" OFF)
 option(ENABLE_DOCS "Enable the documentation target" ON)
 option(ENABLE_COVERAGE "Enable code coverage reporting" OFF)
+option(DISABLE_TEST_LOGGING "Disable console logging during tests" ON)
 
 # Compiler Flags
 if(ENABLE_COVERAGE)
@@ -80,7 +81,7 @@ target_link_libraries(${PROJECT_NAME}Lib PUBLIC
 
 target_compile_definitions(${PROJECT_NAME}Lib
         PUBLIC
-        LOGGING_LEVEL=$<IF:$<CONFIG:Debug>,2,1>
+        LOGGING_LEVEL=$<IF:$<BOOL:${ENABLE_TESTS}>,$<IF:$<BOOL:${DISABLE_TEST_LOGGING}>,0,$<IF:$<CONFIG:Debug>,2,1>>,$<IF:$<CONFIG:Debug>,2,1>>
 )
 
 # 6. Executable
@@ -109,14 +110,13 @@ if(ENABLE_TESTS)
         if(TEST_SOURCES)
             add_executable(${TEST_NAME} ${TEST_SOURCES})
             target_link_libraries(${TEST_NAME} PRIVATE ${PROJECT_NAME}Lib ${LINK_LIB} GTest::gmock Qt6::Test)
-            # Add project root to include path so tests can find helpers
             target_include_directories(${TEST_NAME} PRIVATE ${CMAKE_SOURCE_DIR})
             add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
         endif()
     endfunction()
 
     add_bus_test(UnitTests        "tests/unit"        GTest::gtest_main)
-    add_bus_test(IntegrationTests "tests/integration" GTest::gtest_main)
+    add_bus_test(IntegrationTests "tests/integration" GTest::gtest GTest::gmock Qt6::Test Qt6::Widgets)
     add_bus_test(SystemTests      "tests/system"      GTest::gtest_main)
     add_bus_test(PerformanceTests "tests/performance" benchmark::benchmark_main)
 
@@ -138,12 +138,13 @@ if(ENABLE_TESTS)
 
         if(LCOV_PATH AND GENHTML_PATH)
             add_custom_target(coverage_report
-                    COMMAND find . -name '*.gcda' -delete
+                    COMMAND find . -name '*.gcda' -delete 2>/dev/null || true
                     COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure
-                    COMMAND find . -path '*_autogen*' -name '*.gcda' -delete
-                    COMMAND ${LCOV_PATH} --directory . --capture --output-file coverage_raw.info --ignore-errors gcov,mismatch,empty --rc branch_coverage=0
-                    COMMAND ${LCOV_PATH} --extract coverage_raw.info '${CMAKE_SOURCE_DIR}/src/*' --output-file coverage.info --ignore-errors empty
-                    COMMAND ${GENHTML_PATH} coverage.info --output-directory coverage_html --ignore-errors empty
+                    COMMAND find . -path '*_autogen*' -name '*.gcda' -delete 2>/dev/null || true
+                    COMMAND ${LCOV_PATH} --quiet --directory . --capture --output-file coverage_raw.info --ignore-errors gcov,mismatch,empty --rc branch_coverage=0 2>/dev/null
+                    COMMAND ${LCOV_PATH} --quiet --extract coverage_raw.info '${CMAKE_SOURCE_DIR}/src/*' --output-file coverage_filtered.info --ignore-errors empty
+                    COMMAND ${LCOV_PATH} --quiet --remove coverage_filtered.info '*/view/*' '*/delegate/*' --output-file coverage.info --ignore-errors empty
+                    COMMAND ${GENHTML_PATH} --quiet coverage.info --output-directory coverage_html --ignore-errors empty
                     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
                     COMMENT "Processing coverage data into HTML..."
             )
