@@ -280,10 +280,13 @@ void MonitoringModel::onIncomingDbcFrame(const Core::DbcCanMessage& message)
         j++;
     }
     messageValues->at(message.messageId).timestamps.push_back(message.receiveTime.count());
+
+    // TODO: add emitting of dataChanged(index, index), -> find out index
 }
 
 void MonitoringModel::onDbcChange(const Core::DbcConfig& config)
 {
+    beginResetModel();
     m_currentDbc = config;
     messageValues = std::make_unique<std::array<MessageTimestamp, 2048>>();
     for (auto& messageDefinition : m_currentDbc->messageDefinitions)
@@ -302,6 +305,7 @@ void MonitoringModel::onDbcChange(const Core::DbcConfig& config)
         messageValues->at(messageDefinition.messageId) = MessageTimestamp{
             .timestamps = {}, .signalValues = signalValues, .signalNames = signalNames};
     }
+    endResetModel();
 }
 
 void MonitoringModel::eraseOldData()
