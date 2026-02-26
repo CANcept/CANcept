@@ -49,7 +49,7 @@ auto EcuTreeProxy::filterAcceptsRow(int sourceRow, const QModelIndex& sourcePare
     auto type = static_cast<Core::DbcItemType>(sourceModel()->data(index, Role_ItemType).toInt());
 
     // 1. Always hide metadata nodes (Overview/Orphans)
-    if (type == Core::DbcItemType::Overview || type == Core::DbcItemType::OrphanHolder)
+    if (type == Core::DbcItemType::Overview || type == Core::DbcItemType::OrphanHolder || Core::DbcItemType::Signal)
         return false;
 
     // 2. Apply category filter
