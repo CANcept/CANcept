@@ -43,6 +43,12 @@ class DbcView final : public QWidget
      */
     ~DbcView() override;
 
+    [[nodiscard]] auto getOverviewEcuProxy() const -> FlatListProxy* { return m_ecuOverviewProxy.get(); }
+    [[nodiscard]] auto getOverviewMessageProxy() const -> FlatListProxy* { return m_messageOverviewProxy.get(); }
+    [[nodiscard]] auto getMessagesProxy() const -> FlatListProxy* { return m_messagesProxy.get(); }
+    [[nodiscard]] auto getSignalsProxy() const -> FlatListProxy* { return m_signalsProxy.get(); }
+    [[nodiscard]] auto getEcuTreeProxy() const -> EcuTreeProxy* { return m_ecuTreeProxy.get(); }
+
     /**
      * @brief Returns the load page instance.
      * @return Reference to the internal LoadPage.
