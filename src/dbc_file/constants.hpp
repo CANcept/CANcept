@@ -100,6 +100,14 @@ static const QString TitleEcus = "ECUs";
 static const QString TitleMessages = "Messages";
 static const QString TitleSignals = "Signals";
 
+constexpr int INDEX_LOAD = 0;
+constexpr int INDEX_OVERVIEW = 1;
+constexpr int INDEX_ECUS = 2;
+constexpr int INDEX_MESSAGES = 3;
+constexpr int INDEX_SIGNALS = 4;
+
+constexpr int STACK_COUNT = 5;
+
 static const QString HoverText = "Load DBC file first";
 // Icons
 static const QString IconLoadNew = ":/assets/icon/dbc_file/load_new.svg";
