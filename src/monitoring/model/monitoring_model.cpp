@@ -260,6 +260,21 @@ void MonitoringModel::onIncomingDbcFrame(const Core::DbcCanMessage& message)
     {
         return;
     }
+
+    // Find row index for message and create msgIdx
+    int messageRow = -1;
+    int currentRow = 0;
+    for (const auto& def : m_currentDbc->messageDefinitions)
+    {
+        if (def.messageId == message.messageId)
+        {
+            messageRow = currentRow;
+            break;
+        }
+        currentRow++;
+    }
+    QModelIndex msgIdx = index(messageRow, 0, QModelIndex());
+
     int j = 0;
     for (auto& signalName : messageValues->at(message.messageId).signalNames)
     {
@@ -281,7 +296,16 @@ void MonitoringModel::onIncomingDbcFrame(const Core::DbcCanMessage& message)
     }
     messageValues->at(message.messageId).timestamps.push_back(message.receiveTime.count());
 
-    // TODO: add emitting of dataChanged(index, index), -> find out index
+    // Notify that the Message row changed
+    emit dataChanged(msgIdx, msgIdx);
+
+    // Notify that all child Signal rows changed
+    if (rowCount(msgIdx) > 0)
+    {
+        QModelIndex firstSig = index(0, 0, msgIdx);
+        QModelIndex lastSig = index(rowCount(msgIdx) - 1, 0, msgIdx);
+        emit dataChanged(firstSig, lastSig);
+    }
 }
 
 void MonitoringModel::onDbcChange(const Core::DbcConfig& config)
@@ -289,8 +313,12 @@ void MonitoringModel::onDbcChange(const Core::DbcConfig& config)
     beginResetModel();
     m_currentDbc = config;
     messageValues = std::make_unique<std::array<MessageTimestamp, 2048>>();
+    // Clear and rebuild ID-to-Row mapping for fast lookup
+    m_idToRow.clear();
+    int row = 0;
     for (auto& messageDefinition : m_currentDbc->messageDefinitions)
     {
+        m_idToRow[messageDefinition.messageId] = row;
         std::vector<QList<double>> signalValues;
         QList<QString> signalNames;
         for (auto& signalDescription : messageDefinition.signalDescriptions)
@@ -304,6 +332,7 @@ void MonitoringModel::onDbcChange(const Core::DbcConfig& config)
         }
         messageValues->at(messageDefinition.messageId) = MessageTimestamp{
             .timestamps = {}, .signalValues = signalValues, .signalNames = signalNames};
+        row++;
     }
     endResetModel();
 }

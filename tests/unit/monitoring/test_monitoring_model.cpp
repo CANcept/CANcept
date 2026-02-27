@@ -112,3 +112,69 @@ INSTANTIATE_TEST_SUITE_P(
                       RoleScenario{"LatestValue", Monitoring::MonitoringModel::Role_LatestValue},
                       RoleScenario{"ValueList", Monitoring::MonitoringModel::Role_ValueList}),
     [](const ::testing::TestParamInfo<RoleScenario>& info) { return info.param.name; });
+
+/**
+ * @brief Tests signal values specifically to hit child-level code paths.
+ */
+TEST_F(MonitoringModelTest, HandlesMissingSignalsInFrame)
+{
+    auto config = TestHelpers::DbcExamples::motorController();
+    model->onDbcChange(config);
+
+    uint32_t msgId = config.messageDefinitions.front().messageId;
+
+    Core::DbcCanMessage partialMsg;
+    partialMsg.messageId = msgId;
+    partialMsg.receiveTime = std::chrono::milliseconds(500);
+    // Note: We are NOT adding any signalValues here to trigger the !valueExists path
+
+    model->onIncomingDbcFrame(partialMsg);
+
+    QModelIndex msgIdx = model->index(0, 0, QModelIndex());
+    QModelIndex sigIdx = model->index(0, 0, msgIdx);
+
+    QVariant val = model->data(sigIdx, Monitoring::MonitoringModel::Role_LatestValue);
+    EXPECT_TRUE(std::isnan(val.toDouble()));  // Should be NAN
+}
+
+/**
+ * @brief Forces the eraseOldData while loop to execute.
+ */
+TEST_F(MonitoringModelTest, EraseOldDataCleansUpExpiredEntries)
+{
+    model->onDbcChange(TestHelpers::DbcExamples::motorController());
+
+    Core::DbcCanMessage oldMsg;
+    oldMsg.messageId =
+        TestHelpers::DbcExamples::motorController().messageDefinitions.front().messageId;
+    // Set time to the beginning of the epoch (definitely older than HOLDING_SECONDS)
+    oldMsg.receiveTime = std::chrono::milliseconds(0);
+
+    model->onIncomingDbcFrame(oldMsg);
+
+    // Manually trigger erasure
+    model->eraseOldData();
+
+    QModelIndex msgIdx = model->index(0, 0, QModelIndex());
+    QVariant list = model->data(msgIdx, Monitoring::MonitoringModel::Role_ValueList);
+
+    EXPECT_EQ(list.toList().size(), 0) << "Data should have been purged";
+}
+
+/**
+ * @brief Targets boundary conditions (invalid IDs and indices).
+ */
+TEST_F(MonitoringModelTest, GuardClausesHandleInvalidInputs)
+{
+    model->onDbcChange(TestHelpers::DbcExamples::motorController());
+
+    // 1. Invalid Index
+    EXPECT_FALSE(model->data(QModelIndex(), Qt::DisplayRole).isValid());
+
+    // 2. Out of bounds ID
+    Core::DbcCanMessage hugeIdMsg;
+    hugeIdMsg.messageId = 5000;            // Array size is 2048
+    model->onIncomingDbcFrame(hugeIdMsg);  // Should return early and not crash
+
+    SUCCEED();
+}
