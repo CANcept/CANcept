@@ -8,6 +8,7 @@
 #include <atomic>
 #include <optional>
 #include <thread>
+#include <unordered_map>
 #include <vector>
 
 #include "core/dto/can_dto.hpp"
@@ -106,6 +107,7 @@ class MonitoringModel final : public QAbstractItemModel
     void eraseOldData();
 
    private:
+    std::unordered_map<uint32_t, int> m_idToRow;
     std::unique_ptr<std::array<MessageTimestamp, 2048>> messageValues;
     std::optional<Core::DbcConfig> m_currentDbc;
     std::atomic<bool> _execute;
