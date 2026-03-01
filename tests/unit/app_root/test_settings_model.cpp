@@ -175,4 +175,3 @@ TEST_F(SettingsModelTest, GetSettingsForComponentFiltersCorrectly)
     const auto settings2 = model->getSettingsForComponent("component2");
     EXPECT_EQ(settings2.size(), 1);
 }
-

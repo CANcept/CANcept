@@ -3,10 +3,10 @@
 #include <QApplication>
 
 /**
- * @brief Custom main for integration tests that require QApplication.
+ * @brief Custom main for unit tests that require QApplication.
  *
  * This main initializes QApplication before running tests, which is required
- * for tests that create Qt widgets or use Qt's event loop.
+ * for tests that create Qt widgets, use QSignalSpy, or rely on Qt's event loop.
  */
 auto main(int argc, char** argv) -> int
 {

@@ -14,11 +14,11 @@
 using namespace TestHelpers;
 
 /**
- * @brief Integration tests for SendingComponent.
+ * @brief Unit tests for SendingComponent.
  * These tests verify component lifecycle, event handling, and coordination
  * of sub-components.
  */
-class SendingComponentIntegrationTest : public ::testing::Test
+class SendingComponentTest : public ::testing::Test
 {
    protected:
     void SetUp() override
@@ -44,7 +44,7 @@ class SendingComponentIntegrationTest : public ::testing::Test
 /**
  * @brief Test component lifecycle - construction.
  */
-TEST_F(SendingComponentIntegrationTest, ConstructsSuccessfully)
+TEST_F(SendingComponentTest, ConstructsSuccessfully)
 {
     EXPECT_NE(component, nullptr);
     EXPECT_NE(component->getView(), nullptr);
@@ -53,7 +53,7 @@ TEST_F(SendingComponentIntegrationTest, ConstructsSuccessfully)
 /**
  * @brief Test component lifecycle - onStart.
  */
-TEST_F(SendingComponentIntegrationTest, StartsSuccessfully)
+TEST_F(SendingComponentTest, StartsSuccessfully)
 {
     EXPECT_NO_THROW(component->onStart());
 }
@@ -61,7 +61,7 @@ TEST_F(SendingComponentIntegrationTest, StartsSuccessfully)
 /**
  * @brief Test component lifecycle - onStop.
  */
-TEST_F(SendingComponentIntegrationTest, StopsSuccessfully)
+TEST_F(SendingComponentTest, StopsSuccessfully)
 {
     component->onStart();
     EXPECT_NO_THROW(component->onStop());
@@ -70,7 +70,7 @@ TEST_F(SendingComponentIntegrationTest, StopsSuccessfully)
 /**
  * @brief Test multiple start/stop cycles.
  */
-TEST_F(SendingComponentIntegrationTest, MultipleStartStopCycles)
+TEST_F(SendingComponentTest, MultipleStartStopCycles)
 {
     for (int i = 0; i < 3; ++i)
     {
@@ -83,7 +83,7 @@ TEST_F(SendingComponentIntegrationTest, MultipleStartStopCycles)
 /**
  * @brief Test DBC configuration event handling.
  */
-TEST_F(SendingComponentIntegrationTest, HandlesDbcParsedEvent)
+TEST_F(SendingComponentTest, HandlesDbcParsedEvent)
 {
     component->onStart();
 
@@ -106,7 +106,7 @@ TEST_F(SendingComponentIntegrationTest, HandlesDbcParsedEvent)
 /**
  * @brief Test DBC parse error event handling.
  */
-TEST_F(SendingComponentIntegrationTest, HandlesDbcParseError)
+TEST_F(SendingComponentTest, HandlesDbcParseError)
 {
     component->onStart();
 
@@ -119,7 +119,7 @@ TEST_F(SendingComponentIntegrationTest, HandlesDbcParseError)
 /**
  * @brief Test CAN driver change event handling.
  */
-TEST_F(SendingComponentIntegrationTest, HandlesCanDriverChangeEvent)
+TEST_F(SendingComponentTest, HandlesCanDriverChangeEvent)
 {
     component->onStart();
 
@@ -132,7 +132,7 @@ TEST_F(SendingComponentIntegrationTest, HandlesCanDriverChangeEvent)
 /**
  * @brief Test multiple DBC config updates.
  */
-TEST_F(SendingComponentIntegrationTest, HandlesMultipleDbcConfigs)
+TEST_F(SendingComponentTest, HandlesMultipleDbcConfigs)
 {
     component->onStart();
 
@@ -152,7 +152,7 @@ TEST_F(SendingComponentIntegrationTest, HandlesMultipleDbcConfigs)
 /**
  * @brief Test component with empty DBC config.
  */
-TEST_F(SendingComponentIntegrationTest, HandlesEmptyDbcConfig)
+TEST_F(SendingComponentTest, HandlesEmptyDbcConfig)
 {
     component->onStart();
 
@@ -167,7 +167,7 @@ TEST_F(SendingComponentIntegrationTest, HandlesEmptyDbcConfig)
 /**
  * @brief Test getView returns valid widget.
  */
-TEST_F(SendingComponentIntegrationTest, GetViewReturnsValidWidget)
+TEST_F(SendingComponentTest, GetViewReturnsValidWidget)
 {
     auto* view = component->getView();
 
@@ -178,7 +178,7 @@ TEST_F(SendingComponentIntegrationTest, GetViewReturnsValidWidget)
 /**
  * @brief Test component survives rapid event publishing.
  */
-TEST_F(SendingComponentIntegrationTest, SurvivesRapidEventPublishing)
+TEST_F(SendingComponentTest, SurvivesRapidEventPublishing)
 {
     component->onStart();
 
@@ -199,7 +199,7 @@ TEST_F(SendingComponentIntegrationTest, SurvivesRapidEventPublishing)
 /**
  * @brief Test component destruction after start.
  */
-TEST_F(SendingComponentIntegrationTest, SafeDestructionAfterStart)
+TEST_F(SendingComponentTest, SafeDestructionAfterStart)
 {
     component->onStart();
     QTest::qWait(50);
@@ -210,7 +210,7 @@ TEST_F(SendingComponentIntegrationTest, SafeDestructionAfterStart)
 /**
  * @brief Test component destruction during event processing.
  */
-TEST_F(SendingComponentIntegrationTest, SafeDestructionDuringEventProcessing)
+TEST_F(SendingComponentTest, SafeDestructionDuringEventProcessing)
 {
     component->onStart();
 
@@ -223,7 +223,7 @@ TEST_F(SendingComponentIntegrationTest, SafeDestructionDuringEventProcessing)
 /**
  * @brief Test error then success event sequence.
  */
-TEST_F(SendingComponentIntegrationTest, HandlesErrorThenSuccessSequence)
+TEST_F(SendingComponentTest, HandlesErrorThenSuccessSequence)
 {
     component->onStart();
 
@@ -240,7 +240,7 @@ TEST_F(SendingComponentIntegrationTest, HandlesErrorThenSuccessSequence)
  * @brief Test sendOnce method via view signal.
  * Covers sendOnce method (lines 197-200) and publishRawMessageAsync (lines 85-96).
  */
-TEST_F(SendingComponentIntegrationTest, SendOnceTriggeredByViewSignal)
+TEST_F(SendingComponentTest, SendOnceTriggeredByViewSignal)
 {
     component->onStart();
 
@@ -258,7 +258,7 @@ TEST_F(SendingComponentIntegrationTest, SendOnceTriggeredByViewSignal)
 /**
  * @brief Test startRepeatedSending via view signal.
  */
-TEST_F(SendingComponentIntegrationTest, StartRepeatedSendingTriggeredByViewSignal)
+TEST_F(SendingComponentTest, StartRepeatedSendingTriggeredByViewSignal)
 {
     component->onStart();
 
@@ -279,7 +279,7 @@ TEST_F(SendingComponentIntegrationTest, StartRepeatedSendingTriggeredByViewSigna
 /**
  * @brief Test stopRepeatedSending via view signal.
  */
-TEST_F(SendingComponentIntegrationTest, StopRepeatedSendingTriggeredByViewSignal)
+TEST_F(SendingComponentTest, StopRepeatedSendingTriggeredByViewSignal)
 {
     component->onStart();
 
@@ -300,7 +300,7 @@ TEST_F(SendingComponentIntegrationTest, StopRepeatedSendingTriggeredByViewSignal
 /**
  * @brief Test repeated sending doesn't start if already running.
  */
-TEST_F(SendingComponentIntegrationTest, RepeatedSendingIgnoresStartWhenAlreadyRunning)
+TEST_F(SendingComponentTest, RepeatedSendingIgnoresStartWhenAlreadyRunning)
 {
     component->onStart();
 
@@ -322,7 +322,7 @@ TEST_F(SendingComponentIntegrationTest, RepeatedSendingIgnoresStartWhenAlreadyRu
 /**
  * @brief Test publishRawMessageAsync via model's requestSendRaw signal.
  */
-TEST_F(SendingComponentIntegrationTest, PublishRawMessageViaModelSignal)
+TEST_F(SendingComponentTest, PublishRawMessageViaModelSignal)
 {
     component->onStart();
     auto* view = component->getView();
@@ -335,7 +335,7 @@ TEST_F(SendingComponentIntegrationTest, PublishRawMessageViaModelSignal)
 /**
  * @brief Test publishDbcMessageAsync via model's requestSendDbc signal.
  */
-TEST_F(SendingComponentIntegrationTest, PublishDbcMessageViaModelSignal)
+TEST_F(SendingComponentTest, PublishDbcMessageViaModelSignal)
 {
     component->onStart();
 
@@ -365,7 +365,7 @@ TEST_F(SendingComponentIntegrationTest, PublishDbcMessageViaModelSignal)
 /**
  * @brief Test worker callback publishes DBC messages during repeated sending.
  */
-TEST_F(SendingComponentIntegrationTest, RepeatedSendingPublishesDbcMessages)
+TEST_F(SendingComponentTest, RepeatedSendingPublishesDbcMessages)
 {
     component->onStart();
 
@@ -389,7 +389,7 @@ TEST_F(SendingComponentIntegrationTest, RepeatedSendingPublishesDbcMessages)
 /**
  * @brief Test worker error handler by cleanup during active sending.
  */
-TEST_F(SendingComponentIntegrationTest, HandlesWorkerError)
+TEST_F(SendingComponentTest, HandlesWorkerError)
 {
     component->onStart();
 
