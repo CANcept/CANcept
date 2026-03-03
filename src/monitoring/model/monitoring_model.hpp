@@ -38,7 +38,7 @@ struct MessageTimestamp {
  * via dedicated Qt signals, enabling loose coupling with visualization
  * components.
  */
-class MonitoringModel final : public QAbstractItemModel
+class MonitoringModel : public QAbstractItemModel
 {
     Q_OBJECT
    public:

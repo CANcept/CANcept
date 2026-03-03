@@ -62,7 +62,6 @@ auto MonitoringModel::index(int row, int column, const QModelIndex& parent) cons
             return createIndex(row, column, reinterpret_cast<void*>(parent.row() + 1));
         }
     }
-    return {};
 }
 
 auto MonitoringModel::parent(const QModelIndex& child) const -> QModelIndex
