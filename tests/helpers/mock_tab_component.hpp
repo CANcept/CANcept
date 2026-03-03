@@ -12,7 +12,7 @@ namespace TestHelpers {
  */
 class MockTabComponent : public Core::ITabComponent
 {
-public:
+   public:
     explicit MockTabComponent(Core::IEventBroker& broker, QString id = "mock_tab",
                               QString title = "Mock Tab", QIcon icon = QIcon())
         : ITabComponent(broker, std::move(id), std::move(title), std::move(icon))

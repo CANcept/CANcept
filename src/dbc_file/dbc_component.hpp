@@ -40,15 +40,15 @@ class DbcComponent : public Core::ITabComponent
 
    public:
     /**
-         * @brief Constructs the DBC component.
-         *
-         * @details
-         * Initializes the tab component, creates the `DbcModel` and `DbcView`,
-         * and establishes the Model-View connection.
-         *
-         * @param broker Reference to the central event broker used for
-         *               subscribing to parsing events and publishing load requests.
-         */
+     * @brief Constructs the DBC component.
+     *
+     * @details
+     * Initializes the tab component, creates the `DbcModel` and `DbcView`,
+     * and establishes the Model-View connection.
+     *
+     * @param broker Reference to the central event broker used for
+     *               subscribing to parsing events and publishing load requests.
+     */
     explicit DbcComponent(Core::IEventBroker& broker);
 
     /**
@@ -70,7 +70,10 @@ class DbcComponent : public Core::ITabComponent
 
     /** @brief Model getter for testing.
      */
-    [[nodiscard]] auto getModel() const -> DbcModel* { return m_model.get(); }
+    [[nodiscard]] auto getModel() const -> DbcModel*
+    {
+        return m_model.get();
+    }
 
     // --- Core::ILifecycle Interface Implementation ---
 
@@ -130,16 +133,16 @@ class DbcComponent : public Core::ITabComponent
 
    private:
     /**
-         * @brief Handles successful DBC parsing events.
-         *
-         * @details
-         * - Pushes the new configuration data into the DbcModel via `setDbcConfig`.
-         * - Updates the view state to reflect successful parsing.
-         * - Enables navigation.
-         * - Extracts and sets metadata (signal units, message senders) for view filtering.
-         *
-         * @param event The parsed DBC event containing configuration data.
-         */
+     * @brief Handles successful DBC parsing events.
+     *
+     * @details
+     * - Pushes the new configuration data into the DbcModel via `setDbcConfig`.
+     * - Updates the view state to reflect successful parsing.
+     * - Enables navigation.
+     * - Extracts and sets metadata (signal units, message senders) for view filtering.
+     *
+     * @param event The parsed DBC event containing configuration data.
+     */
     void onDbcParsed(const Core::DBCParsedEvent& event);
 
     /**

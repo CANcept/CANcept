@@ -39,8 +39,7 @@ auto parentItemFromIndex(const QModelIndex& parent, DbcItem* root) -> DbcItem*
 }
 }  // namespace
 
-DbcModel::DbcModel(QObject* parent)
-    : QAbstractItemModel(parent)
+DbcModel::DbcModel(QObject* parent) : QAbstractItemModel(parent)
 {
     m_rootItem = std::make_unique<DbcItem>(QList<QVariant>{"Root"}, Core::DbcItemType::Root);
 }

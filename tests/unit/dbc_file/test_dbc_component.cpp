@@ -28,16 +28,20 @@ struct UnitScenario {
     QStringList expectedUnits;
 };
 
-class UnitExtractionTest : public ::testing::TestWithParam<UnitScenario> {};
+class UnitExtractionTest : public ::testing::TestWithParam<UnitScenario>
+{
+};
 
-TEST_P(UnitExtractionTest, ExtractsAndSortsUnitsCorrectly) {
+TEST_P(UnitExtractionTest, ExtractsAndSortsUnitsCorrectly)
+{
     const auto& p = GetParam();
     Core::DbcConfig config(p.config);
 
     QStringList result = DbcComponent::extractSignalUnits(config);
 
     ASSERT_EQ(result.size(), p.expectedUnits.size());
-    for (int i = 0; i < result.size(); ++i) {
+    for (int i = 0; i < result.size(); ++i)
+    {
         EXPECT_EQ(result[i], p.expectedUnits[i]);
     }
 }
@@ -46,28 +50,24 @@ INSTANTIATE_TEST_SUITE_P(
     UnitScenarios, UnitExtractionTest,
     ::testing::Values(
         // Case 1: Simple cleanup
-        UnitScenario{
-            "DuplicatesAndEmpty",
-            DbcConfigBuilder()
-                .message(DbcMessageBuilder(1, "M").signal(DbcSignalBuilder("S1").unit("V"))
-                                                  .signal(DbcSignalBuilder("S2").unit("V")) // Dup
-                                                  .signal(DbcSignalBuilder("S3").unit(""))) // Empty
-                .build(),
-            {"V"}
-        },
+        UnitScenario{"DuplicatesAndEmpty",
+                     DbcConfigBuilder()
+                         .message(DbcMessageBuilder(1, "M")
+                                      .signal(DbcSignalBuilder("S1").unit("V"))
+                                      .signal(DbcSignalBuilder("S2").unit("V"))  // Dup
+                                      .signal(DbcSignalBuilder("S3").unit("")))  // Empty
+                         .build(),
+                     {"V"}},
         // Case 2: Case Sensitivity & Sorting
-        UnitScenario{
-            "CaseSensitiveSort",
-            DbcConfigBuilder()
-                .message(DbcMessageBuilder(1, "M").signal(DbcSignalBuilder("S1").unit("rpm"))
-                                                  .signal(DbcSignalBuilder("S2").unit("Bar"))
-                                                  .signal(DbcSignalBuilder("S3").unit("km/h")))
-                .build(),
-            {"Bar", "km/h", "rpm"}
-        }
-    ),
-    [](const ::testing::TestParamInfo<UnitScenario>& info) { return info.param.name; }
-);
+        UnitScenario{"CaseSensitiveSort",
+                     DbcConfigBuilder()
+                         .message(DbcMessageBuilder(1, "M")
+                                      .signal(DbcSignalBuilder("S1").unit("rpm"))
+                                      .signal(DbcSignalBuilder("S2").unit("Bar"))
+                                      .signal(DbcSignalBuilder("S3").unit("km/h")))
+                         .build(),
+                     {"Bar", "km/h", "rpm"}}),
+    [](const ::testing::TestParamInfo<UnitScenario>& info) { return info.param.name; });
 
 struct SenderScenario {
     std::string name;
@@ -75,16 +75,20 @@ struct SenderScenario {
     QStringList expectedSenders;
 };
 
-class SenderExtractionTest : public ::testing::TestWithParam<SenderScenario> {};
+class SenderExtractionTest : public ::testing::TestWithParam<SenderScenario>
+{
+};
 
-TEST_P(SenderExtractionTest, ExtractsAndSortsSendersCorrectly) {
+TEST_P(SenderExtractionTest, ExtractsAndSortsSendersCorrectly)
+{
     const auto& p = GetParam();
     Core::DbcConfig config(p.config);
 
     QStringList result = DbcComponent::extractSenders(config);
 
     ASSERT_EQ(result.size(), p.expectedSenders.size());
-    for (int i = 0; i < result.size(); ++i) {
+    for (int i = 0; i < result.size(); ++i)
+    {
         EXPECT_EQ(result[i], p.expectedSenders[i]);
     }
 }
@@ -92,26 +96,20 @@ TEST_P(SenderExtractionTest, ExtractsAndSortsSendersCorrectly) {
 INSTANTIATE_TEST_SUITE_P(
     SenderScenarios, SenderExtractionTest,
     ::testing::Values(
-        SenderScenario{
-            "DedupesSenders",
-            DbcConfigBuilder()
-                .message(DbcMessageBuilder(1, "M1").transmitter("Engine"))
-                .message(DbcMessageBuilder(2, "M2").transmitter("Engine")) // Dup
-                .message(DbcMessageBuilder(3, "M3").transmitter("ABS"))
-                .build(),
-            {"ABS", "Engine"}
-        },
-        SenderScenario{
-            "IgnoresEmpty",
-            DbcConfigBuilder()
-                .message(DbcMessageBuilder(1, "M1").transmitter(""))
-                .message(DbcMessageBuilder(2, "M2").transmitter("Gateway"))
-                .build(),
-            {"Gateway"}
-        }
-    ),
-    [](const ::testing::TestParamInfo<SenderScenario>& info) { return info.param.name; }
-);
+        SenderScenario{"DedupesSenders",
+                       DbcConfigBuilder()
+                           .message(DbcMessageBuilder(1, "M1").transmitter("Engine"))
+                           .message(DbcMessageBuilder(2, "M2").transmitter("Engine"))  // Dup
+                           .message(DbcMessageBuilder(3, "M3").transmitter("ABS"))
+                           .build(),
+                       {"ABS", "Engine"}},
+        SenderScenario{"IgnoresEmpty",
+                       DbcConfigBuilder()
+                           .message(DbcMessageBuilder(1, "M1").transmitter(""))
+                           .message(DbcMessageBuilder(2, "M2").transmitter("Gateway"))
+                           .build(),
+                       {"Gateway"}}),
+    [](const ::testing::TestParamInfo<SenderScenario>& info) { return info.param.name; });
 // ============================================================================
 // 2. COMPONENT LIFECYCLE & INTEGRATION TESTS
 // ============================================================================
@@ -226,9 +224,10 @@ TEST_F(DbcComponentTest, HandlesDbcParsedEvent_UpdatesViewFilters)
 
     // Config with specific units/senders
     auto config = DbcConfigBuilder()
-        .message(DbcMessageBuilder(1, "Msg").transmitter("MySender")
-            .signal(DbcSignalBuilder("Sig").unit("MyUnit")))
-        .build();
+                      .message(DbcMessageBuilder(1, "Msg")
+                                   .transmitter("MySender")
+                                   .signal(DbcSignalBuilder("Sig").unit("MyUnit")))
+                      .build();
 
     mockBroker->triggerEvent(Core::DBCParsedEvent(config, ""));
     QTest::qWait(10);
@@ -275,7 +274,7 @@ TEST_F(DbcComponentTest, PublishesRequest_OnViewFileSelected)
 
     emit view->fileLoadRequested("/tmp/test.dbc");
 
-    QTest::qWait(10); // Allow signal propagation
+    QTest::qWait(10);  // Allow signal propagation
 }
 
 /**
