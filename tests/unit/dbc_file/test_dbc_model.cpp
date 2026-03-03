@@ -13,27 +13,17 @@
 #include "tests/helpers/dbc_examples.hpp"
 
 using namespace TestHelpers;
-
-class DbcModelTest : public ::testing::Test
+class DbcModelTestBase : public ::testing::Test
 {
    protected:
     void SetUp() override
     {
-        broker = std::make_unique<EventBroker::EventBroker>();
-        model = std::make_unique<DbcFile::DbcModel>(*broker);
+        model = std::make_unique<DbcFile::DbcModel>();
     }
 
     void TearDown() override
     {
         model.reset();
-        broker.reset();
-    }
-
-    void loadConfig(const Core::DbcConfig& config)
-    {
-        QSignalSpy spy(model.get(), &QAbstractItemModel::modelReset);
-        broker->publish(Core::DBCParsedEvent(config, config.metaData.fileName));
-        ASSERT_EQ(spy.count(), 1) << "Model did not update after DBCParsedEvent";
     }
 
     // --- Role Collections for Negative Testing ---
@@ -65,12 +55,11 @@ class DbcModelTest : public ::testing::Test
     /**
      * @brief Helper to get data easily from the model.
      */
-    QVariant getVal(const QModelIndex& idx, int role = Qt::DisplayRole)
+    QVariant getVal(const QModelIndex& idx, int role = Qt::DisplayRole) const
     {
         return model->data(idx, role);
     }
 
-    std::unique_ptr<EventBroker::EventBroker> broker;
     std::unique_ptr<DbcFile::DbcModel> model;
 };
 
@@ -78,16 +67,16 @@ class DbcModelTest : public ::testing::Test
 // 1. Structural & Qt Compliance Tests
 // ============================================================================
 
-TEST_F(DbcModelTest, Qt_ModelConsistency_Check)
+TEST_F(DbcModelTestBase, Qt_ModelConsistency_Check)
 {
-    loadConfig(DbcExamples::vehicleSensors());
+    model->setDbcConfig(DbcExamples::vehicleSensors());
     QAbstractItemModelTester tester(model.get(),
                                     QAbstractItemModelTester::FailureReportingMode::Fatal);
 }
 
-TEST_F(DbcModelTest, Qt_Defensive_InvalidInputs)
+TEST_F(DbcModelTestBase, Qt_Defensive_InvalidInputs)
 {
-    loadConfig(DbcExamples::simple());
+    model->setDbcConfig(DbcExamples::simple());
 
     // 1. index() Out of Bounds
     EXPECT_FALSE(model->index(-1, 0, QModelIndex()).isValid());   // Negative Row
@@ -105,10 +94,10 @@ TEST_F(DbcModelTest, Qt_Defensive_InvalidInputs)
     EXPECT_FALSE(model->parent(topLvlIdx).isValid());
 }
 
-TEST_F(DbcModelTest, Hierarchy_BuildsCorrectly)
+TEST_F(DbcModelTestBase, Hierarchy_BuildsCorrectly)
 {
     auto config = DbcExamples::simple();
-    loadConfig(config);
+    model->setDbcConfig(config);
 
     // Level 0: Root (Overview + ECUs)
     // Simple Example: Overview + 1 ECU ("TestNode")
@@ -142,9 +131,9 @@ TEST_F(DbcModelTest, Hierarchy_BuildsCorrectly)
               Core::DbcItemType::Signal);
 }
 
-TEST_F(DbcModelTest, Structural_ColumnCount_ByType)
+TEST_F(DbcModelTestBase, Structural_ColumnCount_ByType)
 {
-    loadConfig(DbcExamples::simple());
+    model->setDbcConfig(DbcExamples::simple());
     QModelIndex overview = model->index(0, 0, QModelIndex());
     QModelIndex ecu = model->index(1, 0, QModelIndex());
     QModelIndex msg = model->index(0, 0, ecu);
@@ -154,9 +143,9 @@ TEST_F(DbcModelTest, Structural_ColumnCount_ByType)
     EXPECT_EQ(model->columnCount(msg), DbcFile::Constants::Columns::SignalColumnCount);
 }
 
-TEST_F(DbcModelTest, HasChildren_BehavesCorrectly)
+TEST_F(DbcModelTestBase, HasChildren_BehavesCorrectly)
 {
-    loadConfig(DbcExamples::simple());
+    model->setDbcConfig(DbcExamples::simple());
 
     QModelIndex root = QModelIndex();
     QModelIndex overview = model->index(0, 0, root);
@@ -170,15 +159,13 @@ TEST_F(DbcModelTest, HasChildren_BehavesCorrectly)
     EXPECT_TRUE(model->hasChildren(msg));
     EXPECT_FALSE(model->hasChildren(sig));
 }
-
 // ============================================================================
 // 2. Item Specific Data Tests (Positive & Negative Paths)
 // ============================================================================
 
-TEST_F(DbcModelTest, OverviewDataIsCorrect)
+TEST_F(DbcModelTestBase, OverviewDataIsCorrect)
 {
-    auto config = DbcExamples::simple();  // 1 Node, 1 Message, 1 Signal
-    loadConfig(config);
+    model->setDbcConfig(DbcExamples::simple());
 
     QModelIndex idx = model->index(0, 0, QModelIndex());
     ASSERT_TRUE(idx.isValid());
@@ -228,10 +215,9 @@ TEST_F(DbcModelTest, OverviewDataIsCorrect)
     EXPECT_FALSE(getVal(idx, DbcFile::Role_Id).isValid());
 }
 
-TEST_F(DbcModelTest, EcuDataIsCorrect)
+TEST_F(DbcModelTestBase, EcuDataIsCorrect)
 {
-    auto config = DbcExamples::motorController();  // Contains "MotorController" with 3 signals
-    loadConfig(config);
+    model->setDbcConfig(DbcExamples::motorController());
 
     // Navigate to ECU
     QModelIndex idx = model->index(1, 0, QModelIndex());  // Row 1 is usually the first ECU
@@ -264,10 +250,9 @@ TEST_F(DbcModelTest, EcuDataIsCorrect)
     EXPECT_FALSE(getVal(idx, DbcFile::Role_Id).isValid());
 }
 
-TEST_F(DbcModelTest, MessageDataIsCorrect)
+TEST_F(DbcModelTestBase, MessageDataIsCorrect)
 {
-    auto config = DbcExamples::simple();
-    loadConfig(config);
+    model->setDbcConfig(DbcExamples::simple());
 
     QModelIndex ecu = model->index(1, 0, QModelIndex());
     QModelIndex idx = model->index(0, 0, ecu);  // The message
@@ -311,11 +296,9 @@ TEST_F(DbcModelTest, MessageDataIsCorrect)
     assertInvalidRoles(idx, signalRoles);
 }
 
-TEST_F(DbcModelTest, SignalDataIsCorrect)
+TEST_F(DbcModelTestBase, SignalDataIsCorrect)
 {
-    auto config = DbcExamples::fullSignalTest();
-
-    loadConfig(config);
+    model->setDbcConfig(DbcExamples::fullSignalTest());
 
     // Navigate: Root -> ECU -> Msg -> Sig
     QModelIndex ecu = model->index(1, 0, QModelIndex());
@@ -451,9 +434,9 @@ TEST_F(DbcModelTest, SignalDataIsCorrect)
 // 3. Edge Cases & Specials
 // ============================================================================
 
-TEST_F(DbcModelTest, Visuals_IconsReturned)
+TEST_F(DbcModelTestBase, Visuals_IconsReturned)
 {
-    loadConfig(DbcExamples::simple());
+    model->setDbcConfig(DbcExamples::simple());
 
     QModelIndex ecuIdx = model->index(1, 0, QModelIndex());
     QModelIndex msgIdx = model->index(0, 0, ecuIdx);
@@ -464,19 +447,17 @@ TEST_F(DbcModelTest, Visuals_IconsReturned)
     EXPECT_FALSE(getVal(sigIdx, Qt::DecorationRole).value<QIcon>().isNull());
 }
 
-TEST_F(DbcModelTest, EdgeCase_DecorationDefaults)
+TEST_F(DbcModelTestBase, EdgeCase_DecorationDefaults)
 {
-    loadConfig(DbcExamples::simple());
+    model->setDbcConfig(DbcExamples::simple());
     QModelIndex overview = model->index(0, 0, QModelIndex());
 
     EXPECT_TRUE(model->data(overview, Qt::DecorationRole).isNull());
 }
 
-TEST_F(DbcModelTest, HandlesEmptyConfig)
+TEST_F(DbcModelTestBase, HandlesEmptyConfig)
 {
-    auto config = DbcExamples::empty();
-
-    loadConfig(config);
+    model->setDbcConfig(DbcExamples::empty());
 
     // Only overview row should exist
     EXPECT_EQ(model->rowCount(QModelIndex()), 1);
@@ -490,10 +471,9 @@ TEST_F(DbcModelTest, HandlesEmptyConfig)
     EXPECT_EQ(getVal(overview).toString(), "empty.dbc");
 }
 
-TEST_F(DbcModelTest, EdgeCase_OrphanHandling)
+TEST_F(DbcModelTestBase, EdgeCase_OrphanHandling)
 {
-    auto config = DbcExamples::orphanTest();
-    loadConfig(config);
+    model->setDbcConfig(DbcExamples::orphanTest());
 
     QModelIndex orphanHolderIdx;
     for (int i = 0; i < model->rowCount(QModelIndex()); ++i)
@@ -518,24 +498,51 @@ TEST_F(DbcModelTest, EdgeCase_OrphanHandling)
     EXPECT_FALSE(getVal(orphanHolderIdx, DbcFile::Role_Id).isValid());
 }
 
-TEST_F(DbcModelTest, EdgeCase_UnknownRoles)
+TEST_F(DbcModelTestBase, EdgeCase_UnknownRoles)
 {
-    loadConfig(DbcExamples::simple());
+    model->setDbcConfig(DbcExamples::simple());
     QModelIndex msg = model->index(0, 0, model->index(1, 0, QModelIndex()));
 
     EXPECT_FALSE(getVal(msg, Qt::UserRole + 9999).isValid());
 }
 
-TEST_F(DbcModelTest, MultipleLoadConfig_ResetsCleanly)
+TEST_F(DbcModelTestBase, MultipleLoadConfig_ResetsCleanly)
 {
-    loadConfig(DbcExamples::simple());
+    model->setDbcConfig(DbcExamples::simple());
     int firstCount = model->rowCount(QModelIndex());
     EXPECT_GT(firstCount, 0);
 
-    loadConfig(DbcExamples::vehicleSensors());
+    model->setDbcConfig(DbcExamples::vehicleSensors());
     int secondCount = model->rowCount(QModelIndex());
     EXPECT_GT(secondCount, 0);
 
     // Ensure model did not accumulate old data
     EXPECT_NE(firstCount, secondCount);
 }
+TEST_F(DbcModelTestBase, Logic_Linking_IsCaseSensitive) {
+    auto config = DbcConfigBuilder()
+        .node("MyECU")
+        .message(DbcMessageBuilder(1, "SuccessMsg").transmitter("MyECU")) // Match
+        .message(DbcMessageBuilder(2, "FailMsg").transmitter("myecu"))    // Mismatch (Case)
+        .build();
+
+    model->setDbcConfig(config);
+
+    // Ecu has to hold SuccessMsg
+    QModelIndex ecuIdx = model->index(1, 0, QModelIndex());
+    EXPECT_EQ(getVal(ecuIdx).toString().toStdString(), "MyECU");
+    EXPECT_EQ(model->rowCount(ecuIdx), 1);
+    EXPECT_EQ(getVal(model->index(0, 0, ecuIdx)).toString().toStdString(), "SuccessMsg");
+
+    // Orphan Holder has to hold FailMsg
+    QModelIndex orphanIdx;
+    for(int i=0; i<model->rowCount(QModelIndex()); ++i) {
+        QModelIndex idx = model->index(i, 0, QModelIndex());
+        auto type = getVal(idx, DbcFile::DbcRoles::Role_ItemType).value<Core::DbcItemType>();
+        if (type == Core::DbcItemType::OrphanHolder) orphanIdx = idx;
+    }
+
+    ASSERT_TRUE(orphanIdx.isValid());
+    EXPECT_EQ(getVal(model->index(0, 0, orphanIdx)).toString().toStdString(), "FailMsg");
+}
+

@@ -306,6 +306,28 @@ class DbcExamples
             .build();
     }
 
+    /**
+ * @brief DBC containing signals with a wide range of attributes.
+ *
+ * This configuration is intended for testing complex signal setups,
+ * including:
+ *
+ * - Multiple nodes
+ * - Different receivers per signal
+ * - Signed and unsigned signals
+ * - Little- and big-endian byte order
+ * - Scaling (factor/offset)
+ * - Physical ranges and units
+ *
+ * Messages:
+ * - 0x100 TestMessage:
+ *      - UnsignedLittleEndSignal (multi-receiver, scaled, unit, range)
+ *      - SignedBigEndSignal (big-endian, signed)
+ *
+ * Nodes: ECU1, ECU2, ECU3
+ *
+ * Useful for integration tests or validating advanced signal handling.
+ */
     [[nodiscard]] static Core::DbcConfig fullSignalTest()
     {
         return DbcConfigBuilder()
@@ -362,11 +384,192 @@ class DbcExamples
             .build();
     }
 
+    /**
+ * @brief DBC containing a message with an unknown transmitter.
+ *
+ * This configuration simulates an orphan message whose transmitter
+ * is not part of the defined node list.
+ *
+ * Messages:
+ * - 0x100 GhostMsg (transmitter: "Ghost")
+ *
+ * Nodes:
+ * - KnownECU
+ *
+ * Useful for testing validation logic, error handling,
+ * or component robustness when encountering inconsistent configurations.
+ */
     [[nodiscard]] static Core::DbcConfig orphanTest()
     {
         return DbcConfigBuilder()
             .node("KnownECU")
             .message(DbcMessageBuilder(0x100, "GhostMsg").transmitter("Ghost"))
+            .build();
+    }
+
+    /**
+ * @brief Comprehensive DBC covering multiple typical and edge-case scenarios.
+ *
+ * This configuration combines various features in a single setup:
+ *
+ * - Multiple nodes
+ * - Standard messages with scaling and units
+ * - Signals with multiple receivers
+ * - Signed and big-endian signals
+ * - Orphan message with unknown transmitter
+ *
+ * Messages:
+ * - 0x100 SpeedMsg (standard signals, multi-receiver)
+ * - 0x200 TorqueMsg (signed, big-endian signal)
+ * - 0x999 OrphanMsg (unknown transmitter)
+ *
+ * Nodes: EngineECU, Dashboard, Logger
+ *
+ * Intended for higher-level component or integration testing.
+ */
+    [[nodiscard]] static Core::DbcConfig comprehensiveTest()
+    {
+        return DbcConfigBuilder()
+            .version("2.0")
+            .fileName("master_test.dbc")
+
+            // --- 1. Nodes ---
+            .node("EngineECU")
+            .node("Dashboard")
+            .node("Logger")
+
+            // --- 2. Standard Message ---
+            .message(DbcMessageBuilder(0x100, "SpeedMsg")
+                         .size(8)
+                         .transmitter("EngineECU")
+                         // Signal A: Standard
+                         .signal(DbcSignalBuilder("Velocity")
+                                     .startBit(0).size(16)
+                                     .unit("km/h")
+                                     .factor(0.1).offset(0.0)
+                                     .receiver("Dashboard"))
+                         // Signal B: Multi-Receiver
+                         .signal(DbcSignalBuilder("Status")
+                                     .startBit(32).size(8)
+                                     .receiver("Dashboard")
+                                     .receiver("Logger")))
+
+            // --- 3. Edge Case Message (Signed, Big Endian) ---
+            .message(DbcMessageBuilder(0x200, "TorqueMsg")
+                         .transmitter("EngineECU")
+                         .signal(DbcSignalBuilder("Torque")
+                                     .startBit(0).size(16)
+                                     .signed_().bigEndian()))
+
+            // --- 4. Orphan Message ---
+            .message(DbcMessageBuilder(0x999, "OrphanMsg")
+                         .transmitter("UnknownNode")
+                         .signal(DbcSignalBuilder("GhostSig").size(8))
+            )
+            .build();
+    }
+
+    /**
+     * @brief DBC designed for testing signal unit extraction in DbcComponent.
+     *
+     * This configuration intentionally includes:
+     *
+     * - Duplicate units ("V")
+     * - Mixed-case units ("V" vs "v")
+     * - Empty units ("")
+     * - Signals without explicitly set units
+     * - Units spread across multiple messages
+     *
+     * Messages:
+     * - 0x100 Msg1: duplicate and empty units
+     * - 0x200 Msg2: mixed-case units and missing unit
+     *
+     * Nodes: NodeA
+     *
+     * Useful for validating:
+     * - Duplicate removal
+     * - Empty unit handling
+     * - Case sensitivity behavior
+     * - Sorting behavior
+     */
+    [[nodiscard]] static Core::DbcConfig unitVariationTest()
+    {
+        return DbcConfigBuilder()
+            .version("1.0")
+            .fileName("units_component_test.dbc")
+            .node("NodeA")
+
+            // Message 1 – normale + duplicate + empty
+            .message(DbcMessageBuilder(0x100, "Msg1")
+                         .transmitter("NodeA")
+                         .signal(DbcSignalBuilder("Sig1").unit("V"))
+                         .signal(DbcSignalBuilder("Sig2").unit("A"))
+                         .signal(DbcSignalBuilder("Sig3").unit("V"))      // duplicate
+                         .signal(DbcSignalBuilder("Sig4").unit("")))      // empty
+
+            // Message 2 – mixed case
+            .message(DbcMessageBuilder(0x200, "Msg2")
+                         .transmitter("NodeA")
+                         .signal(DbcSignalBuilder("Sig5").unit("v"))      // case variant
+                         .signal(DbcSignalBuilder("Sig6").unit("km/h"))
+                         .signal(DbcSignalBuilder("Sig7")))               // no unit set
+
+            .build();
+    }
+
+    /**
+     * @brief DBC designed for testing sender extraction in DbcComponent.
+     *
+     * This configuration intentionally includes:
+     *
+     * - Duplicate transmitters ("NodeA")
+     * - Mixed-case transmitters ("NodeA" vs "nodea")
+     * - Messages with missing transmitter definitions
+     * - Multiple messages per sender
+     *
+     * Messages:
+     * - 0x100 Msg1 (NodeA)
+     * - 0x200 Msg2 (NodeA, duplicate)
+     * - 0x300 Msg3 (NodeB)
+     * - 0x400 Msg4 (nodea, case variant)
+     * - 0x500 Msg5 (missing transmitter)
+     *
+     * Nodes: NodeA, NodeB, nodea
+     *
+     * Useful for validating:
+     * - Duplicate removal
+     * - Case sensitivity behavior
+     * - Missing transmitter handling
+     * - Sorting behavior
+     */
+    [[nodiscard]] static Core::DbcConfig senderVariationTest()
+    {
+        return DbcConfigBuilder()
+            .version("1.0")
+            .fileName("senders_component_test.dbc")
+
+            .node("NodeA")
+            .node("NodeB")
+            .node("nodea")   // case variant
+
+            // Duplicate sender
+            .message(DbcMessageBuilder(0x100, "Msg1")
+                         .transmitter("NodeA"))
+
+            .message(DbcMessageBuilder(0x200, "Msg2")
+                         .transmitter("NodeA"))
+
+            // Different sender
+            .message(DbcMessageBuilder(0x300, "Msg3")
+                         .transmitter("NodeB"))
+
+            // Case variant sender
+            .message(DbcMessageBuilder(0x400, "Msg4")
+                         .transmitter("nodea"))
+
+            // Missing transmitter
+            .message(DbcMessageBuilder(0x500, "Msg5"))
+
             .build();
     }
 

@@ -12,16 +12,20 @@
 
 namespace DbcFile {
 
+
 /**
  * @class DbcModel
  * @brief The hierarchical data model for the DBC file content.
  *
- * This class acts as a "Smart Model":
- * 1. It holds the reference to the Core::IEventBroker.
- * 2. It subscribes to the DbcParsedEvent to automatically update its data
- *    when a file is parsed by the CAN Handler.
- * 3. It serves data to Views and Delegates via standard Qt roles and
- *    custom DbcRoles.
+ * This class serves as the passive data store (Model in MVC) for the DBC visualization.
+ *
+ * Responsibilities:
+ * - Stores the hierarchical structure of the parsed DBC file (Root -> ECU -> Message -> Signal).
+ * - Provides data to Views and Delegates via standard Qt roles and custom DbcRoles.
+ * - Handles the internal logic for grouping orphans and calculating statistics.
+ *
+ * @note This model does not handle event subscriptions. Data must be pushed into it
+ *       via `setDbcConfig()`, typically by the controlling component.
  */
 class DbcModel : public QAbstractItemModel
 {
@@ -29,20 +33,31 @@ class DbcModel : public QAbstractItemModel
 
    public:
     /**
-     * @brief Constructs the model and subscribes to parsed-DBC events.
-     * @param broker Event broker used to subscribe to Core::DBCParsedEvent.
-     * @param parent Optional QObject parent.
+     * @brief Constructs the DBC model.
+     * @param parent Optional QObject parent (usually the DbcComponent).
      *
-     * The constructor creates an initial root item and registers a callback that
-     * rebuilds the model whenever a DBCParsedEvent is published.
+     * Initializes the internal root item structure. The model is initially empty
+     * until `setDbcConfig()` is called.
      */
-    explicit DbcModel(Core::IEventBroker& broker, QObject* parent = nullptr);
+    explicit DbcModel(QObject* parent = nullptr);
     /**
      * @brief Destroys the model.
      *
      * The event subscription connection is released automatically with the model.
      */
     ~DbcModel() override = default;
+
+    /**
+     * @brief Populates the model with a new DBC configuration.
+     *
+     * @details
+     * This method performs a full model reset. It clears all existing data,
+     * rebuilds the internal item tree from the provided configuration, and
+     * notifies all connected views to refresh their content.
+     *
+     * @param config The parsed DBC configuration data containing ECUs, messages, and signals.
+     */
+    void setDbcConfig(const Core::DbcConfig& config);
 
     // --- QAbstractItemModel Interface Implementation ---
 
@@ -171,14 +186,6 @@ class DbcModel : public QAbstractItemModel
      * @return Column value as QVariant, or invalid QVariant if not a signal item.
      */
     static QVariant signalColumn(const DbcItem* item, Core::DbcItemType type, int column);
-    /**
-     * @brief Handles Core::DBCParsedEvent and rebuilds the model contents.
-     * @param event Parsed event containing the DBC configuration.
-     *
-     * This method resets the model (beginResetModel/endResetModel) and recreates
-     * the internal item tree from the provided configuration.
-     */
-    void onDbcParsed(const Core::DBCParsedEvent& event);
 
     /**
      * @brief Initializes the root item of the DBC model.
@@ -284,14 +291,6 @@ class DbcModel : public QAbstractItemModel
     void setupData(const Core::DbcConfig& data);
 
     // --- Members ---
-
-    Core::IEventBroker& m_broker;
-
-    /**
-     * @brief RAII handle for the event subscription.
-     * Ensures the subscription stays alive as long as the model exists.
-     */
-    Core::Connection m_dbcParsedConnection;
 
     /** @brief Root item of the internal tree. Owns all children. */
     std::unique_ptr<DbcItem> m_rootItem;

@@ -40,15 +40,15 @@ class DbcComponent : public Core::ITabComponent
 
    public:
     /**
-     * @brief Constructs the DBC component.
-     *
-     * @details
-     * Initializes the tab component and creates the associated view.
-     * Signal and event connections are established during the component
-     * lifecycle in `onStart()`.
-     *
-     * @param broker Reference to the central event broker.
-     */
+         * @brief Constructs the DBC component.
+         *
+         * @details
+         * Initializes the tab component, creates the `DbcModel` and `DbcView`,
+         * and establishes the Model-View connection.
+         *
+         * @param broker Reference to the central event broker used for
+         *               subscribing to parsing events and publishing load requests.
+         */
     explicit DbcComponent(Core::IEventBroker& broker);
 
     /**
@@ -67,6 +67,10 @@ class DbcComponent : public Core::ITabComponent
      * @return Pointer to the root widget of the DBC view.
      */
     auto getView() -> QWidget* override;
+
+    /** @brief Model getter for testing.
+     */
+    [[nodiscard]] auto getModel() const -> DbcModel* { return m_model.get(); }
 
     // --- Core::ILifecycle Interface Implementation ---
 
@@ -94,10 +98,10 @@ class DbcComponent : public Core::ITabComponent
      * collects unique unit strings, and returns them sorted
      * alphabetically (case-insensitive).
      *
-     * @param event The parsed DBC event containing configuration data.
+     * @param config Config to extract units out of.
      * @return A sorted list of unique signal units.
      */
-    static auto extractSignalUnits(const Core::DBCParsedEvent& event) -> QStringList;
+    static auto extractSignalUnits(const Core::DbcConfig& config) -> QStringList;
 
     /**
      * @brief Extracts all unique message senders from a parsed DBC event to provide filtering
@@ -107,10 +111,10 @@ class DbcComponent : public Core::ITabComponent
      * transmitter names. The result is sorted alphabetically
      * (case-insensitive).
      *
-     * @param event The parsed DBC event containing configuration data.
+     * @param config Config to extract senders out of.
      * @return A sorted list of unique message sender names.
      */
-    static auto extractSenders(const Core::DBCParsedEvent& event) -> QStringList;
+    static auto extractSenders(const Core::DbcConfig& config) -> QStringList;
 
    private slots:
     /**
@@ -126,14 +130,16 @@ class DbcComponent : public Core::ITabComponent
 
    private:
     /**
-     * @brief Handles successful DBC parsing events.
-     *
-     * Updates the view state to reflect successful parsing,
-     * enables navigation, and provides extracted metadata
-     * (signal units and message senders) for filtering.
-     *
-     * @param event The parsed DBC event containing configuration data.
-     */
+         * @brief Handles successful DBC parsing events.
+         *
+         * @details
+         * - Pushes the new configuration data into the DbcModel via `setDbcConfig`.
+         * - Updates the view state to reflect successful parsing.
+         * - Enables navigation.
+         * - Extracts and sets metadata (signal units, message senders) for view filtering.
+         *
+         * @param event The parsed DBC event containing configuration data.
+         */
     void onDbcParsed(const Core::DBCParsedEvent& event);
 
     /**

@@ -7,7 +7,7 @@ DbcComponent::DbcComponent(Core::IEventBroker& broker)
     : Core::ITabComponent(broker, Constants::Component::TabId, Constants::Component::TabTitle,
                           QIcon(Constants::Component::TabIcon))
 {
-    m_model = std::make_unique<DbcModel>(broker, this);
+    m_model = std::make_unique<DbcModel>(this);
     m_view = std::make_unique<DbcView>();
     m_view->setSourceModel(m_model.get());
 }
@@ -25,11 +25,11 @@ void DbcComponent::onStop()
     m_parseErrorConn.release();
 }
 
-auto DbcComponent::extractSignalUnits(const Core::DBCParsedEvent& event) -> QStringList
+auto DbcComponent::extractSignalUnits(const Core::DbcConfig& config) -> QStringList
 {
     QSet<QString> uniqueUnits;
 
-    for (const auto& msg : event.config.messageDefinitions)
+    for (const auto& msg : config.messageDefinitions)
     {
         for (const auto& sig : msg.signalDescriptions)
         {
@@ -45,10 +45,10 @@ auto DbcComponent::extractSignalUnits(const Core::DBCParsedEvent& event) -> QStr
     return sortedUnits;
 }
 
-auto DbcComponent::extractSenders(const Core::DBCParsedEvent& event) -> QStringList
+auto DbcComponent::extractSenders(const Core::DbcConfig& config) -> QStringList
 {
     QSet<QString> uniqueSenders;
-    for (const auto& msg : event.config.messageDefinitions)
+    for (const auto& msg : config.messageDefinitions)
     {
         if (!msg.transmitterName.empty())
         {
@@ -68,15 +68,17 @@ void DbcComponent::onFileLoadRequested(const QString& filePath)
 }
 void DbcComponent::onDbcParsed(const Core::DBCParsedEvent& event)
 {
+    m_model->setDbcConfig(event.config);
+
     m_view->getLoadPage().showStatusMessage(Constants::Status::ParseSuccess, false);
     m_view->setNavigationEnabled(true);
 
     // Units for signals page filtering
-    const QStringList units = extractSignalUnits(event);
+    const QStringList units = extractSignalUnits(event.config);
     m_view->setSignalUnits(units);
 
     // Senders for messages page filtering
-    const QStringList senders = extractSenders(event);
+    const QStringList senders = extractSenders(event.config);
     m_view->setAvailableSenders(senders);
 }
 void DbcComponent::onDbcParseError(const Core::DBCParseErrorEvent& event)

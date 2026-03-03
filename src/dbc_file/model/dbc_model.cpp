@@ -39,15 +39,18 @@ auto parentItemFromIndex(const QModelIndex& parent, DbcItem* root) -> DbcItem*
 }
 }  // namespace
 
-DbcModel::DbcModel(Core::IEventBroker& broker, QObject* parent)
-    : QAbstractItemModel(parent), m_broker(broker)
+DbcModel::DbcModel(QObject* parent)
+    : QAbstractItemModel(parent)
 {
     m_rootItem = std::make_unique<DbcItem>(QList<QVariant>{"Root"}, Core::DbcItemType::Root);
-
-    m_dbcParsedConnection = m_broker.subscribe<Core::DBCParsedEvent>(
-        [this](const Core::DBCParsedEvent& event) { onDbcParsed(event); });
 }
 
+void DbcModel::setDbcConfig(const Core::DbcConfig& config)
+{
+    beginResetModel();
+    setupData(config);
+    endResetModel();
+}
 auto DbcModel::index(int row, int column, const QModelIndex& parent) const -> QModelIndex
 {
     // Return an invalid index if the requested index is outside model bounds.
@@ -231,13 +234,6 @@ auto DbcModel::data(const QModelIndex& index, int role) const -> QVariant
     }
 }
 
-void DbcModel::onDbcParsed(const Core::DBCParsedEvent& event)
-{
-    beginResetModel();
-    setupData(event.config);
-    endResetModel();
-}
-
 void DbcModel::setupRoot()
 {
     // Initialize the root row with enough columns to satisfy any view/proxy usage.
@@ -280,7 +276,7 @@ auto DbcModel::createEcuItems(const Core::DbcConfig& data) const -> QHash<QStrin
         const QString ecuName = QString::fromStdString(ecu);
 
         QList<QVariant> ecuData;
-        ecuData.reserve(2);
+        ecuData.reserve(Constants::Columns::EcuColumnCount);
         ecuData.append(ecuName);
         ecuData.append(0);  // total ECU signal count
 
