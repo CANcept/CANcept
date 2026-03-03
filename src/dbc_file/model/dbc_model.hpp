@@ -12,7 +12,6 @@
 
 namespace DbcFile {
 
-
 /**
  * @class DbcModel
  * @brief The hierarchical data model for the DBC file content.

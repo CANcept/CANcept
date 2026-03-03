@@ -519,12 +519,14 @@ TEST_F(DbcModelTestBase, MultipleLoadConfig_ResetsCleanly)
     // Ensure model did not accumulate old data
     EXPECT_NE(firstCount, secondCount);
 }
-TEST_F(DbcModelTestBase, Logic_Linking_IsCaseSensitive) {
-    auto config = DbcConfigBuilder()
-        .node("MyECU")
-        .message(DbcMessageBuilder(1, "SuccessMsg").transmitter("MyECU")) // Match
-        .message(DbcMessageBuilder(2, "FailMsg").transmitter("myecu"))    // Mismatch (Case)
-        .build();
+TEST_F(DbcModelTestBase, Logic_Linking_IsCaseSensitive)
+{
+    auto config =
+        DbcConfigBuilder()
+            .node("MyECU")
+            .message(DbcMessageBuilder(1, "SuccessMsg").transmitter("MyECU"))  // Match
+            .message(DbcMessageBuilder(2, "FailMsg").transmitter("myecu"))     // Mismatch (Case)
+            .build();
 
     model->setDbcConfig(config);
 
@@ -536,7 +538,8 @@ TEST_F(DbcModelTestBase, Logic_Linking_IsCaseSensitive) {
 
     // Orphan Holder has to hold FailMsg
     QModelIndex orphanIdx;
-    for(int i=0; i<model->rowCount(QModelIndex()); ++i) {
+    for (int i = 0; i < model->rowCount(QModelIndex()); ++i)
+    {
         QModelIndex idx = model->index(i, 0, QModelIndex());
         auto type = getVal(idx, DbcFile::DbcRoles::Role_ItemType).value<Core::DbcItemType>();
         if (type == Core::DbcItemType::OrphanHolder) orphanIdx = idx;
@@ -545,4 +548,3 @@ TEST_F(DbcModelTestBase, Logic_Linking_IsCaseSensitive) {
     ASSERT_TRUE(orphanIdx.isValid());
     EXPECT_EQ(getVal(model->index(0, 0, orphanIdx)).toString().toStdString(), "FailMsg");
 }
-
