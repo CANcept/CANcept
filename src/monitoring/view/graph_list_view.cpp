@@ -105,8 +105,8 @@ void GraphListView::deleteGraph(const QString& messageId, const QString& signalN
 {
     for (int i = 0; i < m_signal_graphs.size(); ++i)
     {
-        SignalGraph* graph = m_signal_graphs[i];
-        if (graph->getSignalName() == signalName && graph->getMessageId() == messageId)
+        if (SignalGraph* graph = m_signal_graphs[i];
+            graph->getSignalName() == signalName && graph->getMessageId() == messageId)
         {
             QWidget* container = graph->getContainer();
 
@@ -145,7 +145,7 @@ void GraphListView::signalChecked(bool checked, const QString& messageId, const 
 
 void GraphListView::onDbcChange()
 {
-    for (SignalGraph* graph : m_signal_graphs)
+    for (const SignalGraph* graph : m_signal_graphs)
     {
         deleteGraph(graph->getMessageId(), graph->getSignalName());
     }
@@ -182,7 +182,7 @@ void GraphListView::updateViewData()
             continue;
         }
 
-        int signalCount = m_model->rowCount(messageIndex);
+        const int signalCount = m_model->rowCount(messageIndex);
 
         for (int j = 0; j < signalCount; ++j)
         {
@@ -193,10 +193,10 @@ void GraphListView::updateViewData()
 
             if (currentSignalName == targetSignalName)
             {
-                QVariant timestamps =
+                const QVariant timestamps =
                     m_model->data(messageIndex, MonitoringModel::MonitoringRoles::Role_ValueList);
 
-                QVariant signalValues =
+                const QVariant signalValues =
                     m_model->data(signalIndex, MonitoringModel::MonitoringRoles::Role_ValueList);
 
                 graph->updateGraphData(timestamps, signalValues);
