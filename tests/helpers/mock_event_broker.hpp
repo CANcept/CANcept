@@ -123,7 +123,10 @@ class MockEventBroker final : public Core::IEventBroker
      */
     void _publish(const std::type_index type, const void* data) override
     {
-        _publishEvent(type, data);
+        for (auto function : m_callbacks[type])
+        {
+            function(data);
+        }
     }
 
     /**
