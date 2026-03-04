@@ -336,11 +336,7 @@ void MessagesPage::selectMessageIndex(const QModelIndex& index)
 
     const QString name = nameIdx.data(Qt::DisplayRole).toString();
 
-    uint id = idIdx.data(DbcRoles::Role_Id).toUInt();
-    if (id == 0)
-    {
-        id = idIdx.data(Qt::DisplayRole).toUInt();
-    }
+    uint id = Core::Util::resolveMessageId(idIdx);
 
     const QString sender = senderIdx.data(Qt::DisplayRole).toString();
     const int dlc = dlcIdx.data(Qt::DisplayRole).toInt();

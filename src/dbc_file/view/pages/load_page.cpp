@@ -9,6 +9,7 @@
 #include <QStyle>
 #include <QVBoxLayout>
 #include <QWidget>
+#include <core/util/dbc_utils.hpp>
 
 #include "core/macro/theme.hpp"
 #include "core/theme/style_event.hpp"
@@ -78,20 +79,18 @@ void LoadPage::resetStatus() const
 void LoadPage::dragEnterEvent(QDragEnterEvent* event)
 {
     resetStatus();
-    // extract URLS
-    const QList<QUrl>& urls = event->mimeData()->urls();
-    // Check: only one file dragged? File extension correct?
-    bool isDragValid = urls.size() == 1 && urls.first().toLocalFile().endsWith(
-                                               Constants::LoadPage::FileExt, Qt::CaseInsensitive);
 
-    if (isDragValid)
-    {
-        // Update drag style to change upload zone border color to indicate dragged data is valid
+    QList<QString> filePaths;
+    for (const QUrl& url : event->mimeData()->urls()) {
+        filePaths.append(url.toLocalFile());
+    }
+
+    if (Core::Util::canAcceptDrop(filePaths)) {
         updateDragStyle(m_uploadBoxFrame, Constants::LoadPage::Drag::Valid);
-    } else
-    {
+    } else {
         updateDragStyle(m_uploadBoxFrame, Constants::LoadPage::Drag::Invalid);
     }
+
     event->acceptProposedAction();
 }
 
@@ -115,7 +114,7 @@ void LoadPage::dropEvent(QDropEvent* event)
 
     const QString filePath = urls.first().toLocalFile();
     // Wrong ending warning
-    if (!filePath.endsWith(Constants::LoadPage::FileExt, Qt::CaseInsensitive))
+    if (!Core::Util::isValidFile(filePath))
     {
         showStatusMessage(Constants::LoadPage::Errors::InvalidFileBody, true);
         return;

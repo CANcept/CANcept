@@ -35,6 +35,20 @@ class LoadPage : public QWidget
     ~LoadPage() override;
 
     /**
+     * @return @brief Getter for status text.
+     */
+QString testStatusText() const {
+  return m_statusLabel ? m_statusLabel->text() : QString{};
+ }
+
+ /**
+*
+* @return @brief Getter for status visibility.
+*/
+ bool testStatusVisible() const {
+  return m_statusLabel ? m_statusLabel->isVisible() : false;
+ }
+    /**
      * @brief Displays a status message in the upload zone.
      * @param message The text of the message.
      * @param isError True if this is an error message, false for success/info.
