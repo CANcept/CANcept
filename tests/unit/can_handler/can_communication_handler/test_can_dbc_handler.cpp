@@ -547,3 +547,250 @@ TEST_F(CanDbcHandlerTest, SendMessageWithTooBigValues)
     EXPECT_EQ(lastSentMessage->getRawFrame().data[2], static_cast<__u8>(expectedRawValue));
     EXPECT_EQ(lastSentMessage->getRawFrame().data[3], static_cast<__u8>(expectedRawValue >> 8));
 }
+
+// Big Endian Signal Tests
+
+TEST_F(CanDbcHandlerTest, SendMessageWithBigEndianSignal)
+{
+    const auto dbcConfig = TestHelpers::DbcConfigBuilder()
+                               .version("1.0")
+                               .fileName("test.dbc")
+                               .node("ECU0")
+                               .node("ECU1")
+                               .message(TestHelpers::DbcMessageBuilder(1, "BigEndianMessage")
+                                            .transmitter("ECU0")
+                                            .signal(TestHelpers::DbcSignalBuilder("BigEndianSignal")
+                                                        .startBit(0)
+                                                        .size(16)
+                                                        .bigEndian()
+                                                        .unsigned_()
+                                                        .factor(1.0)
+                                                        .offset(0.0)
+                                                        .range(0.0, 65535.0)
+                                                        .unit("unit")
+                                                        .receiver("ECU1")))
+                               .build();
+    eventBroker->publish(Core::DBCParsedEvent(dbcConfig, "test.dbc"));
+
+    Core::DbcCanMessage sendMessage{
+        .receiveTime = std::chrono::milliseconds(1000),
+        .signalValues = {Core::DbcCanSignal{.name = "BigEndianSignal", .value = 0x1234}},
+        .messageId = 1};
+
+    EXPECT_NO_THROW(eventBroker->publish(Core::SendCanMessageDbcEvent(sendMessage)));
+    EXPECT_EQ(sentMessageCounter, 1);
+    EXPECT_NE(lastSentMessage, nullptr);
+
+    // Big endian: MSB first, so 0x1234 should be stored as [0x12, 0x34]
+    EXPECT_EQ(lastSentMessage->getRawFrame().data[0], 0x12);
+    EXPECT_EQ(lastSentMessage->getRawFrame().data[1], 0x34);
+}
+
+TEST_F(CanDbcHandlerTest, ParseReceivedMessageWithBigEndianSignal)
+{
+    const auto dbcConfig = TestHelpers::DbcConfigBuilder()
+                               .version("1.0")
+                               .fileName("test.dbc")
+                               .node("ECU0")
+                               .node("ECU1")
+                               .message(TestHelpers::DbcMessageBuilder(1, "BigEndianMessage")
+                                            .transmitter("ECU0")
+                                            .signal(TestHelpers::DbcSignalBuilder("BigEndianSignal")
+                                                        .startBit(0)
+                                                        .size(16)
+                                                        .bigEndian()
+                                                        .unsigned_()
+                                                        .factor(1.0)
+                                                        .offset(0.0)
+                                                        .range(0.0, 65535.0)
+                                                        .unit("unit")
+                                                        .receiver("ECU1")))
+                               .build();
+    eventBroker->publish(Core::DBCParsedEvent(dbcConfig, "test.dbc"));
+
+    // Big endian: 0x1234 stored as [0x12, 0x34]
+    std::string rawData;
+    rawData.push_back(0x12);
+    rawData.push_back(0x34);
+    rawData.push_back(0x00);
+    rawData.push_back(0x00);
+    rawData.push_back(0x00);
+    rawData.push_back(0x00);
+    rawData.push_back(0x00);
+    rawData.push_back(0x00);
+
+    const CanMessage message{1, rawData, std::chrono::milliseconds(1000)};
+    canDbcHandler->parseReceivedMessage(&message);
+
+    EXPECT_EQ(receiveMessageCounter, 1);
+    EXPECT_NE(lastReceivedMessage, nullptr);
+    EXPECT_EQ(lastReceivedMessage->signalValues.size(), 1);
+    EXPECT_EQ(lastReceivedMessage->signalValues.front().name, "BigEndianSignal");
+    EXPECT_DOUBLE_EQ(lastReceivedMessage->signalValues.front().value, 0x1234);
+}
+
+TEST_F(CanDbcHandlerTest, MixedEndiannessInSameMessage)
+{
+    const auto dbcConfig =
+        TestHelpers::DbcConfigBuilder()
+            .version("1.0")
+            .fileName("test.dbc")
+            .node("ECU0")
+            .node("ECU1")
+            .message(TestHelpers::DbcMessageBuilder(1, "MixedEndianMessage")
+                         .transmitter("ECU0")
+                         .signal(TestHelpers::DbcSignalBuilder("LittleEndianSignal")
+                                     .startBit(0)
+                                     .size(16)
+                                     .littleEndian()
+                                     .unsigned_()
+                                     .factor(1.0)
+                                     .offset(0.0)
+                                     .range(0.0, 65535.0)
+                                     .unit("unit")
+                                     .receiver("ECU1"))
+                         .signal(TestHelpers::DbcSignalBuilder("BigEndianSignal")
+                                     .startBit(16)
+                                     .size(16)
+                                     .bigEndian()
+                                     .unsigned_()
+                                     .factor(1.0)
+                                     .offset(0.0)
+                                     .range(0.0, 65535.0)
+                                     .unit("unit")
+                                     .receiver("ECU1")))
+            .build();
+    eventBroker->publish(Core::DBCParsedEvent(dbcConfig, "test.dbc"));
+
+    Core::DbcCanMessage sendMessage{
+        .receiveTime = std::chrono::milliseconds(1000),
+        .signalValues = {Core::DbcCanSignal{.name = "LittleEndianSignal", .value = 0x1234},
+                         Core::DbcCanSignal{.name = "BigEndianSignal", .value = 0x5678}},
+        .messageId = 1};
+
+    eventBroker->publish(Core::SendCanMessageDbcEvent(sendMessage));
+    EXPECT_EQ(sentMessageCounter, 1);
+    EXPECT_NE(lastSentMessage, nullptr);
+
+    // Little endian 0x1234: [0x34, 0x12]
+    EXPECT_EQ(lastSentMessage->getRawFrame().data[0], 0x34);
+    EXPECT_EQ(lastSentMessage->getRawFrame().data[1], 0x12);
+
+    // Big endian 0x5678: [0x56, 0x78]
+    EXPECT_EQ(lastSentMessage->getRawFrame().data[2], 0x56);
+    EXPECT_EQ(lastSentMessage->getRawFrame().data[3], 0x78);
+
+    // Parse it back and verify
+    canDbcHandler->parseReceivedMessage(lastSentMessage.get());
+
+    EXPECT_EQ(receiveMessageCounter, 1);
+    EXPECT_NE(lastReceivedMessage, nullptr);
+    EXPECT_EQ(lastReceivedMessage->signalValues.size(), 2);
+
+    for (const auto& signal : lastReceivedMessage->signalValues)
+    {
+        if (signal.name == "LittleEndianSignal")
+        {
+            EXPECT_DOUBLE_EQ(signal.value, 0x1234);
+        } else if (signal.name == "BigEndianSignal")
+        {
+            EXPECT_DOUBLE_EQ(signal.value, 0x5678);
+        }
+    }
+}
+
+TEST_F(CanDbcHandlerTest, BigEndian32BitSignal)
+{
+    const auto dbcConfig =
+        TestHelpers::DbcConfigBuilder()
+            .version("1.0")
+            .fileName("test.dbc")
+            .node("ECU0")
+            .node("ECU1")
+            .message(TestHelpers::DbcMessageBuilder(1, "BigEndianMessage")
+                         .transmitter("ECU0")
+                         .signal(TestHelpers::DbcSignalBuilder("BigEndian32BitSignal")
+                                     .startBit(0)
+                                     .size(32)
+                                     .bigEndian()
+                                     .unsigned_()
+                                     .factor(1.0)
+                                     .offset(0.0)
+                                     .range(0.0, 4294967295.0)
+                                     .unit("unit")
+                                     .receiver("ECU1")))
+            .build();
+    eventBroker->publish(Core::DBCParsedEvent(dbcConfig, "test.dbc"));
+
+    const double testValue = 0x12345678;
+
+    Core::DbcCanMessage sendMessage{
+        .receiveTime = std::chrono::milliseconds(1000),
+        .signalValues = {Core::DbcCanSignal{.name = "BigEndian32BitSignal", .value = testValue}},
+        .messageId = 1};
+
+    eventBroker->publish(Core::SendCanMessageDbcEvent(sendMessage));
+    EXPECT_EQ(sentMessageCounter, 1);
+    EXPECT_NE(lastSentMessage, nullptr);
+
+    // Big endian 0x12345678: [0x12, 0x34, 0x56, 0x78]
+    EXPECT_EQ(lastSentMessage->getRawFrame().data[0], 0x12);
+    EXPECT_EQ(lastSentMessage->getRawFrame().data[1], 0x34);
+    EXPECT_EQ(lastSentMessage->getRawFrame().data[2], 0x56);
+    EXPECT_EQ(lastSentMessage->getRawFrame().data[3], 0x78);
+
+    // Parse it back
+    canDbcHandler->parseReceivedMessage(lastSentMessage.get());
+
+    EXPECT_EQ(receiveMessageCounter, 1);
+    EXPECT_NE(lastReceivedMessage, nullptr);
+    EXPECT_DOUBLE_EQ(lastReceivedMessage->signalValues.front().value, testValue);
+}
+
+TEST_F(CanDbcHandlerTest, LittleEndian32BitSignal)
+{
+    const auto dbcConfig =
+        TestHelpers::DbcConfigBuilder()
+            .version("1.0")
+            .fileName("test.dbc")
+            .node("ECU0")
+            .node("ECU1")
+            .message(TestHelpers::DbcMessageBuilder(1, "LittleEndianMessage")
+                         .transmitter("ECU0")
+                         .signal(TestHelpers::DbcSignalBuilder("LittleEndian32BitSignal")
+                                     .startBit(0)
+                                     .size(32)
+                                     .littleEndian()
+                                     .unsigned_()
+                                     .factor(1.0)
+                                     .offset(0.0)
+                                     .range(0.0, 4294967295.0)
+                                     .unit("unit")
+                                     .receiver("ECU1")))
+            .build();
+    eventBroker->publish(Core::DBCParsedEvent(dbcConfig, "test.dbc"));
+
+    const double testValue = 0x12345678;
+
+    Core::DbcCanMessage sendMessage{
+        .receiveTime = std::chrono::milliseconds(1000),
+        .signalValues = {Core::DbcCanSignal{.name = "LittleEndian32BitSignal", .value = testValue}},
+        .messageId = 1};
+
+    eventBroker->publish(Core::SendCanMessageDbcEvent(sendMessage));
+    EXPECT_EQ(sentMessageCounter, 1);
+    EXPECT_NE(lastSentMessage, nullptr);
+
+    // Little endian 0x12345678: [0x78, 0x56, 0x34, 0x12]
+    EXPECT_EQ(lastSentMessage->getRawFrame().data[0], 0x78);
+    EXPECT_EQ(lastSentMessage->getRawFrame().data[1], 0x56);
+    EXPECT_EQ(lastSentMessage->getRawFrame().data[2], 0x34);
+    EXPECT_EQ(lastSentMessage->getRawFrame().data[3], 0x12);
+
+    // Parse it back
+    canDbcHandler->parseReceivedMessage(lastSentMessage.get());
+
+    EXPECT_EQ(receiveMessageCounter, 1);
+    EXPECT_NE(lastReceivedMessage, nullptr);
+    EXPECT_DOUBLE_EQ(lastReceivedMessage->signalValues.front().value, testValue);
+}
