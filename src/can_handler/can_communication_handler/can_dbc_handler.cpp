@@ -121,6 +121,12 @@ void CanDbcHandler::handleSendMessage(const Core::SendCanMessageDbcEvent& event)
                     event.canMessage.messageId, dbcMessages.size());
             return;
         }
+        if (event.canMessage.messageId < 0)
+        {
+            LOG_ERR("CanDbcHandler", "Message ID 0x{:X} is negative, invalid CAN ID>",
+                    event.canMessage.messageId);
+            return;
+        }
         const Core::DbcMessageDescription* currentMessageDescription =
             dbcMessages[event.canMessage.messageId];
         if (currentMessageDescription == nullptr)
