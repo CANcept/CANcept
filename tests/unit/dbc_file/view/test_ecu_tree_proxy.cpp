@@ -1,29 +1,33 @@
 #include <gtest/gtest.h>
-#include <QStandardItemModel>
-#include <QStandardItem>
 
-#include "dbc_file/view/proxies/ecu_tree_proxy.hpp"
+#include <QStandardItem>
+#include <QStandardItemModel>
+
+#include "core/enum/dbc_itemtype.hpp"
 #include "dbc_file/constants.hpp"
 #include "dbc_file/model/dbc_roles.hpp"
-#include "core/enum/dbc_itemtype.hpp"
+#include "dbc_file/view/proxies/ecu_tree_proxy.hpp"
 
 using namespace DbcFile;
 
-class TestableEcuTreeProxy : public EcuTreeProxy {
-public:
+class TestableEcuTreeProxy : public EcuTreeProxy
+{
+   public:
     explicit TestableEcuTreeProxy(QObject* parent = nullptr) : EcuTreeProxy(parent) {}
 
-    bool publicFilterAcceptsRow(int sourceRow, const QModelIndex& sourceParent) const {
+    bool publicFilterAcceptsRow(int sourceRow, const QModelIndex& sourceParent) const
+    {
         return filterAcceptsRow(sourceRow, sourceParent);
     }
 };
 
 class EcuTreeProxyTest : public ::testing::Test
 {
-protected:
+   protected:
     QStandardItemModel dummyModel;
 
-    static QStandardItem* createItem(const QString& name, Core::DbcItemType type) {
+    static QStandardItem* createItem(const QString& name, Core::DbcItemType type)
+    {
         auto* item = new QStandardItem(name);
         item->setData(QVariant::fromValue(type), DbcFile::DbcRoles::Role_ItemType);
         return item;
@@ -62,7 +66,8 @@ protected:
 // TESTS: Structural Filtering (Overview & Orphans)
 // ============================================================================
 
-TEST_F(EcuTreeProxyTest, HidesSpecialNodes) {
+TEST_F(EcuTreeProxyTest, HidesSpecialNodes)
+{
     EcuTreeProxy proxy;
     proxy.setSourceModel(&dummyModel);
 
@@ -79,7 +84,8 @@ TEST_F(EcuTreeProxyTest, HidesSpecialNodes) {
 // TESTS: Category Filtering (Active vs All)
 // ===========================================================================
 
-TEST_F(EcuTreeProxyTest, Filter_SendingOnly) {
+TEST_F(EcuTreeProxyTest, Filter_SendingOnly)
+{
     EcuTreeProxy proxy;
     proxy.setSourceModel(&dummyModel);
 
@@ -93,7 +99,8 @@ TEST_F(EcuTreeProxyTest, Filter_SendingOnly) {
     EXPECT_EQ(name, "EngineECU");
 }
 
-TEST_F(EcuTreeProxyTest, Filter_All) {
+TEST_F(EcuTreeProxyTest, Filter_All)
+{
     EcuTreeProxy proxy;
     proxy.setSourceModel(&dummyModel);
 
@@ -107,7 +114,8 @@ TEST_F(EcuTreeProxyTest, Filter_All) {
     EXPECT_EQ(proxy.rowCount(QModelIndex()), 2);
 }
 
-TEST_F(EcuTreeProxyTest, Filter_Category_ActiveOnly_KeepsActiveEcus) {
+TEST_F(EcuTreeProxyTest, Filter_Category_ActiveOnly_KeepsActiveEcus)
+{
     TestableEcuTreeProxy proxy;
     proxy.setSourceModel(&dummyModel);
 
@@ -124,7 +132,8 @@ TEST_F(EcuTreeProxyTest, Filter_Category_ActiveOnly_KeepsActiveEcus) {
 // TESTS: Text Search Filtering
 // ============================================================================
 
-TEST_F(EcuTreeProxyTest, Filter_Text_MatchesCaseInsensitive) {
+TEST_F(EcuTreeProxyTest, Filter_Text_MatchesCaseInsensitive)
+{
     EcuTreeProxy proxy;
     proxy.setSourceModel(&dummyModel);
 
@@ -135,7 +144,8 @@ TEST_F(EcuTreeProxyTest, Filter_Text_MatchesCaseInsensitive) {
     EXPECT_EQ(name, "GatewayECU");
 }
 
-TEST_F(EcuTreeProxyTest, Filter_Text_NoMatchHidesAll) {
+TEST_F(EcuTreeProxyTest, Filter_Text_NoMatchHidesAll)
+{
     TestableEcuTreeProxy proxy;
     proxy.setSourceModel(&dummyModel);
 
@@ -152,7 +162,8 @@ TEST_F(EcuTreeProxyTest, Filter_Text_NoMatchHidesAll) {
 // TESTS: Tree Structure Logic (Leaves)
 // ============================================================================
 
-TEST_F(EcuTreeProxyTest, Logic_HasChildren_BlocksSignals) {
+TEST_F(EcuTreeProxyTest, Logic_HasChildren_BlocksSignals)
+{
     EcuTreeProxy proxy;
     proxy.setSourceModel(&dummyModel);
 
@@ -180,7 +191,8 @@ TEST_F(EcuTreeProxyTest, Logic_HasChildren_BlocksSignals) {
 // TESTS: Columns & Robustness
 // ============================================================================
 
-TEST_F(EcuTreeProxyTest, Logic_ColumnCount_IsAlwaysOne) {
+TEST_F(EcuTreeProxyTest, Logic_ColumnCount_IsAlwaysOne)
+{
     EcuTreeProxy proxy;
     proxy.setSourceModel(&dummyModel);
 
@@ -192,7 +204,8 @@ TEST_F(EcuTreeProxyTest, Logic_ColumnCount_IsAlwaysOne) {
     EXPECT_EQ(proxy.columnCount(engineIdx), 1);
 }
 
-TEST_F(EcuTreeProxyTest, Robustness_InvalidIndices) {
+TEST_F(EcuTreeProxyTest, Robustness_InvalidIndices)
+{
     EcuTreeProxy proxy;
     proxy.setSourceModel(&dummyModel);
 
@@ -203,25 +216,27 @@ TEST_F(EcuTreeProxyTest, Robustness_InvalidIndices) {
     EXPECT_EQ(proxy.columnCount(invalid), 1);
 }
 
-TEST_F(EcuTreeProxyTest, Robustness_HandlesNullModel) {
+TEST_F(EcuTreeProxyTest, Robustness_HandlesNullModel)
+{
     EcuTreeProxy proxy;
     proxy.setSourceModel(nullptr);
     EXPECT_EQ(proxy.rowCount(QModelIndex()), 0);
 }
 
-TEST_F(EcuTreeProxyTest, Robustness_HandlesEmptyModel) {
+TEST_F(EcuTreeProxyTest, Robustness_HandlesEmptyModel)
+{
     EcuTreeProxy proxy;
     QStandardItemModel emptyModel;
     proxy.setSourceModel(&emptyModel);
     EXPECT_EQ(proxy.rowCount(QModelIndex()), 0);
 }
 
-TEST_F(EcuTreeProxyTest, Robustness_FilterAcceptsRow_HandlesInvalidIndex) {
+TEST_F(EcuTreeProxyTest, Robustness_FilterAcceptsRow_HandlesInvalidIndex)
+{
     TestableEcuTreeProxy proxy;
     proxy.setSourceModel(&dummyModel);
 
-    bool accepted = proxy.publicFilterAcceptsRow(999, QModelIndex()); // Root parent
+    bool accepted = proxy.publicFilterAcceptsRow(999, QModelIndex());  // Root parent
 
     EXPECT_FALSE(accepted);
 }
-

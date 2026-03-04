@@ -14,20 +14,24 @@
 
 using namespace DbcFile;
 
-class DbcViewLogicTest : public ::testing::Test {
-protected:
-    static void invokeSlot(QObject* obj, const char* slot, const QString& arg) {
+class DbcViewLogicTest : public ::testing::Test
+{
+   protected:
+    static void invokeSlot(QObject* obj, const char* slot, const QString& arg)
+    {
         bool success = QMetaObject::invokeMethod(obj, slot, Q_ARG(QString, arg));
         ASSERT_TRUE(success) << "Slot " << slot << " not found or arguments mismatch!";
     }
 
-    static void invokeSlot(QObject* obj, const char* slot, int arg) {
+    static void invokeSlot(QObject* obj, const char* slot, int arg)
+    {
         bool success = QMetaObject::invokeMethod(obj, slot, Q_ARG(int, arg));
         ASSERT_TRUE(success) << "Slot " << slot << " not found or arguments mismatch!";
     }
 
     template <typename T>
-    T* getPage(DbcView& view, int index) {
+    T* getPage(DbcView& view, int index)
+    {
         auto* stack = view.findChild<QStackedWidget*>();
         if (!stack || index >= stack->count()) return nullptr;
         return qobject_cast<T*>(stack->widget(index));
@@ -37,7 +41,8 @@ protected:
 // ============================================================================
 // 1. INITIALIZATION & STRUCTURE
 // ============================================================================
-TEST_F(DbcViewLogicTest, InitialStructure_PagesExist) {
+TEST_F(DbcViewLogicTest, InitialStructure_PagesExist)
+{
     DbcView view;
     auto* stack = view.findChild<QStackedWidget*>();
     ASSERT_NE(stack, nullptr);
@@ -54,7 +59,8 @@ TEST_F(DbcViewLogicTest, InitialStructure_PagesExist) {
 // ============================================================================
 // 2. MODEL WIRING
 // ============================================================================
-TEST_F(DbcViewLogicTest, SetSourceModel_CreatesProxies) {
+TEST_F(DbcViewLogicTest, SetSourceModel_CreatesProxies)
+{
     DbcView view;
     QStandardItemModel dummyModel;
 
@@ -76,7 +82,8 @@ TEST_F(DbcViewLogicTest, SetSourceModel_CreatesProxies) {
 // ============================================================================
 // 3. NAVIGATION LOGIC
 // ============================================================================
-TEST_F(DbcViewLogicTest, SidebarSwitch_ChangesStackIndex) {
+TEST_F(DbcViewLogicTest, SidebarSwitch_ChangesStackIndex)
+{
     DbcView view;
     auto* stack = view.findChild<QStackedWidget*>();
     ASSERT_NE(stack, nullptr);
@@ -90,7 +97,8 @@ TEST_F(DbcViewLogicTest, SidebarSwitch_ChangesStackIndex) {
     EXPECT_EQ(stack->currentIndex(), Constants::Sidebar::INDEX_SIGNALS);
 }
 
-TEST_F(DbcViewLogicTest, SidebarSwitch_InvalidIndices_Ignored) {
+TEST_F(DbcViewLogicTest, SidebarSwitch_InvalidIndices_Ignored)
+{
     DbcView view;
     auto* stack = view.findChild<QStackedWidget*>();
     ASSERT_NE(stack, nullptr);
@@ -107,7 +115,8 @@ TEST_F(DbcViewLogicTest, SidebarSwitch_InvalidIndices_Ignored) {
 // ============================================================================
 // 4. FILTER LOGIC
 // ============================================================================
-TEST_F(DbcViewLogicTest, MessageFilter_UpdatesProxy) {
+TEST_F(DbcViewLogicTest, MessageFilter_UpdatesProxy)
+{
     DbcView view;
     QStandardItemModel dummyModel;
     view.setSourceModel(&dummyModel);
@@ -122,7 +131,8 @@ TEST_F(DbcViewLogicTest, MessageFilter_UpdatesProxy) {
     EXPECT_EQ(proxy->getFilterMessageSender(), "EngineECU");
 }
 
-TEST_F(DbcViewLogicTest, SignalFilter_UpdatesProxy) {
+TEST_F(DbcViewLogicTest, SignalFilter_UpdatesProxy)
+{
     DbcView view;
     QStandardItemModel dummyModel;
     view.setSourceModel(&dummyModel);
@@ -137,7 +147,8 @@ TEST_F(DbcViewLogicTest, SignalFilter_UpdatesProxy) {
     EXPECT_EQ(proxy->getSignalFilterUnit(), "km/h");
 }
 
-TEST_F(DbcViewLogicTest, EcuFilter_UpdatesProxy) {
+TEST_F(DbcViewLogicTest, EcuFilter_UpdatesProxy)
+{
     DbcView view;
     QStandardItemModel dummyModel;
     view.setSourceModel(&dummyModel);
@@ -155,7 +166,8 @@ TEST_F(DbcViewLogicTest, EcuFilter_UpdatesProxy) {
 // ============================================================================
 // 5. ROBUSTNESS
 // ============================================================================
-TEST_F(DbcViewLogicTest, Slots_DoNotCrashWithoutModel) {
+TEST_F(DbcViewLogicTest, Slots_DoNotCrashWithoutModel)
+{
     DbcView view;
 
     EXPECT_NO_THROW(invokeSlot(&view, "onMessageFilterTextChanged", "Text"));
@@ -163,12 +175,14 @@ TEST_F(DbcViewLogicTest, Slots_DoNotCrashWithoutModel) {
     EXPECT_NO_THROW(invokeSlot(&view, "onEcuFilterTextChanged", "Text"));
 }
 
-TEST_F(DbcViewLogicTest, SetSourceModel_NullHandled) {
+TEST_F(DbcViewLogicTest, SetSourceModel_NullHandled)
+{
     DbcView view;
     EXPECT_NO_THROW(view.setSourceModel(nullptr));
 }
 
-TEST_F(DbcViewLogicTest, PublicAPI_SettersDoNotCrash) {
+TEST_F(DbcViewLogicTest, PublicAPI_SettersDoNotCrash)
+{
     DbcView view;
 
     EXPECT_NO_THROW(view.setSignalUnits({"km/h", "rpm"}));

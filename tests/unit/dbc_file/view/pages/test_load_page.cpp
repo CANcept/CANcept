@@ -7,16 +7,19 @@
 
 using namespace DbcFile;
 
-class LoadPageLogicTest : public ::testing::Test {
-protected:
+class LoadPageLogicTest : public ::testing::Test
+{
+   protected:
     LoadPage* page = nullptr;
 
-    void SetUp() override {
+    void SetUp() override
+    {
         page = new LoadPage();
         page->show();
     }
 
-    void TearDown() override {
+    void TearDown() override
+    {
         delete page;
     }
 };
@@ -24,7 +27,8 @@ protected:
 // ============================================================================
 // 1. STATUS MESSAGES
 // ============================================================================
-TEST_F(LoadPageLogicTest, ShowStatusMessageSetsTextAndVisible) {
+TEST_F(LoadPageLogicTest, ShowStatusMessageSetsTextAndVisible)
+{
     page->showStatusMessage("Parsing...", false);
     EXPECT_EQ(page->testStatusText(), "Parsing...");
     EXPECT_TRUE(page->testStatusVisible());
@@ -34,7 +38,8 @@ TEST_F(LoadPageLogicTest, ShowStatusMessageSetsTextAndVisible) {
     EXPECT_TRUE(page->testStatusVisible());
 }
 
-TEST_F(LoadPageLogicTest, ResetStatusClearsMessageAndHides) {
+TEST_F(LoadPageLogicTest, ResetStatusClearsMessageAndHides)
+{
     page->showStatusMessage("Error", true);
     page->resetStatus();
     EXPECT_EQ(page->testStatusText(), "");
@@ -44,7 +49,8 @@ TEST_F(LoadPageLogicTest, ResetStatusClearsMessageAndHides) {
 // ============================================================================
 // 2. DROP EVENT LOGIC
 // ============================================================================
-TEST_F(LoadPageLogicTest, DropEventEmitsFileSelectedOnValidFile) {
+TEST_F(LoadPageLogicTest, DropEventEmitsFileSelectedOnValidFile)
+{
     QSignalSpy spy(page, &LoadPage::fileSelected);
 
     const QString validFile = "/tmp/test.dbc";
@@ -56,13 +62,15 @@ TEST_F(LoadPageLogicTest, DropEventEmitsFileSelectedOnValidFile) {
     EXPECT_EQ(spy.takeFirst().at(0).toString(), validFile);
 }
 
-TEST_F(LoadPageLogicTest, DropEventShowsErrorForTooManyFiles) {
+TEST_F(LoadPageLogicTest, DropEventShowsErrorForTooManyFiles)
+{
     page->showStatusMessage(Constants::LoadPage::Errors::TooManyFiles, true);
     EXPECT_EQ(page->testStatusText(), Constants::LoadPage::Errors::TooManyFiles);
     EXPECT_TRUE(page->testStatusVisible());
 }
 
-TEST_F(LoadPageLogicTest, DropEventShowsErrorForInvalidFile) {
+TEST_F(LoadPageLogicTest, DropEventShowsErrorForInvalidFile)
+{
     page->showStatusMessage(Constants::LoadPage::Errors::InvalidFileBody, true);
     EXPECT_EQ(page->testStatusText(), Constants::LoadPage::Errors::InvalidFileBody);
     EXPECT_TRUE(page->testStatusVisible());
@@ -71,7 +79,8 @@ TEST_F(LoadPageLogicTest, DropEventShowsErrorForInvalidFile) {
 // ============================================================================
 // 3. BROWSE BUTTON LOGIC
 // ============================================================================
-TEST_F(LoadPageLogicTest, OnBrowseButtonClickedWithInvalidFileShowsError) {
+TEST_F(LoadPageLogicTest, OnBrowseButtonClickedWithInvalidFileShowsError)
+{
     page->showStatusMessage(Constants::LoadPage::Errors::InvalidFileBody, true);
     EXPECT_TRUE(page->testStatusVisible());
 }
@@ -79,7 +88,8 @@ TEST_F(LoadPageLogicTest, OnBrowseButtonClickedWithInvalidFileShowsError) {
 // ============================================================================
 // 4. SIGNAL EMISSION
 // ============================================================================
-TEST_F(LoadPageLogicTest, FileSelectedSignalIsEmitted) {
+TEST_F(LoadPageLogicTest, FileSelectedSignalIsEmitted)
+{
     QSignalSpy spy(page, &LoadPage::fileSelected);
     const QString path = "/tmp/dummy.dbc";
 
