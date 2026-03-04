@@ -62,6 +62,7 @@ auto MonitoringModel::index(int row, int column, const QModelIndex& parent) cons
             return createIndex(row, column, reinterpret_cast<void*>(parent.row() + 1));
         }
     }
+    return {};
 }
 
 auto MonitoringModel::parent(const QModelIndex& child) const -> QModelIndex
@@ -260,20 +261,6 @@ void MonitoringModel::onIncomingDbcFrame(const Core::DbcCanMessage& message)
         return;
     }
 
-    // Find row index for message and create msgIdx
-    int messageRow = -1;
-    int currentRow = 0;
-    for (const auto& def : m_currentDbc->messageDefinitions)
-    {
-        if (def.messageId == message.messageId)
-        {
-            messageRow = currentRow;
-            break;
-        }
-        currentRow++;
-    }
-    QModelIndex msgIdx = index(messageRow, 0, QModelIndex());
-
     int j = 0;
     for (auto& signalName : messageValues->at(message.messageId).signalNames)
     {
@@ -294,30 +281,15 @@ void MonitoringModel::onIncomingDbcFrame(const Core::DbcCanMessage& message)
         j++;
     }
     messageValues->at(message.messageId).timestamps.push_back(message.receiveTime.count());
-
-    // Notify that the Message row changed
-    emit dataChanged(msgIdx, msgIdx);
-
-    // Notify that all child Signal rows changed
-    if (rowCount(msgIdx) > 0)
-    {
-        QModelIndex firstSig = index(0, 0, msgIdx);
-        QModelIndex lastSig = index(rowCount(msgIdx) - 1, 0, msgIdx);
-        emit dataChanged(firstSig, lastSig);
-    }
 }
 
 void MonitoringModel::onDbcChange(const Core::DbcConfig& config)
 {
-    beginResetModel();
     m_currentDbc = config;
     messageValues = std::make_unique<std::array<MessageTimestamp, 2048>>();
-    // Clear and rebuild ID-to-Row mapping for fast lookup
-    m_idToRow.clear();
     int row = 0;
     for (auto& messageDefinition : m_currentDbc->messageDefinitions)
     {
-        m_idToRow[messageDefinition.messageId] = row;
         std::vector<QList<double>> signalValues;
         QList<QString> signalNames;
         for (auto& signalDescription : messageDefinition.signalDescriptions)
@@ -333,7 +305,6 @@ void MonitoringModel::onDbcChange(const Core::DbcConfig& config)
             .timestamps = {}, .signalValues = signalValues, .signalNames = signalNames};
         row++;
     }
-    endResetModel();
 }
 
 void MonitoringModel::eraseOldData()

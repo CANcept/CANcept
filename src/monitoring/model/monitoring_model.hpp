@@ -8,7 +8,6 @@
 #include <atomic>
 #include <optional>
 #include <thread>
-#include <unordered_map>
 #include <vector>
 
 #include "core/dto/can_dto.hpp"
@@ -38,7 +37,7 @@ struct MessageTimestamp {
  * via dedicated Qt signals, enabling loose coupling with visualization
  * components.
  */
-class MonitoringModel : public QAbstractItemModel
+class MonitoringModel final : public QAbstractItemModel
 {
     Q_OBJECT
    public:
@@ -68,8 +67,8 @@ class MonitoringModel : public QAbstractItemModel
     /**
      * @brief Returns the model index for the given row and column.
      */
-    [[nodiscard]] auto index(int row, int column,
-                             const QModelIndex& parent) const -> QModelIndex override;
+    [[nodiscard]] auto index(int row, int column, const QModelIndex& parent) const
+        -> QModelIndex override;
 
     /**
      * @brief Returns the parent index of a given model index.
@@ -107,7 +106,6 @@ class MonitoringModel : public QAbstractItemModel
     void eraseOldData();
 
    private:
-    std::unordered_map<uint32_t, int> m_idToRow;
     std::unique_ptr<std::array<MessageTimestamp, 2048>> messageValues;
     std::optional<Core::DbcConfig> m_currentDbc;
     std::atomic<bool> _execute;
