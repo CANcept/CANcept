@@ -5,7 +5,6 @@
 
 // Core Interfaces & Events
 #include "core/event/dbc_event.hpp"
-#include "core/interface/i_event_broker.hpp"
 
 // Model Internal Components
 #include "dbc_item.hpp"
@@ -127,7 +126,6 @@ class DbcModel : public QAbstractItemModel
     [[nodiscard]] auto data(const QModelIndex& index, int role) const -> QVariant override;
 
    private:
-
     /**
      * @brief Initializes the root item of the DBC model.
      *
