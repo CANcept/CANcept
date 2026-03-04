@@ -3,9 +3,7 @@
 #include <QString>
 #include <QList>
 
-// Dein Header einbinden
 #include "core/util/dbc_utils.hpp"
-// Ggf. Header für Konstanten und Rollen einbinden, falls nicht in dbc_utils.hpp enthalten
 #include "dbc_file/constants.hpp"
 #include "dbc_file/model/dbc_roles.hpp"
 

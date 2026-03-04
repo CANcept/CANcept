@@ -7,10 +7,11 @@
 #include "tests/helpers/dbc_config_builder.hpp"
 class FlatListProxyTest : public ::testing::Test
 {
-protected:
+   protected:
     QStandardItemModel dummyModel;
 
- static QStandardItem* createItem(const QString& name, Core::DbcItemType type) {
+    static QStandardItem* createItem(const QString& name, Core::DbcItemType type)
+    {
         auto* item = new QStandardItem(name);
         item->setData(QVariant::fromValue(type), DbcFile::DbcRoles::Role_ItemType);
         return item;
@@ -25,35 +26,35 @@ protected:
         engineEcu->setData(1, DbcFile::DbcRoles::Role_ChildCount);
         dummyModel.appendRow(engineEcu);
 
-            // Message: SpeedMsg
-            auto* speedMsg = createItem("SpeedMsg", Core::DbcItemType::Message);
-            speedMsg->setData("EngineECU", DbcFile::DbcRoles::Role_Sender);
-            engineEcu->appendRow(speedMsg);
+        // Message: SpeedMsg
+        auto* speedMsg = createItem("SpeedMsg", Core::DbcItemType::Message);
+        speedMsg->setData("EngineECU", DbcFile::DbcRoles::Role_Sender);
+        engineEcu->appendRow(speedMsg);
 
-                // Signal: VehicleSpeed
-                auto* speedSig = createItem("VehicleSpeed", Core::DbcItemType::Signal);
-                speedSig->setData("km/h", DbcFile::DbcRoles::Role_Unit);
-                speedMsg->appendRow(speedSig);
+        // Signal: VehicleSpeed
+        auto* speedSig = createItem("VehicleSpeed", Core::DbcItemType::Signal);
+        speedSig->setData("km/h", DbcFile::DbcRoles::Role_Unit);
+        speedMsg->appendRow(speedSig);
 
-                // Signal: RPM
-                auto* rpmSig = createItem("EngineRPM", Core::DbcItemType::Signal);
-                rpmSig->setData("rpm", DbcFile::DbcRoles::Role_Unit);
-                speedMsg->appendRow(rpmSig);
+        // Signal: RPM
+        auto* rpmSig = createItem("EngineRPM", Core::DbcItemType::Signal);
+        rpmSig->setData("rpm", DbcFile::DbcRoles::Role_Unit);
+        speedMsg->appendRow(rpmSig);
 
         // --- 3. BRAKE ECU (Active) ---
         auto* brakeEcu = createItem("BrakeECU", Core::DbcItemType::Ecu);
         brakeEcu->setData(1, DbcFile::DbcRoles::Role_ChildCount);
         dummyModel.appendRow(brakeEcu);
 
-            // Message: BrakeMsg
-            auto* brakeMsg = createItem("BrakeMsg", Core::DbcItemType::Message);
-            brakeMsg->setData("BrakeECU", DbcFile::DbcRoles::Role_Sender);
-            brakeEcu->appendRow(brakeMsg);
+        // Message: BrakeMsg
+        auto* brakeMsg = createItem("BrakeMsg", Core::DbcItemType::Message);
+        brakeMsg->setData("BrakeECU", DbcFile::DbcRoles::Role_Sender);
+        brakeEcu->appendRow(brakeMsg);
 
-                // Signal: BrakeTemp
-                auto* tempSig = createItem("BrakeTemp", Core::DbcItemType::Signal);
-                tempSig->setData("C", DbcFile::DbcRoles::Role_Unit);
-                brakeMsg->appendRow(tempSig);
+        // Signal: BrakeTemp
+        auto* tempSig = createItem("BrakeTemp", Core::DbcItemType::Signal);
+        tempSig->setData("C", DbcFile::DbcRoles::Role_Unit);
+        brakeMsg->appendRow(tempSig);
 
         // --- 4. GATEWAY ECU (Passive / Empty) ---
         auto* gatewayEcu = createItem("GatewayECU", Core::DbcItemType::Ecu);
@@ -64,16 +65,15 @@ protected:
         auto* orphanHolder = createItem("Orphan Messages", Core::DbcItemType::OrphanHolder);
         dummyModel.appendRow(orphanHolder);
 
-            // Message: UnknownMsg
-            auto* unknownMsg = createItem("UnknownMsg", Core::DbcItemType::Message);
-            unknownMsg->setData("Unknown", DbcFile::DbcRoles::Role_Sender);
-            orphanHolder->appendRow(unknownMsg);
+        // Message: UnknownMsg
+        auto* unknownMsg = createItem("UnknownMsg", Core::DbcItemType::Message);
+        unknownMsg->setData("Unknown", DbcFile::DbcRoles::Role_Sender);
+        orphanHolder->appendRow(unknownMsg);
 
-                // Signal: GhostSig
-                auto* ghostSig = createItem("GhostSig", Core::DbcItemType::Signal);
-                ghostSig->setData("", DbcFile::DbcRoles::Role_Unit);
-                unknownMsg->appendRow(ghostSig);
-
+        // Signal: GhostSig
+        auto* ghostSig = createItem("GhostSig", Core::DbcItemType::Signal);
+        ghostSig->setData("", DbcFile::DbcRoles::Role_Unit);
+        unknownMsg->appendRow(ghostSig);
     }
 };
 
@@ -81,38 +81,48 @@ protected:
 // TESTS: FlatListProxy (Basic Functionality by Type)
 // ============================================================================
 
-TEST_F(FlatListProxyTest, FlatList_ECUs_FlattensHierarchy) {
+TEST_F(FlatListProxyTest, FlatList_ECUs_FlattensHierarchy)
+{
     DbcFile::FlatListProxy proxy(Core::DbcItemType::Ecu);
     proxy.setSourceModel(&dummyModel);
 
     EXPECT_EQ(proxy.rowCount(QModelIndex()), 3);
-    EXPECT_EQ(proxy.data(proxy.index(0,0, QModelIndex()), Qt::DisplayRole).toString(), "EngineECU");
-    EXPECT_EQ(proxy.data(proxy.index(1,0, QModelIndex()), Qt::DisplayRole).toString(), "BrakeECU");
-    EXPECT_EQ(proxy.data(proxy.index(2,0, QModelIndex()), Qt::DisplayRole).toString(), "GatewayECU");
+    EXPECT_EQ(proxy.data(proxy.index(0, 0, QModelIndex()), Qt::DisplayRole).toString(),
+              "EngineECU");
+    EXPECT_EQ(proxy.data(proxy.index(1, 0, QModelIndex()), Qt::DisplayRole).toString(), "BrakeECU");
+    EXPECT_EQ(proxy.data(proxy.index(2, 0, QModelIndex()), Qt::DisplayRole).toString(),
+              "GatewayECU");
 }
 
-TEST_F(FlatListProxyTest, FlatList_Messages_IncludesOrphans) {
+TEST_F(FlatListProxyTest, FlatList_Messages_IncludesOrphans)
+{
     DbcFile::FlatListProxy proxy(Core::DbcItemType::Message);
     proxy.setSourceModel(&dummyModel);
 
     EXPECT_EQ(proxy.rowCount(QModelIndex()), 3);
-    EXPECT_EQ(proxy.data(proxy.index(0,0, QModelIndex()), Qt::DisplayRole).toString(), "SpeedMsg");
-    EXPECT_EQ(proxy.data(proxy.index(1,0, QModelIndex()), Qt::DisplayRole).toString(), "BrakeMsg");
-    EXPECT_EQ(proxy.data(proxy.index(2,0, QModelIndex()), Qt::DisplayRole).toString(), "UnknownMsg");
+    EXPECT_EQ(proxy.data(proxy.index(0, 0, QModelIndex()), Qt::DisplayRole).toString(), "SpeedMsg");
+    EXPECT_EQ(proxy.data(proxy.index(1, 0, QModelIndex()), Qt::DisplayRole).toString(), "BrakeMsg");
+    EXPECT_EQ(proxy.data(proxy.index(2, 0, QModelIndex()), Qt::DisplayRole).toString(),
+              "UnknownMsg");
 }
 
-TEST_F(FlatListProxyTest, FlatList_Signals_FlattensDeepHierarchy) {
+TEST_F(FlatListProxyTest, FlatList_Signals_FlattensDeepHierarchy)
+{
     DbcFile::FlatListProxy proxy(Core::DbcItemType::Signal);
     proxy.setSourceModel(&dummyModel);
 
     EXPECT_EQ(proxy.rowCount(QModelIndex()), 4);
-    EXPECT_EQ(proxy.data(proxy.index(0,0, QModelIndex()), Qt::DisplayRole).toString(), "VehicleSpeed");
-    EXPECT_EQ(proxy.data(proxy.index(1,0, QModelIndex()), Qt::DisplayRole).toString(), "EngineRPM");
-    EXPECT_EQ(proxy.data(proxy.index(2,0, QModelIndex()), Qt::DisplayRole).toString(), "BrakeTemp");
-    EXPECT_EQ(proxy.data(proxy.index(3,0, QModelIndex()), Qt::DisplayRole).toString(), "GhostSig");
+    EXPECT_EQ(proxy.data(proxy.index(0, 0, QModelIndex()), Qt::DisplayRole).toString(),
+              "VehicleSpeed");
+    EXPECT_EQ(proxy.data(proxy.index(1, 0, QModelIndex()), Qt::DisplayRole).toString(),
+              "EngineRPM");
+    EXPECT_EQ(proxy.data(proxy.index(2, 0, QModelIndex()), Qt::DisplayRole).toString(),
+              "BrakeTemp");
+    EXPECT_EQ(proxy.data(proxy.index(3, 0, QModelIndex()), Qt::DisplayRole).toString(), "GhostSig");
 }
 
-TEST_F(FlatListProxyTest, FlatList_TargetOverview_FindsSingleItem) {
+TEST_F(FlatListProxyTest, FlatList_TargetOverview_FindsSingleItem)
+{
     DbcFile::FlatListProxy proxy(Core::DbcItemType::Overview);
     proxy.setSourceModel(&dummyModel);
 
@@ -122,7 +132,8 @@ TEST_F(FlatListProxyTest, FlatList_TargetOverview_FindsSingleItem) {
     EXPECT_EQ(proxy.data(idx, Qt::DisplayRole).toString(), "Overview");
 }
 
-TEST_F(FlatListProxyTest, FlatList_TargetOrphanHolder_FindsContainer) {
+TEST_F(FlatListProxyTest, FlatList_TargetOrphanHolder_FindsContainer)
+{
     DbcFile::FlatListProxy proxy(Core::DbcItemType::OrphanHolder);
     proxy.setSourceModel(&dummyModel);
 
@@ -134,14 +145,15 @@ TEST_F(FlatListProxyTest, FlatList_TargetOrphanHolder_FindsContainer) {
     EXPECT_EQ(name, "Orphan Messages");
 }
 
-TEST_F(FlatListProxyTest, Logic_ScanNode_StopsRecursionAtTarget) {
+TEST_F(FlatListProxyTest, Logic_ScanNode_StopsRecursionAtTarget)
+{
     // Setup: Create a nested structure that is technically possible in QStandardItemModel
     // Root -> ECU1 -> ChildItem(Type=ECU)
     // If logic is correct, ChildItem should NOT be found because recursion stops at ECU1.
 
     QStandardItemModel nestedModel;
     auto* ecu1 = createItem("ParentECU", Core::DbcItemType::Ecu);
-    auto* ecu2 = createItem("ChildECU", Core::DbcItemType::Ecu); // Nested ECU
+    auto* ecu2 = createItem("ChildECU", Core::DbcItemType::Ecu);  // Nested ECU
     ecu1->appendRow(ecu2);
     nestedModel.appendRow(ecu1);
 
@@ -151,14 +163,16 @@ TEST_F(FlatListProxyTest, Logic_ScanNode_StopsRecursionAtTarget) {
     // Assert: Should only find "ParentECU".
     // If 'stopHere' logic was broken, it might find 2 items.
     EXPECT_EQ(proxy.rowCount(QModelIndex()), 1);
-    EXPECT_EQ(proxy.data(proxy.index(0,0, QModelIndex()), Qt::DisplayRole).toString(), "ParentECU");
+    EXPECT_EQ(proxy.data(proxy.index(0, 0, QModelIndex()), Qt::DisplayRole).toString(),
+              "ParentECU");
 }
 
 // ============================================================================
 // TESTS: Filtering Logic
 // ============================================================================
 
-TEST_F(FlatListProxyTest, FlatList_Messages_FilterBySender) {
+TEST_F(FlatListProxyTest, FlatList_Messages_FilterBySender)
+{
     DbcFile::FlatListProxy proxy(Core::DbcItemType::Message);
     proxy.setSourceModel(&dummyModel);
 
@@ -167,15 +181,16 @@ TEST_F(FlatListProxyTest, FlatList_Messages_FilterBySender) {
 
     // Assert: only "BrakeMsg"
     ASSERT_EQ(proxy.rowCount(QModelIndex()), 1);
-    EXPECT_EQ(proxy.data(proxy.index(0,0, QModelIndex()), Qt::DisplayRole).toString(), "BrakeMsg");
+    EXPECT_EQ(proxy.data(proxy.index(0, 0, QModelIndex()), Qt::DisplayRole).toString(), "BrakeMsg");
 
     // Check same sender again
     proxy.setFilterMessageSender("BrakeECU");
     ASSERT_EQ(proxy.rowCount(QModelIndex()), 1);
-    EXPECT_EQ(proxy.data(proxy.index(0,0, QModelIndex()), Qt::DisplayRole).toString(), "BrakeMsg");
+    EXPECT_EQ(proxy.data(proxy.index(0, 0, QModelIndex()), Qt::DisplayRole).toString(), "BrakeMsg");
 }
 
-TEST_F(FlatListProxyTest, FlatList_Messages_FilterByText) {
+TEST_F(FlatListProxyTest, FlatList_Messages_FilterByText)
+{
     DbcFile::FlatListProxy proxy(Core::DbcItemType::Message);
     proxy.setSourceModel(&dummyModel);
 
@@ -184,14 +199,15 @@ TEST_F(FlatListProxyTest, FlatList_Messages_FilterByText) {
 
     // Assert: only "SpeedMsg"
     ASSERT_EQ(proxy.rowCount(QModelIndex()), 1);
-    EXPECT_EQ(proxy.data(proxy.index(0,0, QModelIndex()), Qt::DisplayRole).toString(), "SpeedMsg");
+    EXPECT_EQ(proxy.data(proxy.index(0, 0, QModelIndex()), Qt::DisplayRole).toString(), "SpeedMsg");
 
     proxy.setSearchFilter("Speed");
     ASSERT_EQ(proxy.rowCount(QModelIndex()), 1);
-    EXPECT_EQ(proxy.data(proxy.index(0,0, QModelIndex()), Qt::DisplayRole).toString(), "SpeedMsg");
+    EXPECT_EQ(proxy.data(proxy.index(0, 0, QModelIndex()), Qt::DisplayRole).toString(), "SpeedMsg");
 }
 
-TEST_F(FlatListProxyTest, FlatList_Signals_FilterByUnit) {
+TEST_F(FlatListProxyTest, FlatList_Signals_FilterByUnit)
+{
     DbcFile::FlatListProxy proxy(Core::DbcItemType::Signal);
     proxy.setSourceModel(&dummyModel);
 
@@ -208,7 +224,8 @@ TEST_F(FlatListProxyTest, FlatList_Signals_FilterByUnit) {
     EXPECT_EQ(proxy.data(idx, Qt::DisplayRole).toString(), "VehicleSpeed");
 }
 
-TEST_F(FlatListProxyTest, FlatList_Signals_FilterByText) {
+TEST_F(FlatListProxyTest, FlatList_Signals_FilterByText)
+{
     DbcFile::FlatListProxy proxy(Core::DbcItemType::Signal);
     proxy.setSourceModel(&dummyModel);
 
@@ -217,14 +234,17 @@ TEST_F(FlatListProxyTest, FlatList_Signals_FilterByText) {
 
     // Assert: only "EngineRPM"
     ASSERT_EQ(proxy.rowCount(QModelIndex()), 1);
-    EXPECT_EQ(proxy.data(proxy.index(0,0, QModelIndex()), Qt::DisplayRole).toString(), "EngineRPM");
+    EXPECT_EQ(proxy.data(proxy.index(0, 0, QModelIndex()), Qt::DisplayRole).toString(),
+              "EngineRPM");
 
     proxy.setSearchFilter("RPM");
     ASSERT_EQ(proxy.rowCount(QModelIndex()), 1);
-    EXPECT_EQ(proxy.data(proxy.index(0,0, QModelIndex()), Qt::DisplayRole).toString(), "EngineRPM");
+    EXPECT_EQ(proxy.data(proxy.index(0, 0, QModelIndex()), Qt::DisplayRole).toString(),
+              "EngineRPM");
 }
 
-TEST_F(FlatListProxyTest, FlatList_SearchYieldsNoResults) {
+TEST_F(FlatListProxyTest, FlatList_SearchYieldsNoResults)
+{
     DbcFile::FlatListProxy proxy(Core::DbcItemType::Signal);
     proxy.setSourceModel(&dummyModel);
 
@@ -235,7 +255,8 @@ TEST_F(FlatListProxyTest, FlatList_SearchYieldsNoResults) {
     EXPECT_FALSE(proxy.index(0, 0, QModelIndex()).isValid());
 }
 
-TEST_F(FlatListProxyTest, FlatList_IgnoresSenderFilterOnSignals) {
+TEST_F(FlatListProxyTest, FlatList_IgnoresSenderFilterOnSignals)
+{
     DbcFile::FlatListProxy proxy(Core::DbcItemType::Signal);
     proxy.setSourceModel(&dummyModel);
 
@@ -253,7 +274,8 @@ TEST_F(FlatListProxyTest, FlatList_IgnoresSenderFilterOnSignals) {
 // TESTS: Robustness & Structure
 // ============================================================================
 
-TEST_F(FlatListProxyTest, FlatList_HandlesNullModel) {
+TEST_F(FlatListProxyTest, FlatList_HandlesNullModel)
+{
     DbcFile::FlatListProxy proxy(Core::DbcItemType::Message);
 
     proxy.setSourceModel(nullptr);
@@ -261,7 +283,8 @@ TEST_F(FlatListProxyTest, FlatList_HandlesNullModel) {
     EXPECT_EQ(proxy.rowCount(QModelIndex()), 0);
 }
 
-TEST_F(FlatListProxyTest, FlatList_HandlesEmptyModel) {
+TEST_F(FlatListProxyTest, FlatList_HandlesEmptyModel)
+{
     DbcFile::FlatListProxy proxy(Core::DbcItemType::Message);
 
     QStandardItemModel emptyModel;
@@ -270,7 +293,8 @@ TEST_F(FlatListProxyTest, FlatList_HandlesEmptyModel) {
     EXPECT_EQ(proxy.rowCount(QModelIndex()), 0);
 }
 
-TEST_F(FlatListProxyTest, FlatList_UpdatesOnModelReset) {
+TEST_F(FlatListProxyTest, FlatList_UpdatesOnModelReset)
+{
     DbcFile::FlatListProxy proxy(Core::DbcItemType::Ecu);
     QStandardItemModel dynamicModel;
     proxy.setSourceModel(&dynamicModel);
@@ -286,7 +310,8 @@ TEST_F(FlatListProxyTest, FlatList_UpdatesOnModelReset) {
     EXPECT_EQ(proxy.rowCount(QModelIndex()), 1);
 }
 
-TEST_F(FlatListProxyTest, ReactsToRealModelResetSignal) {
+TEST_F(FlatListProxyTest, ReactsToRealModelResetSignal)
+{
     DbcFile::FlatListProxy proxy(Core::DbcItemType::Ecu);
     proxy.setSourceModel(&dummyModel);
 
@@ -305,7 +330,8 @@ TEST_F(FlatListProxyTest, ReactsToRealModelResetSignal) {
 // TESTS: API Compliance (Mapping, Headers, Parents)
 // ============================================================================
 
-TEST_F(FlatListProxyTest, Api_Mapping_BiDirectional) {
+TEST_F(FlatListProxyTest, Api_Mapping_BiDirectional)
+{
     DbcFile::FlatListProxy proxy(Core::DbcItemType::Signal);
     proxy.setSourceModel(&dummyModel);
 
@@ -329,7 +355,8 @@ TEST_F(FlatListProxyTest, Api_Mapping_BiDirectional) {
     EXPECT_EQ(proxyIndex.row(), backToProxyIndex.row());
 }
 
-TEST_F(FlatListProxyTest, Api_Mapping_InvalidIndices) {
+TEST_F(FlatListProxyTest, Api_Mapping_InvalidIndices)
+{
     DbcFile::FlatListProxy proxy(Core::DbcItemType::Signal);
     proxy.setSourceModel(&dummyModel);
 
@@ -348,10 +375,10 @@ TEST_F(FlatListProxyTest, Api_Mapping_InvalidIndices) {
     EXPECT_FALSE(colOutOfBounds.isValid());
 }
 
-TEST_F(FlatListProxyTest, Api_Mapping_Hidden_Item) {
+TEST_F(FlatListProxyTest, Api_Mapping_Hidden_Item)
+{
     DbcFile::FlatListProxy proxy(Core::DbcItemType::Signal);
     proxy.setSourceModel(&dummyModel);
-
 
     // Search source item "VehicleSpeed" manually
     QModelIndex sourceSpeedIdx;
@@ -370,7 +397,8 @@ TEST_F(FlatListProxyTest, Api_Mapping_Hidden_Item) {
     EXPECT_FALSE(proxyIdx.isValid());
 }
 
-TEST_F(FlatListProxyTest, FlatList_Structure_IsTrulyFlat) {
+TEST_F(FlatListProxyTest, FlatList_Structure_IsTrulyFlat)
+{
     DbcFile::FlatListProxy proxy(Core::DbcItemType::Signal);
     proxy.setSourceModel(&dummyModel);
 
@@ -384,20 +412,22 @@ TEST_F(FlatListProxyTest, FlatList_Structure_IsTrulyFlat) {
     EXPECT_EQ(proxy.columnCount(QModelIndex()), DbcFile::Constants::Columns::SignalColumnCount);
 }
 
-TEST_F(FlatListProxyTest, Api_Headers) {
+TEST_F(FlatListProxyTest, Api_Headers)
+{
     // Messages
     DbcFile::FlatListProxy msgProxy(Core::DbcItemType::Message);
 
-    QVariant idHeader = msgProxy.headerData(DbcFile::Constants::Columns::MsgId, Qt::Horizontal, Qt::DisplayRole);
+    QVariant idHeader =
+        msgProxy.headerData(DbcFile::Constants::Columns::MsgId, Qt::Horizontal, Qt::DisplayRole);
     EXPECT_EQ(idHeader.toString(), DbcFile::Constants::Headers::MsgId);
     QVariant invalidMsgHeader = msgProxy.headerData(100, Qt::Horizontal, Qt::DisplayRole);
     EXPECT_FALSE(invalidMsgHeader.isValid());
 
-
     // Signals
     DbcFile::FlatListProxy sigProxy(Core::DbcItemType::Signal);
 
-    QVariant unitHeader = sigProxy.headerData(DbcFile::Constants::Columns::SigUnit, Qt::Horizontal, Qt::DisplayRole);
+    QVariant unitHeader =
+        sigProxy.headerData(DbcFile::Constants::Columns::SigUnit, Qt::Horizontal, Qt::DisplayRole);
     EXPECT_EQ(unitHeader.toString(), DbcFile::Constants::Headers::SigUnit);
     QVariant invalidSigHeader = msgProxy.headerData(100, Qt::Horizontal, Qt::DisplayRole);
     EXPECT_FALSE(invalidSigHeader.isValid());
@@ -405,7 +435,6 @@ TEST_F(FlatListProxyTest, Api_Headers) {
     // 3. Vertical Header (Standard Qt behavior)
     QVariant vertHeader = sigProxy.headerData(0, Qt::Vertical, Qt::DisplayRole);
     EXPECT_TRUE(vertHeader.isValid());
-
 }
 
 TEST_F(FlatListProxyTest, Api_Headers_ForwardingToBase)
@@ -413,33 +442,26 @@ TEST_F(FlatListProxyTest, Api_Headers_ForwardingToBase)
     DbcFile::FlatListProxy proxy(Core::DbcItemType::Signal);
 
     // Vertical → call base
-    auto expected = proxy.QAbstractProxyModel::headerData(
-        DbcFile::Constants::Columns::SigName,
-        Qt::Vertical,
-        Qt::DisplayRole);
+    auto expected = proxy.QAbstractProxyModel::headerData(DbcFile::Constants::Columns::SigName,
+                                                          Qt::Vertical, Qt::DisplayRole);
 
-    auto actual = proxy.headerData(
-        DbcFile::Constants::Columns::SigName,
-        Qt::Vertical,
-        Qt::DisplayRole);
+    auto actual =
+        proxy.headerData(DbcFile::Constants::Columns::SigName, Qt::Vertical, Qt::DisplayRole);
 
     EXPECT_EQ(actual, expected);
 
     // wrong Role → call Base
-    expected = proxy.QAbstractProxyModel::headerData(
-        DbcFile::Constants::Columns::SigName,
-        Qt::Horizontal,
-        Qt::DisplayRole + 1);
+    expected = proxy.QAbstractProxyModel::headerData(DbcFile::Constants::Columns::SigName,
+                                                     Qt::Horizontal, Qt::DisplayRole + 1);
 
-    actual = proxy.headerData(
-        DbcFile::Constants::Columns::SigName,
-        Qt::Horizontal,
-        Qt::DisplayRole + 1);
+    actual =
+        proxy.headerData(DbcFile::Constants::Columns::SigName, Qt::Horizontal, Qt::DisplayRole + 1);
 
     EXPECT_EQ(actual, expected);
 }
 
-TEST_F(FlatListProxyTest, Api_HeaderData_ReturnsEmptyForUnhandledTypes) {
+TEST_F(FlatListProxyTest, Api_HeaderData_ReturnsEmptyForUnhandledTypes)
+{
     // TargetType is ECU (neither Message nor Signal)
     DbcFile::FlatListProxy proxy(Core::DbcItemType::Ecu);
 
@@ -448,7 +470,8 @@ TEST_F(FlatListProxyTest, Api_HeaderData_ReturnsEmptyForUnhandledTypes) {
     EXPECT_FALSE(result.isValid());
 }
 
-TEST_F(FlatListProxyTest, Api_ColumnCount_DelegatesToSourceForEcus) {
+TEST_F(FlatListProxyTest, Api_ColumnCount_DelegatesToSourceForEcus)
+{
     DbcFile::FlatListProxy proxy(Core::DbcItemType::Ecu);
 
     // Case 1: No Source Model -> returns 0
@@ -460,4 +483,3 @@ TEST_F(FlatListProxyTest, Api_ColumnCount_DelegatesToSourceForEcus) {
     // QStandardItemModel usually has 1 column by default unless changed
     EXPECT_EQ(proxy.columnCount(QModelIndex()), dummyModel.columnCount());
 }
-

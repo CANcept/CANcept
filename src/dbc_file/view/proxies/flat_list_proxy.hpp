@@ -34,9 +34,18 @@ class FlatListProxy : public QAbstractProxyModel
      */
     explicit FlatListProxy(Core::DbcItemType targetType, QObject* parent = nullptr);
 
-    [[nodiscard]] auto getSearchFilter() const -> QString { return m_filterText; }
-    [[nodiscard]] auto getSignalFilterUnit() const -> QString { return m_filterSignalUnit; }
-    [[nodiscard]] auto getFilterMessageSender() const -> QString { return m_filterMessageSender; }
+    [[nodiscard]] auto getSearchFilter() const -> QString
+    {
+        return m_filterText;
+    }
+    [[nodiscard]] auto getSignalFilterUnit() const -> QString
+    {
+        return m_filterSignalUnit;
+    }
+    [[nodiscard]] auto getFilterMessageSender() const -> QString
+    {
+        return m_filterMessageSender;
+    }
 
     /** Set the search text for filtering items */
     void setSearchFilter(const QString& text);

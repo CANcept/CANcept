@@ -81,13 +81,16 @@ void LoadPage::dragEnterEvent(QDragEnterEvent* event)
     resetStatus();
 
     QList<QString> filePaths;
-    for (const QUrl& url : event->mimeData()->urls()) {
+    for (const QUrl& url : event->mimeData()->urls())
+    {
         filePaths.append(url.toLocalFile());
     }
 
-    if (Core::Util::canAcceptDrop(filePaths)) {
+    if (Core::Util::canAcceptDrop(filePaths))
+    {
         updateDragStyle(m_uploadBoxFrame, Constants::LoadPage::Drag::Valid);
-    } else {
+    } else
+    {
         updateDragStyle(m_uploadBoxFrame, Constants::LoadPage::Drag::Invalid);
     }
 
