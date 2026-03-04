@@ -1,14 +1,16 @@
 #include <gtest/gtest.h>
+
+#include <QList>
 #include <QStandardItemModel>
 #include <QString>
-#include <QList>
 
 #include "core/util/dbc_utils.hpp"
 #include "dbc_file/constants.hpp"
 #include "dbc_file/model/dbc_roles.hpp"
 
 using namespace Core::Util;
-inline void PrintTo(const QString& qString, std::ostream* os) {
+inline void PrintTo(const QString& qString, std::ostream* os)
+{
     *os << "\"" << qString.toStdString() << "\"";
 }
 
@@ -16,7 +18,8 @@ inline void PrintTo(const QString& qString, std::ostream* os) {
 // 1. FORMATTING TESTS
 // ============================================================================
 
-TEST(DbcUtilsTest, FormatIdReturnsHexUpperCase) {
+TEST(DbcUtilsTest, FormatIdReturnsHexUpperCase)
+{
     // Case 1: Standard ID (decimal 255 -> hex FF)
     EXPECT_EQ(formatId(255), "0x0FF");
 
@@ -30,10 +33,11 @@ TEST(DbcUtilsTest, FormatIdReturnsHexUpperCase) {
     EXPECT_EQ(formatId(4095), "0xFFF");
 
     // Case 5: Ensure uppercase
-    EXPECT_EQ(formatId(2748), "0xABC"); // 2748 dec = ABC hex
+    EXPECT_EQ(formatId(2748), "0xABC");  // 2748 dec = ABC hex
 }
 
-TEST(DbcUtilsTest, FormatNumberRemovesTrailingZeros) {
+TEST(DbcUtilsTest, FormatNumberRemovesTrailingZeros)
+{
     // Case 1: Integer as double
     EXPECT_EQ(formatNumber(40.0), "40");
 
@@ -47,7 +51,8 @@ TEST(DbcUtilsTest, FormatNumberRemovesTrailingZeros) {
     EXPECT_EQ(formatNumber(0.0), "0");
 }
 
-TEST(DbcUtilsTest, FormatRangeReturnsBracketString) {
+TEST(DbcUtilsTest, FormatRangeReturnsBracketString)
+{
     EXPECT_EQ(formatRange(0, 100), "[0, 100]");
     EXPECT_EQ(formatRange(5, 5), "[5, 5]");
 }
@@ -56,7 +61,8 @@ TEST(DbcUtilsTest, FormatRangeReturnsBracketString) {
 // 2. FILE VALIDATION TESTS
 // ============================================================================
 
-TEST(DbcUtilsTest, IsValidFileChecksExtensionCaseInsensitive) {
+TEST(DbcUtilsTest, IsValidFileChecksExtensionCaseInsensitive)
+{
     // Happy Path
     EXPECT_TRUE(isValidFile("/path/to/file.dbc"));
     EXPECT_TRUE(isValidFile("file.dbc"));
@@ -68,10 +74,11 @@ TEST(DbcUtilsTest, IsValidFileChecksExtensionCaseInsensitive) {
     // Invalid extensions
     EXPECT_FALSE(isValidFile("file.txt"));
     EXPECT_FALSE(isValidFile("file.dbc.txt"));
-    EXPECT_FALSE(isValidFile("file")); // No extension
+    EXPECT_FALSE(isValidFile("file"));  // No extension
 }
 
-TEST(DbcUtilsTest, CanAcceptDropValidatesCountAndExtension) {
+TEST(DbcUtilsTest, CanAcceptDropValidatesCountAndExtension)
+{
     // Case 1: Single valid file -> OK
     QList<QString> validList = {"test.dbc"};
     EXPECT_TRUE(canAcceptDrop(validList));
@@ -93,7 +100,8 @@ TEST(DbcUtilsTest, CanAcceptDropValidatesCountAndExtension) {
 // 3. MODEL INDEX HELPER TESTS
 // ============================================================================
 
-TEST(DbcUtilsTest, SiblingAtColumnReturnsCorrectIndex) {
+TEST(DbcUtilsTest, SiblingAtColumnReturnsCorrectIndex)
+{
     // Setup: Create a small 1x2 model
     QStandardItemModel model(1, 2);
     QModelIndex idxCol0 = model.index(0, 0);
@@ -108,7 +116,8 @@ TEST(DbcUtilsTest, SiblingAtColumnReturnsCorrectIndex) {
     EXPECT_EQ(idxCol1.model(), &model);
 }
 
-TEST(DbcUtilsTest, ResolveMessageIdPrioritizesRoleId) {
+TEST(DbcUtilsTest, ResolveMessageIdPrioritizesRoleId)
+{
     QStandardItemModel model;
     QStandardItem* item = new QStandardItem("DisplayValue");
     model.appendRow(item);
@@ -125,7 +134,8 @@ TEST(DbcUtilsTest, ResolveMessageIdPrioritizesRoleId) {
     EXPECT_EQ(resolveMessageId(index), targetId);
 }
 
-TEST(DbcUtilsTest, ResolveMessageIdFallsBackToDisplayRole) {
+TEST(DbcUtilsTest, ResolveMessageIdFallsBackToDisplayRole)
+{
     QStandardItemModel model;
     QStandardItem* item = new QStandardItem();
     model.appendRow(item);
@@ -140,7 +150,8 @@ TEST(DbcUtilsTest, ResolveMessageIdFallsBackToDisplayRole) {
     EXPECT_EQ(resolveMessageId(index), displayId);
 }
 
-TEST(DbcUtilsTest, ResolveMessageIdReturnsZeroIfEmpty) {
+TEST(DbcUtilsTest, ResolveMessageIdReturnsZeroIfEmpty)
+{
     QStandardItemModel model;
     QStandardItem* item = new QStandardItem();
     model.appendRow(item);
