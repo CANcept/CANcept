@@ -140,11 +140,6 @@ class DbcParser
      */
     auto parseUInt() -> uint;
     /**
-     * Parses a signed int
-     * @return The signed int
-     */
-    auto parseInt() -> int;
-    /**
      * Parses a double
      * @return The double
      */
