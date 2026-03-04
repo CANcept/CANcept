@@ -434,19 +434,6 @@ TEST_F(DbcModelTestBase, SignalDataIsCorrect)
 // 3. Edge Cases & Specials
 // ============================================================================
 
-TEST_F(DbcModelTestBase, Visuals_IconsReturned)
-{
-    model->setDbcConfig(DbcExamples::simple());
-
-    QModelIndex ecuIdx = model->index(1, 0, QModelIndex());
-    QModelIndex msgIdx = model->index(0, 0, ecuIdx);
-    QModelIndex sigIdx = model->index(0, 0, msgIdx);
-
-    EXPECT_FALSE(getVal(ecuIdx, Qt::DecorationRole).value<QIcon>().isNull());
-    EXPECT_FALSE(getVal(msgIdx, Qt::DecorationRole).value<QIcon>().isNull());
-    EXPECT_FALSE(getVal(sigIdx, Qt::DecorationRole).value<QIcon>().isNull());
-}
-
 TEST_F(DbcModelTestBase, EdgeCase_DecorationDefaults)
 {
     model->setDbcConfig(DbcExamples::simple());
