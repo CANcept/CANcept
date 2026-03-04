@@ -14,7 +14,7 @@ namespace Core::Util {
  */
 inline QString formatId(uint id)
 {
-    return QStringLiteral("0x%1").arg(id, 3, 16, QChar('0')).toUpper();
+    return QStringLiteral("0x") + QString("%1").arg(id, 3, 16, QChar('0')).toUpper();
 }
 
 /**
