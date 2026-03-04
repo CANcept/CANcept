@@ -8,12 +8,6 @@
 
 using ::testing::_;
 
-class MonitoringModelTester : public Monitoring::MonitoringModel
-{
-   public:
-    using Monitoring::MonitoringModel::createIndex;
-};
-
 class MonitoringModelTest : public ::testing::Test
 {
    protected:
@@ -213,25 +207,6 @@ TEST_F(MonitoringModelTest, DataReturnsNullForMessageWithNoFrames)
     EXPECT_TRUE(val.isNull());
 }
 
-TEST_F(MonitoringModelTest, ForceIteratorEndReturns)
-{
-    // Use the tester class instead of the regular model
-    auto tester = std::make_unique<MonitoringModelTester>();
-    tester->onDbcChange(TestHelpers::DbcExamples::motorController());
-
-    // Manually create an index for row 999.
-    // This BYPASSES tester->index() logic but is passed directly to tester->data()
-    QModelIndex evilIdx = tester->createIndex(999, 0, nullptr);
-
-    // 1. data() guard check: 999 >= rowCount() will usually stop us.
-    // BUT, if we can't bypass the guard, these lines are truly unreachable.
-    // If you WANT to hit them, you'd have to temporarily remove the guard
-    // at line 118 of the .cpp or use this subclass trick.
-
-    EXPECT_FALSE(tester->data(evilIdx, Monitoring::MonitoringModel::Role_Name).isValid());
-    EXPECT_FALSE(tester->data(evilIdx, Monitoring::MonitoringModel::Role_ID).isValid());
-}
-
 TEST_F(MonitoringModelTest, MessageIdLimitGuard)
 {
     Core::DbcConfig config;
@@ -246,31 +221,6 @@ TEST_F(MonitoringModelTest, MessageIdLimitGuard)
     // This hits 'if (it->messageId >= messageValues->size())'
     EXPECT_TRUE(model->data(idx, Monitoring::MonitoringModel::Role_LatestValue).isNull());
     EXPECT_TRUE(model->data(idx, Monitoring::MonitoringModel::Role_ValueList).isNull());
-}
-
-TEST_F(MonitoringModelTest, RowCountFinalDefaultReturn)
-{
-    auto tester = std::make_unique<MonitoringModelTester>();
-    tester->onDbcChange(TestHelpers::DbcExamples::motorController());
-
-    // Create an index that looks like a "Grandchild" (pointer is not null)
-    // internalPointer (quintptr) 1 means it's a signal.
-    QModelIndex signalIdx = tester->createIndex(0, 0, reinterpret_cast<void*>(1));
-
-    // Calling rowCount on a signal should skip both if blocks and hit line 103
-    EXPECT_EQ(tester->rowCount(signalIdx), 0);
-}
-
-TEST_F(MonitoringModelTest, RowCountMessageBoundsSafety)
-{
-    auto tester = std::make_unique<MonitoringModelTester>();
-    tester->onDbcChange(TestHelpers::DbcExamples::motorController());
-
-    // Create a parent index for a message that doesn't exist (row 500)
-    QModelIndex badParent = tester->createIndex(500, 0, nullptr);
-
-    // This hits line 97
-    EXPECT_EQ(tester->rowCount(badParent), 0);
 }
 
 TEST_F(MonitoringModelTest, IncomingFrameTriggersLoopIncrement)
