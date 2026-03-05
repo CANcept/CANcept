@@ -66,6 +66,8 @@ class DbcView final : public QWidget
      * @param model Source model providing the DBC item hierarchy.
      *
      * This method:
+     * - Resets all active filters (search text, categories) in both proxies and UI pages
+     *   to ensure data from the new file is immediately visible.
      * - Creates the required proxy models (flat proxies and tree proxy).
      * - Assigns the source model to each proxy.
      * - Assigns proxies to the corresponding pages.

@@ -80,7 +80,7 @@ inline const QString MESSAGES_LABEL = "Message";
 
 /** @brief Text for when a dbc file isn't loaded. */
 inline const QString DBC_FILE_NOT_LOADED_MESSAGE =
-    "DBC file isn't loaded. Connection first has to be configured in ";
+    "Connection not complete: Load DBC and select interface in ";
 
 const int REFRESH_INTERVAL_MS = 1000;
 

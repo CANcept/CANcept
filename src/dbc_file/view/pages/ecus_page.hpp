@@ -38,6 +38,14 @@ class EcusPage : public QWidget
     void setModel(QAbstractItemModel* model);
 
     /**
+     * @brief Resets the visual filter state.
+     *
+     * Clears the search bar text and resets the filter category
+     * to the default (usually "All ECUs").
+     */
+    void resetFilters();
+
+    /**
      * @brief Updates the empty state label visibility depending on tree contents.
      */
     void updateEmptyState();
