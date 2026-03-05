@@ -229,6 +229,7 @@ void LoadPage::setupUploadZone(QVBoxLayout* layout)
 
     // Status label
     m_statusLabel = new QLabel("");
+    m_statusLabel->setObjectName("StatusLabel");
     m_statusLabel->setAlignment(Qt::AlignCenter);
     m_statusLabel->hide();  // initially invisible
     zoneLayout->addWidget(m_statusLabel);

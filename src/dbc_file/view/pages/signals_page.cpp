@@ -94,6 +94,7 @@ void SignalsPage::setupUi()
 
     // --- Searchable Table ----------------------------------------------------
     m_tableWidget = new Core::SearchableFilterTable(this);
+    m_tableWidget->setObjectName("SigTable");
     m_tableWidget->setSearchPlaceholder(Constants::SignalsPage::SearchbarText);
 
     m_tableWidget->configureTableBasics();  // setup table basics
