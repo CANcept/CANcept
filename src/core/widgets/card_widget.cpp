@@ -15,7 +15,10 @@ CardWidget::CardWidget(const QString& title, const QString& subtitle, const QStr
 {
     setupUi(title, subtitle, iconPath);
 }
-
+auto CardWidget::getTitle() const -> const QLabel*
+{
+    return m_titleLabel;
+}
 void CardWidget::setTitle(const QString& title)
 {
     if (m_titleLabel) m_titleLabel->setText(title);
