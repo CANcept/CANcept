@@ -128,6 +128,17 @@ TEST_F(EcuTreeProxyTest, Filter_Category_ActiveOnly_KeepsActiveEcus)
     EXPECT_TRUE(accepted);
 }
 
+TEST_F(EcuTreeProxyTest, Filter_ActiveOnly_HidesPassiveEcus)
+{
+    EcuTreeProxy proxy;
+    proxy.setSourceModel(&dummyModel);
+    proxy.setFilterCategory(Constants::EcusPage::FilterActiveIndex);
+
+    EXPECT_EQ(proxy.rowCount(QModelIndex()), 1);
+    EXPECT_EQ(proxy.data(proxy.index(0, 0, QModelIndex()), Qt::DisplayRole).toString(),
+              "EngineECU");
+}
+
 // ============================================================================
 // TESTS: Text Search Filtering
 // ============================================================================
@@ -155,6 +166,49 @@ TEST_F(EcuTreeProxyTest, Filter_Text_NoMatchHidesAll)
 
     int sourceRowEngine = 1;
     bool accepted = proxy.publicFilterAcceptsRow(sourceRowEngine, QModelIndex());
+    EXPECT_FALSE(accepted);
+}
+
+TEST_F(EcuTreeProxyTest, Filter_Text_MatchesParentMessageName)
+{
+    EcuTreeProxy proxy;
+    proxy.setSourceModel(&dummyModel);
+
+    proxy.setSearchText("engine");
+
+    EXPECT_EQ(proxy.rowCount(QModelIndex()), 1);
+    EXPECT_EQ(proxy.data(proxy.index(0, 0, QModelIndex()), Qt::DisplayRole).toString(),
+              "EngineECU");
+}
+
+TEST_F(EcuTreeProxyTest, Filter_Text_MessageParentMatched)
+{
+    TestableEcuTreeProxy proxy;
+    proxy.setSourceModel(&dummyModel);
+    proxy.setSearchText("EngineECU");
+
+    // EngineECU Source Index
+    QModelIndex engineSourceIdx = dummyModel.index(1, 0, QModelIndex());  // Row 1 = EngineECU
+
+    bool accepted = proxy.publicFilterAcceptsRow(0, engineSourceIdx);
+
+    EXPECT_TRUE(accepted);
+}
+
+TEST_F(EcuTreeProxyTest, Filter_ReturnsFalse_ForUnknownType)
+{
+    TestableEcuTreeProxy proxy;
+    proxy.setSourceModel(&dummyModel);
+    proxy.setSearchText("Anything");
+
+    // --- Add dummy node with unknown type ---
+    auto* unknownNode = new QStandardItem("UnknownNode");
+    unknownNode->setData(999, DbcFile::DbcRoles::Role_ItemType);
+    dummyModel.appendRow(unknownNode);
+
+    QModelIndex unknownIndex = dummyModel.index(dummyModel.rowCount() - 1, 0, QModelIndex());
+
+    bool accepted = proxy.publicFilterAcceptsRow(unknownIndex.row(), QModelIndex());
     EXPECT_FALSE(accepted);
 }
 
