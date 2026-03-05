@@ -68,12 +68,10 @@ class DbcComponent : public Core::ITabComponent
      */
     auto getView() -> QWidget* override;
 
-    /** @brief Model getter for testing.
-     */
-    [[nodiscard]] auto getModel() const -> DbcModel*
-    {
-        return m_model.get();
-    }
+/**
+ * @brief Getter for the model
+ */
+    auto getModel() const -> DbcModel*;
 
     // --- Core::ILifecycle Interface Implementation ---
 

@@ -16,6 +16,11 @@ auto DbcComponent::getView() -> QWidget*
 {
     return m_view.get();
 }
+
+auto DbcComponent::getModel() const -> DbcModel*
+{
+    return m_model.get();
+}
 void DbcComponent::onStart()
 {
     setupConnections();
