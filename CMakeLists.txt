@@ -141,10 +141,10 @@ if(ENABLE_TESTS)
                     COMMAND find . -name '*.gcda' -delete 2>/dev/null || true
                     COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure
                     COMMAND find . -path '*_autogen*' -name '*.gcda' -delete 2>/dev/null || true
-                    COMMAND ${LCOV_PATH} --quiet --directory . --capture --output-file coverage_raw.info --ignore-errors gcov,mismatch,empty,inconsistent --rc branch_coverage=1 2>/dev/null
-                    COMMAND ${LCOV_PATH} --quiet --extract coverage_raw.info '${CMAKE_SOURCE_DIR}/src/*' --output-file coverage_filtered.info --ignore-errors empty,inconsistent --rc branch_coverage=1
-                    COMMAND ${LCOV_PATH} --quiet --remove coverage_filtered.info '*/view/*' '*/delegate/*' --output-file coverage.info --ignore-errors empty,inconsistent --rc branch_coverage=1
-                    COMMAND ${GENHTML_PATH} --quiet --branch-coverage coverage.info --output-directory coverage_html --ignore-errors empty,inconsistent
+                    COMMAND ${LCOV_PATH} --quiet --directory . --capture --output-file coverage_raw.info --ignore-errors gcov,mismatch,empty --rc branch_coverage=1 2>/dev/null
+                    COMMAND ${LCOV_PATH} --quiet --extract coverage_raw.info '${CMAKE_SOURCE_DIR}/src/*' --output-file coverage_filtered.info --ignore-errors empty --rc branch_coverage=1
+                    COMMAND ${LCOV_PATH} --quiet --remove coverage_filtered.info '*/view/*' '*/delegate/*' --output-file coverage.info --ignore-errors empty --rc branch_coverage=1
+                    COMMAND ${GENHTML_PATH} --quiet --branch-coverage coverage.info --output-directory coverage_html --ignore-errors empty
                     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
                     COMMENT "Processing coverage data into HTML..."
             )
