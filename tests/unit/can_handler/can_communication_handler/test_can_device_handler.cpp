@@ -1,6 +1,5 @@
 #include "can_handler/can_communication_handler/can_device_handler.hpp"
 #include "gtest/gtest.h"
-#include "tests/helpers/can_interface_builder.hpp"
 #include "tests/helpers/mock_event_broker.hpp"
 
 using namespace CanHandler;
@@ -73,4 +72,3 @@ TEST_F(CanDeviceHandlerTest, GetAvailableDevicesEventDoesNotThrow)
 
     EXPECT_NO_THROW(eventBroker->publish(Core::GetAvailableCanDriversEvent(&options)));
 }
-
