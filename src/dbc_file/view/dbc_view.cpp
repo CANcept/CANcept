@@ -110,7 +110,8 @@ void DbcView::onSidebarSelectionChanged(int index) const
     if (m_contentStack->currentIndex() == index) return;
 
     // Reset load page UI state when leaving the load page.
-    if (m_contentStack->currentIndex() == Constants::Sidebar::INDEX_LOAD && index != Constants::Sidebar::INDEX_LOAD)
+    if (m_contentStack->currentIndex() == Constants::Sidebar::INDEX_LOAD &&
+        index != Constants::Sidebar::INDEX_LOAD)
     {
         m_loadPage->resetStatus();
     }

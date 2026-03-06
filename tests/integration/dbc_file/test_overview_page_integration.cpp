@@ -1,15 +1,17 @@
 #include <gtest/gtest.h>
+
+#include "dbc_file/constants.hpp"
 #include "dbc_file/dbc_component.hpp"
 #include "dbc_file/view/pages/overview_page.hpp"
-#include "dbc_file/constants.hpp"
-#include "tests/helpers/mock_event_broker.hpp"
 #include "tests/helpers/dbc_config_builder.hpp"
+#include "tests/helpers/mock_event_broker.hpp"
 
 using namespace DbcFile;
 using namespace testing;
 
-class OverviewPageIntegrationTest : public ::testing::Test {
-protected:
+class OverviewPageIntegrationTest : public ::testing::Test
+{
+   protected:
     int argc = 0;
     char** argv = nullptr;
     std::unique_ptr<QApplication> app;
@@ -17,8 +19,10 @@ protected:
     std::unique_ptr<DbcComponent> component;
     OverviewPage* overviewPage = nullptr;
 
-    void SetUp() override {
-        if (!QApplication::instance()) {
+    void SetUp() override
+    {
+        if (!QApplication::instance())
+        {
             app = std::make_unique<QApplication>(argc, argv);
         }
         EXPECT_CALL(mockBroker, _subscribeEvent(_)).WillRepeatedly(Return());
@@ -31,12 +35,14 @@ protected:
         ASSERT_NE(overviewPage, nullptr);
     }
 
-    void TearDown() override {
+    void TearDown() override
+    {
         component->onStop();
         component.reset();
     }
 
-    QLabel* getLabel(const QString& objectName) {
+    QLabel* getLabel(const QString& objectName)
+    {
         return overviewPage->findChild<QLabel*>(objectName);
     }
 };
@@ -44,15 +50,13 @@ protected:
 /**
  * @brief Test: Metadata
  */
-TEST_F(OverviewPageIntegrationTest, DisplaysFileMetadata) {
+TEST_F(OverviewPageIntegrationTest, DisplaysFileMetadata)
+{
     // 1. Arrange
     const std::string testFile = "integration_test.dbc";
     std::string testVersion = "2.0";
 
-    auto config = TestHelpers::DbcConfigBuilder()
-        .fileName(testFile)
-        .version(testVersion)
-        .build();
+    auto config = TestHelpers::DbcConfigBuilder().fileName(testFile).version(testVersion).build();
 
     // 2. Act
     mockBroker.triggerEvent(Core::DBCParsedEvent(config, "path"));
@@ -71,18 +75,19 @@ TEST_F(OverviewPageIntegrationTest, DisplaysFileMetadata) {
 /**
  * @brief Test: Counter labels
  */
-TEST_F(OverviewPageIntegrationTest, DisplaysCorrectStatistics) {
+TEST_F(OverviewPageIntegrationTest, DisplaysCorrectStatistics)
+{
     // 1. Arrange: Config mit 1 Node, 2 Messages, 3 Signals
     auto config = TestHelpers::DbcConfigBuilder()
-        .node("Engine") // 1 ECU
-        .message(TestHelpers::DbcMessageBuilder(0x100, "A")
-            .transmitter("Engine")
-            .signal(TestHelpers::DbcSignalBuilder("S1"))) // +1 Signal
-        .message(TestHelpers::DbcMessageBuilder(0x200, "B")
-            .transmitter("Unknown")
-            .signal(TestHelpers::DbcSignalBuilder("S2"))
-            .signal(TestHelpers::DbcSignalBuilder("S3"))) // +2 Signals
-        .build();
+                      .node("Engine")  // 1 ECU
+                      .message(TestHelpers::DbcMessageBuilder(0x100, "A")
+                                   .transmitter("Engine")
+                                   .signal(TestHelpers::DbcSignalBuilder("S1")))  // +1 Signal
+                      .message(TestHelpers::DbcMessageBuilder(0x200, "B")
+                                   .transmitter("Unknown")
+                                   .signal(TestHelpers::DbcSignalBuilder("S2"))
+                                   .signal(TestHelpers::DbcSignalBuilder("S3")))  // +2 Signals
+                      .build();
 
     // 2. Act
     mockBroker.triggerEvent(Core::DBCParsedEvent(config, "path"));
@@ -107,15 +112,14 @@ TEST_F(OverviewPageIntegrationTest, DisplaysCorrectStatistics) {
 /**
  * @brief Test: List-content (for ecus and messages overview lists)
  */
-TEST_F(OverviewPageIntegrationTest, PopulatesOverviewLists) {
+TEST_F(OverviewPageIntegrationTest, PopulatesOverviewLists)
+{
     // 1. Arrange
     auto config = TestHelpers::DbcConfigBuilder()
-        .node("TestECU")
-        .message(TestHelpers::DbcMessageBuilder(0x100, "MsgA")
-            .transmitter("TestECU"))
-        .message(TestHelpers::DbcMessageBuilder(0x200, "MsgB")
-            .transmitter("Unknown"))
-        .build();
+                      .node("TestECU")
+                      .message(TestHelpers::DbcMessageBuilder(0x100, "MsgA").transmitter("TestECU"))
+                      .message(TestHelpers::DbcMessageBuilder(0x200, "MsgB").transmitter("Unknown"))
+                      .build();
 
     // 2. Act
     mockBroker.triggerEvent(Core::DBCParsedEvent(config, "path"));

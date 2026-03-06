@@ -1,12 +1,13 @@
 #include <gtest/gtest.h>
-#include <QTreeView>
-#include <QLineEdit>
+
 #include <QComboBox>
+#include <QLineEdit>
+#include <QTreeView>
 
 // Module Includes
+#include "dbc_file/constants.hpp"
 #include "dbc_file/dbc_component.hpp"
 #include "dbc_file/view/pages/ecus_page.hpp"
-#include "dbc_file/constants.hpp"
 
 // Core Widgets
 #include "core/widgets/common/searchable_filter_widgets.hpp"
@@ -19,8 +20,9 @@
 using namespace DbcFile;
 using namespace testing;
 
-class EcusPageIntegrationTest : public ::testing::Test {
-protected:
+class EcusPageIntegrationTest : public ::testing::Test
+{
+   protected:
     int argc = 0;
     char** argv = nullptr;
     std::unique_ptr<QApplication> app;
@@ -28,8 +30,10 @@ protected:
     std::unique_ptr<DbcComponent> component;
     EcusPage* ecusPage = nullptr;
 
-    void SetUp() override {
-        if (!QApplication::instance()) {
+    void SetUp() override
+    {
+        if (!QApplication::instance())
+        {
             app = std::make_unique<QApplication>(argc, argv);
         }
         EXPECT_CALL(mockBroker, _subscribeEvent(_)).WillRepeatedly(Return());
@@ -45,7 +49,8 @@ protected:
         ASSERT_NE(ecusPage, nullptr);
     }
 
-    void TearDown() override {
+    void TearDown() override
+    {
         component->onStop();
         component.reset();
     }
@@ -67,7 +72,8 @@ protected:
     QLabel* getEmptyLabel() const
     {
         auto labels = ecusPage->findChildren<QLabel*>();
-        for (auto* lbl : labels) {
+        for (auto* lbl : labels)
+        {
             if (lbl->text() == Constants::EcusPage::EmptyLabelText) return lbl;
         }
         return nullptr;
@@ -78,12 +84,10 @@ protected:
  * Scenario: Load config with 2 ECUs.
  * Expectation: TreeView shows two top level items
  */
-TEST_F(EcusPageIntegrationTest, PopulatesTreeWithEcus) {
+TEST_F(EcusPageIntegrationTest, PopulatesTreeWithEcus)
+{
     // 1. Arrange
-    auto config = TestHelpers::DbcConfigBuilder()
-        .node("EngineECU")
-        .node("BrakeECU")
-        .build();
+    auto config = TestHelpers::DbcConfigBuilder().node("EngineECU").node("BrakeECU").build();
 
     // 2. Act
     mockBroker.triggerEvent(Core::DBCParsedEvent(config, "test.dbc"));
@@ -95,7 +99,6 @@ TEST_F(EcusPageIntegrationTest, PopulatesTreeWithEcus) {
     ASSERT_NE(model, nullptr);
 
     EXPECT_EQ(model->rowCount(), 2);
-
 
     QString name0 = model->index(0, 0).data().toString();
     QString name1 = model->index(1, 0).data().toString();
@@ -112,12 +115,10 @@ TEST_F(EcusPageIntegrationTest, PopulatesTreeWithEcus) {
  * Scenario: Search "Brake".
  * Expectation: "Engine" hidden.
  */
-TEST_F(EcusPageIntegrationTest, FiltersEcusByText) {
+TEST_F(EcusPageIntegrationTest, FiltersEcusByText)
+{
     // 1. Arrange
-    auto config = TestHelpers::DbcConfigBuilder()
-        .node("EngineECU")
-        .node("BrakeECU")
-        .build();
+    auto config = TestHelpers::DbcConfigBuilder().node("EngineECU").node("BrakeECU").build();
     mockBroker.triggerEvent(Core::DBCParsedEvent(config, "test.dbc"));
 
     QTreeView* tree = getTreeView();
@@ -137,13 +138,15 @@ TEST_F(EcusPageIntegrationTest, FiltersEcusByText) {
  * Scenario: Active ECU (sends Msg) + passive ECU (no messages)
  * Set "Active only" filter
  */
-TEST_F(EcusPageIntegrationTest, FiltersActiveEcus) {
+TEST_F(EcusPageIntegrationTest, FiltersActiveEcus)
+{
     // 1. Arrange
-    auto config = TestHelpers::DbcConfigBuilder()
-        .node("ActiveECU")
-        .node("PassiveECU")
-        .message(TestHelpers::DbcMessageBuilder(0x100, "Msg").transmitter("ActiveECU"))
-        .build();
+    auto config =
+        TestHelpers::DbcConfigBuilder()
+            .node("ActiveECU")
+            .node("PassiveECU")
+            .message(TestHelpers::DbcMessageBuilder(0x100, "Msg").transmitter("ActiveECU"))
+            .build();
 
     mockBroker.triggerEvent(Core::DBCParsedEvent(config, "test.dbc"));
 
@@ -167,7 +170,8 @@ TEST_F(EcusPageIntegrationTest, FiltersActiveEcus) {
  * Scenario: Load empty config.
  * Expectation: Label visible, tree invisible
  */
-TEST_F(EcusPageIntegrationTest, ShowsEmptyStateOnNoData) {
+TEST_F(EcusPageIntegrationTest, ShowsEmptyStateOnNoData)
+{
     // 1. Arrange
     auto config = TestHelpers::DbcConfigBuilder().build();
     mockBroker.triggerEvent(Core::DBCParsedEvent(config, "empty.dbc"));
@@ -187,11 +191,10 @@ TEST_F(EcusPageIntegrationTest, ShowsEmptyStateOnNoData) {
  * Scenario: ECU "Engine" is there, user searches "Banana"
  * Expectation: Tree hidden, empty label visible.
  */
-TEST_F(EcusPageIntegrationTest, ShowsEmptyLabelOnNoSearchResults) {
+TEST_F(EcusPageIntegrationTest, ShowsEmptyLabelOnNoSearchResults)
+{
     // 1. Arrange:
-    auto config = TestHelpers::DbcConfigBuilder()
-        .node("EngineECU")
-        .build();
+    auto config = TestHelpers::DbcConfigBuilder().node("EngineECU").build();
 
     mockBroker.triggerEvent(Core::DBCParsedEvent(config, "test.dbc"));
 
@@ -227,7 +230,8 @@ TEST_F(EcusPageIntegrationTest, ShowsEmptyLabelOnNoSearchResults) {
  * Scenario: Set filter to "Active" + enter search text -> load new file
  * Expectation: Filter reset, new data is not being filtered
  */
-TEST_F(EcusPageIntegrationTest, ResetsFilterOnNewLoad) {
+TEST_F(EcusPageIntegrationTest, ResetsFilterOnNewLoad)
+{
     // 1. Arrange: Load config A and set filters
     mockBroker.triggerEvent(Core::DBCParsedEvent(
         TestHelpers::DbcConfigBuilder().node("EngineECU").node("Brakes").build(), "A.dbc"));
@@ -239,8 +243,8 @@ TEST_F(EcusPageIntegrationTest, ResetsFilterOnNewLoad) {
     filterBar->setCurrentFilterIndex(Constants::EcusPage::FilterActiveIndex);
 
     // 2. Act: Load new config
-    mockBroker.triggerEvent(Core::DBCParsedEvent(
-        TestHelpers::DbcConfigBuilder().node("NodeB").build(), "B.dbc"));
+    mockBroker.triggerEvent(
+        Core::DBCParsedEvent(TestHelpers::DbcConfigBuilder().node("NodeB").build(), "B.dbc"));
 
     // 3. Assert
     EXPECT_EQ(filterBar->currentFilterData().toInt(), 0);
@@ -257,15 +261,16 @@ TEST_F(EcusPageIntegrationTest, ResetsFilterOnNewLoad) {
  * - Message is visible below ECU.
  * - Signals not visible as children (proxy hides for display in grid layout)
  */
-TEST_F(EcusPageIntegrationTest, PopulatesTreeWithCorrectHierarchy) {
+TEST_F(EcusPageIntegrationTest, PopulatesTreeWithCorrectHierarchy)
+{
     // 1. Arrange: Full Hierarchy (ECU -> Message -> Signals)
     auto config = TestHelpers::DbcConfigBuilder()
-        .node("EngineECU")
-        .message(TestHelpers::DbcMessageBuilder(0x100, "SpeedMsg")
-            .transmitter("EngineECU")
-            .signal(TestHelpers::DbcSignalBuilder("Velocity"))
-            .signal(TestHelpers::DbcSignalBuilder("RPM")))
-        .build();
+                      .node("EngineECU")
+                      .message(TestHelpers::DbcMessageBuilder(0x100, "SpeedMsg")
+                                   .transmitter("EngineECU")
+                                   .signal(TestHelpers::DbcSignalBuilder("Velocity"))
+                                   .signal(TestHelpers::DbcSignalBuilder("RPM")))
+                      .build();
 
     // 2. Act
     mockBroker.triggerEvent(Core::DBCParsedEvent(config, "hierarchy.dbc"));
@@ -287,9 +292,7 @@ TEST_F(EcusPageIntegrationTest, PopulatesTreeWithCorrectHierarchy) {
 
     // 5. Assert: Level 3 (Signals below Message hidden)
 
-    EXPECT_FALSE(model->hasChildren(msgIdx))
-        << "Messages should be leafs in proxy";
+    EXPECT_FALSE(model->hasChildren(msgIdx)) << "Messages should be leafs in proxy";
 
-    EXPECT_EQ(model->rowCount(msgIdx), 0)
-        << "Signals should be hidden by proxy";
+    EXPECT_EQ(model->rowCount(msgIdx), 0) << "Signals should be hidden by proxy";
 }

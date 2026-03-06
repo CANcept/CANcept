@@ -1,13 +1,13 @@
 #include <gtest/gtest.h>
-#include <QTableView>
-#include <QLineEdit>
-#include <QComboBox>
 
+#include <QComboBox>
+#include <QLineEdit>
+#include <QTableView>
 
 // Module Includes
+#include "dbc_file/constants.hpp"
 #include "dbc_file/dbc_component.hpp"
 #include "dbc_file/view/pages/signals_page.hpp"
-#include "dbc_file/constants.hpp"
 
 // Core Widgets
 #include "core/widgets/common/searchable_filter_widgets.hpp"
@@ -22,8 +22,9 @@
 using namespace DbcFile;
 using namespace testing;
 
-class SignalsPageIntegrationTest : public ::testing::Test {
-protected:
+class SignalsPageIntegrationTest : public ::testing::Test
+{
+   protected:
     int argc = 0;
     char** argv = nullptr;
     std::unique_ptr<QApplication> app;
@@ -31,8 +32,10 @@ protected:
     std::unique_ptr<DbcComponent> component;
     SignalsPage* signalsPage = nullptr;
 
-    void SetUp() override {
-        if (!QApplication::instance()) {
+    void SetUp() override
+    {
+        if (!QApplication::instance())
+        {
             app = std::make_unique<QApplication>(argc, argv);
         }
         EXPECT_CALL(mockBroker, _subscribeEvent(_)).WillRepeatedly(Return());
@@ -48,7 +51,8 @@ protected:
         ASSERT_NE(signalsPage, nullptr);
     }
 
-    void TearDown() override {
+    void TearDown() override
+    {
         component->onStop();
         component.reset();
     }
@@ -70,12 +74,12 @@ protected:
     QLabel* getEmptyLabel() const
     {
         auto labels = signalsPage->findChildren<QLabel*>();
-        for (auto* lbl : labels) {
+        for (auto* lbl : labels)
+        {
             if (lbl->text() == Constants::SignalsPage::EmptyLabelText) return lbl;
         }
         return nullptr;
     }
-
 };
 
 /**
@@ -83,13 +87,14 @@ protected:
  * Scenario: Load config with 2 signals
  * Expectation: Table shows 2 rows
  */
-TEST_F(SignalsPageIntegrationTest, PopulatesTableWithSignals) {
+TEST_F(SignalsPageIntegrationTest, PopulatesTableWithSignals)
+{
     // 1. Arrange
     auto config = TestHelpers::DbcConfigBuilder()
-        .message(TestHelpers::DbcMessageBuilder(0x100, "Msg")
-            .signal(TestHelpers::DbcSignalBuilder("SigA"))
-            .signal(TestHelpers::DbcSignalBuilder("SigB")))
-        .build();
+                      .message(TestHelpers::DbcMessageBuilder(0x100, "Msg")
+                                   .signal(TestHelpers::DbcSignalBuilder("SigA"))
+                                   .signal(TestHelpers::DbcSignalBuilder("SigB")))
+                      .build();
 
     // 2. Act
     mockBroker.triggerEvent(Core::DBCParsedEvent(config, "test.dbc"));
@@ -114,13 +119,14 @@ TEST_F(SignalsPageIntegrationTest, PopulatesTableWithSignals) {
  * Scenario: Search for "Speed"
  * Expectation: "RPM" hidden, "Speed" shown.
  */
-TEST_F(SignalsPageIntegrationTest, FiltersSignalsByText) {
+TEST_F(SignalsPageIntegrationTest, FiltersSignalsByText)
+{
     // 1. Arrange
     auto config = TestHelpers::DbcConfigBuilder()
-        .message(TestHelpers::DbcMessageBuilder(0x100, "Msg")
-            .signal(TestHelpers::DbcSignalBuilder("Speed"))
-            .signal(TestHelpers::DbcSignalBuilder("RPM")))
-        .build();
+                      .message(TestHelpers::DbcMessageBuilder(0x100, "Msg")
+                                   .signal(TestHelpers::DbcSignalBuilder("Speed"))
+                                   .signal(TestHelpers::DbcSignalBuilder("RPM")))
+                      .build();
 
     mockBroker.triggerEvent(Core::DBCParsedEvent(config, "test.dbc"));
 
@@ -141,13 +147,14 @@ TEST_F(SignalsPageIntegrationTest, FiltersSignalsByText) {
  * Scenario: Signals with Units "km/h" and "rpm".
  * Set filter to "km/h"
  */
-TEST_F(SignalsPageIntegrationTest, FiltersSignalsByUnit) {
+TEST_F(SignalsPageIntegrationTest, FiltersSignalsByUnit)
+{
     // 1. Arrange
     auto config = TestHelpers::DbcConfigBuilder()
-        .message(TestHelpers::DbcMessageBuilder(0x100, "Msg")
-            .signal(TestHelpers::DbcSignalBuilder("Speed").unit("km/h"))
-            .signal(TestHelpers::DbcSignalBuilder("Engine").unit("rpm")))
-        .build();
+                      .message(TestHelpers::DbcMessageBuilder(0x100, "Msg")
+                                   .signal(TestHelpers::DbcSignalBuilder("Speed").unit("km/h"))
+                                   .signal(TestHelpers::DbcSignalBuilder("Engine").unit("rpm")))
+                      .build();
 
     mockBroker.triggerEvent(Core::DBCParsedEvent(config, "test.dbc"));
 
@@ -174,11 +181,12 @@ TEST_F(SignalsPageIntegrationTest, FiltersSignalsByUnit) {
  * Scenario: Config without signals
  * Expectation: Table hidden, empty label shown
  */
-TEST_F(SignalsPageIntegrationTest, ShowsEmptyStateOnNoSignals) {
+TEST_F(SignalsPageIntegrationTest, ShowsEmptyStateOnNoSignals)
+{
     // 1. Arrange: Message without signals
     auto config = TestHelpers::DbcConfigBuilder()
-        .message(TestHelpers::DbcMessageBuilder(0x100, "EmptyMsg"))
-        .build();
+                      .message(TestHelpers::DbcMessageBuilder(0x100, "EmptyMsg"))
+                      .build();
 
     mockBroker.triggerEvent(Core::DBCParsedEvent(config, "empty.dbc"));
 
@@ -197,12 +205,13 @@ TEST_F(SignalsPageIntegrationTest, ShowsEmptyStateOnNoSignals) {
  * Scenario: Data is there, but user searches for "BananaXYZ".
  * Expectation: Everything is filtered out -> table hidden -> label visible
  */
-TEST_F(SignalsPageIntegrationTest, ShowsEmptyLabelOnNoSearchResults) {
+TEST_F(SignalsPageIntegrationTest, ShowsEmptyLabelOnNoSearchResults)
+{
     // 1. Arrange: Load Config with data
     auto config = TestHelpers::DbcConfigBuilder()
-        .message(TestHelpers::DbcMessageBuilder(0x100, "Msg")
-            .signal(TestHelpers::DbcSignalBuilder("Speed")))
-        .build();
+                      .message(TestHelpers::DbcMessageBuilder(0x100, "Msg")
+                                   .signal(TestHelpers::DbcSignalBuilder("Speed")))
+                      .build();
 
     mockBroker.triggerEvent(Core::DBCParsedEvent(config, "test.dbc"));
 
@@ -223,8 +232,7 @@ TEST_F(SignalsPageIntegrationTest, ShowsEmptyLabelOnNoSearchResults) {
     EXPECT_FALSE(emptyLabel->isHidden())
         << "Empty Label should be visible when proxy hides all items.";
 
-    EXPECT_TRUE(table->isHidden())
-        << "Table should be hidden when empty";
+    EXPECT_TRUE(table->isHidden()) << "Table should be hidden when empty";
 
     // 4. Act: Delete Search -> Table appears again
     filterBar->setSearchText("");
@@ -240,12 +248,13 @@ TEST_F(SignalsPageIntegrationTest, ShowsEmptyLabelOnNoSearchResults) {
  * 2. Load File B
  * 3. Check for filter reset
  */
-TEST_F(SignalsPageIntegrationTest, ResetsUnitFilterOnNewLoad) {
+TEST_F(SignalsPageIntegrationTest, ResetsUnitFilterOnNewLoad)
+{
     // 1. Arrange: File A with km/h
     auto configA = TestHelpers::DbcConfigBuilder()
-        .message(TestHelpers::DbcMessageBuilder(0x100, "A")
-            .signal(TestHelpers::DbcSignalBuilder("S1").unit("km/h")))
-        .build();
+                       .message(TestHelpers::DbcMessageBuilder(0x100, "A")
+                                    .signal(TestHelpers::DbcSignalBuilder("S1").unit("km/h")))
+                       .build();
     mockBroker.triggerEvent(Core::DBCParsedEvent(configA, "A.dbc"));
 
     Core::StyledFilterBar* filterBar = getFilterBar();
@@ -253,9 +262,9 @@ TEST_F(SignalsPageIntegrationTest, ResetsUnitFilterOnNewLoad) {
 
     // 2. Act: Load File B
     auto configB = TestHelpers::DbcConfigBuilder()
-        .message(TestHelpers::DbcMessageBuilder(0x200, "B")
-            .signal(TestHelpers::DbcSignalBuilder("S2").unit("Volt")))
-        .build();
+                       .message(TestHelpers::DbcMessageBuilder(0x200, "B")
+                                    .signal(TestHelpers::DbcSignalBuilder("S2").unit("Volt")))
+                       .build();
 
     mockBroker.triggerEvent(Core::DBCParsedEvent(configB, "B.dbc"));
 

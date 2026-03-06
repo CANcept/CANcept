@@ -172,7 +172,7 @@ constexpr const char* EcuCount = "lblEcuCount";
 constexpr const char* MsgCount = "lblMessageCount";
 constexpr const char* SigCount = "lblSignalCount";
 constexpr const char* OrphanCount = "lblOrphanCount";
-}
+}  // namespace LblNames
 }  // namespace OverviewPage
 
 // --- ECUs Page Specifics ---

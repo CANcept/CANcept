@@ -1,14 +1,14 @@
 #include <gtest/gtest.h>
+
 #include <QTableView>
 
 // Module Includes
-#include "dbc_file/dbc_component.hpp"
-#include "dbc_file/view/pages/messages_page.hpp"
-#include "dbc_file/constants.hpp"
-
+#include "core/widgets/card_widget.hpp"
 #include "core/widgets/common/searchable_filter_widgets.hpp"
 #include "core/widgets/common/styled_filter_bar.hpp"
-#include "core/widgets/card_widget.hpp"
+#include "dbc_file/constants.hpp"
+#include "dbc_file/dbc_component.hpp"
+#include "dbc_file/view/pages/messages_page.hpp"
 
 // Helpers
 #include <QMouseEvent>
@@ -19,8 +19,9 @@
 using namespace DbcFile;
 using namespace testing;
 
-class MessagesPageIntegrationTest : public ::testing::Test {
-protected:
+class MessagesPageIntegrationTest : public ::testing::Test
+{
+   protected:
     int argc = 0;
     char** argv = nullptr;
     std::unique_ptr<QApplication> app;
@@ -28,8 +29,10 @@ protected:
     std::unique_ptr<DbcComponent> component;
     MessagesPage* messagesPage = nullptr;
 
-    void SetUp() override {
-        if (!QApplication::instance()) {
+    void SetUp() override
+    {
+        if (!QApplication::instance())
+        {
             app = std::make_unique<QApplication>(argc, argv);
         }
         EXPECT_CALL(mockBroker, _subscribeEvent(_)).WillRepeatedly(Return());
@@ -46,7 +49,8 @@ protected:
         ASSERT_NE(messagesPage, nullptr);
     }
 
-    void TearDown() override {
+    void TearDown() override
+    {
         component->onStop();
         component.reset();
     }
@@ -76,13 +80,14 @@ protected:
  * Scenario: Parse 3 Messages
  * Expectation: Table has 3 rows with correct names
  */
-TEST_F(MessagesPageIntegrationTest, PopulatesMasterTable) {
+TEST_F(MessagesPageIntegrationTest, PopulatesMasterTable)
+{
     // 1. Arrange
     auto config = TestHelpers::DbcConfigBuilder()
-        .message(TestHelpers::DbcMessageBuilder(0x100, "SpeedMsg"))
-        .message(TestHelpers::DbcMessageBuilder(0x101, "TorqueMsg"))
-        .message(TestHelpers::DbcMessageBuilder(0x102, "StatusMsg"))
-        .build();
+                      .message(TestHelpers::DbcMessageBuilder(0x100, "SpeedMsg"))
+                      .message(TestHelpers::DbcMessageBuilder(0x101, "TorqueMsg"))
+                      .message(TestHelpers::DbcMessageBuilder(0x102, "StatusMsg"))
+                      .build();
 
     // 2. Act
     mockBroker.triggerEvent(Core::DBCParsedEvent(config, "test.dbc"));
@@ -105,12 +110,13 @@ TEST_F(MessagesPageIntegrationTest, PopulatesMasterTable) {
  * Scenario: Filter for Text "Torque".
  * Expectation: Only one row visible.
  */
-TEST_F(MessagesPageIntegrationTest, FiltersMasterTable) {
+TEST_F(MessagesPageIntegrationTest, FiltersMasterTable)
+{
     // 1. Arrange
     auto config = TestHelpers::DbcConfigBuilder()
-        .message(TestHelpers::DbcMessageBuilder(0x100, "SpeedMsg"))
-        .message(TestHelpers::DbcMessageBuilder(0x101, "TorqueMsg"))
-        .build();
+                      .message(TestHelpers::DbcMessageBuilder(0x100, "SpeedMsg"))
+                      .message(TestHelpers::DbcMessageBuilder(0x101, "TorqueMsg"))
+                      .build();
 
     mockBroker.triggerEvent(Core::DBCParsedEvent(config, "test.dbc"));
 
@@ -135,14 +141,16 @@ TEST_F(MessagesPageIntegrationTest, FiltersMasterTable) {
  * Szenario: Filtern nach "EngineECU".
  * Erwartung: Nur Messages von diesem Sender sichtbar.
  */
-TEST_F(MessagesPageIntegrationTest, FiltersBySenderCategory) {
+TEST_F(MessagesPageIntegrationTest, FiltersBySenderCategory)
+{
     // 1. Arrange: 2 Messages von unterschiedlichen Sendern
-    auto config = TestHelpers::DbcConfigBuilder()
-        .node("EngineECU")
-        .node("BrakeECU")
-        .message(TestHelpers::DbcMessageBuilder(0x100, "SpeedMsg").transmitter("EngineECU"))
-        .message(TestHelpers::DbcMessageBuilder(0x200, "BrakeMsg").transmitter("BrakeECU"))
-        .build();
+    auto config =
+        TestHelpers::DbcConfigBuilder()
+            .node("EngineECU")
+            .node("BrakeECU")
+            .message(TestHelpers::DbcMessageBuilder(0x100, "SpeedMsg").transmitter("EngineECU"))
+            .message(TestHelpers::DbcMessageBuilder(0x200, "BrakeMsg").transmitter("BrakeECU"))
+            .build();
 
     mockBroker.triggerEvent(Core::DBCParsedEvent(config, "test.dbc"));
     QApplication::processEvents();
@@ -175,12 +183,13 @@ TEST_F(MessagesPageIntegrationTest, FiltersBySenderCategory) {
  * 2. Load file B
  * 3. Check data
  */
-TEST_F(MessagesPageIntegrationTest, ResetsFilterOnNewConfigLoad) {
+TEST_F(MessagesPageIntegrationTest, ResetsFilterOnNewConfigLoad)
+{
     // 1. Arrange: File A
     auto configA = TestHelpers::DbcConfigBuilder()
-        .node("Engine")
-        .message(TestHelpers::DbcMessageBuilder(0x100, "MsgA").transmitter("Engine"))
-        .build();
+                       .node("Engine")
+                       .message(TestHelpers::DbcMessageBuilder(0x100, "MsgA").transmitter("Engine"))
+                       .build();
 
     mockBroker.triggerEvent(Core::DBCParsedEvent(configA, "A.dbc"));
 
@@ -195,9 +204,9 @@ TEST_F(MessagesPageIntegrationTest, ResetsFilterOnNewConfigLoad) {
 
     // 2. Act: Load File B
     auto configB = TestHelpers::DbcConfigBuilder()
-        .node("Brakes")
-        .message(TestHelpers::DbcMessageBuilder(0x200, "MsgB").transmitter("Brakes"))
-        .build();
+                       .node("Brakes")
+                       .message(TestHelpers::DbcMessageBuilder(0x200, "MsgB").transmitter("Brakes"))
+                       .build();
 
     mockBroker.triggerEvent(Core::DBCParsedEvent(configB, "B.dbc"));
 
@@ -216,13 +225,14 @@ TEST_F(MessagesPageIntegrationTest, ResetsFilterOnNewConfigLoad) {
  *  2. DetailView Header shows name of the message.
  *  3. DetailView signal-list shows signals of selected message.
  */
-TEST_F(MessagesPageIntegrationTest, SelectionUpdatesDetailView) {
+TEST_F(MessagesPageIntegrationTest, SelectionUpdatesDetailView)
+{
     // 1. Arrange: Message "MsgWithSignals" with 2 signals
     auto config = TestHelpers::DbcConfigBuilder()
-        .message(TestHelpers::DbcMessageBuilder(0x300, "MsgWithSignals")
-            .signal(TestHelpers::DbcSignalBuilder("SigAlpha"))
-            .signal(TestHelpers::DbcSignalBuilder("SigBeta")))
-        .build();
+                      .message(TestHelpers::DbcMessageBuilder(0x300, "MsgWithSignals")
+                                   .signal(TestHelpers::DbcSignalBuilder("SigAlpha"))
+                                   .signal(TestHelpers::DbcSignalBuilder("SigBeta")))
+                      .build();
 
     mockBroker.triggerEvent(Core::DBCParsedEvent(config, "test.dbc"));
     QApplication::processEvents();
@@ -237,7 +247,8 @@ TEST_F(MessagesPageIntegrationTest, SelectionUpdatesDetailView) {
 
     // 2. Act: Select first row
     QModelIndex firstRow = masterTable->model()->index(0, 0);
-    masterTable->selectionModel()->select(firstRow, QItemSelectionModel::Select | QItemSelectionModel::Rows);
+    masterTable->selectionModel()->select(firstRow,
+                                          QItemSelectionModel::Select | QItemSelectionModel::Rows);
     masterTable->selectionModel()->setCurrentIndex(firstRow, QItemSelectionModel::SelectCurrent);
     QApplication::processEvents();
 
@@ -271,11 +282,11 @@ TEST_F(MessagesPageIntegrationTest, SelectionUpdatesDetailView) {
  * Scenario: Click in empty space
  * Expectation: DetailView hidden
  */
-TEST_F(MessagesPageIntegrationTest, DeselectionHidesDetailView) {
+TEST_F(MessagesPageIntegrationTest, DeselectionHidesDetailView)
+{
     // 1. Arrange
-    auto config = TestHelpers::DbcConfigBuilder()
-        .message(TestHelpers::DbcMessageBuilder(0x100, "A"))
-        .build();
+    auto config =
+        TestHelpers::DbcConfigBuilder().message(TestHelpers::DbcMessageBuilder(0x100, "A")).build();
     mockBroker.triggerEvent(Core::DBCParsedEvent(config, "test.dbc"));
     QApplication::processEvents();
 
@@ -283,7 +294,7 @@ TEST_F(MessagesPageIntegrationTest, DeselectionHidesDetailView) {
     MessageDetailView* detailView = getDetailView();
 
     // Select
-    QModelIndex idx = table->model()->index(0,0);
+    QModelIndex idx = table->model()->index(0, 0);
     table->selectionModel()->setCurrentIndex(idx, QItemSelectionModel::SelectCurrent);
     QApplication::processEvents();
 
@@ -291,7 +302,8 @@ TEST_F(MessagesPageIntegrationTest, DeselectionHidesDetailView) {
 
     // 2. Act: Deselection
     table->selectionModel()->clearSelection();
-    table->selectionModel()->setCurrentIndex(QModelIndex(), QItemSelectionModel::SelectCurrent); // Invalid Index
+    table->selectionModel()->setCurrentIndex(QModelIndex(),
+                                             QItemSelectionModel::SelectCurrent);  // Invalid Index
     QApplication::processEvents();
 
     // 3. Assert
@@ -302,11 +314,12 @@ TEST_F(MessagesPageIntegrationTest, DeselectionHidesDetailView) {
  * @brief Test 6: Toggle Selection (Click on already selected message)
  * Scenario: Click auf Row 0 (selected) -> Click auf Row 0 (deselected).
  */
-TEST_F(MessagesPageIntegrationTest, ClickingSelectedRowDeselectsIt) {
+TEST_F(MessagesPageIntegrationTest, ClickingSelectedRowDeselectsIt)
+{
     // 1. Arrange
     auto config = TestHelpers::DbcConfigBuilder()
-        .message(TestHelpers::DbcMessageBuilder(0x100, "ClickMe"))
-        .build();
+                      .message(TestHelpers::DbcMessageBuilder(0x100, "ClickMe"))
+                      .build();
     mockBroker.triggerEvent(Core::DBCParsedEvent(config, "test.dbc"));
 
     QTableView* table = getMasterTable();
@@ -326,7 +339,8 @@ TEST_F(MessagesPageIntegrationTest, ClickingSelectedRowDeselectsIt) {
     QPoint clickPoint = rowRect.center();
     // create MouseButtonPress event
     auto* viewport = table->viewport();
-    QMouseEvent event(QEvent::MouseButtonPress, clickPoint, Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+    QMouseEvent event(QEvent::MouseButtonPress, clickPoint, Qt::LeftButton, Qt::LeftButton,
+                      Qt::NoModifier);
 
     // Send event to application
     QApplication::sendEvent(viewport, &event);
@@ -335,8 +349,7 @@ TEST_F(MessagesPageIntegrationTest, ClickingSelectedRowDeselectsIt) {
     EXPECT_FALSE(table->selectionModel()->isSelected(idx))
         << "Row should be deselected after second selection";
 
-    EXPECT_FALSE(table->selectionModel()->hasSelection())
-        << "Nothing should be selected";
+    EXPECT_FALSE(table->selectionModel()->hasSelection()) << "Nothing should be selected";
 
     EXPECT_TRUE(detailView->isHidden());
 }
@@ -345,7 +358,8 @@ TEST_F(MessagesPageIntegrationTest, ClickingSelectedRowDeselectsIt) {
  * Scenario: A valid DBC-File without messages is loaded.
  * Expectation: Table is hidden, Empty label is shown
  */
-TEST_F(MessagesPageIntegrationTest, ShowsEmptyStateOnNoData) {
+TEST_F(MessagesPageIntegrationTest, ShowsEmptyStateOnNoData)
+{
     // 1. Arrange: Build empty config
     auto config = TestHelpers::DbcConfigBuilder().build();
 
@@ -356,8 +370,10 @@ TEST_F(MessagesPageIntegrationTest, ShowsEmptyStateOnNoData) {
 
     QLabel* emptyLabel = nullptr;
     auto labels = messagesPage->findChildren<QLabel*>();
-    for (auto* lbl : labels) {
-        if (lbl->text() == Constants::MessagesPage::EmptyLabelText) {
+    for (auto* lbl : labels)
+    {
+        if (lbl->text() == Constants::MessagesPage::EmptyLabelText)
+        {
             emptyLabel = lbl;
             break;
         }
@@ -371,22 +387,21 @@ TEST_F(MessagesPageIntegrationTest, ShowsEmptyStateOnNoData) {
     EXPECT_EQ(table->model()->rowCount(), 0);
 
     // Label has to be visible
-    EXPECT_FALSE(emptyLabel->isHidden())
-        << "Empty Label should be visible when model is empty";
+    EXPECT_FALSE(emptyLabel->isHidden()) << "Empty Label should be visible when model is empty";
 
     // Table has to be hidden
-    EXPECT_TRUE(table->isHidden())
-        << "Table should be hidden when model is empty";
+    EXPECT_TRUE(table->isHidden()) << "Table should be hidden when model is empty";
 }
 /**
  * @brief Test 8: Empty State of master table at invalid search
  * Scenario: Message "Speed" exists, search for "Banana".
  */
-TEST_F(MessagesPageIntegrationTest, ShowsEmptyLabelOnNoSearchResults) {
+TEST_F(MessagesPageIntegrationTest, ShowsEmptyLabelOnNoSearchResults)
+{
     // 1. Arrange
     auto config = TestHelpers::DbcConfigBuilder()
-        .message(TestHelpers::DbcMessageBuilder(0x100, "SpeedMsg"))
-        .build();
+                      .message(TestHelpers::DbcMessageBuilder(0x100, "SpeedMsg"))
+                      .build();
 
     mockBroker.triggerEvent(Core::DBCParsedEvent(config, "test.dbc"));
 
@@ -394,8 +409,10 @@ TEST_F(MessagesPageIntegrationTest, ShowsEmptyLabelOnNoSearchResults) {
     // Search empty label
     QLabel* emptyLabel = nullptr;
     auto labels = messagesPage->findChildren<QLabel*>();
-    for(auto* lbl : labels) {
-        if(lbl->text() == Constants::MessagesPage::EmptyLabelText) {
+    for (auto* lbl : labels)
+    {
+        if (lbl->text() == Constants::MessagesPage::EmptyLabelText)
+        {
             emptyLabel = lbl;
             break;
         }
@@ -417,11 +434,12 @@ TEST_F(MessagesPageIntegrationTest, ShowsEmptyLabelOnNoSearchResults) {
  * Scenario: Message "EmptyMsg" has 0 signals and is selected
  * Expectation: Detail View shows "No Signals defined" (Index 1 in stack)
  */
-TEST_F(MessagesPageIntegrationTest, ShowsNoSignalsLabelForEmptyMessage) {
+TEST_F(MessagesPageIntegrationTest, ShowsNoSignalsLabelForEmptyMessage)
+{
     // 1. Arrange: Message without signals
     auto config = TestHelpers::DbcConfigBuilder()
-        .message(TestHelpers::DbcMessageBuilder(0x999, "EmptyMsg"))
-        .build();
+                      .message(TestHelpers::DbcMessageBuilder(0x999, "EmptyMsg"))
+                      .build();
 
     mockBroker.triggerEvent(Core::DBCParsedEvent(config, "test.dbc"));
 
@@ -433,7 +451,8 @@ TEST_F(MessagesPageIntegrationTest, ShowsNoSignalsLabelForEmptyMessage) {
 
     // 2. Act: Select message
     QModelIndex firstRow = masterTable->model()->index(0, 0);
-    masterTable->selectionModel()->select(firstRow, QItemSelectionModel::Select | QItemSelectionModel::Rows);
+    masterTable->selectionModel()->select(firstRow,
+                                          QItemSelectionModel::Select | QItemSelectionModel::Rows);
     masterTable->selectionModel()->setCurrentIndex(firstRow, QItemSelectionModel::SelectCurrent);
 
     // 3. Assert
@@ -441,8 +460,9 @@ TEST_F(MessagesPageIntegrationTest, ShowsNoSignalsLabelForEmptyMessage) {
     EXPECT_FALSE(detailView->isHidden());
 
     // B) StackedWidget has to be on index 1 (empty state)
-    EXPECT_EQ(stack->currentIndex(), 1)
-        << "StackedWidget should show ""No Signals defined""";
+    EXPECT_EQ(stack->currentIndex(), 1) << "StackedWidget should show "
+                                           "No Signals defined"
+                                           "";
 
     // C) Check text
     auto* currentWidget = stack->currentWidget();

@@ -1,23 +1,24 @@
 #include <gtest/gtest.h>
 
 // Module Includes
+#include "dbc_file/constants.hpp"
 #include "dbc_file/dbc_component.hpp"
 #include "dbc_file/view/dbc_view.hpp"
 #include "dbc_file/view/pages/load_page.hpp"
-#include "dbc_file/constants.hpp"
 
 // Core Includes
 #include "core/widgets/sidebar.hpp"
 
 // Helpers
-#include "tests/helpers/mock_event_broker.hpp"
 #include "tests/helpers/dbc_examples.hpp"
+#include "tests/helpers/mock_event_broker.hpp"
 
 using namespace DbcFile;
 using namespace testing;
 
-class DbcComponentIntegrationTest : public ::testing::Test {
-protected:
+class DbcComponentIntegrationTest : public ::testing::Test
+{
+   protected:
     int argc = 0;
     char** argv = nullptr;
     std::unique_ptr<QApplication> app;
@@ -25,8 +26,10 @@ protected:
     std::unique_ptr<DbcComponent> component;
     DbcView* view = nullptr;
 
-    void SetUp() override {
-        if (!QApplication::instance()) {
+    void SetUp() override
+    {
+        if (!QApplication::instance())
+        {
             app = std::make_unique<QApplication>(argc, argv);
         }
         EXPECT_CALL(mockBroker, _subscribeEvent(_)).WillRepeatedly(Return());
@@ -41,7 +44,8 @@ protected:
         view->show();
     }
 
-    void TearDown() override {
+    void TearDown() override
+    {
         component->onStop();
         component.reset();
     }
@@ -67,9 +71,11 @@ protected:
         if (!sidebar || !sidebar->model()) return -1;
 
         QAbstractItemModel* model = sidebar->model();
-        for (int i = 0; i < model->rowCount(); ++i) {
+        for (int i = 0; i < model->rowCount(); ++i)
+        {
             QModelIndex idx = model->index(i, 0);
-            if (idx.data(Qt::DisplayRole).toString().contains(name)) {
+            if (idx.data(Qt::DisplayRole).toString().contains(name))
+            {
                 return i;
             }
         }
@@ -79,7 +85,8 @@ protected:
     /**
      * @brief Checks if a tab is enabeld
      */
-    bool isTabEnabled(int index) {
+    bool isTabEnabled(int index)
+    {
         auto* sidebar = getSidebar();
         if (!sidebar || !sidebar->model()) return false;
 
@@ -91,7 +98,8 @@ protected:
 /**
  * @brief Test 1: Initial navagation lock
  */
-TEST_F(DbcComponentIntegrationTest, NavigationIsLockedInitially) {
+TEST_F(DbcComponentIntegrationTest, NavigationIsLockedInitially)
+{
     int overviewIdx = findTabIndex(Constants::Sidebar::TitleOverview);
     int ecusIdx = findTabIndex(Constants::Sidebar::TitleEcus);
     int msgIdx = findTabIndex(Constants::Sidebar::TitleMessages);
@@ -114,7 +122,8 @@ TEST_F(DbcComponentIntegrationTest, NavigationIsLockedInitially) {
 /**
  * @brief Test 2: Navigation unlocked at successful file load
  */
-TEST_F(DbcComponentIntegrationTest, NavigationUnlocksOnParseSuccess) {
+TEST_F(DbcComponentIntegrationTest, NavigationUnlocksOnParseSuccess)
+{
     int overviewIdx = findTabIndex(Constants::Sidebar::TitleOverview);
     int ecusIdx = findTabIndex(Constants::Sidebar::TitleEcus);
     int msgIdx = findTabIndex(Constants::Sidebar::TitleMessages);
@@ -125,7 +134,7 @@ TEST_F(DbcComponentIntegrationTest, NavigationUnlocksOnParseSuccess) {
     ASSERT_GE(msgIdx, 0) << "Overview Tab not found in model";
     ASSERT_GE(sigIdx, 0) << "Overview Tab not found in model";
     ASSERT_GE(loadIdx, 0) << "Load Tab not found in model";
-    ASSERT_FALSE(isTabEnabled(overviewIdx)); // Pre-Check
+    ASSERT_FALSE(isTabEnabled(overviewIdx));  // Pre-Check
 
     // 2. Act: Successful file parsing
     auto config = TestHelpers::DbcExamples::simple();
@@ -133,18 +142,23 @@ TEST_F(DbcComponentIntegrationTest, NavigationUnlocksOnParseSuccess) {
     QApplication::processEvents();
 
     // 3. Assert: Jetzt frei
-    EXPECT_TRUE(isTabEnabled(loadIdx)) << "Navigation should be unlocked after successful file load.";
-    EXPECT_TRUE(isTabEnabled(overviewIdx)) << "Navigation should be unlocked after successful file load.";
-    EXPECT_TRUE(isTabEnabled(ecusIdx)) << "Navigation should be unlocked after successful file load.";
-    EXPECT_TRUE(isTabEnabled(msgIdx)) << "Navigation should be unlocked after successful file load.";
-    EXPECT_TRUE(isTabEnabled(sigIdx)) << "Navigation should be unlocked after successful file load.";
-
+    EXPECT_TRUE(isTabEnabled(loadIdx))
+        << "Navigation should be unlocked after successful file load.";
+    EXPECT_TRUE(isTabEnabled(overviewIdx))
+        << "Navigation should be unlocked after successful file load.";
+    EXPECT_TRUE(isTabEnabled(ecusIdx))
+        << "Navigation should be unlocked after successful file load.";
+    EXPECT_TRUE(isTabEnabled(msgIdx))
+        << "Navigation should be unlocked after successful file load.";
+    EXPECT_TRUE(isTabEnabled(sigIdx))
+        << "Navigation should be unlocked after successful file load.";
 }
 
 /**
  * @brief Test 4: Page switching
  */
-TEST_F(DbcComponentIntegrationTest, SwitchingSidebarTabChangesPage) {
+TEST_F(DbcComponentIntegrationTest, SwitchingSidebarTabChangesPage)
+{
     // 1. Arrange
     mockBroker.triggerEvent(Core::DBCParsedEvent(TestHelpers::DbcExamples::simple(), "test.dbc"));
     QApplication::processEvents();
@@ -159,13 +173,15 @@ TEST_F(DbcComponentIntegrationTest, SwitchingSidebarTabChangesPage) {
     QApplication::processEvents();
 
     // 3. Assert
-    EXPECT_EQ(stack->currentIndex(), Constants::Sidebar::INDEX_OVERVIEW) << "StackedWidget should have switched to overviewpage";
+    EXPECT_EQ(stack->currentIndex(), Constants::Sidebar::INDEX_OVERVIEW)
+        << "StackedWidget should have switched to overviewpage";
 }
 
 /**
  * @brief Test 5: LoadPage Reset when leaving load page
  */
-TEST_F(DbcComponentIntegrationTest, ResetsLoadPageStatusWhenLeaving) {
+TEST_F(DbcComponentIntegrationTest, ResetsLoadPageStatusWhenLeaving)
+{
     // 1. Arrange: Create error
     mockBroker.triggerEvent(Core::DBCParseErrorEvent("Test error", "test.dbc"));
     QApplication::processEvents();
