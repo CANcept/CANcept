@@ -112,8 +112,6 @@ if(ENABLE_TESTS)
             target_link_libraries(${TEST_NAME} PRIVATE ${PROJECT_NAME}Lib ${LINK_LIB} GTest::gmock Qt6::Test)
             target_include_directories(${TEST_NAME} PRIVATE ${CMAKE_SOURCE_DIR})
             add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
-
-            set_tests_properties(${TEST_NAME} PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
         endif()
     endfunction()
 
@@ -150,8 +148,6 @@ if(ENABLE_TESTS)
                     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
                     COMMENT "Processing coverage data into HTML..."
             )
-
-            add_dependencies(coverage_report UnitTests)
         endif()
     endif()
 endif()
