@@ -149,3 +149,165 @@ TEST_F(LoggingModelTestBase, GetCurrentSessionId)
     EXPECT_TRUE(model->getCurrentSessionId().isEmpty())
         << "Current session ID should be empty after stopping the session";
 }
+
+TEST_F(LoggingModelTestBase, HeaderDataEdgeCases)
+{
+    // Test invalid role
+    EXPECT_FALSE(
+        model->headerData(Logging::LoggingModel::Col_Timestamp, Qt::Horizontal, Qt::UserRole)
+            .isValid());
+
+    // Test invalid orientation
+    EXPECT_FALSE(
+        model->headerData(Logging::LoggingModel::Col_Timestamp, Qt::Vertical, Qt::DisplayRole)
+            .isValid());
+
+    // Test out of bounds section
+    EXPECT_FALSE(model->headerData(999, Qt::Horizontal, Qt::DisplayRole).isValid());
+}
+
+TEST_F(LoggingModelTestBase, DataMethodRolesAndColumns)
+{
+    // 1. Test Invalid Index
+    EXPECT_FALSE(model->data(QModelIndex(), Qt::DisplayRole).isValid());
+    EXPECT_FALSE(model->data(model->index(999, 0), Qt::DisplayRole).isValid());
+
+    // Setup: Start DBC Session to check its specific data formatting
+    // Renamed 'signals' to 'testSignalsMap' to avoid Qt macro conflicts
+    std::map<uint32_t, QStringList> testSignalsMap = {{0x123, {"Sig1", "Sig2"}}};
+    model->startNewDbcLogSession(testSignalsMap, {});
+    QModelIndex dbcRow = model->index(model->rowCount() - 1, 0);
+
+    // 2. Test Qt::DisplayRole for all columns on DBC Session
+    EXPECT_TRUE(model
+                    ->data(model->index(dbcRow.row(), Logging::LoggingModel::Col_Timestamp),
+                           Qt::DisplayRole)
+                    .isValid());
+    EXPECT_EQ(
+        model
+            ->data(model->index(dbcRow.row(), Logging::LoggingModel::Col_Duration), Qt::DisplayRole)
+            .toString(),
+        "00:00:00");
+
+    QStringList expectedDbcSignals{"0x123"};
+    EXPECT_EQ(
+        model->data(model->index(dbcRow.row(), Logging::LoggingModel::Col_Signals), Qt::DisplayRole)
+            .toStringList(),
+        expectedDbcSignals);
+    EXPECT_FALSE(
+        model->data(model->index(dbcRow.row(), Logging::LoggingModel::Col_Actions), Qt::DisplayRole)
+            .isValid());
+    EXPECT_FALSE(
+        model->data(model->index(dbcRow.row(), 999), Qt::DisplayRole).isValid());  // Invalid column
+
+    // 3. Test other Custom Roles on DBC Session
+    EXPECT_TRUE(model->data(dbcRow, Logging::LoggingModel::IsActiveRole).toBool());
+    EXPECT_EQ(model->data(dbcRow, Logging::LoggingModel::EntryCountRole).toULongLong(), 0);
+    EXPECT_EQ(model->data(dbcRow, Logging::LoggingModel::SignalsListRole).toStringList(),
+              expectedDbcSignals);
+    EXPECT_FALSE(model->data(dbcRow, Qt::UserRole + 999).isValid());  // Unknown role
+
+    // 4. Setup: Start RAW Session to check its specific data formatting
+    model->startNewRawLogsSession();
+    QModelIndex rawRow = model->index(model->rowCount() - 1, 0);
+
+    // Test DisplayRole and SignalsListRole for RAW
+    QStringList expectedRaw{"Raw"};
+    EXPECT_EQ(
+        model->data(model->index(rawRow.row(), Logging::LoggingModel::Col_Signals), Qt::DisplayRole)
+            .toStringList(),
+        expectedRaw);
+    EXPECT_EQ(model->data(rawRow, Logging::LoggingModel::SignalsListRole).toStringList(),
+              expectedRaw);
+}
+
+#include <iostream>
+
+TEST_F(LoggingModelTestBase, DbcConfigLookups)
+{
+    // 1. Initial State Check (No DBC)
+    uint16_t testMsgId = 0x1A4;
+    QString fallback = model->getMessageName(testMsgId);
+
+    // This will print to the console during 'ctest -V'
+    std::cout << "\n[DEBUG] Fallback result: " << fallback.toStdString() << std::endl;
+    EXPECT_EQ(fallback, "0x1A4");
+
+    // 2. Setup DBC
+    Core::DbcConfig mockConfig;
+    Core::DbcMessageDescription msgDef;
+    msgDef.messageId = testMsgId;
+    msgDef.messageName = "EngineData";
+
+    Core::DbcSignalDescription sigDef;
+    sigDef.signalName = "EngineSpeed";
+    sigDef.unit = "rpm";
+
+    msgDef.signalDescriptions.push_back(sigDef);
+    mockConfig.messageDefinitions.push_back(msgDef);
+
+    model->updateDbcConfig(mockConfig);
+
+    // 3. DBC Hit Check
+    QString nameResult = model->getMessageName(testMsgId);
+    std::cout << "[DEBUG] DBC Name result: " << nameResult.toStdString() << std::endl;
+    EXPECT_EQ(nameResult, "EngineData");
+
+    QString unitResult = model->getSignalUnit(testMsgId, "EngineSpeed");
+    std::cout << "[DEBUG] DBC Unit result: " << unitResult.toStdString() << "\n" << std::endl;
+    EXPECT_EQ(unitResult, "rpm");
+}
+
+TEST_F(LoggingModelTestBase, GetSelectedSignalsForMessage)
+{
+    uint16_t targetMsgId = 0x100;
+    QStringList expectedSignals = {"SigA", "SigB"};
+    std::map<uint32_t, QStringList> signalsMap = {{targetMsgId, expectedSignals}};
+
+    // 1. Test when no session is active
+    EXPECT_TRUE(model->getSelectedSignalsForMessage(targetMsgId).isEmpty());
+
+    // 2. Start session and test finding the existing signal
+    model->startNewDbcLogSession(signalsMap, {});
+    EXPECT_EQ(model->getSelectedSignalsForMessage(targetMsgId), expectedSignals);
+
+    // 3. Test asking for a message ID that wasn't selected
+    EXPECT_TRUE(model->getSelectedSignalsForMessage(0x999).isEmpty());
+}
+
+TEST_F(LoggingModelTestBase, DurationAndUpdateSignals)
+{
+    QSignalSpy dataChangedSpy(model.get(), &Logging::LoggingModel::dataChanged);
+
+    // 1. Ensure no signal when idle
+    model->updateActiveDuration();
+    EXPECT_EQ(dataChangedSpy.count(), 0);
+
+    // 2. Start a session
+    model->startNewRawLogsSession();
+    int activeRow = model->rowCount() - 1;  // This is row 2
+    dataChangedSpy.clear();
+
+    // 3. Test updateActiveDuration
+    model->updateActiveDuration();
+    ASSERT_GT(dataChangedSpy.count(), 0);
+
+    QList<QVariant> updateArgs = dataChangedSpy.takeFirst();
+    QModelIndex updateTopLeft = updateArgs.at(0).toModelIndex();
+    EXPECT_EQ(updateTopLeft.row(), activeRow);
+    EXPECT_EQ(updateTopLeft.column(), Logging::LoggingModel::Col_Duration);
+
+    // 4. Test stopActiveSession
+    // Based on your error log, your stopActiveSession emits a signal
+    // starting at the active row and duration column.
+    dataChangedSpy.clear();
+    model->stopActiveSession();
+
+    ASSERT_GT(dataChangedSpy.count(), 0);
+    QList<QVariant> stopArgs = dataChangedSpy.at(0);
+    QModelIndex stopTopLeft = stopArgs.at(0).toModelIndex();
+
+    // Matching your actual output: Row 2, Column 1
+    EXPECT_EQ(stopTopLeft.row(), activeRow);
+    EXPECT_EQ(stopTopLeft.column(), Logging::LoggingModel::Col_Duration);
+}

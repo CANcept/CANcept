@@ -177,7 +177,7 @@ QString LoggingModel::getMessageName(uint16_t messageId) const
 {
     if (!m_currentDbc.has_value())
     {
-        return QString("0x%1").arg(messageId, 3, 16, QChar('0')).toUpper();
+        return QString("0x%1").arg(QString::number(messageId, 16).toUpper(), 3, QChar('0'));
     }
 
     for (const auto& msgDef : m_currentDbc->messageDefinitions)
@@ -188,7 +188,7 @@ QString LoggingModel::getMessageName(uint16_t messageId) const
         }
     }
 
-    return QString("UNKNOWN_0x%1").arg(messageId, 3, 16, QChar('0')).toUpper();
+    return QString("UNKNOWN_0x%1").arg(QString::number(messageId, 16).toUpper(), 3, QChar('0'));
 }
 
 // Looks up signal unit from DBC config
