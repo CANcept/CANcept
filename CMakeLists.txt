@@ -59,7 +59,7 @@ set(RESOURCE_FILE "${CMAKE_CURRENT_SOURCE_DIR}/resources.qrc")
 file(GLOB_RECURSE SOURCE_FILES CONFIGURE_DEPENDS "src/*.cpp")
 list(FILTER SOURCE_FILES EXCLUDE REGEX "src/app_root/entry_point/main.cpp")
 
-add_library(${PROJECT_NAME}Lib STATIC ${SOURCE_FILES})
+add_library(${PROJECT_NAME}Lib STATIC ${SOURCE_FILES} ${RESOURCE_FILE})
 if(CLANG_TIDY_EXE)
     set_target_properties(${PROJECT_NAME}Lib PROPERTIES CXX_CLANG_TIDY "${DO_CLANG_TIDY}")
 endif()
@@ -112,11 +112,13 @@ if(ENABLE_TESTS)
             target_link_libraries(${TEST_NAME} PRIVATE ${PROJECT_NAME}Lib ${LINK_LIB} GTest::gmock Qt6::Test)
             target_include_directories(${TEST_NAME} PRIVATE ${CMAKE_SOURCE_DIR})
             add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
+
+            set_tests_properties(${TEST_NAME} PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
         endif()
     endfunction()
 
     add_bus_test(UnitTests        "tests/unit"        GTest::gtest GTest::gmock Qt6::Test Qt6::Widgets)
-    add_bus_test(IntegrationTests "tests/integration" GTest::gtest_main)
+    add_bus_test(IntegrationTests "tests/integration" GTest::gtest)
     add_bus_test(SystemTests      "tests/system"      GTest::gtest_main)
     add_bus_test(PerformanceTests "tests/performance" benchmark::benchmark_main)
 
@@ -148,6 +150,8 @@ if(ENABLE_TESTS)
                     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
                     COMMENT "Processing coverage data into HTML..."
             )
+
+            add_dependencies(coverage_report UnitTests)
         endif()
     endif()
 endif()

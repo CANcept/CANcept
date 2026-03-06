@@ -196,15 +196,13 @@ TEST_F(MessagesPageIntegrationTest, ResetsFilterOnNewConfigLoad) {
     // 2. Act: Load File B
     auto configB = TestHelpers::DbcConfigBuilder()
         .node("Brakes")
-        .node("Radio")
-        .node("WheelFR")
         .message(TestHelpers::DbcMessageBuilder(0x200, "MsgB").transmitter("Brakes"))
         .build();
 
     mockBroker.triggerEvent(Core::DBCParsedEvent(configB, "B.dbc"));
 
     // 3. Assert
-    EXPECT_EQ(table->model()->rowCount(), 3);
+    EXPECT_EQ(table->model()->rowCount(), 1);
 
     auto idxSender = table->model()->index(0, Constants::Columns::MsgSender);
     EXPECT_EQ(idxSender.data().toString(), "Brakes");
@@ -341,4 +339,114 @@ TEST_F(MessagesPageIntegrationTest, ClickingSelectedRowDeselectsIt) {
         << "Nothing should be selected";
 
     EXPECT_TRUE(detailView->isHidden());
+}
+/**
+ * @brief Test 7: Empty State (No messages in model)
+ * Scenario: A valid DBC-File without messages is loaded.
+ * Expectation: Table is hidden, Empty label is shown
+ */
+TEST_F(MessagesPageIntegrationTest, ShowsEmptyStateOnNoData) {
+    // 1. Arrange: Build empty config
+    auto config = TestHelpers::DbcConfigBuilder().build();
+
+    // 2. Act:
+    mockBroker.triggerEvent(Core::DBCParsedEvent(config, "empty.dbc"));
+
+    QTableView* table = getMasterTable();
+
+    QLabel* emptyLabel = nullptr;
+    auto labels = messagesPage->findChildren<QLabel*>();
+    for (auto* lbl : labels) {
+        if (lbl->text() == Constants::MessagesPage::EmptyLabelText) {
+            emptyLabel = lbl;
+            break;
+        }
+    }
+
+    // 3. Assert
+    ASSERT_NE(table, nullptr);
+    ASSERT_NE(emptyLabel, nullptr) << "Empty Label Widget not found";
+
+    // Model has to be empty
+    EXPECT_EQ(table->model()->rowCount(), 0);
+
+    // Label has to be visible
+    EXPECT_FALSE(emptyLabel->isHidden())
+        << "Empty Label should be visible when model is empty";
+
+    // Table has to be hidden
+    EXPECT_TRUE(table->isHidden())
+        << "Table should be hidden when model is empty";
+}
+/**
+ * @brief Test 8: Empty State of master table at invalid search
+ * Scenario: Message "Speed" exists, search for "Banana".
+ */
+TEST_F(MessagesPageIntegrationTest, ShowsEmptyLabelOnNoSearchResults) {
+    // 1. Arrange
+    auto config = TestHelpers::DbcConfigBuilder()
+        .message(TestHelpers::DbcMessageBuilder(0x100, "SpeedMsg"))
+        .build();
+
+    mockBroker.triggerEvent(Core::DBCParsedEvent(config, "test.dbc"));
+
+    QTableView* table = getMasterTable();
+    // Search empty label
+    QLabel* emptyLabel = nullptr;
+    auto labels = messagesPage->findChildren<QLabel*>();
+    for(auto* lbl : labels) {
+        if(lbl->text() == Constants::MessagesPage::EmptyLabelText) {
+            emptyLabel = lbl;
+            break;
+        }
+    }
+    ASSERT_NE(emptyLabel, nullptr);
+    Core::StyledFilterBar* filterBar = getFilterBar();
+
+    // 2. Act: Search for nonsense
+    filterBar->setSearchText("Banana");
+
+    // 3. Assert
+    EXPECT_EQ(table->model()->rowCount(), 0);
+    EXPECT_FALSE(emptyLabel->isHidden()) << "Empty Label should be visible after";
+    EXPECT_TRUE(table->isHidden());
+}
+
+/**
+ * @brief Test 9: Detail View Empty State (Message without signals)
+ * Scenario: Message "EmptyMsg" has 0 signals and is selected
+ * Expectation: Detail View shows "No Signals defined" (Index 1 in stack)
+ */
+TEST_F(MessagesPageIntegrationTest, ShowsNoSignalsLabelForEmptyMessage) {
+    // 1. Arrange: Message without signals
+    auto config = TestHelpers::DbcConfigBuilder()
+        .message(TestHelpers::DbcMessageBuilder(0x999, "EmptyMsg"))
+        .build();
+
+    mockBroker.triggerEvent(Core::DBCParsedEvent(config, "test.dbc"));
+
+    QTableView* masterTable = getMasterTable();
+    MessageDetailView* detailView = getDetailView();
+
+    auto* stack = detailView->findChild<QStackedWidget*>();
+    ASSERT_NE(stack, nullptr) << "QStackedWidget in DetailView not found";
+
+    // 2. Act: Select message
+    QModelIndex firstRow = masterTable->model()->index(0, 0);
+    masterTable->selectionModel()->select(firstRow, QItemSelectionModel::Select | QItemSelectionModel::Rows);
+    masterTable->selectionModel()->setCurrentIndex(firstRow, QItemSelectionModel::SelectCurrent);
+
+    // 3. Assert
+    // A) DetailView has to be visible
+    EXPECT_FALSE(detailView->isHidden());
+
+    // B) StackedWidget has to be on index 1 (empty state)
+    EXPECT_EQ(stack->currentIndex(), 1)
+        << "StackedWidget should show ""No Signals defined""";
+
+    // C) Check text
+    auto* currentWidget = stack->currentWidget();
+    auto* label = qobject_cast<QLabel*>(currentWidget);
+    ASSERT_NE(label, nullptr);
+    EXPECT_EQ(label->text(), Constants::MessagesPage::NoSignalsIndicator);
 }
