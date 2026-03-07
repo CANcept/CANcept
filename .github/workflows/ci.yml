@@ -31,8 +31,7 @@ jobs:
             clang-tidy \
             clang-format \
             doxygen \
-            graphviz \
-            iproute2 
+            graphviz
 
       - name: Configure CMake
         run: |

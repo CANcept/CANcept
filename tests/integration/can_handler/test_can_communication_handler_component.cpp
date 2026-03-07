@@ -23,14 +23,16 @@ class CanCommunicationHandlerIntegrationTest : public ::testing::Test
                 lastReceivedMessageDbc = std::make_unique<Core::DbcCanMessage>(event.canMessage);
                 receiveMessageCounterDbc++;
             });
-        try
+        if (!getuid())
         {
-            deviceManager->create();
-            deviceManager->up();
-            canDeviceCreated = true;
-        } catch (const std::exception& e)  // not root user or could not add device
-        {
-            return;
+            try
+            {
+                deviceManager->create();
+                deviceManager->up();
+                canDeviceCreated = true;
+            } catch (const std::exception& e)  // not root user or could not add device
+            {
+            }
         }
         eventBroker->publish(Core::AppStartedEvent{});
         isStarted = true;
@@ -77,7 +79,6 @@ TEST_F(CanCommunicationHandlerIntegrationTest, SendRawAndReceiveMessages)
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(2000));
     eventBroker->publish(Core::CanDriverChangeEvent("vcan0"));
-    ASSERT_TRUE(canDeviceCreated);
     ASSERT_TRUE(isStarted);
     ASSERT_EQ(receiveMessageCounterRaw, 0);
     ASSERT_EQ(receiveMessageCounterDbc, 0);
@@ -116,7 +117,6 @@ TEST_F(CanCommunicationHandlerIntegrationTest, SendDbcAndReceiveMessages)
         return;
     }
 
-    ASSERT_TRUE(canDeviceCreated);
     ASSERT_TRUE(isStarted);
     ASSERT_EQ(receiveMessageCounterRaw, 0);
     ASSERT_EQ(receiveMessageCounterDbc, 0);

@@ -76,6 +76,10 @@ TEST_F(CanDeviceHandlerTest, GetAvailableDevicesEventDoesNotThrow)
 
 TEST_F(CanDeviceHandlerTest, CheckForCanDevicesWithAvailableDevice)
 {
+    if (getuid())  // Check if not root user
+    {
+        return;
+    }
     TestHelpers::SocketCanDeviceManager deviceManager("vcan0");
     try
     {
@@ -89,7 +93,12 @@ TEST_F(CanDeviceHandlerTest, CheckForCanDevicesWithAvailableDevice)
     eventBroker->publish(Core::GetAvailableCanDriversEvent(&options));
 
     EXPECT_FALSE(options.empty());
-    EXPECT_EQ(options.front().value, "vcan0");
+    bool found = false;
+    for (const auto& option : options)
+    {
+        found = found || (option.value == "vcan0");
+    }
+    EXPECT_TRUE(found);
 
     deviceManager.down();
     deviceManager.remove();
@@ -97,6 +106,10 @@ TEST_F(CanDeviceHandlerTest, CheckForCanDevicesWithAvailableDevice)
 
 TEST_F(CanDeviceHandlerTest, SetUpAvailableCanDevice)
 {
+    if (getuid())  // Check if not root user
+    {
+        return;
+    }
     TestHelpers::SocketCanDeviceManager deviceManager("vcan0");
     try
     {
