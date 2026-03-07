@@ -5,6 +5,7 @@
 #include <QTimer>
 #include <algorithm>
 
+#include "app_root/constants.hpp"
 #include "core/macro/theme.hpp"
 #include "core/theme/style_event.hpp"
 #include "core/widgets/card_widget.hpp"
@@ -109,7 +110,8 @@ SettingsView::SettingsView(SettingsModel* model, QWidget* parent)
       m_model(model),
       m_scrollArea(nullptr),
       m_contentWidget(nullptr),
-      m_contentLayout(nullptr)
+      m_contentLayout(nullptr),
+      m_copyrightLabel(nullptr)
 {
     setupUi();
     rebuild();
@@ -137,6 +139,13 @@ void SettingsView::setupUi()
 
     m_scrollArea->setWidget(m_contentWidget);
     mainLayout->addWidget(m_scrollArea, 1);
+
+    m_copyrightLabel = new QLabel(Constants::COPYRIGHT_TEXT, this);
+    QFont copyrightFont = m_copyrightLabel->font();
+    copyrightFont.setPointSize(spacing.fontSizeXs);
+    m_copyrightLabel->setFont(copyrightFont);
+    m_copyrightLabel->setAlignment(Qt::AlignCenter);
+    mainLayout->addWidget(m_copyrightLabel);
 
     applyStyle();
 }
@@ -195,6 +204,7 @@ void SettingsView::applyStyle() const
 {
     const auto& colors = THEME.colors();
     m_scrollArea->setStyleSheet(QString("background-color: %1;").arg(colors.surfaceMain.name()));
+    m_copyrightLabel->setStyleSheet(QString("color: %1;").arg(colors.textSecondary.name()));
 }
 
 bool SettingsView::event(QEvent* event)

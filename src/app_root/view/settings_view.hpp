@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QLabel>
 #include <QScrollArea>
 #include <QVBoxLayout>
 #include <QWidget>
@@ -50,6 +51,7 @@ class SettingsView final : public QWidget
     QScrollArea* m_scrollArea;
     QWidget* m_contentWidget;
     QVBoxLayout* m_contentLayout;
+    QLabel* m_copyrightLabel;
 };
 
 }  // namespace AppRoot
