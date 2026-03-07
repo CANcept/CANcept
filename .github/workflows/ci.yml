@@ -50,7 +50,7 @@ jobs:
           QT_QPA_PLATFORM: offscreen
         run: |
           cd build
-          sudo ctest --output-on-failure
+          ctest --output-on-failure
 
       - name: Run Clang-Format Check
         run: |
