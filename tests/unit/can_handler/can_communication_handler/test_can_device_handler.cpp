@@ -1,6 +1,7 @@
 #include "can_handler/can_communication_handler/can_device_handler.hpp"
 #include "gtest/gtest.h"
 #include "tests/helpers/mock_event_broker.hpp"
+#include "tests/helpers/socket_can_device_manager.hpp"
 
 using namespace CanHandler;
 
@@ -71,4 +72,47 @@ TEST_F(CanDeviceHandlerTest, GetAvailableDevicesEventDoesNotThrow)
     std::list<Core::SelectOption> options;
 
     EXPECT_NO_THROW(eventBroker->publish(Core::GetAvailableCanDriversEvent(&options)));
+}
+
+TEST_F(CanDeviceHandlerTest, CheckForCanDevicesWithAvailableDevice)
+{
+    TestHelpers::SocketCanDeviceManager deviceManager("vcan0");
+    try
+    {
+        deviceManager.create();
+        deviceManager.up();
+    } catch (const std::exception& e)  // not root user or could not add device
+    {
+        return;
+    }
+    std::list<Core::SelectOption> options;
+    eventBroker->publish(Core::GetAvailableCanDriversEvent(&options));
+
+    EXPECT_FALSE(options.empty());
+    EXPECT_EQ(options.front().value, "vcan0");
+
+    deviceManager.down();
+    deviceManager.remove();
+}
+
+TEST_F(CanDeviceHandlerTest, SetUpAvailableCanDevice)
+{
+    TestHelpers::SocketCanDeviceManager deviceManager("vcan0");
+    try
+    {
+        deviceManager.create();
+        deviceManager.up();
+    } catch (const std::exception& e)  // not root user or could not add device
+    {
+        return;
+    }
+    EXPECT_NO_THROW(eventBroker->publish(Core::CanDriverChangeEvent("vcan0")));
+
+    bool ready = true;
+    eventBroker->publish(Core::CheckCanDeviceReadyEvent(ready));
+
+    EXPECT_TRUE(ready);
+
+    deviceManager.down();
+    deviceManager.remove();
 }
