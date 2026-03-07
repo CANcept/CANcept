@@ -11,14 +11,13 @@
 
 #include "core/macro/theme.hpp"
 #include "core/theme/style_event.hpp"
-#include "core/util/dbc_utils.hpp"
 #include "core/widgets/card_widget.hpp"
 #include "core/widgets/common/searchable_filter_widgets.hpp"
 #include "core/widgets/common/styled_filter_bar.hpp"
 #include "dbc_file/constants.hpp"
+#include "dbc_file/dbc_utils.hpp"
 #include "dbc_file/delegate/message_detail_delegate.hpp"
 #include "dbc_file/delegate/message_table_delegate.hpp"
-#include "dbc_file/model/dbc_roles.hpp"
 #include "dbc_file/styles.hpp"
 
 namespace DbcFile {
@@ -81,7 +80,7 @@ void MessageDetailView::updateHeaderInfo(const QString& name, uint id, const QSt
     m_card->setTitle(QString(Constants::MessagesPage::DetailTitle).arg(name));
 
     const QString subtitle = QString(Constants::MessagesPage::DetailSubtitle)
-                                 .arg(Core::Util::formatId(id), sender, QString::number(dlc));
+                                 .arg(Util::formatId(id), sender, QString::number(dlc));
     m_card->setSubtitle(subtitle);
 }
 
@@ -328,15 +327,15 @@ void MessagesPage::selectMessageIndex(const QModelIndex& index)
 {
     if (!m_detailView || !index.isValid()) return;
 
-    const QModelIndex nameIdx = Core::Util::siblingAtColumnQt5(index, Constants::Columns::MsgName);
-    const QModelIndex idIdx = Core::Util::siblingAtColumnQt5(index, Constants::Columns::MsgId);
+    const QModelIndex nameIdx = Util::siblingAtColumnQt5(index, Constants::Columns::MsgName);
+    const QModelIndex idIdx = Util::siblingAtColumnQt5(index, Constants::Columns::MsgId);
     const QModelIndex senderIdx =
-        Core::Util::siblingAtColumnQt5(index, Constants::Columns::MsgSender);
-    const QModelIndex dlcIdx = Core::Util::siblingAtColumnQt5(index, Constants::Columns::MsgDlc);
+        Util::siblingAtColumnQt5(index, Constants::Columns::MsgSender);
+    const QModelIndex dlcIdx = Util::siblingAtColumnQt5(index, Constants::Columns::MsgDlc);
 
     const QString name = nameIdx.data(Qt::DisplayRole).toString();
 
-    uint id = Core::Util::resolveMessageId(idIdx);
+    uint id = Util::resolveMessageId(idIdx);
 
     const QString sender = senderIdx.data(Qt::DisplayRole).toString();
     const int dlc = dlcIdx.data(Qt::DisplayRole).toInt();

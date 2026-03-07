@@ -8,7 +8,6 @@
 #include "dbc_file/constants.hpp"
 #include "dbc_file/model/dbc_model.hpp"
 #include "dbc_file/model/dbc_roles.hpp"
-#include "event_broker/event_broker.hpp"
 #include "tests/helpers/dbc_config_builder.hpp"
 #include "tests/helpers/dbc_examples.hpp"
 

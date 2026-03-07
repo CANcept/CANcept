@@ -1,14 +1,13 @@
 #include <gtest/gtest.h>
 
-#include <QList>
 #include <QStandardItemModel>
 #include <QString>
 
-#include "core/util/dbc_utils.hpp"
 #include "dbc_file/constants.hpp"
+#include "dbc_file/dbc_utils.hpp"
 #include "dbc_file/model/dbc_roles.hpp"
 
-using namespace Core::Util;
+using namespace DbcFile::Util;
 inline void PrintTo(const QString& qString, std::ostream* os)
 {
     *os << "\"" << qString.toStdString() << "\"";
@@ -21,7 +20,7 @@ inline void PrintTo(const QString& qString, std::ostream* os)
 TEST(DbcUtilsTest, FormatIdReturnsHexUpperCase)
 {
     // Case 1: Standard ID (decimal 255 -> hex FF)
-    EXPECT_EQ(formatId(255), "0x0FF");
+    EXPECT_EQ(DbcFile::Util::formatId(255), "0x0FF");
 
     // Case 2: Zero padding (decimal 10 -> hex A -> 00A)
     EXPECT_EQ(formatId(10), "0x00A");

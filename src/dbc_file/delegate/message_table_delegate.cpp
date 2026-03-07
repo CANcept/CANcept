@@ -2,8 +2,8 @@
 
 #include "core/macro/theme.hpp"
 #include "core/painters/item_painter.hpp"
-#include "core/util/dbc_utils.hpp"
 #include "dbc_file/constants.hpp"
+#include "dbc_file/dbc_utils.hpp"
 #include "dbc_file/model/dbc_roles.hpp"
 
 namespace DbcFile {
@@ -46,7 +46,7 @@ void MessageTableDelegate::paint(QPainter* painter, const QStyleOptionViewItem& 
 
         case Constants::Columns::MsgId: {
             const uint id = index.data(Role_Id).toUInt();
-            const QString text = Core::Util::formatId(id);
+            const QString text = Util::formatId(id);
 
             const QSize badgeSize = Core::ItemPainter::measureBadge(text);
 

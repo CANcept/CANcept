@@ -5,7 +5,7 @@
 #include <dbc_file/constants.hpp>
 #include <dbc_file/model/dbc_roles.hpp>
 
-namespace Core::Util {
+namespace DbcFile::Util {
 
 /**
  * @brief Formats a CAN ID as a hexadecimal string.
@@ -80,5 +80,4 @@ inline uint resolveMessageId(const QModelIndex& idIdx)
     if (id == 0) id = idIdx.data(Qt::DisplayRole).toUInt();
     return id;
 }
-
-}  // namespace Core::Util
+}  // namespace DbcFile::Util

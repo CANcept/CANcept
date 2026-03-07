@@ -3,8 +3,8 @@
 #include <QIcon>
 
 #include "core/macro/console_logging.hpp"
-#include "core/util/dbc_utils.hpp"
 #include "dbc_file/constants.hpp"
+#include "dbc_file/dbc_utils.hpp"
 #include "dbc_roles.hpp"
 
 namespace DbcFile {
@@ -117,13 +117,11 @@ auto DbcModel::columnCount(const QModelIndex& parent) const -> int
 
 auto DbcModel::data(const QModelIndex& index, int role) const -> QVariant
 {
-    // 1. Basic Validity Check
-    if (!index.isValid())
-    {
-        return {};
-    }
+    if (!index.isValid()) return {};
 
-    const auto* item = static_cast<DbcItem*>(index.internalPointer());
+    const auto* item = itemFromIndex(index);
+    if (!item) return {};
+
     const auto type = item->type();
 
     // -------------------------------------------------------------------------
@@ -387,8 +385,8 @@ void DbcModel::createSignalItems(const std::list<Core::DbcSignalDescription>& si
         signalData[Constants::Columns::SigMax] = sig.maximum;
 
         // Keep numeric formatting stable and readable.
-        signalData[Constants::Columns::SigFactor] = Core::Util::formatNumber(sig.factor);
-        signalData[Constants::Columns::SigOffset] = Core::Util::formatNumber(sig.offset);
+        signalData[Constants::Columns::SigFactor] = Util::formatNumber(sig.factor);
+        signalData[Constants::Columns::SigOffset] = Util::formatNumber(sig.offset);
 
         signalData[Constants::Columns::SigByteOrder] =
             sig.byteOrder ? Constants::SignalsPage::BigEndIndicator

@@ -2,8 +2,8 @@
 
 #include "core/macro/theme.hpp"
 #include "core/painters/item_painter.hpp"
-#include "core/util/dbc_utils.hpp"
 #include "dbc_file/constants.hpp"
+#include "dbc_file/dbc_utils.hpp"
 #include "dbc_file/model/dbc_roles.hpp"
 
 namespace DbcFile {
@@ -29,7 +29,7 @@ void SignalTableDelegate::paint(QPainter* painter, const QStyleOptionViewItem& o
     if (index.column() == Constants::Columns::SigMessage)
     {
         uint msgId = index.data(DbcRoles::Role_Id).toUInt();
-        QString idText = Core::Util::formatId(msgId);
+        QString idText = Util::formatId(msgId);
         QString msgName = index.data(Qt::DisplayRole).toString();
 
         // --- Measure badge ---
@@ -75,7 +75,7 @@ void SignalTableDelegate::paint(QPainter* painter, const QStyleOptionViewItem& o
     {
         double min = index.data(Qt::DisplayRole).toDouble();
         double max = index.sibling(index.row(), Constants::Columns::SigMax).data().toDouble();
-        QString text = Core::Util::formatRange(min, max);
+        QString text = Util::formatRange(min, max);
 
         Core::ItemPainter::paintText(painter, cellRect, text, false, QColor(), Qt::AlignCenter);
     }

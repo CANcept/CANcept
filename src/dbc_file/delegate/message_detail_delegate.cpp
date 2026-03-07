@@ -2,8 +2,8 @@
 
 #include "core/macro/theme.hpp"
 #include "core/painters/item_painter.hpp"
-#include "core/util/dbc_utils.hpp"
 #include "dbc_file/constants.hpp"
+#include "dbc_file/dbc_utils.hpp"
 #include "dbc_file/model/dbc_roles.hpp"
 
 namespace DbcFile {
@@ -155,10 +155,10 @@ void MessagesDetailDelegate::drawGrid(QPainter* painter, const QRect& rect,
     const QString valueType = index.data(Role_ValueType).toString();
 
     // Row 1
-    const QString factor = Core::Util::formatNumber(index.data(Role_Factor).toDouble());
-    const QString offset = Core::Util::formatNumber(index.data(Role_Offset).toDouble());
-    const QString minVal = Core::Util::formatNumber(index.data(Role_Min).toDouble());
-    const QString maxVal = Core::Util::formatNumber(index.data(Role_Max).toDouble());
+    const QString factor = Util::formatNumber(index.data(Role_Factor).toDouble());
+    const QString offset = Util::formatNumber(index.data(Role_Offset).toDouble());
+    const QString minVal = Util::formatNumber(index.data(Role_Min).toDouble());
+    const QString maxVal = Util::formatNumber(index.data(Role_Max).toDouble());
 
     const int rowH = Layout::gridRowHeightPx();
     const int y0 = rect.top();

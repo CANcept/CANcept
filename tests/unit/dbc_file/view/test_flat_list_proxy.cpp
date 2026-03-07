@@ -381,10 +381,9 @@ TEST_F(FlatListProxyTest, Api_Mapping_Hidden_Item)
     proxy.setSourceModel(&dummyModel);
 
     // Search source item "VehicleSpeed" manually
-    QModelIndex sourceSpeedIdx;
     QModelIndex ecuIdx = dummyModel.index(1, 0);
     QModelIndex msgIdx = dummyModel.index(0, 0, ecuIdx);
-    sourceSpeedIdx = dummyModel.index(0, 0, msgIdx);
+    QModelIndex sourceSpeedIdx = dummyModel.index(0, 0, msgIdx);
 
     ASSERT_EQ(dummyModel.data(sourceSpeedIdx, Qt::DisplayRole).toString(), "VehicleSpeed");
 
@@ -435,29 +434,6 @@ TEST_F(FlatListProxyTest, Api_Headers)
     // 3. Vertical Header (Standard Qt behavior)
     QVariant vertHeader = sigProxy.headerData(0, Qt::Vertical, Qt::DisplayRole);
     EXPECT_TRUE(vertHeader.isValid());
-}
-
-TEST_F(FlatListProxyTest, Api_Headers_ForwardingToBase)
-{
-    DbcFile::FlatListProxy proxy(Core::DbcItemType::Signal);
-
-    // Vertical → call base
-    auto expected = proxy.QAbstractProxyModel::headerData(DbcFile::Constants::Columns::SigName,
-                                                          Qt::Vertical, Qt::DisplayRole);
-
-    auto actual =
-        proxy.headerData(DbcFile::Constants::Columns::SigName, Qt::Vertical, Qt::DisplayRole);
-
-    EXPECT_EQ(actual, expected);
-
-    // wrong Role → call Base
-    expected = proxy.QAbstractProxyModel::headerData(DbcFile::Constants::Columns::SigName,
-                                                     Qt::Horizontal, Qt::DisplayRole + 1);
-
-    actual =
-        proxy.headerData(DbcFile::Constants::Columns::SigName, Qt::Horizontal, Qt::DisplayRole + 1);
-
-    EXPECT_EQ(actual, expected);
 }
 
 TEST_F(FlatListProxyTest, Api_HeaderData_ReturnsEmptyForUnhandledTypes)

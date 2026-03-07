@@ -9,7 +9,6 @@
 #include <QStyle>
 #include <QVBoxLayout>
 #include <QWidget>
-#include <core/util/dbc_utils.hpp>
 
 #include "core/macro/theme.hpp"
 #include "core/theme/style_event.hpp"
@@ -17,6 +16,7 @@
 #include "core/widgets/card_widget.hpp"
 #include "core/widgets/tinted_icon_label.hpp"
 #include "dbc_file/constants.hpp"
+#include "dbc_file/dbc_utils.hpp"
 #include "dbc_file/styles.hpp"
 
 namespace DbcFile {
@@ -86,7 +86,7 @@ void LoadPage::dragEnterEvent(QDragEnterEvent* event)
         filePaths.append(url.toLocalFile());
     }
 
-    if (Core::Util::canAcceptDrop(filePaths))
+    if (Util::canAcceptDrop(filePaths))
     {
         updateDragStyle(m_uploadBoxFrame, Constants::LoadPage::Drag::Valid);
     } else
@@ -117,7 +117,7 @@ void LoadPage::dropEvent(QDropEvent* event)
 
     const QString filePath = urls.first().toLocalFile();
     // Wrong ending warning
-    if (!Core::Util::isValidFile(filePath))
+    if (!Util::isValidFile(filePath))
     {
         showStatusMessage(Constants::LoadPage::Errors::InvalidFileBody, true);
         return;
