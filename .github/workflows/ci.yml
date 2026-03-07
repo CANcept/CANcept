@@ -31,7 +31,8 @@ jobs:
             clang-tidy \
             clang-format \
             doxygen \
-            graphviz
+            graphviz \
+            iproute2 
 
       - name: Configure CMake
         run: |
@@ -49,7 +50,7 @@ jobs:
           QT_QPA_PLATFORM: offscreen
         run: |
           cd build
-          ctest --output-on-failure
+          sudo ctest --output-on-failure
 
       - name: Run Clang-Format Check
         run: |
