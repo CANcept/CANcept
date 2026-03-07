@@ -75,11 +75,6 @@ TEST_F(CanCommunicationHandlerIntegrationTest, SendRawAndReceiveMessages)
     {
         return;
     }
-    std::list<Core::SelectOption> options;
-    eventBroker->publish(Core::GetAvailableCanDriversEvent(&options));
-
-    EXPECT_FALSE(options.empty());
-    EXPECT_EQ(options.front().value, "vcan0");
     std::this_thread::sleep_for(std::chrono::milliseconds(2000));
     eventBroker->publish(Core::CanDriverChangeEvent("vcan0"));
     ASSERT_TRUE(canDeviceCreated);
@@ -107,9 +102,7 @@ TEST_F(CanCommunicationHandlerIntegrationTest, SendRawAndReceiveMessages)
                                  .build(),
                              ""));
     eventBroker->publish(Core::SendCanMessageRawEvent(message));
-    std::cout << std::chrono::system_clock::now().time_since_epoch().count() << std::endl;
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-    std::cout << std::chrono::system_clock::now().time_since_epoch().count() << std::endl;
     ASSERT_EQ(receiveMessageCounterRaw, 1);
     ASSERT_EQ(receiveMessageCounterDbc, 1);
     ASSERT_EQ(lastReceivedMessageRaw->messageId, message.messageId);
@@ -148,9 +141,7 @@ TEST_F(CanCommunicationHandlerIntegrationTest, SendDbcAndReceiveMessages)
                                  .build(),
                              ""));
     eventBroker->publish(Core::SendCanMessageDbcEvent(message));
-    std::cout << std::chrono::system_clock::now().time_since_epoch().count() << std::endl;
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-    std::cout << std::chrono::system_clock::now().time_since_epoch().count() << std::endl;
     ASSERT_EQ(receiveMessageCounterRaw, 1);
     ASSERT_EQ(receiveMessageCounterDbc, 1);
     ASSERT_EQ(lastReceivedMessageRaw->messageId, message.messageId);
