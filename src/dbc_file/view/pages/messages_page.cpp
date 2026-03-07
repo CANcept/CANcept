@@ -329,8 +329,7 @@ void MessagesPage::selectMessageIndex(const QModelIndex& index)
 
     const QModelIndex nameIdx = Util::siblingAtColumnQt5(index, Constants::Columns::MsgName);
     const QModelIndex idIdx = Util::siblingAtColumnQt5(index, Constants::Columns::MsgId);
-    const QModelIndex senderIdx =
-        Util::siblingAtColumnQt5(index, Constants::Columns::MsgSender);
+    const QModelIndex senderIdx = Util::siblingAtColumnQt5(index, Constants::Columns::MsgSender);
     const QModelIndex dlcIdx = Util::siblingAtColumnQt5(index, Constants::Columns::MsgDlc);
 
     const QString name = nameIdx.data(Qt::DisplayRole).toString();
