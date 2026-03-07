@@ -86,3 +86,10 @@ TEST_F(DbcHandlerTest, HandlesInvalidDbc)
     EXPECT_EQ(validDbcCounter, 0);
     EXPECT_EQ(invalidDbcCounter, 1);
 }
+TEST_F(DbcHandlerTest, HandlesInvalidFile)
+{
+    EXPECT_NO_THROW(
+        eventBroker->publish(Core::ParseDBCRequestEvent("definitely_not_a_real_file_123.dbc")));
+    EXPECT_EQ(validDbcCounter, 0);
+    EXPECT_EQ(invalidDbcCounter, 1);
+}
