@@ -266,6 +266,8 @@ CanDbcHandler::~CanDbcHandler()
             delete dbcMessage;
         }
     }
+    dbcConfigChangeConnection.release();
+    dbcSendEventConnection.release();
 }
 
 }  // namespace CanHandler
