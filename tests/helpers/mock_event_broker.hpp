@@ -125,7 +125,10 @@ class MockEventBroker final : public Core::IEventBroker
     {
         for (auto function : m_callbacks[type])
         {
-            function(data);
+            if (function == nullptr)
+            {
+                function(data);
+            }
         }
     }
 
