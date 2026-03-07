@@ -171,7 +171,7 @@ TEST_F(CanDbcHandlerTest, SendMultipleMessages)
 
 TEST_F(CanDbcHandlerTest, HandleSendError)
 {
-    canDbcHandler.release();
+    canDbcHandler.reset();
     canDbcHandler =
         std::make_unique<CanDbcHandler>(*eventBroker, [this](const CanMessage& canMessage) {
             lastSentMessage = std::make_unique<CanMessage>(canMessage);
