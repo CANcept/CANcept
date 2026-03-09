@@ -22,7 +22,10 @@ class CanRawHandler final : public ICanParser
                 handleSendMessage(event);
             });
     };
-    ~CanRawHandler() override = default;
+    ~CanRawHandler() override
+    {
+        rawSendEventConnection.release();
+    };
     /**
      * @brief Publishes the received CAN message in its raw form to the event handler.
      * @param canMessage The received CAN message
