@@ -89,6 +89,8 @@ void RepeatedSendingWorker::run()
 
     while (!m_shouldStop.load())
     {
+        const auto iterationStart = std::chrono::steady_clock::now();
+
         // Execute the send callback
         {
             std::lock_guard lock(m_callbackMutex);
@@ -108,15 +110,16 @@ void RepeatedSendingWorker::run()
             }
         }
 
-        // Sleep for the specified interval, also checks periodicallly for stop signal
+        const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+                                 std::chrono::steady_clock::now() - iterationStart)
+                                 .count();
         const int intervalMs = m_intervalMs.load();
-        int remainingMs = intervalMs;
+        const int remainingMs = static_cast<int>(
+            std::max<long long>(0LL, static_cast<long long>(intervalMs) - elapsed));
 
-        while (remainingMs > 0 && !m_shouldStop.load())
+        if (remainingMs > 0 && !m_shouldStop.load())
         {
-            const int sleepMs = std::min(remainingMs, Constants::POLLING_CHECK_INTERVAL_MS);
-            msleep(sleepMs);
-            remainingMs -= sleepMs;
+            msleep(remainingMs);
         }
     }
 

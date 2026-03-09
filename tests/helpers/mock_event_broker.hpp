@@ -4,6 +4,7 @@
 
 #include <functional>
 #include <map>
+#include <mutex>
 #include <typeindex>
 #include <vector>
 
@@ -76,9 +77,17 @@ class MockEventBroker final : public Core::IEventBroker
     template <typename Event>
     void triggerEvent(const Event& event)
     {
-        if (const auto it = m_callbacks.find(typeid(Event)); it != m_callbacks.end())
+        std::vector<std::function<void(const void*)>> snapshot;
         {
-            for (const auto& callback : it->second)
+            std::lock_guard lock(m_mutex);
+            if (const auto it = m_callbacks.find(typeid(Event)); it != m_callbacks.end())
+            {
+                snapshot = it->second;
+            }
+        }
+        for (const auto& callback : snapshot)
+        {
+            if (callback)
             {
                 callback(&event);
             }
@@ -91,6 +100,7 @@ class MockEventBroker final : public Core::IEventBroker
     template <typename Event>
     auto hasSubscription() const -> bool
     {
+        std::lock_guard lock(m_mutex);
         const auto it = m_callbacks.find(typeid(Event));
         return it != m_callbacks.end() && !it->second.empty();
     }
@@ -101,6 +111,7 @@ class MockEventBroker final : public Core::IEventBroker
     template <typename Event>
     auto subscriptionCount() const -> size_t
     {
+        std::lock_guard lock(m_mutex);
         const auto it = m_callbacks.find(typeid(Event));
         return it != m_callbacks.end() ? it->second.size() : 0;
     }
@@ -110,6 +121,7 @@ class MockEventBroker final : public Core::IEventBroker
      */
     void clearSubscriptions()
     {
+        std::lock_guard lock(m_mutex);
         m_callbacks.clear();
     }
 
@@ -119,11 +131,21 @@ class MockEventBroker final : public Core::IEventBroker
 
    protected:
     /**
-     * @brief Implementation of IEventBroker::_publish
+     * @brief Implementation of IEventBroker::_publish.
+     * Thread-safe: callbacks are copied under the lock then invoked outside it,
+     * so subscribers can safely publish or subscribe inside their callbacks.
      */
     void _publish(const std::type_index type, const void* data) override
     {
-        for (auto function : m_callbacks[type])
+        std::vector<std::function<void(const void*)>> snapshot;
+        {
+            std::lock_guard lock(m_mutex);
+            if (const auto it = m_callbacks.find(type); it != m_callbacks.end())
+            {
+                snapshot = it->second;
+            }
+        }
+        for (const auto& function : snapshot)
         {
             if (function != nullptr)
             {
@@ -134,17 +156,18 @@ class MockEventBroker final : public Core::IEventBroker
     }
 
     /**
-     * @brief Implementation of IEventBroker::_subscribe
+     * @brief Implementation of IEventBroker::_subscribe. Thread-safe.
      */
     auto _subscribe(std::type_index type,
                     std::function<void(const void*)> callback) -> Core::Connection override
     {
         _subscribeEvent(type);
+        std::lock_guard lock(m_mutex);
         m_callbacks[type].push_back(std::move(callback));
 
-        // Return a connection corresponding to the current subscription
         const size_t index = m_callbacks[type].size() - 1;
         return Core::Connection([this, type, index]() {
+            std::lock_guard lock(m_mutex);
             if (const auto it = m_callbacks.find(type);
                 it != m_callbacks.end() && index < it->second.size())
             {
@@ -154,6 +177,7 @@ class MockEventBroker final : public Core::IEventBroker
     }
 
    private:
+    mutable std::mutex m_mutex;
     std::map<std::type_index, std::vector<std::function<void(const void*)>>> m_callbacks;
 };
 

@@ -53,10 +53,20 @@ void StyledLineEdit::paintEvent(QPaintEvent* event)
     painter.drawRoundedRect(borderRect, spacing.radiusSm, spacing.radiusSm);
 }
 
+void StyledLineEdit::setPadding(const int vertical, const int horizontal)
+{
+    m_paddingV = vertical;
+    m_paddingH = horizontal;
+    applyStyle();
+}
+
 void StyledLineEdit::applyStyle()
 {
     const auto& spacing = THEME.spacing();
     const auto& colors = THEME.colors();
+
+    const int paddingV = m_paddingV >= 0 ? m_paddingV : spacing.spacingLg;
+    const int paddingH = m_paddingH >= 0 ? m_paddingH : spacing.spacingXl;
 
     const QString style = QString(
                               "QLineEdit {"
@@ -77,8 +87,8 @@ void StyledLineEdit::applyStyle()
                               "}")
                               .arg(colors.surfaceMain.name(), colors.textSecondary.name())
                               .arg(spacing.radiusSm)
-                              .arg(spacing.spacingLg)
-                              .arg(spacing.spacingXl)
+                              .arg(paddingV)
+                              .arg(paddingH)
                               .arg(spacing.fontSizeSm)
                               .arg(colors.surfaceSecondary.name());
 

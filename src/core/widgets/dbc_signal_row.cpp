@@ -126,9 +126,7 @@ void DbcSignalRowWidget::setupFullMode(const QString& name, const QString& unit,
     }
     m_valueEditor->setPlaceholderText(QString("e.g., %1").arg(exampleValue, 0, 'f', 0));
     m_valueEditor->setText(QString());
-    m_valueEditor->setStyleSheet(
-        m_valueEditor->styleSheet() +
-        QString("QLineEdit { padding: %1px %2px; }").arg(spacing.spacingXs).arg(spacing.spacingMd));
+    m_valueEditor->setPadding(spacing.spacingXs, spacing.spacingMd);
     auto* validator = new QDoubleValidator(min, max, 6, m_valueEditor);
     validator->setNotation(QDoubleValidator::StandardNotation);
     validator->setLocale(QLocale::C);
@@ -217,10 +215,6 @@ void DbcSignalRowWidget::applyStyle() const
     if (m_valueEditor)
     {
         m_valueEditor->setFixedHeight(spacing.spacingXl + spacing.spacingMd);
-        m_valueEditor->setStyleSheet(m_valueEditor->styleSheet() +
-                                     QString("QLineEdit { padding: %1px %2px; }")
-                                         .arg(spacing.spacingXs)
-                                         .arg(spacing.spacingMd));
     }
 }
 

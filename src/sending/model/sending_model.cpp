@@ -433,8 +433,30 @@ auto SendingModel::isSignalSelected(const uint16_t messageId,
 void SendingModel::setSignalValue(const uint16_t messageId, const std::string& signalName,
                                   const double value)
 {
+    double clamped = value;
+
+    if (m_currentDbc.has_value())
+    {
+        for (const auto& msg : m_currentDbc->messageDefinitions)
+        {
+            if (msg.messageId != messageId)
+            {
+                continue;
+            }
+            for (const auto& sig : msg.signalDescriptions)
+            {
+                if (sig.signalName == signalName)
+                {
+                    clamped = std::clamp(value, sig.minimum, sig.maximum);
+                    break;
+                }
+            }
+            break;
+        }
+    }
+
     const std::string key = makeSignalKey(messageId, signalName);
-    m_dynamicSignalValues[key] = value;
+    m_dynamicSignalValues[key] = clamped;
 }
 
 void SendingModel::setRawCanId(const uint16_t canId)
