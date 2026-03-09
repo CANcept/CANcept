@@ -9,16 +9,17 @@
 #include <qevent.h>
 #include <qscrollbar.h>
 
+#include "../../../core/util/dbc_utils.hpp"
 #include "core/macro/theme.hpp"
 #include "core/theme/style_event.hpp"
 #include "core/widgets/card_widget.hpp"
 #include "core/widgets/common/searchable_filter_widgets.hpp"
 #include "core/widgets/common/styled_filter_bar.hpp"
 #include "dbc_file/constants.hpp"
-#include "dbc_file/dbc_utils.hpp"
 #include "dbc_file/delegate/message_detail_delegate.hpp"
 #include "dbc_file/delegate/message_table_delegate.hpp"
 #include "dbc_file/styles.hpp"
+#include "dbc_file/util/util.hpp"
 
 namespace DbcFile {
 

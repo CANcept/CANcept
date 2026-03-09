@@ -10,14 +10,15 @@
 #include <QVBoxLayout>
 #include <QWidget>
 
+#include "../../../core/util/dbc_utils.hpp"
 #include "core/macro/theme.hpp"
 #include "core/theme/style_event.hpp"
 #include "core/theme/theme_manager.hpp"
 #include "core/widgets/card_widget.hpp"
 #include "core/widgets/tinted_icon_label.hpp"
 #include "dbc_file/constants.hpp"
-#include "dbc_file/dbc_utils.hpp"
 #include "dbc_file/styles.hpp"
+#include "dbc_file/util/util.hpp"
 
 namespace DbcFile {
 LoadPage::LoadPage(QWidget* parent) : QWidget(parent)

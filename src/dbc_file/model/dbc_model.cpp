@@ -2,9 +2,9 @@
 
 #include <QIcon>
 
+#include "../../core/util/dbc_utils.hpp"
 #include "core/macro/console_logging.hpp"
 #include "dbc_file/constants.hpp"
-#include "dbc_file/dbc_utils.hpp"
 #include "dbc_roles.hpp"
 
 namespace DbcFile {

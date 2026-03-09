@@ -2,11 +2,11 @@
 
 #include <QHBoxLayout>
 
+#include "../util/dbc_utils.hpp"
 #include "card_widget.hpp"
 #include "common/styled_checkbox.hpp"
 #include "core/macro/theme.hpp"
 #include "core/theme/style_event.hpp"
-#include "dbc_file/dbc_utils.hpp"
 #include "dbc_signal_row.hpp"
 
 namespace Core {
