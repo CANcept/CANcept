@@ -130,6 +130,7 @@ class MockEventBroker final : public Core::IEventBroker
                 function(data);
             }
         }
+        _publishEvent(type, data);
     }
 
     /**
