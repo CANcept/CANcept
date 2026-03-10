@@ -29,7 +29,7 @@ void SignalTableDelegate::paint(QPainter* painter, const QStyleOptionViewItem& o
     if (index.column() == Constants::Columns::SigMessage)
     {
         uint msgId = index.data(DbcRoles::Role_Id).toUInt();
-        QString idText = Util::formatId(msgId);
+        QString idText = Core::formatId(msgId);
         QString msgName = index.data(Qt::DisplayRole).toString();
 
         // --- Measure badge ---
@@ -75,7 +75,7 @@ void SignalTableDelegate::paint(QPainter* painter, const QStyleOptionViewItem& o
     {
         double min = index.data(Qt::DisplayRole).toDouble();
         double max = index.sibling(index.row(), Constants::Columns::SigMax).data().toDouble();
-        QString text = Util::formatRange(min, max);
+        QString text = Core::formatRange(min, max);
 
         Core::ItemPainter::paintText(painter, cellRect, text, false, QColor(), Qt::AlignCenter);
     }

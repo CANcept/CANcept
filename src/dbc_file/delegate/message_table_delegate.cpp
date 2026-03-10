@@ -46,7 +46,7 @@ void MessageTableDelegate::paint(QPainter* painter, const QStyleOptionViewItem& 
 
         case Constants::Columns::MsgId: {
             const uint id = index.data(Role_Id).toUInt();
-            const QString text = Util::formatId(id);
+            const QString text = Core::formatId(id);
 
             const QSize badgeSize = Core::ItemPainter::measureBadge(text);
 

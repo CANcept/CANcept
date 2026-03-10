@@ -1,7 +1,7 @@
 #pragma once
 #include <QString>
 
-namespace DbcFile::Util {
+namespace Core {
 
 /**
  * @brief Formats a CAN ID as a hexadecimal string.
@@ -33,4 +33,4 @@ inline QString formatRange(const uint min, const uint max)
 {
     return QString("[%1, %2]").arg(min).arg(max);
 }
-}  // namespace DbcFile::Util
+}  // namespace Core

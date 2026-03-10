@@ -81,7 +81,7 @@ void MessageDetailView::updateHeaderInfo(const QString& name, uint id, const QSt
     m_card->setTitle(QString(Constants::MessagesPage::DetailTitle).arg(name));
 
     const QString subtitle = QString(Constants::MessagesPage::DetailSubtitle)
-                                 .arg(Util::formatId(id), sender, QString::number(dlc));
+                                 .arg(Core::formatId(id), sender, QString::number(dlc));
     m_card->setSubtitle(subtitle);
 }
 

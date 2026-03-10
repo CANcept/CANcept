@@ -385,8 +385,8 @@ void DbcModel::createSignalItems(const std::list<Core::DbcSignalDescription>& si
         signalData[Constants::Columns::SigMax] = sig.maximum;
 
         // Keep numeric formatting stable and readable.
-        signalData[Constants::Columns::SigFactor] = Util::formatNumber(sig.factor);
-        signalData[Constants::Columns::SigOffset] = Util::formatNumber(sig.offset);
+        signalData[Constants::Columns::SigFactor] = Core::formatNumber(sig.factor);
+        signalData[Constants::Columns::SigOffset] = Core::formatNumber(sig.offset);
 
         signalData[Constants::Columns::SigByteOrder] =
             sig.byteOrder ? Constants::SignalsPage::BigEndIndicator

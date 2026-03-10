@@ -4,7 +4,6 @@
 #include <memory>
 #include <vector>
 
-// Ensure this path is correct in your project structure
 #include "core/enum/dbc_itemtype.hpp"
 
 namespace DbcFile {

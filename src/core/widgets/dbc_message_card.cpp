@@ -79,7 +79,7 @@ void DbcMessageCard::setupUi(const QString& name, const uint32_t id, const int s
     headerRow->addWidget(m_nameLabel);
 
     // CAN ID with 0x prefix
-    m_idLabel = new QLabel(DbcFile::Util::formatId(id), card);
+    m_idLabel = new QLabel(Core::formatId(id), card);
     headerRow->addWidget(m_idLabel);
 
     headerRow->addStretch();
