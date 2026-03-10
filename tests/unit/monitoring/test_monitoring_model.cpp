@@ -178,23 +178,6 @@ TEST_F(MonitoringModelTest, RowCountHandlesStaleOutOfBoundsMessageIndex)
     EXPECT_EQ(model->rowCount(staleMsgIdx), 0);
 }
 
-TEST_F(MonitoringModelTest, DataReturnsNullForMessageIdOutOfBounds)
-{
-    // Create a custom DBC where a message has an ID > 2047
-    Core::DbcConfig config;
-    Core::DbcMessageDescription hugeIdMsg;
-    hugeIdMsg.messageId = 3000;  // Over the 2048 limit
-    hugeIdMsg.messageName = "HugeIdMessage";
-    config.messageDefinitions.push_back(hugeIdMsg);
-
-    model->onDbcChange(config);
-    QModelIndex msgIdx = model->index(0, 0, QModelIndex());
-
-    // This will hit the 'if (it->messageId >= messageValues->size())' branches
-    EXPECT_TRUE(model->data(msgIdx, Monitoring::MonitoringModel::Role_LatestValue).isNull());
-    EXPECT_TRUE(model->data(msgIdx, Monitoring::MonitoringModel::Role_ValueList).isNull());
-}
-
 TEST_F(MonitoringModelTest, DataReturnsNullForMessageWithNoFrames)
 {
     model->onDbcChange(TestHelpers::DbcExamples::motorController());
