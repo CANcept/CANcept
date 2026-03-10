@@ -57,6 +57,14 @@ class MonitoringComponent final : public Core::ITabComponent
     auto getView() -> QWidget* override;
 
     /**
+     * @brief Returns the model
+     */
+    MonitoringModel* getModel()
+    {
+        return m_model.get();
+    };
+
+    /**
      * @brief Called when the application starts/module is activated.
      */
     void onStart() override;

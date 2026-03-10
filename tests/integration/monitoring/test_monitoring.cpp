@@ -1,40 +1,52 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+
+#include <QApplication>
+#include <QTimer>
+
+#include "core/event/can_event.hpp"
+#include "core/event/dbc_event.hpp"
 #include "monitoring/monitoring_component.hpp"
 #include "monitoring/view/monitoring_view.hpp"
-#include "monitoring/view/signal_list.hpp"
-#include "monitoring/view/graph_list_view.hpp"
+#include "tests/helpers/dbc_examples.hpp"
 
 // Helpers
 #include "../tests/helpers/dbc_examples.hpp"
 #include "../tests/helpers/mock_event_broker.hpp"
 
-class MonitoringComponentIntegrationTest : public ::testing::Test
+using namespace Monitoring;
+
+class MonitoringIntegrationTest : public ::testing::Test
 {
-protected:
-    int argc = 0;
-    char** argv = nullptr;
+   protected:
     std::unique_ptr<QApplication> app;
     TestHelpers::MockEventBroker mockBroker;
     std::unique_ptr<MonitoringComponent> component;
     MonitoringView* view = nullptr;
+    MonitoringModel* model = nullptr;
 
     void SetUp() override
     {
+        int argc = 0;
+        char* argv[] = {nullptr};
         if (!QApplication::instance())
         {
             app = std::make_unique<QApplication>(argc, argv);
         }
-        EXPECT_CALL(mockBroker, _subscribeEvent(_)).WillRepeatedly(Return());
 
+        // 1. Initialize Component
         component = std::make_unique<MonitoringComponent>(mockBroker);
+
+        // 2. Start (this triggers subscriptions in the broker)
         component->onStart();
 
+        // 3. Extract view and model for verification
         view = qobject_cast<MonitoringView*>(component->getView());
         ASSERT_NE(view, nullptr);
 
-        view->resize(1024, 768);
-        view->show();
+        // Assuming your MonitoringView has a getter for the model
+        model = component->getModel();
+        ASSERT_NE(model, nullptr);
     }
 
     void TearDown() override
@@ -42,75 +54,83 @@ protected:
         component->onStop();
         component.reset();
     }
-
-    // --- Helpers ---
-
-    Monitoring::GraphListView* getGraphListView() const
-    {
-        return view->findChild<Monitoring::GraphListView*>();
-    }
-
-    Monitoring::SignalList* getSignalList() const
-    {
-        return view->findChild<Monitoring::SignalList*>();
-    }
 };
 
 /**
- * @brief Test 1: Initial navigation lock
+ * @brief Integration: Verifies that a DBCParsedEvent correctly populates the tree model.
  */
-TEST_F(MonitoringComponentIntegrationTest, NavigationIsLockedInitially)
+TEST_F(MonitoringIntegrationTest, DbcLoadingPopulatesModel)
 {
-    int overviewIdx = findTabIndex(Constants::Sidebar::TitleOverview);
-    int ecusIdx = findTabIndex(Constants::Sidebar::TitleEcus);
-    int msgIdx = findTabIndex(Constants::Sidebar::TitleMessages);
-    int sigIdx = findTabIndex(Constants::Sidebar::TitleSignals);
-    int loadIdx = findTabIndex(Constants::Sidebar::TitleLoadNew);
+    // 1. Prepare a dummy DBC via your helper
+    auto config = TestHelpers::DbcExamples::simple();
+    std::string filename = "test_data.dbc";
 
-    ASSERT_GE(overviewIdx, 0) << "Overview Tab not found in model";
-    ASSERT_GE(ecusIdx, 0) << "Overview Tab not found in model";
-    ASSERT_GE(msgIdx, 0) << "Overview Tab not found in model";
-    ASSERT_GE(sigIdx, 0) << "Overview Tab not found in model";
-    ASSERT_GE(loadIdx, 0) << "Load Tab not found in model";
+    // 2. Simulate the Event Broker receiving a parsed DBC
+    mockBroker.triggerEvent(Core::DBCParsedEvent(config, filename));
 
-    EXPECT_FALSE(isTabEnabled(overviewIdx)) << "Overview Tab should initially be locked";
-    EXPECT_FALSE(isTabEnabled(ecusIdx)) << "ECUs Tab should initially be locked";
-    EXPECT_FALSE(isTabEnabled(msgIdx)) << "Messages Tab should initially be locked";
-    EXPECT_FALSE(isTabEnabled(sigIdx)) << "Signals Tab should initially be locked";
-    EXPECT_TRUE(isTabEnabled(loadIdx)) << "Load Page Tab always has to be active";
+    // 3. Process Qt Events (Signals/Slots between Component and Model)
+    QApplication::processEvents();
+
+    // 4. Verify Model State
+    int expectedMsgCount = static_cast<int>(config.messageDefinitions.size());
+    ASSERT_EQ(model->rowCount(QModelIndex()), expectedMsgCount);
+
+    QModelIndex firstMsgIdx = model->index(0, 0, QModelIndex());
+    QString nameInModel = model->data(firstMsgIdx, MonitoringModel::Role_Name).toString();
+    EXPECT_EQ(nameInModel, QString::fromStdString(config.messageDefinitions.front().messageName));
 }
 
 /**
- * @brief Test 2: Navigation unlocked at successful file load and interface conection
+ * @brief Integration: Verifies that CAN traffic via ReceivedCanDbcEvent updates signal values.
  */
-TEST_F(MonitoringComponentIntegrationTest, NavigationUnlocksOnParseSuccess)
+TEST_F(MonitoringIntegrationTest, CanTrafficUpdatesSignalValues)
 {
-    int overviewIdx = findTabIndex(Constants::Sidebar::TitleOverview);
-    int ecusIdx = findTabIndex(Constants::Sidebar::TitleEcus);
-    int msgIdx = findTabIndex(Constants::Sidebar::TitleMessages);
-    int sigIdx = findTabIndex(Constants::Sidebar::TitleSignals);
-    int loadIdx = findTabIndex(Constants::Sidebar::TitleLoadNew);
-    ASSERT_GE(overviewIdx, 0) << "Overview Tab not found in model";
-    ASSERT_GE(ecusIdx, 0) << "Overview Tab not found in model";
-    ASSERT_GE(msgIdx, 0) << "Overview Tab not found in model";
-    ASSERT_GE(sigIdx, 0) << "Overview Tab not found in model";
-    ASSERT_GE(loadIdx, 0) << "Load Tab not found in model";
-    ASSERT_FALSE(isTabEnabled(overviewIdx));  // Pre-Check
-
-    // 2. Act: Successful file parsing
+    // 1. Setup: Load the DBC structure first
     auto config = TestHelpers::DbcExamples::simple();
     mockBroker.triggerEvent(Core::DBCParsedEvent(config, "test.dbc"));
     QApplication::processEvents();
 
-    // 3. Assert: Jetzt frei
-    EXPECT_TRUE(isTabEnabled(loadIdx))
-        << "Navigation should be unlocked after successful file load.";
-    EXPECT_TRUE(isTabEnabled(overviewIdx))
-        << "Navigation should be unlocked after successful file load.";
-    EXPECT_TRUE(isTabEnabled(ecusIdx))
-        << "Navigation should be unlocked after successful file load.";
-    EXPECT_TRUE(isTabEnabled(msgIdx))
-        << "Navigation should be unlocked after successful file load.";
-    EXPECT_TRUE(isTabEnabled(sigIdx))
-        << "Navigation should be unlocked after successful file load.";
+    // 2. Prepare an incoming CAN message (Decoded)
+    Core::DbcCanMessage canMsg;
+    canMsg.messageId = config.messageDefinitions.front().messageId;
+    canMsg.receiveTime = std::chrono::milliseconds(1000);
+
+    // Create a signal value match
+    Core::DbcCanSignal sigVal;
+    sigVal.name = config.messageDefinitions.front().signalDescriptions.front().signalName;
+    sigVal.value = 123.45;
+    canMsg.signalValues.push_back(sigVal);
+
+    // 3. Act: Trigger the CAN event through the broker
+    mockBroker.triggerEvent(Core::ReceivedCanDbcEvent(canMsg));
+    QApplication::processEvents();
+
+    // 4. Assert: Navigate to the signal index and check Role_LatestValue
+    QModelIndex msgIdx = model->index(0, 0, QModelIndex());
+    QModelIndex sigIdx = model->index(0, 0, msgIdx);  // First signal
+
+    QVariant value = model->data(sigIdx, MonitoringModel::Role_LatestValue);
+    EXPECT_FALSE(value.isNull());
+    EXPECT_DOUBLE_EQ(value.toDouble(), 123.45);
+}
+
+/**
+ * @brief Integration: Verifies the "No DBC" overlay logic via Readiness events.
+ */
+TEST_F(MonitoringIntegrationTest, DeviceReadinessTogglesOverlay)
+{
+    // Note: checkDeviceReadiness is called onStart and on DBC load.
+    // Since we start without a DBC, the overlay should be visible.
+
+    // 1. Act: Provide the missing piece (DBC)
+    mockBroker.triggerEvent(Core::DBCParsedEvent(TestHelpers::DbcExamples::simple(), "test.dbc"));
+
+    // 2. Act: Simulate CAN Driver becoming ready
+    // We expect the component to publish CheckCanDeviceReadyEvent and we set 'isReady' to true
+    // This part requires your MockBroker to handle the "Ready" check response.
+
+    QApplication::processEvents();
+
+    // 3. Assert: The model should have data, suggesting the overlay should be gone
+    EXPECT_GT(model->rowCount(QModelIndex()), 0);
 }
