@@ -103,15 +103,6 @@ class MonitoringComponent final : public Core::ITabComponent
 
     void tick();
 
-   private slots:
-
-    /**
-     * @brief Triggered when the user selects a different CAN device/interface.
-     * It also publishes the CanDriverChangeEvent.
-     * @param deviceName The identifier of the newly selected hardware.
-     */
-    void onDeviceChanged(const std::string& deviceName) const;
-
    private:
     void connectSignals();
     void checkDeviceReadiness() const;
