@@ -3,10 +3,14 @@
 
 #include <QSignalSpy>
 
+#include "../../../external/googletest/googletest/include/gtest/gtest.h"
+#include "../../../external/googletest/googletest/include/gtest/internal/gtest-death-test-internal.h"
+#include "../tests/helpers/dbc_examples.hpp"
 #include "monitoring/model/monitoring_model.hpp"
-#include "tests/helpers/dbc_examples.hpp"
 
 using ::testing::_;
+using namespace Monitoring;
+using namespace testing;
 
 class MonitoringModelTest : public ::testing::Test
 {
@@ -217,9 +221,8 @@ TEST_F(MonitoringModelTest, IncomingFrameTriggersLoopIncrement)
         Core::DbcCanMessage secondMsg;
         config.messageDefinitions.pop_front();  // Remove the first message to get to the second
         secondMsg.messageId = config.messageDefinitions.front().messageId;
-        model->onIncomingDbcFrame(secondMsg);
+        EXPECT_NO_THROW(model->onIncomingDbcFrame(secondMsg));
     }
-    SUCCEED();
 }
 
 INSTANTIATE_TEST_SUITE_P(
@@ -294,8 +297,7 @@ TEST_F(MonitoringModelTest, GuardClausesHandleInvalidInputs)
 
     // 2. Out of bounds ID
     Core::DbcCanMessage hugeIdMsg;
-    hugeIdMsg.messageId = 5000;            // Array size is 2048
-    model->onIncomingDbcFrame(hugeIdMsg);  // Should return early and not crash
+    hugeIdMsg.messageId = 5000;  // Array size is 2048
 
-    SUCCEED();
+    EXPECT_NO_THROW(model->onIncomingDbcFrame(hugeIdMsg));  // Should return early and not crash
 }
