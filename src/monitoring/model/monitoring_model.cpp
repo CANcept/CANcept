@@ -318,7 +318,10 @@ void MonitoringModel::eraseOldData()
         {
             for (auto& j : messageValue.signalValues)
             {
-                j.pop_front();
+                if (!j.empty())
+                {
+                    j.pop_front();
+                }
             }
             messageValue.timestamps.pop_front();
         }
