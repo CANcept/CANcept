@@ -344,6 +344,88 @@ class DbcExamples
     {
         return DbcConfigBuilder().version("1.0").fileName("empty.dbc").build();
     }
+
+    /**
+     * @brief Large-scale DBC for stress/performance and parser coverage tests.
+     *
+     * Creates 120 messages (0x600-0x677), each with two signals:
+     * - ValueN: 16-bit unsigned, little endian
+     * - StatusN: 8-bit unsigned, little endian
+     */
+    [[nodiscard]] static auto longDbc() -> Core::DbcConfig
+    {
+        DbcConfigBuilder builder;
+        builder.version("1.0").fileName("large_scale_120_messages.dbc").node("LoadTestNode");
+
+        for (uint i = 0; i < 120; ++i)
+        {
+            const auto id = 0x000 + i;
+            const auto suffix = std::to_string(i);
+
+            builder.message(DbcMessageBuilder(id, "LargeMessage" + suffix)
+                                .size(8)
+                                .transmitter("LoadTestNode")
+                                .signal(DbcSignalBuilder("Value" + suffix)
+                                            .startBit(0)
+                                            .size(16)
+                                            .littleEndian()
+                                            .unsigned_()
+                                            .factor(1.0)
+                                            .offset(0)
+                                            .range(0, 65535)
+                                            .unit("raw"))
+                                .signal(DbcSignalBuilder("Status" + suffix)
+                                            .startBit(16)
+                                            .size(8)
+                                            .littleEndian()
+                                            .unsigned_()
+                                            .factor(1.0)
+                                            .offset(0)
+                                            .range(0, 255)
+                                            .unit("")));
+        }
+
+        return builder.build();
+    }
+
+    /**
+     * @brief DBC with a single message containing 10 signals.
+     *
+     * Messages:
+     * - 0x800 ComplexMessage: Signal0-Signal9 (8-bit each, little endian)
+     *
+     * Useful for testing dense signal packing in a single message.
+     */
+    [[nodiscard]] static auto manySignalMessage() -> Core::DbcConfig
+    {
+        auto builder = DbcConfigBuilder()
+                           .version("1.0")
+                           .fileName("multi_signal_message.dbc")
+                           .node("ComplexNode");
+
+        auto messageBuilder =
+            DbcMessageBuilder(0x100, "ComplexMessage").size(8).transmitter("ComplexNode");
+
+        for (uint i = 0; i < 20; ++i)
+        {
+            const auto startBit = i * 8;
+            // Stop at 64 bits (8 bytes) to not exceed message size
+            if (startBit >= 64) break;
+
+            messageBuilder.signal(DbcSignalBuilder("Signal" + std::to_string(i))
+                                      .startBit(startBit)
+                                      .size(1)
+                                      .littleEndian()
+                                      .unsigned_()
+                                      .factor(1.0)
+                                      .offset(0)
+                                      .range(0, 1)
+                                      .unit(""));
+        }
+
+        builder.message(messageBuilder);
+        return builder.build();
+    }
 };
 
 }  // namespace TestHelpers
