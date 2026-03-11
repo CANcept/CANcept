@@ -127,6 +127,20 @@ class LoggingModel final : public QAbstractTableModel
     /** @brief Updates the duration string of the active session based on current time. */
     void updateActiveDuration();
 
+    /**
+     * @brief Handler for incoming DBC-decoded CAN messages. Adds the message to the active session
+     * if it's a DBC-based session.
+     * @param message The received DBC-decoded CAN message to be logged.
+     */
+    void onDbcMessageReceived(const Core::DbcCanMessage& message);
+
+    /**
+     * @brief Handler for incoming raw CAN messages. Adds the message to the active session if it's
+     * a RAW session.
+     * @param message The received raw CAN message to be logged.
+     */
+    void onRawMessageReceived(const Core::RawCanMessage& message);
+
    private:
     std::optional<Core::DbcConfig> m_currentDbc;
 

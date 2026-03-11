@@ -5,9 +5,11 @@
 #include <QLabel>
 #include <QSpacerItem>
 
+#include "components/message_selection_dialog.hpp"
 #include "core/macro/theme.hpp"
 #include "core/theme/style_event.hpp"
 #include "core/widgets/tinted_icon_label.hpp"
+#include "logging/logging_component.hpp"
 
 namespace Logging {
 
@@ -107,6 +109,9 @@ void LoggingView::setupUi()
     m_deviceNotConfiguredOverlay->hide();
     m_deviceNotConfiguredOverlay->raise();
 
+    // Message selection dialog
+    m_selectionDialog = std::make_unique<MessageSelectionDialog>(this);
+
     applyStyle();
     // ===== Connections =====
     connect(m_btnAction, &QPushButton::clicked, this, [this]() {
@@ -115,7 +120,13 @@ void LoggingView::setupUi()
             emit stopRequested();
         } else
         {
-            emit startRequested();
+            // Show message selection dialog
+            if (m_selectionDialog->exec() != QDialog::Accepted)
+            {
+                return;  // User cancelled
+            }
+            emit startRequested(m_selectionDialog->getSelectedLogSessionType(),
+                                m_selectionDialog->getSelectedSignals());
         }
     });
 }
@@ -293,6 +304,11 @@ void LoggingView::resizeEvent(QResizeEvent* event)
     {
         m_deviceNotConfiguredOverlay->setGeometry(0, 0, width(), height());
     }
+}
+
+void LoggingView::dbcConfigChanged(const Core::DbcConfig& config)
+{
+    m_selectionDialog->setDbcConfig(config);
 }
 
 }  // namespace Logging

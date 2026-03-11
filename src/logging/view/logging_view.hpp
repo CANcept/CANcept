@@ -1,7 +1,3 @@
-//
-// Logging view header
-//
-
 #pragma once
 
 #include <QFrame>
@@ -11,6 +7,7 @@
 #include <QWidget>
 
 #include "components/log_history_table.hpp"
+#include "components/message_selection_dialog.hpp"
 #include "components/no_logs_label.hpp"
 #include "components/start_stop_button.hpp"
 #include "components/timer_label.hpp"
@@ -70,7 +67,8 @@ class LoggingView final : public QWidget
 
    signals:
     /** @brief Emitted when user wants to start; triggers the Modal Selection Dialog. */
-    void startRequested();
+    void startRequested(LogSessionType logSessionType,
+                        const std::map<uint32_t, QStringList>& selectedSignals);
     /** @brief Emitted to stop the active session and finalize the log. */
     void stopRequested();
 
@@ -84,6 +82,9 @@ class LoggingView final : public QWidget
     void showDeviceNotConfiguredOverlay() const;
     /** @brief Hides the device not configured overlay. */
     void hideDeviceNotConfiguredOverlay() const;
+
+   public slots:
+    void dbcConfigChanged(const Core::DbcConfig& config);
 
    protected:
     bool event(QEvent* event) override;
@@ -114,6 +115,8 @@ class LoggingView final : public QWidget
     Core::TintedIconLabel* m_settingsIconLabel;
 
     LoggingModel* m_currentModel{nullptr};
+
+    std::unique_ptr<MessageSelectionDialog> m_selectionDialog;
 };
 
 }  // namespace Logging
