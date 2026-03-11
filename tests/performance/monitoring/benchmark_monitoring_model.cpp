@@ -24,7 +24,7 @@ static void BM_MonitoringModel_InsertDbcMessage(benchmark::State& state)
         model.onIncomingDbcFrame(message);
     }
 }
-BENCHMARK(BM_MonitoringModel_InsertDbcMessage)->Iterations(10000);
+BENCHMARK(BM_MonitoringModel_InsertDbcMessage);
 
 static void BM_MonitoringModel_InsertDbcMessageManySignals(benchmark::State& state)
 {
@@ -41,4 +41,4 @@ static void BM_MonitoringModel_InsertDbcMessageManySignals(benchmark::State& sta
         model.onIncomingDbcFrame(message);
     }
 }
-BENCHMARK(BM_MonitoringModel_InsertDbcMessageManySignals)->Iterations(10000);
+BENCHMARK(BM_MonitoringModel_InsertDbcMessageManySignals);

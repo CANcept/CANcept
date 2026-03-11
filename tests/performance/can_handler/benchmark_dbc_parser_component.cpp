@@ -30,17 +30,12 @@ static void BM_DbcHandler_Parse_ShortDbc(benchmark::State& state)
     Core::Connection successConn = dbcHandler.eventBroker->subscribe<Core::DBCParsedEvent>(
         [](const Core::DBCParsedEvent& event) { successCounter++; });
     Core::Connection errorConn = dbcHandler.eventBroker->subscribe<Core::DBCParseErrorEvent>(
-        [](const Core::DBCParseErrorEvent& event) {
-            failCounter++;
-            std::cout << event.errorMessage << std::endl;
-        });
+        [](const Core::DBCParseErrorEvent& event) { failCounter++; });
     for (auto _ : state)
     {
         dbcHandler.eventBroker->publish(
             Core::ParseDBCRequestEvent("./tests/assets/dbc/shortDbc.dbc"));
     }
-    std::cout << successCounter << " successful parses, " << failCounter << " failed parses."
-              << std::endl;
 }
 BENCHMARK(BM_DbcHandler_Parse_ShortDbc);
 
@@ -50,10 +45,7 @@ static void BM_DbcHandler_Parse_LongDbc(benchmark::State& state)
     static int successCounter = 0;
     static int failCounter = 0;
     Core::Connection successConn = dbcHandler.eventBroker->subscribe<Core::DBCParsedEvent>(
-        [](const Core::DBCParsedEvent& event) {
-            successCounter++;
-            std::cout << event.config.messageDefinitions.size() << " messages parsed." << std::endl;
-        });
+        [](const Core::DBCParsedEvent& event) { successCounter++; });
     Core::Connection errorConn = dbcHandler.eventBroker->subscribe<Core::DBCParseErrorEvent>(
         [](const Core::DBCParseErrorEvent& event) { failCounter++; });
     for (auto _ : state)
@@ -61,7 +53,5 @@ static void BM_DbcHandler_Parse_LongDbc(benchmark::State& state)
         dbcHandler.eventBroker->publish(
             Core::ParseDBCRequestEvent("./tests/assets/dbc/longDbc.dbc"));
     }
-    std::cout << successCounter << " successful parses, " << failCounter << " failed parses."
-              << std::endl;
 }
 BENCHMARK(BM_DbcHandler_Parse_LongDbc);
