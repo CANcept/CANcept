@@ -176,6 +176,29 @@ TEST_F(SignalsPageIntegrationTest, FiltersSignalsByUnit)
     EXPECT_EQ(idxName.data().toString(), "Speed");
 }
 
+TEST_F(SignalsPageIntegrationTest, PopulatesUnitFilterOptionsFromParsedConfig)
+{
+    auto config = TestHelpers::DbcConfigBuilder()
+                      .message(TestHelpers::DbcMessageBuilder(0x100, "Msg")
+                                   .signal(TestHelpers::DbcSignalBuilder("Speed").unit("km/h"))
+                                   .signal(TestHelpers::DbcSignalBuilder("Engine").unit("rpm")))
+                      .build();
+
+    mockBroker.triggerEvent(Core::DBCParsedEvent(config, "units.dbc"));
+    QApplication::processEvents();
+
+    auto* filterBar = getFilterBar();
+    ASSERT_NE(filterBar, nullptr);
+
+    filterBar->setCurrentFilterText("rpm");
+    EXPECT_EQ(filterBar->currentFilterText(), "rpm");
+    EXPECT_EQ(filterBar->currentFilterData().toString(), "rpm");
+
+    filterBar->setCurrentFilterText("DoesNotExist");
+    EXPECT_EQ(filterBar->currentFilterText(), Constants::SignalsPage::FilterAllText);
+    EXPECT_TRUE(filterBar->currentFilterData().toString().isEmpty());
+}
+
 /**
  * @brief Test 4: Empty State
  * Scenario: Config without signals

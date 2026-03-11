@@ -176,6 +176,31 @@ TEST_F(MessagesPageIntegrationTest, FiltersBySenderCategory)
     EXPECT_EQ(idxName.data().toString(), "SpeedMsg");
 }
 
+TEST_F(MessagesPageIntegrationTest, PopulatesSenderFilterOptionsFromParsedConfig)
+{
+    auto config =
+        TestHelpers::DbcConfigBuilder()
+            .node("EngineECU")
+            .node("BrakeECU")
+            .message(TestHelpers::DbcMessageBuilder(0x100, "SpeedMsg").transmitter("EngineECU"))
+            .message(TestHelpers::DbcMessageBuilder(0x200, "BrakeMsg").transmitter("BrakeECU"))
+            .build();
+
+    mockBroker.triggerEvent(Core::DBCParsedEvent(config, "options.dbc"));
+    QApplication::processEvents();
+
+    auto* filterBar = getFilterBar();
+    ASSERT_NE(filterBar, nullptr);
+
+    filterBar->setCurrentFilterText("BrakeECU");
+    EXPECT_EQ(filterBar->currentFilterText(), "BrakeECU");
+    EXPECT_EQ(filterBar->currentFilterData().toString(), "BrakeECU");
+
+    filterBar->setCurrentFilterText("DoesNotExist");
+    EXPECT_EQ(filterBar->currentFilterText(), Constants::MessagesPage::FilterAllText);
+    EXPECT_TRUE(filterBar->currentFilterData().toString().isEmpty());
+}
+
 /**
  * @brief Test 4: Filter Reset at Config-change
  * Scenario:

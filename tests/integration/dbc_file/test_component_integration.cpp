@@ -205,3 +205,25 @@ TEST_F(DbcComponentIntegrationTest, ResetsLoadPageStatusWhenLeaving)
     EXPECT_FALSE(statusLbl->isVisible());
     EXPECT_TRUE(statusLbl->text().isEmpty());
 }
+
+TEST_F(DbcComponentIntegrationTest, IgnoresBrokerEventsAfterStop)
+{
+    auto* model = component->getModel();
+    ASSERT_NE(model, nullptr);
+
+    mockBroker.triggerEvent(Core::DBCParsedEvent(TestHelpers::DbcExamples::simple(), "first.dbc"));
+    QApplication::processEvents();
+
+    const int rowsBeforeStop = model->rowCount(QModelIndex());
+    ASSERT_GT(rowsBeforeStop, 1);
+
+    component->onStop();
+
+    // After stop, publish() should not deliver events to released subscriptions.
+    EXPECT_NO_THROW(
+        mockBroker.publish(Core::DBCParsedEvent(TestHelpers::DbcExamples::empty(), "second.dbc")));
+    EXPECT_NO_THROW(mockBroker.publish(Core::DBCParseErrorEvent("ignored", "second.dbc")));
+    QApplication::processEvents();
+
+    EXPECT_EQ(model->rowCount(QModelIndex()), rowsBeforeStop);
+}
