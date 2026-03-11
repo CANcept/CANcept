@@ -5,6 +5,7 @@
 
 #include "dbc_file/constants.hpp"
 #include "dbc_file/util/util.hpp"
+#include "tests/helpers/dbc_config_builder.hpp"
 
 // ============================================================================
 // FILE VALIDATION TESTS
@@ -68,7 +69,7 @@ TEST(DbcUtilsTest, SiblingAtColumnReturnsCorrectIndex)
 TEST(DbcUtilsTest, ResolveMessageIdPrioritizesRoleId)
 {
     QStandardItemModel model;
-    QStandardItem* item = new QStandardItem("DisplayValue");
+    auto* item = new QStandardItem("DisplayValue");
     model.appendRow(item);
     QModelIndex index = model.index(0, 0);
 
@@ -86,7 +87,7 @@ TEST(DbcUtilsTest, ResolveMessageIdPrioritizesRoleId)
 TEST(DbcUtilsTest, ResolveMessageIdFallsBackToDisplayRole)
 {
     QStandardItemModel model;
-    QStandardItem* item = new QStandardItem();
+    auto* item = new QStandardItem();
     model.appendRow(item);
     QModelIndex index = model.index(0, 0);
 
@@ -102,10 +103,103 @@ TEST(DbcUtilsTest, ResolveMessageIdFallsBackToDisplayRole)
 TEST(UtilsTest, ResolveMessageIdReturnsZeroIfEmpty)
 {
     QStandardItemModel model;
-    QStandardItem* item = new QStandardItem();
+    auto* item = new QStandardItem();
     model.appendRow(item);
     QModelIndex index = model.index(0, 0);
 
     // Case 3: Neither role is set
     EXPECT_EQ(DbcFile::Util::resolveMessageId(index), 0u);
 }
+using namespace TestHelpers;
+// ============================================================================
+// Filter option extraction tests
+// ============================================================================
+
+struct UnitScenario {
+    std::string name;
+    Core::DbcConfig config;
+    QStringList expectedUnits;
+};
+
+class UnitExtractionTest : public ::testing::TestWithParam<UnitScenario>
+{
+};
+
+TEST_P(UnitExtractionTest, ExtractsAndSortsUnitsCorrectly)
+{
+    const auto& p = GetParam();
+    Core::DbcConfig config(p.config);
+
+    QStringList result = DbcFile::Util::extractSignalUnits(config);
+
+    ASSERT_EQ(result.size(), p.expectedUnits.size());
+    for (int i = 0; i < result.size(); ++i)
+    {
+        EXPECT_EQ(result[i], p.expectedUnits[i]);
+    }
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    UnitScenarios, UnitExtractionTest,
+    ::testing::Values(
+        // Case 1: Simple cleanup
+        UnitScenario{"DuplicatesAndEmpty",
+                     DbcConfigBuilder()
+                         .message(DbcMessageBuilder(1, "M")
+                                      .signal(DbcSignalBuilder("S1").unit("V"))
+                                      .signal(DbcSignalBuilder("S2").unit("V"))  // Dup
+                                      .signal(DbcSignalBuilder("S3").unit("")))  // Empty
+                         .build(),
+                     {"V"}},
+        // Case 2: Case Sensitivity & Sorting
+        UnitScenario{"CaseSensitiveSort",
+                     DbcConfigBuilder()
+                         .message(DbcMessageBuilder(1, "M")
+                                      .signal(DbcSignalBuilder("S1").unit("rpm"))
+                                      .signal(DbcSignalBuilder("S2").unit("Bar"))
+                                      .signal(DbcSignalBuilder("S3").unit("km/h")))
+                         .build(),
+                     {"Bar", "km/h", "rpm"}}),
+    [](const ::testing::TestParamInfo<UnitScenario>& info) { return info.param.name; });
+
+struct SenderScenario {
+    std::string name;
+    Core::DbcConfig config;
+    QStringList expectedSenders;
+};
+
+class SenderExtractionTest : public ::testing::TestWithParam<SenderScenario>
+{
+};
+
+TEST_P(SenderExtractionTest, ExtractsAndSortsSendersCorrectly)
+{
+    const auto& p = GetParam();
+    Core::DbcConfig config(p.config);
+
+    QStringList result = DbcFile::Util::extractSenders(config);
+
+    ASSERT_EQ(result.size(), p.expectedSenders.size());
+    for (int i = 0; i < result.size(); ++i)
+    {
+        EXPECT_EQ(result[i], p.expectedSenders[i]);
+    }
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    SenderScenarios, SenderExtractionTest,
+    ::testing::Values(
+        SenderScenario{"DedupesSenders",
+                       DbcConfigBuilder()
+                           .message(DbcMessageBuilder(1, "M1").transmitter("Engine"))
+                           .message(DbcMessageBuilder(2, "M2").transmitter("Engine"))  // Dup
+                           .message(DbcMessageBuilder(3, "M3").transmitter("ABS"))
+                           .build(),
+                       {"ABS", "Engine"}},
+        SenderScenario{"IgnoresEmpty",
+                       DbcConfigBuilder()
+                           .message(DbcMessageBuilder(1, "M1").transmitter(""))
+                           .message(DbcMessageBuilder(2, "M2").transmitter("Gateway"))
+                           .build(),
+                       {"Gateway"}}),
+    [](const ::testing::TestParamInfo<SenderScenario>& info) { return info.param.name; });
