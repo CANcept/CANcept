@@ -3,9 +3,9 @@
 
 #include <QSignalSpy>
 
-#include "../../../external/googletest/googletest/include/gtest/gtest.h"
-#include "../../../external/googletest/googletest/include/gtest/internal/gtest-death-test-internal.h"
-#include "../tests/helpers/dbc_examples.hpp"
+#include "external/googletest/googletest/include/gtest/gtest.h"
+#include "external/googletest/googletest/include/gtest/internal/gtest-death-test-internal.h"
+#include "tests/helpers/dbc_examples.hpp"
 #include "monitoring/model/monitoring_model.hpp"
 
 using ::testing::_;
