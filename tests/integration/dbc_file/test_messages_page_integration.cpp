@@ -143,7 +143,7 @@ TEST_F(MessagesPageIntegrationTest, FiltersMasterTable)
  */
 TEST_F(MessagesPageIntegrationTest, FiltersBySenderCategory)
 {
-    // 1. Arrange: 2 Messages von unterschiedlichen Sendern
+    // 1. Arrange:
     auto config =
         TestHelpers::DbcConfigBuilder()
             .node("EngineECU")

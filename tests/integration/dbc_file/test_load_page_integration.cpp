@@ -15,7 +15,7 @@
 using namespace DbcFile;
 using namespace testing;
 
-class DbcLoadPageIntegrationTest : public ::testing::Test
+class LoadPageIntegrationTest : public ::testing::Test
 {
    protected:
     int argc = 0;
@@ -61,7 +61,7 @@ class DbcLoadPageIntegrationTest : public ::testing::Test
  * Scenario: User selects file
  * Expectation: Component sends parse request signal
  */
-TEST_F(DbcLoadPageIntegrationTest, EmitsParseRequestOnUserSelection)
+TEST_F(LoadPageIntegrationTest, EmitsParseRequestOnUserSelection)
 {
     const std::string testFilePath = "/path/to/can.dbc";
 
@@ -79,7 +79,7 @@ TEST_F(DbcLoadPageIntegrationTest, EmitsParseRequestOnUserSelection)
  * Scenario: Backend reports parse error
  * Expectation: Loadpage shows error message
  */
-TEST_F(DbcLoadPageIntegrationTest, DisplaysErrorMessageOnParseFailure)
+TEST_F(LoadPageIntegrationTest, DisplaysErrorMessageOnParseFailure)
 {
     // 1. Arrange
     const std::string errorText = "File not found";
@@ -101,7 +101,7 @@ TEST_F(DbcLoadPageIntegrationTest, DisplaysErrorMessageOnParseFailure)
  * Scenario: Backend reports parse success
  * Expectation: LoadPage shows success message, sidebar unlocks.
  */
-TEST_F(DbcLoadPageIntegrationTest, DisplaysSuccessMessageOnParseSuccess)
+TEST_F(LoadPageIntegrationTest, DisplaysSuccessMessageOnParseSuccess)
 {
     // 1. Arrange
     Core::DbcConfig emptyConfig;
