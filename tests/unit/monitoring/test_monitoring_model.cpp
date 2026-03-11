@@ -85,10 +85,11 @@ TEST_F(MonitoringModelTest, OnIncomingDbcFrameUpdatesInternalData)
 }
 
 // --- 3. Parametrized Role Tests ---
-
 struct RoleScenario {
-    std::string name;
     int role;
+    QMetaType::Type expectedType; // Der erwartete Qt-Typ
+    bool isValidForMessage;       // Gibt die Nachricht für diese Rolle Daten zurück?
+    bool isValidForSignal;        // Gibt das Signal für diese Rolle Daten zurück?
 };
 
 class MonitoringRoleTest : public MonitoringModelTest,
@@ -96,22 +97,50 @@ class MonitoringRoleTest : public MonitoringModelTest,
 {
 };
 
-TEST_P(MonitoringRoleTest, ReturnsValidDataTypes)
+TEST_P(MonitoringRoleTest, ReturnsCorrectDataTypesAndValues)
 {
     model->onDbcChange(TestHelpers::DbcExamples::motorController());
     const auto& scenario = GetParam();
 
+    // --- 1. Prüfung auf Nachrichtenebene ---
     QModelIndex msgIdx = model->index(0, 0, QModelIndex());
-    QVariant data = model->data(msgIdx, scenario.role);
+    QVariant msgData = model->data(msgIdx, scenario.role);
 
-    // For MonitoringModel, these should at least return a valid type if the row exists
-    EXPECT_TRUE(data.isValid() || !data.isValid());
+    if (scenario.isValidForMessage) {
+        EXPECT_TRUE(msgData.isValid()) << "Role " << scenario.role << " should be valid for Messages";
+        EXPECT_EQ(msgData.typeId(), scenario.expectedType);
+        
+        // Spezifische Inhaltsprüfung (Beispiel für Name)
+        if (scenario.role == Monitoring::MonitoringModel::Role_Name) {
+            EXPECT_FALSE(msgData.toString().isEmpty());
+        }
+    } else {
+        EXPECT_FALSE(msgData.isValid()) << "Role " << scenario.role << " should be empty for Messages";
+    }
 
-    // If the role is valid, we can also check the signal level
+    // --- 2. Prüfung auf Signalebene ---
     QModelIndex sigIdx = model->index(0, 0, msgIdx);
     QVariant sigData = model->data(sigIdx, scenario.role);
-    EXPECT_TRUE(sigData.isValid() || !sigData.isValid());
+
+    if (scenario.isValidForSignal) {
+        EXPECT_TRUE(sigData.isValid()) << "Role " << scenario.role << " should be valid for Signals";
+        EXPECT_EQ(sigData.typeId(), scenario.expectedType);
+    } else {
+        EXPECT_FALSE(sigData.isValid()) << "Role " << scenario.role << " should be empty for Signals";
+    }
 }
+
+INSTANTIATE_TEST_SUITE_P(
+    Roles, MonitoringRoleTest,
+    ::testing::Values(RoleScenario{"Name", Monitoring::MonitoringModel::Role_Name},
+                      RoleScenario{"ID", Monitoring::MonitoringModel::Role_ID},
+                      RoleScenario{"LatestValue", Monitoring::MonitoringModel::Role_LatestValue},
+                      RoleScenario{"ValueList", Monitoring::MonitoringModel::Role_ValueList},
+                      RoleScenario{"Unit", Monitoring::MonitoringModel::Role_Unit},
+                      RoleScenario{"SignalMin", Monitoring::MonitoringModel::Role_Min},
+                      RoleScenario{"SignalMax", Monitoring::MonitoringModel::Role_Max},
+                      RoleScenario{"default", -1}),
+    [](const ::testing::TestParamInfo<RoleScenario>& info) { return info.param.name; });
 
 TEST_F(MonitoringModelTest, IndexReturnsInvalidWhenDbcNotLoaded)
 {
@@ -224,18 +253,6 @@ TEST_F(MonitoringModelTest, IncomingFrameTriggersLoopIncrement)
         EXPECT_NO_THROW(model->onIncomingDbcFrame(secondMsg));
     }
 }
-
-INSTANTIATE_TEST_SUITE_P(
-    Roles, MonitoringRoleTest,
-    ::testing::Values(RoleScenario{"Name", Monitoring::MonitoringModel::Role_Name},
-                      RoleScenario{"ID", Monitoring::MonitoringModel::Role_ID},
-                      RoleScenario{"LatestValue", Monitoring::MonitoringModel::Role_LatestValue},
-                      RoleScenario{"ValueList", Monitoring::MonitoringModel::Role_ValueList},
-                      RoleScenario{"Unit", Monitoring::MonitoringModel::Role_Unit},
-                      RoleScenario{"SignalMin", Monitoring::MonitoringModel::Role_Min},
-                      RoleScenario{"SignalMax", Monitoring::MonitoringModel::Role_Max},
-                      RoleScenario{"default", -1}),
-    [](const ::testing::TestParamInfo<RoleScenario>& info) { return info.param.name; });
 
 /**
  * @brief Tests signal values specifically to hit child-level code paths.
