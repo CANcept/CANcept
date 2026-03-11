@@ -260,6 +260,7 @@ void MonitoringModel::onIncomingDbcFrame(const Core::DbcCanMessage& message)
     {
         return;
     }
+
     int j = 0;
     for (auto& signalName : messageValues->at(message.messageId).signalNames)
     {
