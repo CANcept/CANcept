@@ -25,7 +25,7 @@ class MonitoringModelTest : public ::testing::Test
 
 TEST_F(MonitoringModelTest, RowCountMatchesDbcConfig)
 {
-    auto config = TestHelpers::DbcExamples::motorController();  // Assume this has 2 messages
+    auto config = TestHelpers::DbcExamples::motorController();
     model->onDbcChange(config);
 
     ASSERT_EQ(model->rowCount(QModelIndex()), config.messageDefinitions.size());
@@ -83,20 +83,64 @@ class MonitoringRoleTest : public MonitoringModelTest,
 {
 };
 
-TEST_P(MonitoringRoleTest, ReturnsValidDataTypes)
+TEST_P(MonitoringRoleTest, ReturnsExpectedValidity)
 {
     model->onDbcChange(TestHelpers::DbcExamples::motorController());
     const auto& scenario = GetParam();
 
     QModelIndex msgIdx = model->index(0, 0, QModelIndex());
-    QVariant data = model->data(msgIdx, scenario.role);
-
-    EXPECT_TRUE(data.isValid() || !data.isValid());
+    QVariant msgData = model->data(msgIdx, scenario.role);
 
     QModelIndex sigIdx = model->index(0, 0, msgIdx);
     QVariant sigData = model->data(sigIdx, scenario.role);
-    EXPECT_TRUE(sigData.isValid() || !sigData.isValid());
+
+    if (scenario.role == -1)
+    {
+        EXPECT_FALSE(msgData.isValid());
+        EXPECT_FALSE(sigData.isValid());
+    } else if (scenario.role == Monitoring::MonitoringModel::Role_LatestValue)
+    {
+        EXPECT_FALSE(msgData.isValid()) << "LatestValue should be invalid before first frame";
+        EXPECT_FALSE(sigData.isValid()) << "LatestValue should be invalid before first frame";
+    } else if (scenario.role == Monitoring::MonitoringModel::Role_ValueList)
+    {
+        EXPECT_TRUE(msgData.isValid())
+            << "ValueList should be valid (empty container) after DBC load";
+        EXPECT_TRUE(sigData.isValid())
+            << "ValueList should be valid (empty container) after DBC load";
+    } else
+    {
+        if (scenario.role == Monitoring::MonitoringModel::Role_Unit ||
+            scenario.role == Monitoring::MonitoringModel::Role_Min ||
+            scenario.role == Monitoring::MonitoringModel::Role_Max)
+        {
+            EXPECT_FALSE(msgData.isValid());
+        } else
+        {
+            EXPECT_TRUE(msgData.isValid());
+        }
+
+        if (scenario.role == Monitoring::MonitoringModel::Role_ID)
+        {
+            EXPECT_FALSE(sigData.isValid());
+        } else
+        {
+            EXPECT_TRUE(sigData.isValid());
+        }
+    }
 }
+
+INSTANTIATE_TEST_SUITE_P(
+    Roles, MonitoringRoleTest,
+    ::testing::Values(RoleScenario{"Name", Monitoring::MonitoringModel::Role_Name},
+                      RoleScenario{"ID", Monitoring::MonitoringModel::Role_ID},
+                      RoleScenario{"LatestValue", Monitoring::MonitoringModel::Role_LatestValue},
+                      RoleScenario{"ValueList", Monitoring::MonitoringModel::Role_ValueList},
+                      RoleScenario{"Unit", Monitoring::MonitoringModel::Role_Unit},
+                      RoleScenario{"SignalMin", Monitoring::MonitoringModel::Role_Min},
+                      RoleScenario{"SignalMax", Monitoring::MonitoringModel::Role_Max},
+                      RoleScenario{"default", -1}),
+    [](const ::testing::TestParamInfo<RoleScenario>& info) { return info.param.name; });
 
 TEST_F(MonitoringModelTest, IndexReturnsInvalidWhenDbcNotLoaded)
 {
@@ -172,29 +216,17 @@ TEST_F(MonitoringModelTest, MessageIdLimitGuard)
 
 TEST_F(MonitoringModelTest, IncomingFrameTriggersLoopIncrement)
 {
-    auto config = TestHelpers::DbcExamples::motorController();  // Ensure this has > 1 message
+    auto config = TestHelpers::DbcExamples::motorController();
     model->onDbcChange(config);
 
     if (config.messageDefinitions.size() > 1)
     {
         Core::DbcCanMessage secondMsg;
-        config.messageDefinitions.pop_front();  // Remove the first message to get to the second
+        config.messageDefinitions.pop_front();
         secondMsg.messageId = config.messageDefinitions.front().messageId;
         EXPECT_NO_THROW(model->onIncomingDbcFrame(secondMsg));
     }
 }
-
-INSTANTIATE_TEST_SUITE_P(
-    Roles, MonitoringRoleTest,
-    ::testing::Values(RoleScenario{"Name", Monitoring::MonitoringModel::Role_Name},
-                      RoleScenario{"ID", Monitoring::MonitoringModel::Role_ID},
-                      RoleScenario{"LatestValue", Monitoring::MonitoringModel::Role_LatestValue},
-                      RoleScenario{"ValueList", Monitoring::MonitoringModel::Role_ValueList},
-                      RoleScenario{"Unit", Monitoring::MonitoringModel::Role_Unit},
-                      RoleScenario{"SignalMin", Monitoring::MonitoringModel::Role_Min},
-                      RoleScenario{"SignalMax", Monitoring::MonitoringModel::Role_Max},
-                      RoleScenario{"default", -1}),
-    [](const ::testing::TestParamInfo<RoleScenario>& info) { return info.param.name; });
 
 /**
  * @brief Tests signal values specifically to hit child-level code paths.
