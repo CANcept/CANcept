@@ -93,32 +93,6 @@ class DbcComponent : public Core::ITabComponent
      */
     void onStop() override;
 
-    /**
-     * @brief Extracts all unique signal units from a parsed DBC file to provide filtering options
-     * for signals.
-     *
-     * Iterates over all message definitions and their signals,
-     * collects unique unit strings, and returns them sorted
-     * alphabetically (case-insensitive).
-     *
-     * @param config Config to extract units out of.
-     * @return A sorted list of unique signal units.
-     */
-    static auto extractSignalUnits(const Core::DbcConfig& config) -> QStringList;
-
-    /**
-     * @brief Extracts all unique message senders from a parsed DBC event to provide filtering
-     * options for messages.
-     *
-     * Iterates over all message definitions and collects unique
-     * transmitter names. The result is sorted alphabetically
-     * (case-insensitive).
-     *
-     * @param config Config to extract senders out of.
-     * @return A sorted list of unique message sender names.
-     */
-    static auto extractSenders(const Core::DbcConfig& config) -> QStringList;
-
    private slots:
     /**
      * @brief Handles file load requests initiated by the view.

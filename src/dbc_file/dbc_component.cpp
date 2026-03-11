@@ -1,6 +1,7 @@
 #include "dbc_component.hpp"
 
 #include "constants.hpp"
+#include "util/util.hpp"
 
 namespace DbcFile {
 DbcComponent::DbcComponent(Core::IEventBroker& broker)
@@ -25,42 +26,6 @@ void DbcComponent::onStop()
     m_parseErrorConn.release();
 }
 
-auto DbcComponent::extractSignalUnits(const Core::DbcConfig& config) -> QStringList
-{
-    QSet<QString> uniqueUnits;
-
-    for (const auto& msg : config.messageDefinitions)
-    {
-        for (const auto& sig : msg.signalDescriptions)
-        {
-            if (!sig.unit.empty())
-            {
-                uniqueUnits.insert(QString::fromStdString(sig.unit));
-            }
-        }
-    }
-
-    QStringList sortedUnits = uniqueUnits.values();
-    sortedUnits.sort(Qt::CaseInsensitive);
-    return sortedUnits;
-}
-
-auto DbcComponent::extractSenders(const Core::DbcConfig& config) -> QStringList
-{
-    QSet<QString> uniqueSenders;
-    for (const auto& msg : config.messageDefinitions)
-    {
-        if (!msg.transmitterName.empty())
-        {
-            uniqueSenders.insert(QString::fromStdString(msg.transmitterName));
-        }
-    }
-
-    QStringList sortedSenders = uniqueSenders.values();
-    sortedSenders.sort(Qt::CaseInsensitive);
-    return sortedSenders;
-}
-
 void DbcComponent::onFileLoadRequested(const QString& filePath)
 {
     Core::ParseDBCRequestEvent event(filePath.toStdString());
@@ -74,11 +39,11 @@ void DbcComponent::onDbcParsed(const Core::DBCParsedEvent& event)
     m_view->setNavigationEnabled(true);
 
     // Units for signals page filtering
-    const QStringList units = extractSignalUnits(event.config);
+    const QStringList units = Util::extractSignalUnits(event.config);
     m_view->setSignalUnits(units);
 
     // Senders for messages page filtering
-    const QStringList senders = extractSenders(event.config);
+    const QStringList senders = Util::extractSenders(event.config);
     m_view->setAvailableSenders(senders);
 }
 void DbcComponent::onDbcParseError(const Core::DBCParseErrorEvent& event)

@@ -2,9 +2,9 @@
 
 #include <QModelIndex>
 
+#include "core/dto/dbc_dto.hpp"
 #include "dbc_file/constants.hpp"
 #include "dbc_file/model/dbc_roles.hpp"
-class QModelIndex;
 namespace DbcFile::Util {
 /**
  * @brief Returns a sibling index at the specified column (Qt5 compatible).
@@ -24,7 +24,7 @@ inline auto siblingAtColumnQt5(const QModelIndex& idx, int column) -> QModelInde
  */
 inline bool isValidFile(const QString& filePath)
 {
-    return filePath.endsWith(DbcFile::Constants::LoadPage::FileExt, Qt::CaseInsensitive);
+    return filePath.endsWith(Constants::LoadPage::FileExt, Qt::CaseInsensitive);
 }
 
 /**
@@ -47,5 +47,63 @@ inline uint resolveMessageId(const QModelIndex& idIdx)
     uint id = idIdx.data(DbcFile::DbcRoles::Role_Id).toUInt();
     if (id == 0) id = idIdx.data(Qt::DisplayRole).toUInt();
     return id;
+}
+
+/**
+ * @brief Extracts all unique signal units from a parsed DBC file to provide filtering options
+ * for signals.
+ *
+ * Iterates over all message definitions and their signals,
+ * collects unique unit strings, and returns them sorted
+ * alphabetically (case-insensitive).
+ *
+ * @param config Config to extract units out of.
+ * @return A sorted list of unique signal units.
+ */
+inline auto extractSignalUnits(const Core::DbcConfig& config) -> QStringList
+{
+    QSet<QString> uniqueUnits;
+
+    for (const auto& msg : config.messageDefinitions)
+    {
+        for (const auto& sig : msg.signalDescriptions)
+        {
+            if (!sig.unit.empty())
+            {
+                uniqueUnits.insert(QString::fromStdString(sig.unit));
+            }
+        }
+    }
+
+    QStringList sortedUnits = uniqueUnits.values();
+    sortedUnits.sort(Qt::CaseInsensitive);
+    return sortedUnits;
+}
+
+/**
+ * @brief Extracts all unique message senders from a parsed DBC event to provide filtering
+ * options for messages.
+ *
+ * Iterates over all message definitions and collects unique
+ * transmitter names. The result is sorted alphabetically
+ * (case-insensitive).
+ *
+ * @param config Config to extract senders out of.
+ * @return A sorted list of unique message sender names.
+ */
+inline auto extractSenders(const Core::DbcConfig& config) -> QStringList
+{
+    QSet<QString> uniqueSenders;
+    for (const auto& msg : config.messageDefinitions)
+    {
+        if (!msg.transmitterName.empty())
+        {
+            uniqueSenders.insert(QString::fromStdString(msg.transmitterName));
+        }
+    }
+
+    QStringList sortedSenders = uniqueSenders.values();
+    sortedSenders.sort(Qt::CaseInsensitive);
+    return sortedSenders;
 }
 }  // namespace DbcFile::Util
