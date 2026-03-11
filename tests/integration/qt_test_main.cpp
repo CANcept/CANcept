@@ -4,9 +4,6 @@
 
 /**
  * @brief Custom main for integration tests that require QApplication.
- *
- * SendingComponent creates Qt widgets (QWidget, QStackedWidget, etc.),
- * which require a QApplication instance to exist before construction.
  */
 auto main(int argc, char** argv) -> int
 {

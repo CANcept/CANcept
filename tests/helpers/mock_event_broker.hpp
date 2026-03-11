@@ -132,8 +132,6 @@ class MockEventBroker final : public Core::IEventBroker
    protected:
     /**
      * @brief Implementation of IEventBroker::_publish.
-     * Thread-safe: callbacks are copied under the lock then invoked outside it,
-     * so subscribers can safely publish or subscribe inside their callbacks.
      */
     void _publish(const std::type_index type, const void* data) override
     {
@@ -156,7 +154,7 @@ class MockEventBroker final : public Core::IEventBroker
     }
 
     /**
-     * @brief Implementation of IEventBroker::_subscribe. Thread-safe.
+     * @brief Implementation of IEventBroker::_subscribe.
      */
     auto _subscribe(std::type_index type,
                     std::function<void(const void*)> callback) -> Core::Connection override

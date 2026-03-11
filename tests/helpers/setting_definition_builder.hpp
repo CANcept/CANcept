@@ -11,8 +11,7 @@
 namespace TestHelpers {
 
 /**
- * @brief Creates the standard app-root theme setting (Select, driven by GetAvailableThemesEvent).
- * Matches what AppRoot::bootstrap() registers.
+ * @brief Creates the standard app-root theme setting.
  */
 inline auto makeThemeSetting()
 {
@@ -25,8 +24,7 @@ inline auto makeThemeSetting()
 }
 
 /**
- * @brief Creates a generic Select setting for a given key. Use when you need arbitrary
- * settings in tests without coupling to app-root constants.
+ * @brief Creates a generic Select setting for a given key.
  */
 inline auto makeSelectSetting(const std::string& settingId, const std::string& componentId)
 {

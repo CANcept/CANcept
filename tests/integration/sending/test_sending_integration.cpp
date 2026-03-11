@@ -72,10 +72,6 @@ struct CapturedSendEvents {
     }
 };
 
-// =============================================================================
-// Base fixture
-// =============================================================================
-
 class SendingIntegrationTest : public ::testing::Test
 {
    protected:
@@ -176,12 +172,8 @@ class SendingIntegrationTest : public ::testing::Test
 };
 
 /** Raw Sending */
-
-// Covers: max valid 11-bit ID, empty data (dlc=0), 8-byte full frame, oversized ID clamped,
-// oversized data clamped — all input-boundary and clamping behaviour in one pass.
 TEST_F(SendingIntegrationTest, Raw_SendOnce_InputBoundaries)
 {
-    // Max valid 11-bit standard CAN ID
     rawView->canIdEditor()->setText("7FF");
     QTest::qWait(10);
     triggerSendOnce();
@@ -189,7 +181,6 @@ TEST_F(SendingIntegrationTest, Raw_SendOnce_InputBoundaries)
     EXPECT_EQ(events.firstRaw().messageId, 0x7FF);
     events.clear();
 
-    // Empty data → DLC must be 0
     rawView->messageDataEditor()->setText("");
     QTest::qWait(10);
     triggerSendOnce();
@@ -197,7 +188,6 @@ TEST_F(SendingIntegrationTest, Raw_SendOnce_InputBoundaries)
     EXPECT_EQ(events.firstRaw().dlc, 0);
     events.clear();
 
-    // Full 8-byte frame — all bytes preserved and DLC = 8
     rawView->messageDataEditor()->setText("01 23 45 67 89 AB CD EF");
     QTest::qWait(10);
     triggerSendOnce();
@@ -210,7 +200,6 @@ TEST_F(SendingIntegrationTest, Raw_SendOnce_InputBoundaries)
     }
     events.clear();
 
-    // More than 8 bytes → DLC capped at 8
     rawView->messageDataEditor()->setText("01 02 03 04 05 06 07 08 09 0A");
     QTest::qWait(10);
     triggerSendOnce();
@@ -218,7 +207,6 @@ TEST_F(SendingIntegrationTest, Raw_SendOnce_InputBoundaries)
     EXPECT_EQ(events.firstRaw().dlc, 8) << "DLC must never exceed the CAN maximum of 8";
     events.clear();
 
-    // ID above 0x7FF → clamped to standard 11-bit range
     rawView->canIdEditor()->setText("FFF");
     rawView->messageDataEditor()->setText("");
     QTest::qWait(10);
@@ -230,25 +218,19 @@ TEST_F(SendingIntegrationTest, Raw_SendOnce_InputBoundaries)
 
 /** DBC Based Sending */
 
-// No events fire in DBC mode until at least one signal is selected,
-// regardless of whether a DBC file has been loaded.
 TEST_F(SendingIntegrationTest, Dbc_SendOnce_NoEventsWithoutSignalConfiguration)
 {
-    // No DBC loaded at all
     switchToDbc();
     triggerSendOnce();
     EXPECT_EQ(events.rawCount(), 0);
     EXPECT_EQ(events.dbcCount(), 0);
 
-    // DBC loaded but nothing selected
     loadDbc(DbcExamples::motorController());
     events.clear();
     triggerSendOnce();
     EXPECT_EQ(events.dbcCount(), 0) << "No signals selected — must produce no events";
 }
 
-// Selecting one signal out of three produces an event that contains exactly
-// the selected signal and none of the unselected ones.
 TEST_F(SendingIntegrationTest, Dbc_SendOnce_OnlySelectedSignalsInPayload)
 {
     loadDbc(DbcExamples::motorController());
@@ -332,7 +314,6 @@ TEST_F(SendingIntegrationTest, Dbc_SendOnce_DefaultSignalValue_IsMinimum)
 
 /** Signal Value Clamping */
 
-// Speed range is [0, 65535]. Values outside that range must be clamped at both ends.
 TEST_F(SendingIntegrationTest, SignalValue_OutOfRange_ClampedToBounds)
 {
     loadDbc(DbcExamples::motorController());
@@ -347,7 +328,6 @@ TEST_F(SendingIntegrationTest, SignalValue_OutOfRange_ClampedToBounds)
         return it != sigs.end() ? it->value : -1.0;
     };
 
-    // Below minimum → clamped to 0
     emit dbcView->signalValueChanged(0x100, "Speed", -999.0);
     QTest::qWait(10);
     triggerSendOnce();
@@ -355,7 +335,6 @@ TEST_F(SendingIntegrationTest, SignalValue_OutOfRange_ClampedToBounds)
     EXPECT_GE(getSpeedValue(), 0.0) << "Value below minimum should be clamped to 0";
     events.clear();
 
-    // Above maximum → clamped to 65535
     emit dbcView->signalValueChanged(0x100, "Speed", 999999.0);
     QTest::qWait(10);
     triggerSendOnce();
@@ -364,19 +343,13 @@ TEST_F(SendingIntegrationTest, SignalValue_OutOfRange_ClampedToBounds)
 }
 
 /** Mode */
-
-// Walks through the full Raw → DBC → Raw mode state machine:
-// default is Raw, switching to DBC with a selection sends DBC events only,
-// and switching back to Raw (even after DBC mode with no selection) sends Raw again.
 TEST_F(SendingIntegrationTest, Mode_Transitions_RawDbcRaw_PublishCorrectEvents)
 {
-    // Default mode is Raw
     triggerSendOnce();
     EXPECT_EQ(events.rawCount(), 1);
     EXPECT_EQ(events.dbcCount(), 0);
     events.clear();
 
-    // Switch to DBC with a signal selected → only DBC events
     loadDbc(DbcExamples::motorController());
     switchToDbc();
     emit dbcView->signalSelectionChanged(0x100, "Speed", true);
@@ -386,7 +359,6 @@ TEST_F(SendingIntegrationTest, Mode_Transitions_RawDbcRaw_PublishCorrectEvents)
     EXPECT_GE(events.dbcCount(), 1u);
     events.clear();
 
-    // Switch back to Raw (with nothing selected in DBC) → only Raw events
     switchToRaw();
     triggerSendOnce();
     EXPECT_EQ(events.rawCount(), 1);
@@ -466,8 +438,6 @@ TEST_F(SendingIntegrationTest, Cyclic_LifecycleEdgeCases_StopWithoutStartAndRest
 
 /** DBC load */
 
-// Reloading a DBC clears the old signal selection, and signals from the new
-// DBC can immediately be selected and sent.
 TEST_F(SendingIntegrationTest, DbcUpdate_ReloadClearsOldSelectionAndAcceptsNewSignal)
 {
     loadDbc(DbcExamples::motorController());
@@ -475,7 +445,7 @@ TEST_F(SendingIntegrationTest, DbcUpdate_ReloadClearsOldSelectionAndAcceptsNewSi
     emit dbcView->signalSelectionChanged(0x100, "Speed", true);
     QTest::qWait(10);
 
-    // Reload with a different DBC — old selection must be gone
+    // Reload with a different DBC
     loadDbc(DbcExamples::simple());
     triggerSendOnce();
     EXPECT_EQ(events.dbcCount(), 0) << "Reload must clear previous signal selections";

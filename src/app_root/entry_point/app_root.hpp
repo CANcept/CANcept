@@ -88,11 +88,6 @@ class AppRoot
         }
     }
 
-    /**
-     * @brief Guard flag to prevent re-entrant or double calls to shutdown().
-     * @details Must be a non-static instance member so each AppRoot instance
-     * has its own flag (a static would persist across test cases).
-     */
     bool m_shuttingDown = false;
 
     /**

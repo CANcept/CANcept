@@ -18,10 +18,6 @@ using namespace TestHelpers;
 using ::testing::_;
 using ::testing::AnyNumber;
 
-// =============================================================================
-// Fixture
-// =============================================================================
-
 class SettingsIntegrationTest : public ::testing::Test
 {
    protected:

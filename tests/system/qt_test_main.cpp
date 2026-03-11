@@ -4,9 +4,6 @@
 
 /**
  * @brief Custom main for system tests that require QApplication.
- *
- * AppRoot creates Qt widgets and a main window, which require a QApplication
- * instance to exist before any widget construction.
  */
 auto main(int argc, char** argv) -> int
 {
