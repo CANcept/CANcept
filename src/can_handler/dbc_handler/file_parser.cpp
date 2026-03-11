@@ -16,6 +16,10 @@ auto FileParser::parseFile(const std::string& filePath) -> std::string*
     std::string line;
     while (std::getline(dbcFile, line))
     {
+        if (line.back() == '\r')
+        {
+            line.pop_back();
+        }
         dbcString->append(line + " ");
     }
     dbcFile.close();
