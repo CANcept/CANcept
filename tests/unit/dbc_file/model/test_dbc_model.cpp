@@ -158,6 +158,16 @@ TEST_F(DbcModelTestBase, HasChildren_BehavesCorrectly)
     EXPECT_TRUE(model->hasChildren(msg));
     EXPECT_FALSE(model->hasChildren(sig));
 }
+
+TEST_F(DbcModelTestBase, Api_RowCount_ReturnsZeroForParentColumnsGreaterThanZero)
+{
+    model->setDbcConfig(DbcExamples::simple());
+
+    const QModelIndex overviewColumnOne = model->index(0, 1, QModelIndex());
+    ASSERT_TRUE(overviewColumnOne.isValid());
+
+    EXPECT_EQ(model->rowCount(overviewColumnOne), 0);
+}
 // ============================================================================
 // 2. Item Specific Data Tests (Positive & Negative Paths)
 // ============================================================================
@@ -482,6 +492,18 @@ TEST_F(DbcModelTestBase, EdgeCase_OrphanHandling)
     assertInvalidRoles(orphanHolderIdx, messageRoles);
     assertInvalidRoles(orphanHolderIdx, signalRoles);
     EXPECT_FALSE(getVal(orphanHolderIdx, DbcFile::Role_Id).isValid());
+}
+
+TEST_F(DbcModelTestBase, EdgeCase_DoesNotCreateOrphanHolderWithoutOrphans)
+{
+    model->setDbcConfig(DbcExamples::simple());
+
+    for (int i = 0; i < model->rowCount(QModelIndex()); ++i)
+    {
+        const QModelIndex idx = model->index(i, 0, QModelIndex());
+        const auto type = getVal(idx, DbcFile::Role_ItemType).value<Core::DbcItemType>();
+        EXPECT_NE(type, Core::DbcItemType::OrphanHolder);
+    }
 }
 
 TEST_F(DbcModelTestBase, EdgeCase_UnknownRoles)

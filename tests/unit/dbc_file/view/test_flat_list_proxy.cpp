@@ -206,6 +206,20 @@ TEST_F(FlatListProxyTest, FlatList_Messages_FilterByText)
     EXPECT_EQ(proxy.data(proxy.index(0, 0, QModelIndex()), Qt::DisplayRole).toString(), "SpeedMsg");
 }
 
+TEST_F(FlatListProxyTest, FlatList_Messages_CombinesSenderAndTextFilters)
+{
+    DbcFile::FlatListProxy proxy(Core::DbcItemType::Message);
+    proxy.setSourceModel(&dummyModel);
+
+    proxy.setFilterMessageSender("EngineECU");
+    proxy.setSearchFilter("Brake");
+    EXPECT_EQ(proxy.rowCount(QModelIndex()), 0);
+
+    proxy.setSearchFilter("Speed");
+    ASSERT_EQ(proxy.rowCount(QModelIndex()), 1);
+    EXPECT_EQ(proxy.data(proxy.index(0, 0, QModelIndex()), Qt::DisplayRole).toString(), "SpeedMsg");
+}
+
 TEST_F(FlatListProxyTest, FlatList_Signals_FilterByUnit)
 {
     DbcFile::FlatListProxy proxy(Core::DbcItemType::Signal);
@@ -243,6 +257,21 @@ TEST_F(FlatListProxyTest, FlatList_Signals_FilterByText)
               "EngineRPM");
 }
 
+TEST_F(FlatListProxyTest, FlatList_Signals_CombinesUnitAndTextFilters)
+{
+    DbcFile::FlatListProxy proxy(Core::DbcItemType::Signal);
+    proxy.setSourceModel(&dummyModel);
+
+    proxy.setSignalFilterUnit("km/h");
+    proxy.setSearchFilter("rpm");
+    EXPECT_EQ(proxy.rowCount(QModelIndex()), 0);
+
+    proxy.setSearchFilter("speed");
+    ASSERT_EQ(proxy.rowCount(QModelIndex()), 1);
+    EXPECT_EQ(proxy.data(proxy.index(0, 0, QModelIndex()), Qt::DisplayRole).toString(),
+              "VehicleSpeed");
+}
+
 TEST_F(FlatListProxyTest, FlatList_SearchYieldsNoResults)
 {
     DbcFile::FlatListProxy proxy(Core::DbcItemType::Signal);
@@ -253,6 +282,20 @@ TEST_F(FlatListProxyTest, FlatList_SearchYieldsNoResults)
     EXPECT_EQ(proxy.rowCount(QModelIndex()), 0);
 
     EXPECT_FALSE(proxy.index(0, 0, QModelIndex()).isValid());
+}
+
+TEST_F(FlatListProxyTest, FlatList_ClearingSearchFilterRestoresAllResults)
+{
+    DbcFile::FlatListProxy proxy(Core::DbcItemType::Signal);
+    proxy.setSourceModel(&dummyModel);
+
+    ASSERT_EQ(proxy.rowCount(QModelIndex()), 4);
+
+    proxy.setSearchFilter("RPM");
+    ASSERT_EQ(proxy.rowCount(QModelIndex()), 1);
+
+    proxy.setSearchFilter("");
+    EXPECT_EQ(proxy.rowCount(QModelIndex()), 4);
 }
 
 TEST_F(FlatListProxyTest, FlatList_IgnoresSenderFilterOnSignals)

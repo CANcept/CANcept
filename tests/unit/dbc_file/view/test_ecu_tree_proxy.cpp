@@ -155,6 +155,20 @@ TEST_F(EcuTreeProxyTest, Filter_Text_MatchesCaseInsensitive)
     EXPECT_EQ(name, "GatewayECU");
 }
 
+TEST_F(EcuTreeProxyTest, Filter_Text_ClearRestoresAllVisibleEcus)
+{
+    EcuTreeProxy proxy;
+    proxy.setSourceModel(&dummyModel);
+
+    ASSERT_EQ(proxy.rowCount(QModelIndex()), 2);
+
+    proxy.setSearchText("gateway");
+    ASSERT_EQ(proxy.rowCount(QModelIndex()), 1);
+
+    proxy.setSearchText("");
+    EXPECT_EQ(proxy.rowCount(QModelIndex()), 2);
+}
+
 TEST_F(EcuTreeProxyTest, Filter_Text_NoMatchHidesAll)
 {
     TestableEcuTreeProxy proxy;
