@@ -83,7 +83,13 @@ LoggingComponent::LoggingComponent(Core::IEventBroker& broker)
             &LoggingView::dbcConfigChanged);
 }
 
-LoggingComponent::~LoggingComponent() = default;
+LoggingComponent::~LoggingComponent()
+{
+    if (m_view && m_view->parent())
+    {
+        m_view.release();
+    }
+}
 
 // Returns the main logging view widget
 auto LoggingComponent::getView() -> LoggingView*

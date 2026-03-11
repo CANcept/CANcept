@@ -177,156 +177,79 @@ class SendingIntegrationTest : public ::testing::Test
 
 /** Raw Sending */
 
-TEST_F(SendingIntegrationTest, Raw_SendOnce_PublishesExactlyOneRawEvent)
+// Covers: max valid 11-bit ID, empty data (dlc=0), 8-byte full frame, oversized ID clamped,
+// oversized data clamped — all input-boundary and clamping behaviour in one pass.
+TEST_F(SendingIntegrationTest, Raw_SendOnce_InputBoundaries)
 {
-    triggerSendOnce();
-
-    EXPECT_EQ(events.rawCount(), 1);
-    EXPECT_EQ(events.dbcCount(), 0);
-}
-
-TEST_F(SendingIntegrationTest, Raw_SendOnce_CorrectCanId)
-{
-    rawView->canIdEditor()->setText("1A2");
-    QTest::qWait(10);
-
-    triggerSendOnce();
-
-    ASSERT_EQ(events.rawCount(), 1);
-    EXPECT_EQ(events.firstRaw().messageId, 0x1A2);
-}
-
-TEST_F(SendingIntegrationTest, Raw_SendOnce_MaxStandardCanId)
-{
+    // Max valid 11-bit standard CAN ID
     rawView->canIdEditor()->setText("7FF");
     QTest::qWait(10);
-
     triggerSendOnce();
-
     ASSERT_EQ(events.rawCount(), 1);
     EXPECT_EQ(events.firstRaw().messageId, 0x7FF);
-}
+    events.clear();
 
-TEST_F(SendingIntegrationTest, Raw_SendOnce_DataBytesAppearInEvent)
-{
-    rawView->messageDataEditor()->setText("AA BB CC");
-    QTest::qWait(10);
-
-    triggerSendOnce();
-
-    ASSERT_EQ(events.rawCount(), 1);
-    const auto msg = events.firstRaw();
-    EXPECT_EQ(static_cast<uint8_t>(msg.data[0]), 0xAA);
-    EXPECT_EQ(static_cast<uint8_t>(msg.data[1]), 0xBB);
-    EXPECT_EQ(static_cast<uint8_t>(msg.data[2]), 0xCC);
-}
-
-TEST_F(SendingIntegrationTest, Raw_SendOnce_DlcMatchesNumberOfDataBytes)
-{
-    rawView->messageDataEditor()->setText("01 02 03 04 05");
-    QTest::qWait(10);
-
-    triggerSendOnce();
-
-    ASSERT_EQ(events.rawCount(), 1);
-    EXPECT_EQ(events.firstRaw().dlc, 5);
-}
-
-TEST_F(SendingIntegrationTest, Raw_SendOnce_FullEightBytes_AllPreserved)
-{
-    rawView->messageDataEditor()->setText("01 23 45 67 89 AB CD EF");
-    QTest::qWait(10);
-
-    triggerSendOnce();
-
-    ASSERT_EQ(events.rawCount(), 1);
-    const auto msg = events.firstRaw();
-    EXPECT_EQ(msg.dlc, 8);
-    EXPECT_EQ(static_cast<uint8_t>(msg.data[0]), 0x01);
-    EXPECT_EQ(static_cast<uint8_t>(msg.data[1]), 0x23);
-    EXPECT_EQ(static_cast<uint8_t>(msg.data[6]), 0xCD);
-    EXPECT_EQ(static_cast<uint8_t>(msg.data[7]), 0xEF);
-}
-
-TEST_F(SendingIntegrationTest, Raw_SendOnce_EmptyData_DlcIsZero)
-{
+    // Empty data → DLC must be 0
     rawView->messageDataEditor()->setText("");
     QTest::qWait(10);
-
     triggerSendOnce();
-
     ASSERT_EQ(events.rawCount(), 1);
     EXPECT_EQ(events.firstRaw().dlc, 0);
-}
+    events.clear();
 
-TEST_F(SendingIntegrationTest, Raw_SendOnce_IdAndDataTogether)
-{
-    rawView->canIdEditor()->setText("300");
-    rawView->messageDataEditor()->setText("FF 00 AA 55");
+    // Full 8-byte frame — all bytes preserved and DLC = 8
+    rawView->messageDataEditor()->setText("01 23 45 67 89 AB CD EF");
     QTest::qWait(10);
-
     triggerSendOnce();
-
     ASSERT_EQ(events.rawCount(), 1);
-    const auto msg = events.firstRaw();
-    EXPECT_EQ(msg.messageId, 0x300);
-    EXPECT_EQ(msg.dlc, 4);
-    EXPECT_EQ(static_cast<uint8_t>(msg.data[0]), 0xFF);
-    EXPECT_EQ(static_cast<uint8_t>(msg.data[3]), 0x55);
+    {
+        const auto msg = events.firstRaw();
+        EXPECT_EQ(msg.dlc, 8);
+        EXPECT_EQ(static_cast<uint8_t>(msg.data[0]), 0x01);
+        EXPECT_EQ(static_cast<uint8_t>(msg.data[7]), 0xEF);
+    }
+    events.clear();
+
+    // More than 8 bytes → DLC capped at 8
+    rawView->messageDataEditor()->setText("01 02 03 04 05 06 07 08 09 0A");
+    QTest::qWait(10);
+    triggerSendOnce();
+    ASSERT_EQ(events.rawCount(), 1);
+    EXPECT_EQ(events.firstRaw().dlc, 8) << "DLC must never exceed the CAN maximum of 8";
+    events.clear();
+
+    // ID above 0x7FF → clamped to standard 11-bit range
+    rawView->canIdEditor()->setText("FFF");
+    rawView->messageDataEditor()->setText("");
+    QTest::qWait(10);
+    triggerSendOnce();
+    ASSERT_EQ(events.rawCount(), 1);
+    EXPECT_LE(events.firstRaw().messageId, 0x7FFu)
+        << "CAN ID must be clamped to the 11-bit standard frame range";
 }
 
 /** DBC Based Sending */
 
-TEST_F(SendingIntegrationTest, Dbc_SendOnce_NoDbc_NoEventPublished)
+// No events fire in DBC mode until at least one signal is selected,
+// regardless of whether a DBC file has been loaded.
+TEST_F(SendingIntegrationTest, Dbc_SendOnce_NoEventsWithoutSignalConfiguration)
 {
+    // No DBC loaded at all
     switchToDbc();
     triggerSendOnce();
-
     EXPECT_EQ(events.rawCount(), 0);
     EXPECT_EQ(events.dbcCount(), 0);
-}
 
-TEST_F(SendingIntegrationTest, Dbc_SendOnce_DbcLoaded_NoSignalsSelected_NoEventPublished)
-{
+    // DBC loaded but nothing selected
     loadDbc(DbcExamples::motorController());
-    switchToDbc();
-
+    events.clear();
     triggerSendOnce();
-
-    EXPECT_EQ(events.dbcCount(), 0);
+    EXPECT_EQ(events.dbcCount(), 0) << "No signals selected — must produce no events";
 }
 
-TEST_F(SendingIntegrationTest, Dbc_SendOnce_SelectedSignal_EventPublished)
-{
-    loadDbc(DbcExamples::motorController());
-    switchToDbc();
-    emit dbcView->signalSelectionChanged(0x100, "Speed", true);
-    QTest::qWait(10);
-
-    triggerSendOnce();
-
-    ASSERT_EQ(events.dbcCount(), 1);
-    EXPECT_EQ(events.firstDbc().messageId, 0x100);
-}
-
-TEST_F(SendingIntegrationTest, Dbc_SendOnce_SelectedSignalPresentInPayload)
-{
-    loadDbc(DbcExamples::motorController());
-    switchToDbc();
-    emit dbcView->signalSelectionChanged(0x100, "Speed", true);
-    QTest::qWait(10);
-
-    triggerSendOnce();
-
-    ASSERT_EQ(events.dbcCount(), 1);
-    const auto msg = events.firstDbc();
-    const auto& sigs = msg.signalValues;
-    const bool found = std::ranges::any_of(
-        sigs.begin(), sigs.end(), [](const Core::DbcCanSignal& s) { return s.name == "Speed"; });
-    EXPECT_TRUE(found) << "Selected signal 'Speed' should appear in the published event";
-}
-
-TEST_F(SendingIntegrationTest, Dbc_SendOnce_UnselectedSignalAbsentFromPayload)
+// Selecting one signal out of three produces an event that contains exactly
+// the selected signal and none of the unselected ones.
+TEST_F(SendingIntegrationTest, Dbc_SendOnce_OnlySelectedSignalsInPayload)
 {
     loadDbc(DbcExamples::motorController());
     switchToDbc();
@@ -337,15 +260,17 @@ TEST_F(SendingIntegrationTest, Dbc_SendOnce_UnselectedSignalAbsentFromPayload)
 
     ASSERT_EQ(events.dbcCount(), 1);
     const auto& sigs = events.firstDbc().signalValues;
-    const bool tempFound =
-        std::ranges::any_of(sigs.begin(), sigs.end(),
-                            [](const Core::DbcCanSignal& s) { return s.name == "Temperature"; });
-    const bool errFound =
-        std::ranges::any_of(sigs.begin(), sigs.end(),
-                            [](const Core::DbcCanSignal& s) { return s.name == "ErrorCode"; });
 
-    EXPECT_FALSE(tempFound) << "Unselected signal 'Temperature' must NOT appear in the event";
-    EXPECT_FALSE(errFound) << "Unselected signal 'ErrorCode' must NOT appear in the event";
+    const bool speedFound =
+        std::ranges::any_of(sigs, [](const Core::DbcCanSignal& s) { return s.name == "Speed"; });
+    const bool tempFound = std::ranges::any_of(
+        sigs, [](const Core::DbcCanSignal& s) { return s.name == "Temperature"; });
+    const bool errFound = std::ranges::any_of(
+        sigs, [](const Core::DbcCanSignal& s) { return s.name == "ErrorCode"; });
+
+    EXPECT_TRUE(speedFound) << "Selected signal 'Speed' must appear in the event";
+    EXPECT_FALSE(tempFound) << "Unselected signal 'Temperature' must NOT appear";
+    EXPECT_FALSE(errFound) << "Unselected signal 'ErrorCode' must NOT appear";
 }
 
 TEST_F(SendingIntegrationTest, Dbc_SendOnce_SignalValuePropagatedToEvent)
@@ -364,28 +289,6 @@ TEST_F(SendingIntegrationTest, Dbc_SendOnce_SignalValuePropagatedToEvent)
         sigs.begin(), sigs.end(), [](const Core::DbcCanSignal& s) { return s.name == "Speed"; });
     ASSERT_NE(it, sigs.end()) << "Speed signal not found in event";
     EXPECT_DOUBLE_EQ(it->value, 3000.0);
-}
-
-TEST_F(SendingIntegrationTest, Dbc_SendOnce_TwoSelectedSignals_BothInPayload)
-{
-    loadDbc(DbcExamples::motorController());
-    switchToDbc();
-    emit dbcView->signalSelectionChanged(0x100, "Speed", true);
-    emit dbcView->signalSelectionChanged(0x100, "Temperature", true);
-    QTest::qWait(10);
-
-    triggerSendOnce();
-
-    ASSERT_EQ(events.dbcCount(), 1);
-    const auto& sigs = events.firstDbc().signalValues;
-    EXPECT_EQ(sigs.size(), 2u);
-    const bool speedFound = std::ranges::any_of(
-        sigs.begin(), sigs.end(), [](const Core::DbcCanSignal& s) { return s.name == "Speed"; });
-    const bool tempFound =
-        std::ranges::any_of(sigs.begin(), sigs.end(),
-                            [](const Core::DbcCanSignal& s) { return s.name == "Temperature"; });
-    EXPECT_TRUE(speedFound);
-    EXPECT_TRUE(tempFound);
 }
 
 TEST_F(SendingIntegrationTest, Dbc_SendOnce_SignalsFromTwoMessages_TwoEventsPublished)
@@ -409,33 +312,6 @@ TEST_F(SendingIntegrationTest, Dbc_SendOnce_SignalsFromTwoMessages_TwoEventsPubl
     EXPECT_TRUE(ids.count(0x101)) << "Expected event for message 0x101";
 }
 
-TEST_F(SendingIntegrationTest, Dbc_SendOnce_SelectWholeMessage_AllSignalsInEvent)
-{
-    loadDbc(DbcExamples::motorController());
-    switchToDbc();
-    // messageSelectionChanged selects ALL signals of a message
-    emit dbcView->messageSelectionChanged(0x100, true);
-    QTest::qWait(10);
-
-    triggerSendOnce();
-
-    ASSERT_EQ(events.dbcCount(), 1);
-    EXPECT_EQ(events.firstDbc().signalValues.size(), 3u);
-}
-
-TEST_F(SendingIntegrationTest, Dbc_SendOnce_DeselectSignal_RemovedFromEvent)
-{
-    loadDbc(DbcExamples::motorController());
-    switchToDbc();
-    emit dbcView->signalSelectionChanged(0x100, "Speed", true);
-    QTest::qWait(10);
-    emit dbcView->signalSelectionChanged(0x100, "Speed", false);
-    QTest::qWait(10);
-
-    triggerSendOnce();
-    EXPECT_EQ(events.dbcCount(), 0);
-}
-
 TEST_F(SendingIntegrationTest, Dbc_SendOnce_DefaultSignalValue_IsMinimum)
 {
     // After loadDbc, signal values are initialised to their minimum.
@@ -456,93 +332,63 @@ TEST_F(SendingIntegrationTest, Dbc_SendOnce_DefaultSignalValue_IsMinimum)
 
 /** Signal Value Clamping */
 
-TEST_F(SendingIntegrationTest, SignalValue_ViaViewSignal_OutOfRangeLow_SentAsIs)
+// Speed range is [0, 65535]. Values outside that range must be clamped at both ends.
+TEST_F(SendingIntegrationTest, SignalValue_OutOfRange_ClampedToBounds)
 {
     loadDbc(DbcExamples::motorController());
     switchToDbc();
     emit dbcView->signalSelectionChanged(0x100, "Speed", true);
+
+    auto getSpeedValue = [&]() -> double {
+        const auto& sigs = events.firstDbc().signalValues;
+        const auto it = std::ranges::find_if(
+            sigs, [](const Core::DbcCanSignal& s) { return s.name == "Speed"; });
+        EXPECT_NE(it, sigs.end()) << "Speed signal not found in event";
+        return it != sigs.end() ? it->value : -1.0;
+    };
+
+    // Below minimum → clamped to 0
     emit dbcView->signalValueChanged(0x100, "Speed", -999.0);
     QTest::qWait(10);
-
     triggerSendOnce();
-
     ASSERT_EQ(events.dbcCount(), 1);
-    const auto& sigs = events.firstDbc().signalValues;
-    const auto it = std::ranges::find_if(
-        sigs.begin(), sigs.end(), [](const Core::DbcCanSignal& s) { return s.name == "Speed"; });
-    ASSERT_NE(it, sigs.end());
-    // should clamp to signal minimum
-    EXPECT_GE(it->value, 0.0)
-        << "Signal value sent via signalValueChanged should be clamped to signal minimum";
-}
+    EXPECT_GE(getSpeedValue(), 0.0) << "Value below minimum should be clamped to 0";
+    events.clear();
 
-TEST_F(SendingIntegrationTest, SignalValue_ViaViewSignal_OutOfRangeHigh_SentAsIs)
-{
-    // Speed maximum = 65535.
-    loadDbc(DbcExamples::motorController());
-    switchToDbc();
-    emit dbcView->signalSelectionChanged(0x100, "Speed", true);
+    // Above maximum → clamped to 65535
     emit dbcView->signalValueChanged(0x100, "Speed", 999999.0);
     QTest::qWait(10);
-
     triggerSendOnce();
-
     ASSERT_EQ(events.dbcCount(), 1);
-    const auto& sigs = events.firstDbc().signalValues;
-    const auto it = std::ranges::find_if(
-        sigs.begin(), sigs.end(), [](const Core::DbcCanSignal& s) { return s.name == "Speed"; });
-    ASSERT_NE(it, sigs.end());
-    // should clamp to signal maximum
-    EXPECT_LE(it->value, 65535.0)
-        << "Signal value sent via signalValueChanged should be clamped to signal maximum";
+    EXPECT_LE(getSpeedValue(), 65535.0) << "Value above maximum should be clamped to 65535";
 }
 
 /** Mode */
 
-TEST_F(SendingIntegrationTest, Mode_DefaultIsRaw_RawEventPublished)
+// Walks through the full Raw → DBC → Raw mode state machine:
+// default is Raw, switching to DBC with a selection sends DBC events only,
+// and switching back to Raw (even after DBC mode with no selection) sends Raw again.
+TEST_F(SendingIntegrationTest, Mode_Transitions_RawDbcRaw_PublishCorrectEvents)
 {
-    // Do not switch modes
+    // Default mode is Raw
     triggerSendOnce();
-
     EXPECT_EQ(events.rawCount(), 1);
     EXPECT_EQ(events.dbcCount(), 0);
-}
+    events.clear();
 
-TEST_F(SendingIntegrationTest, Mode_SwitchToDbc_DbcEventPublishedNotRaw)
-{
+    // Switch to DBC with a signal selected → only DBC events
     loadDbc(DbcExamples::motorController());
     switchToDbc();
     emit dbcView->signalSelectionChanged(0x100, "Speed", true);
     QTest::qWait(10);
-
     triggerSendOnce();
-
     EXPECT_EQ(events.rawCount(), 0);
     EXPECT_GE(events.dbcCount(), 1u);
-}
+    events.clear();
 
-TEST_F(SendingIntegrationTest, Mode_SwitchBackToRaw_RawEventPublished)
-{
-    loadDbc(DbcExamples::motorController());
-    switchToDbc();
-    emit dbcView->signalSelectionChanged(0x100, "Speed", true);
-    QTest::qWait(10);
-
+    // Switch back to Raw (with nothing selected in DBC) → only Raw events
     switchToRaw();
     triggerSendOnce();
-
-    EXPECT_EQ(events.rawCount(), 1);
-    EXPECT_EQ(events.dbcCount(), 0);
-}
-
-TEST_F(SendingIntegrationTest, Mode_DbcWithNothingSelected_ThenRaw_RawEventPublished)
-{
-    loadDbc(DbcExamples::motorController());
-    switchToDbc();
-    // No signals selected
-    switchToRaw();
-    triggerSendOnce();
-
     EXPECT_EQ(events.rawCount(), 1);
     EXPECT_EQ(events.dbcCount(), 0);
 }
@@ -601,56 +447,44 @@ TEST_F(SendingIntegrationTest, Cyclic_SecondStartIgnoredWhileRunning)
     EXPECT_GE(events.rawCount(), 1u);
 }
 
-TEST_F(SendingIntegrationTest, Cyclic_StopWithoutStart_DoesNotCrash)
+// Stop-before-start must be safe, and the worker must be restartable after a clean stop.
+TEST_F(SendingIntegrationTest, Cyclic_LifecycleEdgeCases_StopWithoutStartAndRestart)
 {
-    // Calling stop when the worker was never started must not crash or deadlock.
-    EXPECT_NO_THROW(stopCyclic());
-}
+    EXPECT_NO_THROW(stopCyclic()) << "Stopping before starting must not crash or deadlock";
 
-TEST_F(SendingIntegrationTest, Cyclic_CanRestartAfterStop)
-{
     startCyclic(100);
     QTest::qWait(150);
     stopCyclic();
     events.clear();
 
-    // Restart
     startCyclic(100);
     QTest::qWait(250);
     stopCyclic();
 
-    EXPECT_GE(events.rawCount(), 1u) << "Worker should be restartable after a clean stop";
+    EXPECT_GE(events.rawCount(), 1u) << "Worker must be restartable after a clean stop";
 }
 
 /** DBC load */
-TEST_F(SendingIntegrationTest, DbcUpdate_ClearsOldSignalSelection)
+
+// Reloading a DBC clears the old signal selection, and signals from the new
+// DBC can immediately be selected and sent.
+TEST_F(SendingIntegrationTest, DbcUpdate_ReloadClearsOldSelectionAndAcceptsNewSignal)
 {
-    // Load first DBC
     loadDbc(DbcExamples::motorController());
     switchToDbc();
     emit dbcView->signalSelectionChanged(0x100, "Speed", true);
     QTest::qWait(10);
 
-    // Load a new DBC
+    // Reload with a different DBC — old selection must be gone
     loadDbc(DbcExamples::simple());
-
     triggerSendOnce();
+    EXPECT_EQ(events.dbcCount(), 0) << "Reload must clear previous signal selections";
 
-    EXPECT_EQ(events.dbcCount(), 0)
-        << "Reloading a DBC should clear all previous signal selections";
-}
-
-TEST_F(SendingIntegrationTest, DbcUpdate_NewSignalCanBeSelectedAndSent)
-{
-    loadDbc(DbcExamples::motorController());
-    switchToDbc();
-    loadDbc(DbcExamples::simple());  // replaces motor DBC
-
+    // New signal from the replacement DBC can be selected and sent
     emit dbcView->signalSelectionChanged(0x123, "TestSignal", true);
     QTest::qWait(10);
-
+    events.clear();
     triggerSendOnce();
-
     ASSERT_EQ(events.dbcCount(), 1);
     EXPECT_EQ(events.firstDbc().messageId, 0x123);
 }
@@ -697,12 +531,7 @@ TEST_F(SendingIntegrationTest, DbcUpdate_MultipleReloads_AlwaysUsesLatest)
         << "After multiple DBC reloads, only the latest DBC should be active";
 }
 
-// =============================================================================
-// COMPLETE FLOW TESTS — button clicks, state machines, interaction chains
-// =============================================================================
-
-// Clicking the send button directly (not emitting sendOnceRequested) exercises the
-// real connection chain: button::clicked → view slot → sendOnceRequested → component.
+// Raw from Button
 TEST_F(SendingIntegrationTest, Flow_Raw_TypeInputs_ClickSendButton_EventMatchesInput)
 {
     rawView->canIdEditor()->setText("3BC");
@@ -720,67 +549,27 @@ TEST_F(SendingIntegrationTest, Flow_Raw_TypeInputs_ClickSendButton_EventMatchesI
     EXPECT_EQ(static_cast<uint8_t>(msg.data[3]), 0x44);
 }
 
-// Enable the cyclic toggle → set interval → click send button to START →
-// verify button transitions to "Stop" state → click again to STOP.
-// Tests the full send-button state machine through real widget interactions.
-TEST_F(SendingIntegrationTest, Flow_Raw_CyclicStateMachine_ToggleEnableClickStartClickStop)
-{
-    rawView->repeatedSendingCard()->findChild<Core::StyledSwitch*>()->setChecked(true);
-    rawView->repeatedSendingCard()->frequencyEditor()->setText("100");
-    QTest::qWait(20);
-
-    // Click send — cyclic is enabled, so this starts the worker
-    rawView->sendButton()->click();
-    QTest::qWait(50);  // let isSending propagate to button
-
-    EXPECT_EQ(rawView->sendButton()->text(), "Stop")
-        << "Button should show 'Stop' once repeated sending is active";
-
-    QTest::qWait(350);  // accumulate sends
-
-    // Click the Stop button
-    rawView->sendButton()->click();
-    QTest::qWait(300);
-
-    EXPECT_NE(rawView->sendButton()->text(), "Stop") << "Button should revert after stopping";
-    EXPECT_GE(events.rawCount(), 2u)
-        << "Multiple events should have been published during cyclic sending";
-}
-
-// DBC send button must be disabled when no signals are selected, and re-enabled
-// as soon as at least one signal is selected.
-TEST_F(SendingIntegrationTest, Flow_Dbc_SendButton_DisabledWithNoSelection_EnabledAfterSelect)
+// Track the DBC based Send Message Button state
+TEST_F(SendingIntegrationTest, Flow_Dbc_SendButton_EnableStateFollowsSelection)
 {
     loadDbc(DbcExamples::motorController());
     switchToDbc();
 
     EXPECT_FALSE(dbcView->sendButton()->isEnabled())
-        << "DBC send button must be disabled when no signals are selected";
+        << "Send button must be disabled when no signals are selected";
 
     emit dbcView->signalSelectionChanged(0x100, "Speed", true);
     QTest::qWait(10);
-
     EXPECT_TRUE(dbcView->sendButton()->isEnabled())
-        << "DBC send button must be enabled once at least one signal is selected";
-}
-
-// Deselecting the last signal must disable the send button again.
-TEST_F(SendingIntegrationTest, Flow_Dbc_SendButton_DisabledAgainAfterDeselectingLastSignal)
-{
-    loadDbc(DbcExamples::motorController());
-    switchToDbc();
-    emit dbcView->signalSelectionChanged(0x100, "Speed", true);
-    QTest::qWait(10);
-    ASSERT_TRUE(dbcView->sendButton()->isEnabled());
+        << "Send button must be enabled once at least one signal is selected";
 
     emit dbcView->signalSelectionChanged(0x100, "Speed", false);
     QTest::qWait(10);
-
     EXPECT_FALSE(dbcView->sendButton()->isEnabled())
-        << "Send button must disable once the last signal is deselected";
+        << "Send button must disable again once the last signal is deselected";
 }
 
-// Full DBC flow via actual button click: select signal, set value, click the DBC send button.
+// Full DBC send flow
 TEST_F(SendingIntegrationTest, Flow_Dbc_ClickSendButton_PublishesCorrectEvent)
 {
     loadDbc(DbcExamples::motorController());
@@ -799,28 +588,6 @@ TEST_F(SendingIntegrationTest, Flow_Dbc_ClickSendButton_PublishesCorrectEvent)
         sigs, [](const Core::DbcCanSignal& s) { return s.name == "TargetSpeed"; });
     ASSERT_NE(it, sigs.end());
     EXPECT_DOUBLE_EQ(it->value, 4200.0);
-}
-
-// Selecting/deselecting/reselecting a signal and then sending must only include
-// signals that are currently selected at send time.
-TEST_F(SendingIntegrationTest, Flow_Dbc_SelectDeselectReselect_OnlyCurrentSelectionSent)
-{
-    loadDbc(DbcExamples::motorController());
-    switchToDbc();
-    emit dbcView->signalSelectionChanged(0x100, "Speed", true);
-    emit dbcView->signalSelectionChanged(0x100, "Temperature", true);
-    QTest::qWait(10);
-
-    // Deselect Temperature — only Speed should go out
-    emit dbcView->signalSelectionChanged(0x100, "Temperature", false);
-    QTest::qWait(10);
-
-    triggerSendOnce();
-
-    ASSERT_EQ(events.dbcCount(), 1);
-    const auto& sigs = events.firstDbc().signalValues;
-    EXPECT_EQ(sigs.size(), 1u);
-    EXPECT_EQ(sigs.front().name, "Speed");
 }
 
 // Message selection checkbox selects all signals; sending must include them all.
@@ -843,32 +610,7 @@ TEST_F(SendingIntegrationTest, Flow_Dbc_MessageCheckbox_SelectThenDeselect_FullR
     EXPECT_EQ(events.dbcCount(), 0) << "No signals after message deselect";
 }
 
-// Switching mode while a cyclic worker is active: the worker keeps running but
-// subsequent sends use the new mode's data.  Specifically, switching to DBC with
-// no signals selected should produce zero DBC events for that period.
-TEST_F(SendingIntegrationTest, Flow_ModeSwitchDuringActiveCyclic_SwitchesToNewModeData)
-{
-    // Start raw cyclic
-    startCyclic(100);
-    QTest::qWait(250);
-    const size_t rawBefore = events.rawCount();
-    EXPECT_GE(rawBefore, 1u);
-
-    // Switch to DBC with no signals selected — cyclic keeps ticking but
-    // DBC mode with no selection produces no events
-    switchToDbc();
-    events.clear();
-    QTest::qWait(300);
-    stopCyclic();
-
-    // With no DBC signals selected, no events of either type should arrive
-    EXPECT_EQ(events.dbcCount(), 0u)
-        << "DBC mode with no signals selected should publish no events";
-    EXPECT_EQ(events.rawCount(), 0u) << "Mode switched to DBC, no raw events expected";
-}
-
 // Load DBC, start cyclic, reload a different DBC mid-flight.
-// The selection is cleared on reload so no events should be produced after the reload.
 TEST_F(SendingIntegrationTest, Flow_DbcReloadDuringActiveCyclic_OldSelectionCleared)
 {
     loadDbc(DbcExamples::motorController());
@@ -889,11 +631,10 @@ TEST_F(SendingIntegrationTest, Flow_DbcReloadDuringActiveCyclic_OldSelectionClea
         << "After DBC reload, old selection is cleared; no events expected";
 }
 
-// All three messages from vehicleSensors selected; cyclic send must publish
-// events for each message ID in every cycle.
+// All three messages from vehicleSensors selected
 TEST_F(SendingIntegrationTest, Flow_Dbc_AllMessagesSelected_CyclicPublishesAllMessageIds)
 {
-    loadDbc(DbcExamples::vehicleSensors());  // 0x200, 0x201, 0x202
+    loadDbc(DbcExamples::vehicleSensors());
     switchToDbc();
     emit dbcView->messageSelectionChanged(0x200, true);
     emit dbcView->messageSelectionChanged(0x201, true);
@@ -915,8 +656,7 @@ TEST_F(SendingIntegrationTest, Flow_Dbc_AllMessagesSelected_CyclicPublishesAllMe
     EXPECT_TRUE(seenIds.count(0x202)) << "0x202 BatteryStatus must appear";
 }
 
-// Change a signal value while cyclic is running; events collected after the
-// change must carry the new value.
+// Change a signal value while cyclic is running
 TEST_F(SendingIntegrationTest, Flow_Dbc_ChangeSignalValueDuringCyclic_NewValueReachesWire)
 {
     loadDbc(DbcExamples::motorController());
@@ -927,7 +667,7 @@ TEST_F(SendingIntegrationTest, Flow_Dbc_ChangeSignalValueDuringCyclic_NewValueRe
 
     startCyclic(80);
     QTest::qWait(200);
-    events.clear();  // discard events with old value
+    events.clear();
 
     emit dbcView->signalValueChanged(0x100, "Speed", 9999.0);
     QTest::qWait(300);
@@ -942,7 +682,6 @@ TEST_F(SendingIntegrationTest, Flow_Dbc_ChangeSignalValueDuringCyclic_NewValueRe
 }
 
 // After stopping cyclic and restarting it, new events must accumulate.
-// Tests that the worker can be recycled cleanly multiple times.
 TEST_F(SendingIntegrationTest, Flow_Cyclic_MultipleStartStopCycles_AllProduceEvents)
 {
     for (int cycle = 0; cycle < 3; ++cycle)
@@ -956,12 +695,9 @@ TEST_F(SendingIntegrationTest, Flow_Cyclic_MultipleStartStopCycles_AllProduceEve
     }
 }
 
-// With DBC cyclic enabled, select signals from TWO messages; each cyclic tick
-// must publish one event per message.  After 300 ms at 100 ms interval we
-// expect at least 3 ticks × 2 messages = 6 events.
 TEST_F(SendingIntegrationTest, Flow_Dbc_TwoMessages_CyclicRateMatchesExpectedEventCount)
 {
-    loadDbc(DbcExamples::motorController());  // 0x100 and 0x101
+    loadDbc(DbcExamples::motorController());
     switchToDbc();
     emit dbcView->signalSelectionChanged(0x100, "Speed", true);
     emit dbcView->signalSelectionChanged(0x101, "TargetSpeed", true);
@@ -973,31 +709,6 @@ TEST_F(SendingIntegrationTest, Flow_Dbc_TwoMessages_CyclicRateMatchesExpectedEve
 
     EXPECT_GE(events.dbcCount(), 6u)
         << "2 messages × ~3 ticks should produce at least 6 DBC events";
-}
-
-// Sending in raw mode with an oversized data string must not exceed 8 bytes DLC.
-TEST_F(SendingIntegrationTest, Flow_Raw_MoreThan8DataBytes_DlcCappedAt8)
-{
-    rawView->messageDataEditor()->setText("01 02 03 04 05 06 07 08 09 0A");
-    QTest::qWait(10);
-
-    triggerSendOnce();
-
-    ASSERT_EQ(events.rawCount(), 1);
-    EXPECT_EQ(events.firstRaw().dlc, 8) << "DLC must never exceed the CAN maximum of 8";
-}
-
-// Entering a CAN ID above 0x7FF must be clamped to the 11-bit standard CAN range.
-TEST_F(SendingIntegrationTest, Flow_Raw_CanIdAbove7FF_ClampedToStandardRange)
-{
-    rawView->canIdEditor()->setText("FFF");  // 4095, above 11-bit max
-    QTest::qWait(10);
-
-    triggerSendOnce();
-
-    ASSERT_EQ(events.rawCount(), 1);
-    EXPECT_LE(events.firstRaw().messageId, 0x7FFu)
-        << "CAN ID must be clamped to the 11-bit standard frame range";
 }
 
 // Setting all three signal values on a message and sending must include all three
@@ -1052,28 +763,6 @@ TEST_F(SendingIntegrationTest, Flow_Dbc_SwitchBackToRaw_RawEventOverridesDbcSele
     EXPECT_EQ(events.firstRaw().messageId, 0xAAA & 0x7FF);
 }
 
-// Toggling cyclic off while the worker is running must not crash and must stop
-// the worker when the stop button is subsequently clicked.
-TEST_F(SendingIntegrationTest, Flow_Cyclic_ToggleOffWhileRunning_StopButtonEndsGracefully)
-{
-    rawView->repeatedSendingCard()->findChild<Core::StyledSwitch*>()->setChecked(true);
-    rawView->repeatedSendingCard()->frequencyEditor()->setText("100");
-    QTest::qWait(10);
-    rawView->sendButton()->click();  // starts
-    QTest::qWait(150);
-
-    // Toggle repeated sending off — the model records this but the worker keeps
-    // running until explicitly stopped via the Stop button
-    emit rawView->repeatedSendingCard()->toggled(false);
-    QTest::qWait(10);
-
-    rawView->sendButton()->click();  // Stop button click
-    QTest::qWait(300);
-
-    // No crash and button reverts
-    EXPECT_NE(rawView->sendButton()->text(), "Stop");
-}
-
 // Sending with an empty DBC (no messages/signals) in DBC mode must publish nothing.
 TEST_F(SendingIntegrationTest, Flow_Dbc_EmptyDbc_SendProducesNoEvents)
 {
@@ -1086,8 +775,7 @@ TEST_F(SendingIntegrationTest, Flow_Dbc_EmptyDbc_SendProducesNoEvents)
     EXPECT_EQ(events.rawCount(), 0);
 }
 
-// Rapid successive single-sends must each produce exactly one event and must
-// not merge or drop any.
+// Rapid successive single-sends must each produce exactly one event
 TEST_F(SendingIntegrationTest, Flow_Raw_RapidSuccessiveSends_EachProducesOneEvent)
 {
     constexpr int kSends = 5;

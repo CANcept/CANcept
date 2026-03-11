@@ -175,6 +175,11 @@ void AppRootView::setSettingsModel(SettingsModel* settingsModel)
 
 void AppRootView::handleTabChanged(const int index)
 {
+    if (index < 0)
+    {
+        return;
+    }
+
     LOG_INF("AppRoot", "Switching tab...")
     if (m_settingsActive)
     {
@@ -182,7 +187,7 @@ void AppRootView::handleTabChanged(const int index)
         updateSettingsButtonStyle(false);
     }
 
-    if (index >= 0 && index < m_contentStack->count() - 1)
+    if (index < m_contentStack->count() - 1)
     {
         m_lastTabIndex = index;
         m_contentStack->setCurrentIndex(index);

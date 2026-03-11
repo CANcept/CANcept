@@ -57,7 +57,7 @@ class DbcComponent : public Core::ITabComponent
      * Cleans up component resources. Event subscriptions are
      * released in onStop().
      */
-    ~DbcComponent() override = default;
+    ~DbcComponent() override;
 
     // --- Core::ITabComponent Interface Implementation ---
 
