@@ -5,8 +5,8 @@
 
 #include "external/googletest/googletest/include/gtest/gtest.h"
 #include "external/googletest/googletest/include/gtest/internal/gtest-death-test-internal.h"
-#include "tests/helpers/dbc_examples.hpp"
 #include "monitoring/model/monitoring_model.hpp"
+#include "tests/helpers/dbc_examples.hpp"
 
 using ::testing::_;
 using namespace Monitoring;
