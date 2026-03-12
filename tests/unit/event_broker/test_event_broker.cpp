@@ -14,7 +14,7 @@ struct DeliveryScenario {
     std::string name;
     int subscriberCount;
     int publishCount;
-    int releasedCount;  // connections released before publishing
+    int releasedCount;
     int expectedCalls;
     std::function<Core::Connection(EventBroker::EventBroker&, std::function<void()>)>
         makeSubscription;
@@ -94,10 +94,6 @@ INSTANTIATE_TEST_SUITE_P(
                          [](EventBroker::EventBroker& b) { b.publish(EmptyEvent{}); }}),
     [](const ::testing::TestParamInfo<DeliveryScenario>& info) { return info.param.name; });
 
-/**
- * @brief Each scenario uses an IIFE to create shared state (via shared_ptr) captured
- * by all three lambdas, so subscribe, publish, and verify refer to the same storage.
- */
 struct ContentScenario {
     std::string name;
     std::function<Core::Connection(EventBroker::EventBroker&)> subscribe;

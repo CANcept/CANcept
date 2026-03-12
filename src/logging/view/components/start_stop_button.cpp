@@ -108,8 +108,6 @@ bool StartStopButton::event(QEvent* event)
     if (event->type() == Core::StyleEvent::EventType)
     {
         applyStyle();
-        // Defer icon re-tint to avoid re-entering style processing
-        // (style()->polish inside setRecordingState must not run during a StyleEvent)
         QTimer::singleShot(0, this, [this]() { setRecordingState(m_isRecording); });
         return true;
     }

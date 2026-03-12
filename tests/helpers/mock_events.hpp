@@ -8,9 +8,6 @@ namespace TestHelpers {
 
 /**
  * @brief Minimal event types for testing the EventBroker in isolation.
- *
- * These are not application events — they cover a range of payload shapes
- * to verify that the broker correctly round-trips different data types.
  */
 
 /** Single integer payload — minimal viable event. */
@@ -32,11 +29,6 @@ struct MultiFieldEvent {
 
 /** Zero-byte payload — marker / signal event with no data. */
 struct EmptyEvent {
-};
-
-/** Monotonic counter — lets tests verify delivery count and ordering. */
-struct CounterEvent {
-    int sequence{0};
 };
 
 /** Large heap payload — ensures bulky data is not sliced or truncated. */
