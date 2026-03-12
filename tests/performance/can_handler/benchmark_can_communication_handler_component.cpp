@@ -4,6 +4,7 @@
 #include "can_handler/can_communication_handler/can_communication_handler.hpp"
 #include "core/interface/i_event_broker.hpp"
 #include "event_broker/event_broker.hpp"
+#include "logging/logging_component.hpp"
 #include "monitoring/monitoring_component.hpp"
 #include "tests/helpers/dbc_examples.hpp"
 #include "tests/helpers/mock_event_broker.hpp"
@@ -122,31 +123,42 @@ static void BM_CanCommunicationHandler_Receive_ParseMessage(benchmark::State& st
             "Cannot run raw message benchmark without root permissions to create vcan device.");
         return;
     }
-    Monitoring::MonitoringModel monitoringModel;
-    Core::Connection monitoringDbcConn =
-        benchmarkObject.eventBroker->subscribe<Core::DBCParsedEvent>(
-            [&monitoringModel](const Core::DBCParsedEvent& event) {
-                monitoringModel.onDbcChange(event.config);
-            });
-    Core::Connection monitoringMessageConn =
-        benchmarkObject.eventBroker->subscribe<Core::ReceivedCanDbcEvent>(
-            [&monitoringModel](const Core::ReceivedCanDbcEvent& event) {
-                monitoringModel.onIncomingDbcFrame(event.canMessage);
-            });
-    benchmarkObject.eventBroker->publish(
-        Core::DBCParsedEvent(TestHelpers::DbcExamples::longDbc(), ""));
+
+    benchmarkObject.eventBroker->publish(Core::AppStoppedEvent{});
+    auto dbc = TestHelpers::DbcExamples::manySignalMessage();
+
+    auto monitoringComponent =
+        std::make_unique<Monitoring::MonitoringComponent>(*benchmarkObject.eventBroker);
+
+    auto loggingComponent =
+        std::make_unique<Logging::LoggingComponent>(*benchmarkObject.eventBroker);
+
+    benchmarkObject.eventBroker->publish(Core::AppStartedEvent{});
+
+    benchmarkObject.eventBroker->publish(Core::DBCParsedEvent(dbc, ""));
+
+    std::map<uint32_t, QStringList> selectedSignals = {};
+    QStringList signalList = {};
+    for (auto signal : dbc.messageDefinitions.front().signalDescriptions)
+    {
+        signalList.append(QString().fromStdString(signal.signalName));
+    }
+    selectedSignals[(dbc.messageDefinitions.front().messageId)] = signalList;
+    emit loggingComponent->getView()->startRequested(Logging::DBC_BASED, {selectedSignals});
+
     static int messageCount = 0;
     Core::Connection messageCountConn =
         benchmarkObject.eventBroker->subscribe<Core::ReceivedCanDbcEvent>(
             [](const Core::ReceivedCanDbcEvent& event) { messageCount++; });
     constexpr Core::RawCanMessage rawMessage = {.data = {'1', '2', '3', '4', '5', '6', '7', '8'},
-                                                .messageId = 100};
+                                                .messageId = 0x100};
     const Core::SendCanMessageRawEvent sendEvent(rawMessage);
     const int MESSAGE_COUNT = 100;
     for (auto _ : state)
     {
         messageCount = 0;
         state.PauseTiming();
+        auto start = std::chrono::high_resolution_clock::now();
         int i = 0;
         for (; i < MESSAGE_COUNT; i++)
         {
@@ -165,11 +177,31 @@ static void BM_CanCommunicationHandler_Receive_ParseMessage(benchmark::State& st
         {
             while (messageCount == 0)
             {
+                if (std::chrono::duration_cast<std::chrono::nanoseconds>(
+                        std::chrono::high_resolution_clock::now().time_since_epoch())
+                        .count() >
+                    (std::chrono::duration_cast<std::chrono::nanoseconds>(start.time_since_epoch())
+                         .count() +
+                     2000000000LL))
+                {
+                    std::cout << "Error, received no message" << std::endl;
+                    return;
+                }
             }
             state.ResumeTiming();
         }
         while (messageCount < MESSAGE_COUNT)
         {
+            if (std::chrono::duration_cast<std::chrono::nanoseconds>(
+                    std::chrono::high_resolution_clock::now().time_since_epoch())
+                    .count() >
+                (std::chrono::duration_cast<std::chrono::nanoseconds>(start.time_since_epoch())
+                     .count() +
+                 2000000000LL))
+            {
+                std::cout << "Error, received no message" << std::endl;
+                return;
+            }
         }
     }
 }
