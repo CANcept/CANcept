@@ -58,7 +58,6 @@ void GraphListView::applyStyle()
     m_layout->setContentsMargins(0, 0, 0, 0);
     m_layout->setSpacing(spacing.spacingSm);
     m_layout->setAlignment(Qt::AlignTop);
-    
     // Apply vertical scrollbar style
     if (m_scrollArea->verticalScrollBar())
         m_scrollArea->verticalScrollBar()->setStyleSheet(Style::Common::verticalScrollBar());
