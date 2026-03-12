@@ -9,6 +9,7 @@
 #include <core/event/dbc_event.hpp>
 #include <core/macro/console_logging.hpp>
 #include <core/macro/theme.hpp>
+#include <ranges>
 #include <set>
 
 #include "constants.hpp"
@@ -58,10 +59,7 @@ LoggingComponent::LoggingComponent(Core::IEventBroker& broker)
     connect(m_delegate.get(), &LoggingDelegate::detailClicked, this,
             &LoggingComponent::onDetailRequested);
 
-    // Message selection dialog
-    m_selectionDialog = std::make_unique<MessageSelectionDialog>(m_view.get());
-
-    // View → Component
+    // View -> Component
     connect(m_view.get(), &LoggingView::startRequested, this, &LoggingComponent::startLogging);
     connect(m_view.get(), &LoggingView::stopRequested, this, &LoggingComponent::stopLogging);
     connect(m_view.get(), &LoggingView::detailRequested, this,
@@ -78,9 +76,11 @@ LoggingComponent::LoggingComponent(Core::IEventBroker& broker)
         }
     });
 
-    // Component → Model bridge (DBC config updates only)
+    // Component -> Model bridge (DBC config updates only)
     connect(this, &LoggingComponent::dbcConfigurationChanged, m_model.get(),
             &LoggingModel::updateDbcConfig);
+    connect(this, &LoggingComponent::dbcConfigurationChanged, m_view.get(),
+            &LoggingView::dbcConfigChanged);
 }
 
 LoggingComponent::~LoggingComponent() = default;
@@ -96,13 +96,8 @@ auto LoggingComponent::getView() -> QWidget*
 void LoggingComponent::onStart()
 {
     // Listen for successful DBC parsing
-    m_parseSuccessConn =
-        m_eventBroker.subscribe<Core::DBCParsedEvent>([this](const Core::DBCParsedEvent& event) {
-            emit dbcConfigurationChanged(event.config);
-
-            // Update the message selection dialog with the new DBC config
-            m_selectionDialog->setDbcConfig(event.config);
-        });
+    m_parseSuccessConn = m_eventBroker.subscribe<Core::DBCParsedEvent>(
+        [this](const Core::DBCParsedEvent& event) { emit dbcConfigurationChanged(event.config); });
 
     // Listen for DBC parse errors
     m_parseErrorConn = m_eventBroker.subscribe<Core::DBCParseErrorEvent>(
@@ -129,28 +124,17 @@ void LoggingComponent::onStop()
 }
 
 // Initiates a new logging session with user-selected signals
-void LoggingComponent::startLogging()
+void LoggingComponent::startLogging(LogSessionType logSessionType,
+                                    const std::map<uint32_t, QStringList>& selectedSignals)
 {
-    if (m_model->isRecording())
-    {
-        return;
-    }
-
-    // Show message selection dialog
-    if (m_selectionDialog->exec() != QDialog::Accepted)
-    {
-        return;  // User cancelled
-    }
-    switch (m_selectionDialog->getSelectedLogSessionType())
+    switch (logSessionType)
     {
         case DBC_BASED: {
             // DBC based logging
 
             int selectedSignalsCount = 0;
             std::map<uint16_t, std::pair<int, int>> signalsBeforeAfterMessage = {};
-            std::map<uint32_t, QStringList> selectedSignals =
-                m_selectionDialog->getSelectedSignals();
-            for (const auto& [msgId, signalList] : selectedSignals)
+            for (const auto& signalList : selectedSignals | std::views::values)
             {
                 selectedSignalsCount += signalList.size();
             }
@@ -188,58 +172,13 @@ void LoggingComponent::startLogging()
             // Start timer and elapsed time tracking
             m_elapsedTimer.start();
             m_view->updateTimer(0);
-            m_timer->start();  // Starts with 100ms interval set in constructor
+            m_timer->start();
 
-            // Subscribe to decoded DBC messages
             m_dbcMsgConn = m_eventBroker.subscribe<Core::ReceivedCanDbcEvent>(
                 [this](const Core::ReceivedCanDbcEvent& event) {
-                    // Fast path: early return if not recording (thread-safe atomic)
-                    if (!m_isRecording.load(std::memory_order_acquire) || !m_sessionLogger)
-                        [[unlikely]]
-                    {
-                        return;
-                    }
-                    auto* logSession =
-                        m_model->getSession(QString::fromStdString(m_currentSessionId));
-                    if (!logSession) [[unlikely]]
-                    {
-                        return;
-                    }
-                    if (logSession->type != DBC_BASED ||
-                        !logSession->selectedSignals.contains(event.canMessage.messageId))
-                    {
-                        return;
-                    }
-
-                    const auto& msg = event.canMessage;
-
-                    std::string messageLine = "";
-                    messageLine += fmt::format("{},", msg.receiveTime.count());
-                    messageLine.append(
-                        logSession->signalsBeforeAfterMessage.at(msg.messageId).first, ',');
-                    for (const auto& signal : logSession->selectedSignals.at(msg.messageId))
-                    {
-                        bool containsValue = false;
-                        for (const auto& [name, value] : msg.signalValues)
-                        {
-                            if (signal.toStdString() == name)
-                            {
-                                messageLine += fmt::format("{:.3f},", value);
-                                containsValue = true;
-                                break;
-                            }
-                        }
-                        if (!containsValue)
-                        {
-                            messageLine += ",";
-                        }
-                    }
-
-                    messageLine.append(
-                        logSession->signalsBeforeAfterMessage.at(msg.messageId).second, ',');
-                    messageLine.pop_back();
-                    m_sessionLogger->info(messageLine.c_str());
+                    m_model->onDbcMessageReceived(event.canMessage);
                 });
+
             break;
         }
         case RAW: {
@@ -259,40 +198,13 @@ void LoggingComponent::startLogging()
             // Start timer and elapsed time tracking
             m_elapsedTimer.start();
             m_view->updateTimer(0);
-            m_timer->start();  // Starts with 100ms interval set in constructor
+            m_timer->start();
 
-            // Subscribe to decoded DBC messages
-            m_dbcMsgConn = m_eventBroker.subscribe<Core::ReceivedCanRawEvent>(
+            m_rawMsgConn = m_eventBroker.subscribe<Core::ReceivedCanRawEvent>(
                 [this](const Core::ReceivedCanRawEvent& event) {
-                    // Fast path: early return if not recording (thread-safe atomic)
-                    if (!m_isRecording.load(std::memory_order_acquire) || !m_sessionLogger)
-                        [[unlikely]]
-                    {
-                        return;
-                    }
-                    auto* logSession =
-                        m_model->getSession(QString::fromStdString(m_currentSessionId));
-                    if (!logSession) [[unlikely]]
-                    {
-                        return;
-                    }
-                    if (logSession->type != RAW)
-                    {
-                        return;
-                    }
-
-                    const auto& msg = event.canMessage;
-
-                    std::string messageLine = "";
-                    messageLine += fmt::format("{},", msg.receiveTime.count());
-                    messageLine += fmt::format("{:x},", msg.messageId);
-                    for (uint8_t data : msg.data)
-                    {
-                        messageLine += fmt::format("{:x} ", data);
-                    }
-                    messageLine.pop_back();
-                    m_sessionLogger->info(messageLine.c_str());
+                    m_model->onRawMessageReceived(event.canMessage);
                 });
+
             break;
         }
         default: {
