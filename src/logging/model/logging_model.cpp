@@ -297,19 +297,20 @@ void LoggingModel::startNewRawLogsSession()
 // Stops the currently active logging session
 void LoggingModel::stopActiveSession()
 {
-    std::scoped_lock<std::mutex> lock(m_messageReceiveMutex);
-
-    if (!isRecording())
     {
-        return;
-    }
+        std::scoped_lock<std::mutex> lock(m_messageReceiveMutex);
 
-    m_sessions[m_activeSessionIndex].isRecording = false;
+        if (!isRecording())
+        {
+            return;
+        }
+
+        m_sessions[m_activeSessionIndex].isRecording = false;
+        m_activeSessionIndex = -1;
+    }
     updateActiveDuration();
 
-    m_activeSessionIndex = -1;
-
-    emit dataChanged(index(0, 0), index(rowCount() - 1, columnCount() - 1));
+    // emit dataChanged(index(0, 0), index(rowCount() - 1, columnCount() - 1));
 }
 
 // Updates the elapsed duration of the active logging session
