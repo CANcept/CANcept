@@ -9,6 +9,7 @@
 
 #include "core/dto/can_dto.hpp"
 #include "core/dto/dbc_dto.hpp"
+#include "spdlog/spdlog.h"
 
 namespace Logging {
 
@@ -28,6 +29,8 @@ struct LogSession {
     std::map<uint32_t, QStringList> selectedSignals;  // Map of message ID to selected signal names
                                                       // (for filtering during logging)
     std::map<uint16_t, std::pair<int, int>> signalsBeforeAfterMessage;
+
+    std::shared_ptr<spdlog::logger> logger;
 };
 
 /**
