@@ -52,12 +52,12 @@ void GraphListView::applyStyle()
     m_scrollArea->setWidgetResizable(true);
     m_scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     m_scrollArea->setFrameShape(QFrame::NoFrame);
+    m_scrollArea->setAlignment(Qt::AlignTop);
 
     if (!m_layout) return;
     m_layout->setContentsMargins(0, 0, 0, 0);
     m_layout->setSpacing(spacing.spacingSm);
-    m_layout->addStretch();
-
+    m_layout->setAlignment(Qt::AlignTop);
     // Apply vertical scrollbar style
     if (m_scrollArea->verticalScrollBar())
         m_scrollArea->verticalScrollBar()->setStyleSheet(Style::Common::verticalScrollBar());
@@ -95,6 +95,7 @@ void GraphListView::addGraph(const QString& messageId, const QString& signalName
     auto* graph = new SignalGraph(messageId, signalName, this);
     graph->setContainer(new Core::CardWidget(QString("0x%1:  %2").arg(messageId, signalName),
                                              QString(), Constants::SIGNAL_GRAPH_ICON_PATH, this));
+    graph->getContainer()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     graph->getContainer()->contentLayout()->addWidget(graph);
 
     m_signal_graphs.append(graph);
