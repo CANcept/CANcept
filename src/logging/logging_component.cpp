@@ -86,7 +86,7 @@ LoggingComponent::LoggingComponent(Core::IEventBroker& broker)
 LoggingComponent::~LoggingComponent() = default;
 
 // Returns the main logging view widget
-auto LoggingComponent::getView() -> QWidget*
+auto LoggingComponent::getView() -> LoggingView*
 {
     // return logging_view
     return m_view.get();

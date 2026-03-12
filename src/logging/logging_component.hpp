@@ -39,7 +39,7 @@ class LoggingComponent final : public Core::ITabComponent
     explicit LoggingComponent(Core::IEventBroker& broker);
     ~LoggingComponent() override;
 
-    auto getView() -> QWidget* override;
+    auto getView() -> LoggingView* override;
 
     void onStart() override;
     void onStop() override;
