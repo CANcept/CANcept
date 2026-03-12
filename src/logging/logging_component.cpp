@@ -111,15 +111,6 @@ void LoggingComponent::onStart()
                 this, [this]() { checkDeviceReadiness(); }, Qt::QueuedConnection);
         });
 
-    m_dbcMsgConn = m_eventBroker.subscribe<Core::ReceivedCanDbcEvent>(
-        [this](const Core::ReceivedCanDbcEvent& event) {
-            m_model->onDbcMessageReceived(event.canMessage);
-        });
-
-    m_rawMsgConn = m_eventBroker.subscribe<Core::ReceivedCanRawEvent>(
-        [this](const Core::ReceivedCanRawEvent& event) {
-            m_model->onRawMessageReceived(event.canMessage);
-        });
     checkDeviceReadiness();
 }
 
@@ -181,7 +172,12 @@ void LoggingComponent::startLogging(LogSessionType logSessionType,
             // Start timer and elapsed time tracking
             m_elapsedTimer.start();
             m_view->updateTimer(0);
-            m_timer->start();  // Starts with 100ms interval set in constructor
+            m_timer->start();
+
+            m_dbcMsgConn = m_eventBroker.subscribe<Core::ReceivedCanDbcEvent>(
+                [this](const Core::ReceivedCanDbcEvent& event) {
+                    m_model->onDbcMessageReceived(event.canMessage);
+                });
 
             break;
         }
@@ -202,7 +198,12 @@ void LoggingComponent::startLogging(LogSessionType logSessionType,
             // Start timer and elapsed time tracking
             m_elapsedTimer.start();
             m_view->updateTimer(0);
-            m_timer->start();  // Starts with 100ms interval set in constructor
+            m_timer->start();
+
+            m_rawMsgConn = m_eventBroker.subscribe<Core::ReceivedCanRawEvent>(
+                [this](const Core::ReceivedCanRawEvent& event) {
+                    m_model->onRawMessageReceived(event.canMessage);
+                });
 
             break;
         }

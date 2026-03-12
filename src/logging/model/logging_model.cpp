@@ -238,7 +238,8 @@ QStringList LoggingModel::getSelectedSignalsForMessage(uint16_t messageId) const
 // Updates the stored DBC configuration reference
 void LoggingModel::updateDbcConfig(const Core::DbcConfig& config)
 {
-    m_currentDbc = config;  // Store a copy in std::optional
+    stopActiveSession();
+    m_currentDbc = config;
 }
 
 // Creates and starts a new logging session with selected signals
@@ -246,6 +247,8 @@ void LoggingModel::startNewDbcLogSession(
     const std::map<uint32_t, QStringList>& selectedSignals,
     const std::map<uint16_t, std::pair<int, int>>& signalsBeforeAfterMessage)
 {
+    std::scoped_lock<std::mutex> lock(m_messageReceiveMutex);
+
     if (isRecording())
     {
         stopActiveSession();
@@ -268,6 +271,8 @@ void LoggingModel::startNewDbcLogSession(
 
 void LoggingModel::startNewRawLogsSession()
 {
+    std::scoped_lock<std::mutex> lock(m_messageReceiveMutex);
+
     if (isRecording())
     {
         stopActiveSession();
@@ -288,6 +293,8 @@ void LoggingModel::startNewRawLogsSession()
 // Stops the currently active logging session
 void LoggingModel::stopActiveSession()
 {
+    std::scoped_lock<std::mutex> lock(m_messageReceiveMutex);
+
     if (!isRecording())
     {
         return;
@@ -304,6 +311,8 @@ void LoggingModel::stopActiveSession()
 // Updates the elapsed duration of the active logging session
 void LoggingModel::updateActiveDuration()
 {
+    std::scoped_lock<std::mutex> lock(m_messageReceiveMutex);
+
     if (!isRecording())
     {
         return;
@@ -324,6 +333,8 @@ void LoggingModel::updateActiveDuration()
 
 void LoggingModel::onDbcMessageReceived(const Core::DbcCanMessage& message)
 {
+    std::scoped_lock<std::mutex> lock(m_messageReceiveMutex);
+
     if (!isRecording() || m_activeSessionIndex < 0 ||
         m_activeSessionIndex >= static_cast<int>(m_sessions.size()) ||
         m_sessions[m_activeSessionIndex].type != DBC_BASED)
@@ -372,6 +383,8 @@ void LoggingModel::onDbcMessageReceived(const Core::DbcCanMessage& message)
 
 void LoggingModel::onRawMessageReceived(const Core::RawCanMessage& message)
 {
+    std::scoped_lock<std::mutex> lock(m_messageReceiveMutex);
+
     if (!isRecording() || m_activeSessionIndex < 0 ||
         m_activeSessionIndex >= static_cast<int>(m_sessions.size()) ||
         m_sessions[m_activeSessionIndex].type != RAW)

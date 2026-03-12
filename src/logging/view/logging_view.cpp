@@ -9,7 +9,6 @@
 #include "core/macro/theme.hpp"
 #include "core/theme/style_event.hpp"
 #include "core/widgets/tinted_icon_label.hpp"
-#include "logging/logging_component.hpp"
 
 namespace Logging {
 

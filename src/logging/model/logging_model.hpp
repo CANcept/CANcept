@@ -146,6 +146,7 @@ class LoggingModel final : public QAbstractTableModel
 
     std::vector<LogSession> m_sessions;
     int m_activeSessionIndex = -1;
+    std::mutex m_messageReceiveMutex;
 };
 
 }  // namespace Logging
