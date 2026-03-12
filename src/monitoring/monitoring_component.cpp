@@ -86,12 +86,6 @@ void MonitoringComponent::onStop()
     m_canDriverChangeConn = {};
 }
 
-void MonitoringComponent::onDeviceChanged(const std::string& deviceName) const
-{
-    LOG_INF("MonitoringComponent", "CAN device changed to: {}", deviceName);
-    m_eventBroker.publish<Core::CanDriverChangeEvent>(Core::CanDriverChangeEvent(deviceName));
-}
-
 void MonitoringComponent::checkDeviceReadiness() const
 {
     bool isReady = false;

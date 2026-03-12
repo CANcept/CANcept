@@ -287,6 +287,7 @@ void MonitoringModel::onDbcChange(const Core::DbcConfig& config)
 {
     m_currentDbc = config;
     messageValues = std::make_unique<std::array<MessageTimestamp, 2048>>();
+    int row = 0;
     for (auto& messageDefinition : m_currentDbc->messageDefinitions)
     {
         std::vector<QList<double>> signalValues;
@@ -302,6 +303,7 @@ void MonitoringModel::onDbcChange(const Core::DbcConfig& config)
         }
         messageValues->at(messageDefinition.messageId) = MessageTimestamp{
             .timestamps = {}, .signalValues = signalValues, .signalNames = signalNames};
+        row++;
     }
 }
 
