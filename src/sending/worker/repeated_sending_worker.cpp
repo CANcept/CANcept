@@ -110,16 +110,15 @@ void RepeatedSendingWorker::run()
             }
         }
 
-        const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
-                                 std::chrono::steady_clock::now() - iterationStart)
-                                 .count();
-        const int intervalMs = m_intervalMs.load();
-        const int remainingMs = static_cast<int>(
-            std::max<long long>(0LL, static_cast<long long>(intervalMs) - elapsed));
+        const long long intervalNs = static_cast<long long>(m_intervalMs.load()) * 1'000'000LL;
+        const auto now = std::chrono::steady_clock::now();
+        const auto elapsedNs =
+            std::chrono::duration_cast<std::chrono::nanoseconds>(now - iterationStart).count();
 
-        if (remainingMs > 0 && !m_shouldStop.load())
+        if (const long long remainingNs = std::max(0LL, intervalNs - elapsedNs);
+            remainingNs > 0 && !m_shouldStop.load())
         {
-            msleep(remainingMs);
+            std::this_thread::sleep_for(std::chrono::nanoseconds(remainingNs));
         }
     }
 

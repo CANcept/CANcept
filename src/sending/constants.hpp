@@ -205,7 +205,7 @@ inline constexpr int REPEATED_SENDING_MAX_FREQUENCY = 10000;
 
 /** @brief Template for the repeated sending input title */
 inline const QString REPEATED_SENDING_TRANSMISSION_INPUT_TITLE =
-    QString("Transmission Interval (0 - %1 ms)").arg(MAX_CYCLE_INTERVAL_MS);
+    QString("Transmission Interval (1 - %1 ms)").arg(MAX_CYCLE_INTERVAL_MS);
 
 /** @brief Time to wait (in ms) for the thread to stop gracefully before forcing termination. */
 inline constexpr int THREAD_TERMINATION_WAIT_MS = 5000;

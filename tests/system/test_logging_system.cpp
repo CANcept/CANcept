@@ -1,6 +1,8 @@
 #include <gtest/gtest.h>
 #include <unistd.h>
 
+#include <QDir>
+#include <QFile>
 #include <QSignalSpy>
 #include <QTest>
 #include <chrono>
@@ -13,26 +15,10 @@
 #include "core/event/dbc_event.hpp"
 #include "core/event/lifecycle_event.hpp"
 #include "event_broker/event_broker.hpp"
-#include "logging/model/logging_model.hpp"
-#include "monitoring/monitoring_component.hpp"
+#include "logging/logging_component.hpp"
+#include "tests/helpers/logging_system_helpers.hpp"
 #include "tests/helpers/socket_can_device_manager.hpp"
 #include "tests/helpers/temp_dbc_file.hpp"
-
-using namespace Logging;
-
-namespace {
-
-auto makeSelectedSignals() -> std::map<uint32_t, QStringList>
-{
-    return {{TestHelpers::kTestMsgId, {TestHelpers::kTestSignalName}}};
-}
-
-auto makeBeforeAfter() -> std::map<uint16_t, std::pair<int, int>>
-{
-    return {{static_cast<uint16_t>(TestHelpers::kTestMsgId), {0, 0}}};
-}
-
-}  // namespace
 
 class CanLoggingSystemTest : public ::testing::Test
 {
@@ -58,10 +44,10 @@ class CanLoggingSystemTest : public ::testing::Test
         broker = std::make_unique<EventBroker::EventBroker>();
         canHandler = std::make_unique<CanHandler::CanCommunicationHandler>(*broker);
         dbcHandler = std::make_unique<CanHandler::DbcHandler>(*broker);
-        loggingModel = std::make_unique<LoggingModel>();
-        monitoring = std::make_unique<Monitoring::MonitoringComponent>(*broker);
+        logging = std::make_unique<Logging::LoggingComponent>(*broker);
 
         broker->publish<Core::AppStartedEvent>({});
+        QTest::qWait(100);
     }
 
     void TearDown() override
@@ -69,10 +55,10 @@ class CanLoggingSystemTest : public ::testing::Test
         if (broker)
         {
             broker->publish<Core::AppStoppedEvent>({});
+            QTest::qWait(100);
         }
 
-        monitoring.reset();
-        loggingModel.reset();
+        logging.reset();
         dbcHandler.reset();
         canHandler.reset();
         broker.reset();
@@ -100,31 +86,18 @@ class CanLoggingSystemTest : public ::testing::Test
     std::unique_ptr<EventBroker::EventBroker> broker;
     std::unique_ptr<CanHandler::CanCommunicationHandler> canHandler;
     std::unique_ptr<CanHandler::DbcHandler> dbcHandler;
-    std::unique_ptr<LoggingModel> loggingModel;
-    std::unique_ptr<Monitoring::MonitoringComponent> monitoring;
+    std::unique_ptr<Logging::LoggingComponent> logging;
     bool vcanCreated = false;
 };
 
-TEST_F(CanLoggingSystemTest, SendVcan_RawEventFires_AndActiveSessionCapturesIt)
+TEST_F(CanLoggingSystemTest, StartRawLogging_SendVcan_LogFileContainsMessage)
 {
-    int rawEventCount = 0;
-    auto rawConn = broker->subscribe<Core::ReceivedCanRawEvent>(
-        [&](const Core::ReceivedCanRawEvent&) { ++rawEventCount; });
-
-    int capturedInSession = 0;
-    auto sessionConn =
-        broker->subscribe<Core::ReceivedCanRawEvent>([&](const Core::ReceivedCanRawEvent&) {
-            if (const auto* session = loggingModel->getSession(loggingModel->getCurrentSessionId());
-                session && session->type == RAW && session->isRecording)
-            {
-                ++capturedInSession;
-            }
-        });
-
     connectVcan();
 
-    loggingModel->startNewRawLogsSession();
-    ASSERT_TRUE(loggingModel->isRecording());
+    const qint64 testStart = QDateTime::currentMSecsSinceEpoch();
+    TestHelpers::acceptDialogAsRaw();
+    QMetaObject::invokeMethod(logging.get(), "startLogging");
+    QTest::qWait(500);
 
     Core::RawCanMessage msg;
     msg.messageId = 0x42;
@@ -136,51 +109,61 @@ TEST_F(CanLoggingSystemTest, SendVcan_RawEventFires_AndActiveSessionCapturesIt)
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     QTest::qWait(50);
 
-    EXPECT_GT(rawEventCount, 0) << "ReceivedCanRawEvent was never published";
-    EXPECT_GT(capturedInSession, 0) << "Active RAW session did not receive the event";
+    QMetaObject::invokeMethod(logging.get(), "stopLogging");
+    QTest::qWait(300);
+
+    const QString logFile = TestHelpers::findLogFileCreatedAfter(testStart);
+    ASSERT_FALSE(logFile.isEmpty()) << "No log file was created during the session";
+
+    QFile file(logFile);
+    ASSERT_TRUE(file.open(QIODevice::ReadOnly | QIODevice::Text));
+    const QString content = QString::fromUtf8(file.readAll());
+
+    EXPECT_TRUE(content.contains("Timestamp,MessageId,Data")) << "Log file missing CSV header";
+    const QStringList lines = content.trimmed().split('\n', Qt::SkipEmptyParts);
+    EXPECT_GT(lines.size(), 1) << "Log file should contain at least one data row beyond the header";
+    EXPECT_TRUE(content.contains("42")) << "Expected message ID 0x42 in log";
 }
 
-TEST_F(CanLoggingSystemTest, LoadDbcFile_SendVcan_DbcEventFires_LoggingAndMonitoringCapture)
+TEST_F(CanLoggingSystemTest, StartDbcLogging_SendVcan_LogFileContainsDecodedSignal)
 {
-    bool dbcParsed = false;
-    auto parsedConn = broker->subscribe<Core::DBCParsedEvent>(
-        [&](const Core::DBCParsedEvent&) { dbcParsed = true; });
-
     loadDbc(TestHelpers::makeTempDbcFile());
-    ASSERT_TRUE(dbcParsed) << "DBCParsedEvent not received after ParseDBCRequestEvent";
-
-    int dbcEventCount = 0;
-    auto dbcConn = broker->subscribe<Core::ReceivedCanDbcEvent>(
-        [&](const Core::ReceivedCanDbcEvent&) { ++dbcEventCount; });
-
-    int capturedInSession = 0;
-    auto sessionConn =
-        broker->subscribe<Core::ReceivedCanDbcEvent>([&](const Core::ReceivedCanDbcEvent&) {
-            if (const auto* session = loggingModel->getSession(loggingModel->getCurrentSessionId());
-                session && session->type == DBC_BASED && session->isRecording)
-            {
-                ++capturedInSession;
-            }
-        });
-
-    const QSignalSpy monitoringSpy(monitoring.get(),
-                                   &Monitoring::MonitoringComponent::dbcFrameReceived);
-
     connectVcan();
 
-    loggingModel->startNewDbcLogSession(makeSelectedSignals(), makeBeforeAfter());
-    ASSERT_TRUE(loggingModel->isRecording());
+    const qint64 testStart = QDateTime::currentMSecsSinceEpoch();
+    TestHelpers::acceptDialogAsDbc();
+    QMetaObject::invokeMethod(logging.get(), "startLogging");
+    QTest::qWait(500);
 
     Core::RawCanMessage msg;
     msg.messageId = TestHelpers::kTestMsgId;
     msg.dlc = 8;
+    msg.data.fill(0);
     msg.data[0] = 0xAB;
     broker->publish<Core::SendCanMessageRawEvent>(Core::SendCanMessageRawEvent{msg});
 
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     QTest::qWait(50);
 
-    EXPECT_GT(dbcEventCount, 0) << "ReceivedCanDbcEvent was never published";
-    EXPECT_GT(capturedInSession, 0) << "Active DBC session did not receive the event";
-    EXPECT_GT(monitoringSpy.count(), 0) << "MonitoringComponent::dbcFrameReceived not emitted";
+    QMetaObject::invokeMethod(logging.get(), "stopLogging");
+    QTest::qWait(300);
+
+    const QString logFile = TestHelpers::findLogFileCreatedAfter(testStart);
+    ASSERT_FALSE(logFile.isEmpty()) << "No log file was created during the DBC session";
+
+    QFile file(logFile);
+    ASSERT_TRUE(file.open(QIODevice::ReadOnly | QIODevice::Text));
+    const QString content = QString::fromUtf8(file.readAll());
+
+    // Header must be: Timestamp,{MessageName}_{SignalName}_{Unit}
+    const QString expectedHeader =
+        QString("Timestamp,TestMessage_%1_units").arg(TestHelpers::kTestSignalName);
+    EXPECT_TRUE(content.contains(expectedHeader))
+        << "Log file header should be \"" << expectedHeader.toStdString() << "\"";
+
+    EXPECT_TRUE(content.contains("171.000"))
+        << "Log file should contain the decoded signal value 171.000";
+
+    const QStringList lines = content.trimmed().split('\n', Qt::SkipEmptyParts);
+    EXPECT_GT(lines.size(), 1) << "Log file should contain at least one decoded signal row";
 }

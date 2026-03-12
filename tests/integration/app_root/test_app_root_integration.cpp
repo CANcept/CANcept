@@ -88,7 +88,7 @@ class AppRootIntegrationTest : public ::testing::Test
     }
     auto settingsButton() const -> QPushButton*
     {
-        return view->findChild<QPushButton*>(QString(), Qt::FindDirectChildrenOnly);
+        return view->findChild<QPushButton*>(QString("settingsButton"), Qt::FindDirectChildrenOnly);
     }
     void selectTab(const int index) const
     {

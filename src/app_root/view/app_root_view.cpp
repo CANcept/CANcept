@@ -49,6 +49,7 @@ void AppRootView::setupUi()
     m_tabView->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
     m_settingsButton->setCursor(Qt::PointingHandCursor);
+    m_settingsButton->setObjectName("settingsButton");
     connect(m_settingsButton, &QPushButton::clicked, this, &AppRootView::onSettingsClicked);
 
     m_mainLayout->setContentsMargins(0, 0, 0, 0);

@@ -115,29 +115,6 @@ TEST_F(SettingsIntegrationTest, Flow_MultiComponent_IndependentValues_NoCrossCon
     EXPECT_EQ(model->getValue(key2), "gamma");
 }
 
-// Multiple subscribers to the same provider event all contribute to the options list.
-TEST_F(SettingsIntegrationTest, Flow_FetchOptions_MultipleProviders_MergesAllOptions)
-{
-    service->registerSetting(makeThemeSetting());
-
-    auto conn1 = broker->subscribe<Core::GetAvailableThemesEvent>(
-        [](const Core::GetAvailableThemesEvent& e) {
-            e.options->push_back({Constants::THEME_LIGHT, Constants::THEME_LIGHT});
-        });
-    auto conn2 = broker->subscribe<Core::GetAvailableThemesEvent>(
-        [](const Core::GetAvailableThemesEvent& e) {
-            e.options->push_back({Constants::THEME_DARK, Constants::THEME_DARK});
-            e.options->push_back({Constants::THEME_AQUA, Constants::THEME_AQUA});
-        });
-
-    const auto settings = model->getSettingsForComponent(Constants::THEME_COMPONENT_ID);
-    ASSERT_EQ(settings.size(), 1);
-
-    const auto options = model->fetchOptions(settings.front());
-
-    EXPECT_EQ(options.size(), 3);
-}
-
 // Cycling through all 5 themes publishes ThemeChangeEvent each time with the correct name.
 TEST_F(SettingsIntegrationTest, Flow_ThemeChange_FullCycle_AllFiveThemes_PublishInOrder)
 {

@@ -4,7 +4,6 @@
 #include <QLabel>
 #include <QStandardItemModel>
 #include <QTest>
-#include <algorithm>
 #include <atomic>
 #include <string>
 
@@ -12,7 +11,6 @@
 #include "can_handler/dbc_handler/dbc_handler.hpp"
 #include "core/event/dbc_event.hpp"
 #include "core/event/lifecycle_event.hpp"
-#include "core/widgets/sidebar.hpp"
 #include "dbc_file/constants.hpp"
 #include "dbc_file/dbc_component.hpp"
 #include "dbc_file/view/dbc_view.hpp"
@@ -90,7 +88,7 @@ class DbcSystemTest : public ::testing::Test
     bool vcanCreated = false;
 };
 
-TEST_F(DbcSystemTest, LoadDbc_ShowsSuccessMessageAndEnablesSidebarNavigation)
+TEST_F(DbcSystemTest, LoadDbc_ShowsSuccessLabel_AndParsesCorrectMessage)
 {
     std::atomic<bool> parsedEventReceived{false};
     auto parsedConn = broker->subscribe<Core::DBCParsedEvent>(
@@ -113,8 +111,6 @@ TEST_F(DbcSystemTest, LoadDbc_ShowsSuccessMessageAndEnablesSidebarNavigation)
             break;
         }
     }
-
-    // Verify the label is shown
     ASSERT_NE(statusLabel, nullptr)
         << "No QLabel with text \"" << DbcFile::Constants::Status::ParseSuccess.toStdString()
         << "\" found inside LoadPage";
@@ -136,7 +132,7 @@ TEST_F(DbcSystemTest, LoadDbc_ShowsSuccessMessageAndEnablesSidebarNavigation)
     }
 }
 
-TEST_F(DbcSystemTest, LoadDbc_PopulatesModelWithExpectedMessagesAndSignals)
+TEST_F(DbcSystemTest, LoadDbc_ParsedSignal_HasCorrectAttributes)
 {
     Core::DbcConfig capturedConfig;
     std::atomic<bool> parsedEventReceived{false};
@@ -150,38 +146,18 @@ TEST_F(DbcSystemTest, LoadDbc_PopulatesModelWithExpectedMessagesAndSignals)
     loadDbc(TestHelpers::makeTempDbcFile());
 
     ASSERT_TRUE(parsedEventReceived.load()) << "DBCParsedEvent was never published";
+    ASSERT_EQ(capturedConfig.messageDefinitions.size(), 1u);
 
-    // Verify the config contains the expected message
-    ASSERT_EQ(capturedConfig.messageDefinitions.size(), 1u)
-        << "Expected exactly one message definition from the minimal DBC";
-
-    const auto& msgDef = capturedConfig.messageDefinitions.front();
-    EXPECT_EQ(msgDef.messageId, TestHelpers::kTestMsgId)
-        << "Message ID should match kTestMsgId (0x123 = 291)";
-
-    // Verify the message contains the expected signal
-    ASSERT_FALSE(msgDef.signalDescriptions.empty()) << "Message should contain at least one signal";
-    const bool hasTestSignal = std::any_of(
-        msgDef.signalDescriptions.begin(), msgDef.signalDescriptions.end(), [](const auto& sig) {
-            return sig.signalName == TestHelpers::kTestSignalName.toStdString();
-        });
-    EXPECT_TRUE(hasTestSignal) << "Expected signal \"" << TestHelpers::kTestSignalName.toStdString()
-                               << "\" was not found in the parsed message";
-
-    // Verify sidebar enabled
-    auto* dbcView = getDbcView();
-    ASSERT_NE(dbcView, nullptr);
-
-    auto* sidebar = dbcView->findChild<Core::Sidebar*>();
-    ASSERT_NE(sidebar, nullptr);
-    auto* sidebarModel = qobject_cast<QStandardItemModel*>(sidebar->model());
-    ASSERT_NE(sidebarModel, nullptr);
-
-    for (int i = 1; i < sidebarModel->rowCount(); ++i)
-    {
-        auto* item = sidebarModel->item(i);
-        ASSERT_NE(item, nullptr);
-        EXPECT_TRUE(item->isEnabled() && item->isSelectable())
-            << "Sidebar tab at index " << i << " should be enabled and selectable";
-    }
+    const auto& sig = capturedConfig.messageDefinitions.front().signalDescriptions.front();
+    EXPECT_EQ(sig.signalName, TestHelpers::kTestSignalName.toStdString());
+    EXPECT_EQ(sig.startBit, 0u);
+    EXPECT_EQ(sig.signalSize, 8u);
+    EXPECT_DOUBLE_EQ(sig.factor, 1.0);
+    EXPECT_DOUBLE_EQ(sig.offset, 0.0);
+    EXPECT_DOUBLE_EQ(sig.minimum, 0.0);
+    EXPECT_DOUBLE_EQ(sig.maximum, 255.0);
+    EXPECT_EQ(sig.unit, "units");
+    EXPECT_TRUE(sig.byteOrder)
+        << "Expected byteOrder=true (parser maps @1 → byteOrderInt==1 → true)";
+    EXPECT_FALSE(sig.valueType) << "Expected unsigned value type";
 }

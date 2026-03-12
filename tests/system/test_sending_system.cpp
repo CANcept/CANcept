@@ -2,6 +2,7 @@
 #include <unistd.h>
 
 #include <QTest>
+#include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <thread>
@@ -16,7 +17,6 @@
 #include "core/widgets/common/styled_switch.hpp"
 #include "core/widgets/dbc_message_card.hpp"
 #include "event_broker/event_broker.hpp"
-#include "logging/model/logging_model.hpp"
 #include "sending/sending_component.hpp"
 #include "sending/view/components/repeated_sending_card.hpp"
 #include "sending/view/dbc_based_sending_subview.hpp"
@@ -24,8 +24,6 @@
 #include "sending/view/sending_view.hpp"
 #include "tests/helpers/socket_can_device_manager.hpp"
 #include "tests/helpers/temp_dbc_file.hpp"
-
-using namespace Logging;
 
 class SendingSystemTest : public ::testing::Test
 {
@@ -52,7 +50,6 @@ class SendingSystemTest : public ::testing::Test
         canHandler = std::make_unique<CanHandler::CanCommunicationHandler>(*broker);
         dbcHandler = std::make_unique<CanHandler::DbcHandler>(*broker);
         sending = std::make_unique<Sending::SendingComponent>(*broker);
-        loggingModel = std::make_unique<LoggingModel>();
 
         broker->publish<Core::AppStartedEvent>({});
         QTest::qWait(100);
@@ -67,7 +64,6 @@ class SendingSystemTest : public ::testing::Test
         }
 
         sending.reset();
-        loggingModel.reset();
         dbcHandler.reset();
         canHandler.reset();
         broker.reset();
@@ -101,34 +97,21 @@ class SendingSystemTest : public ::testing::Test
     std::unique_ptr<CanHandler::CanCommunicationHandler> canHandler;
     std::unique_ptr<CanHandler::DbcHandler> dbcHandler;
     std::unique_ptr<Sending::SendingComponent> sending;
-    std::unique_ptr<LoggingModel> loggingModel;
     bool vcanCreated = false;
 };
 
-TEST_F(SendingSystemTest, FillRawForm_ClickSend_RawEventFiresAndSessionCaptures)
+TEST_F(SendingSystemTest, FillRawForm_ClickSend_ReceivedEventHasCorrectPayload)
 {
-    int rawEventCount = 0;
+    Core::RawCanMessage receivedMsg{};
     auto rawConn = broker->subscribe<Core::ReceivedCanRawEvent>(
-        [&](const Core::ReceivedCanRawEvent&) { ++rawEventCount; });
-
-    int capturedInSession = 0;
-    auto sessionConn =
-        broker->subscribe<Core::ReceivedCanRawEvent>([&](const Core::ReceivedCanRawEvent&) {
-            if (const auto* session = loggingModel->getSession(loggingModel->getCurrentSessionId());
-                session && session->type == RAW && session->isRecording)
-            {
-                ++capturedInSession;
-            }
-        });
+        [&](const Core::ReceivedCanRawEvent& e) { receivedMsg = e.canMessage; });
 
     connectVcan();
-    loggingModel->startNewRawLogsSession();
-    ASSERT_TRUE(loggingModel->isRecording());
 
     auto* view = getSendingView();
     ASSERT_NE(view, nullptr);
 
-    auto* rawView = view->rawSubView();
+    const auto* rawView = view->rawSubView();
     rawView->canIdEditor()->setText("042");
     rawView->messageDataEditor()->setText("AB CD");
     QTest::qWait(50);
@@ -138,8 +121,9 @@ TEST_F(SendingSystemTest, FillRawForm_ClickSend_RawEventFiresAndSessionCaptures)
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     QTest::qWait(50);
 
-    EXPECT_GT(rawEventCount, 0) << "ReceivedCanRawEvent was never published";
-    EXPECT_GT(capturedInSession, 0) << "Active RAW session did not receive the event";
+    EXPECT_EQ(receivedMsg.messageId, 0x42) << "Received message ID should match the entered value";
+    EXPECT_EQ(static_cast<uint8_t>(receivedMsg.data[0]), 0xAB) << "First data byte should be 0xAB";
+    EXPECT_EQ(static_cast<uint8_t>(receivedMsg.data[1]), 0xCD) << "Second data byte should be 0xCD";
 }
 
 TEST_F(SendingSystemTest, EnableRepeatedSending_ClickSend_MultipleRawEventsFireWithinInterval)
@@ -168,28 +152,26 @@ TEST_F(SendingSystemTest, EnableRepeatedSending_ClickSend_MultipleRawEventsFireW
     repeatedCard->frequencyEditor()->setText("200");
     QTest::qWait(30);
 
-    // Count received raw CAN events
     std::atomic<int> rawEventCount{0};
     auto rawConn = broker->subscribe<Core::ReceivedCanRawEvent>(
         [&](const Core::ReceivedCanRawEvent&) { ++rawEventCount; });
 
-    // Click send button — should start repeated sending
+    // Click send button
     rawView->sendButton()->click();
     QTest::qWait(30);
 
-    // Wait ~1 second: at 200ms interval, expect at least 3 messages
     std::this_thread::sleep_for(std::chrono::milliseconds(1100));
     QTest::qWait(50);
 
+    // which should amount to atleast 3
     const int countAfterRunning = rawEventCount.load();
     EXPECT_GE(countAfterRunning, 3)
         << "Expected at least 3 repeated messages in 1.1 seconds at 200ms interval";
 
-    // Click again to stop
+    // and finally stop
     rawView->sendButton()->click();
     QTest::qWait(50);
 
-    // Wait another second and confirm no more events accumulate
     const int countAfterStop = rawEventCount.load();
     std::this_thread::sleep_for(std::chrono::milliseconds(600));
     QTest::qWait(50);
@@ -198,7 +180,7 @@ TEST_F(SendingSystemTest, EnableRepeatedSending_ClickSend_MultipleRawEventsFireW
         << "Events should stop accumulating after repeated sending is stopped";
 }
 
-TEST_F(SendingSystemTest, FillDbcForm_ClickSend_DbcEventFiresAndSessionCaptures)
+TEST_F(SendingSystemTest, FillDbcForm_ClickSend_ReceivedDbcEventHasCorrectMessageAndSignal)
 {
     loadDbc(TestHelpers::makeTempDbcFile());
 
@@ -206,19 +188,9 @@ TEST_F(SendingSystemTest, FillDbcForm_ClickSend_DbcEventFiresAndSessionCaptures)
     auto sentConn = broker->subscribe<Core::SendCanMessageDbcEvent>(
         [&](const Core::SendCanMessageDbcEvent&) { dbcSent = true; });
 
-    int dbcEventCount = 0;
+    Core::DbcCanMessage receivedMsg{};
     auto dbcConn = broker->subscribe<Core::ReceivedCanDbcEvent>(
-        [&](const Core::ReceivedCanDbcEvent&) { ++dbcEventCount; });
-
-    int capturedInSession = 0;
-    auto sessionConn =
-        broker->subscribe<Core::ReceivedCanDbcEvent>([&](const Core::ReceivedCanDbcEvent&) {
-            if (const auto* session = loggingModel->getSession(loggingModel->getCurrentSessionId());
-                session && session->type == DBC_BASED && session->isRecording)
-            {
-                ++capturedInSession;
-            }
-        });
+        [&](const Core::ReceivedCanDbcEvent& e) { receivedMsg = e.canMessage; });
 
     connectVcan();
 
@@ -235,14 +207,7 @@ TEST_F(SendingSystemTest, FillDbcForm_ClickSend_DbcEventFiresAndSessionCaptures)
     QTest::qWait(50);
 
     ASSERT_TRUE(dbcView->sendButton()->isEnabled())
-        << "DBC send button not enabled after selecting signal";
-
-    const std::map<uint32_t, QStringList> selectedSignals = {
-        {TestHelpers::kTestMsgId, {TestHelpers::kTestSignalName}}};
-    const std::map<uint16_t, std::pair<int, int>> beforeAfter = {
-        {static_cast<uint16_t>(TestHelpers::kTestMsgId), {0, 0}}};
-    loggingModel->startNewDbcLogSession(selectedSignals, beforeAfter);
-    ASSERT_TRUE(loggingModel->isRecording());
+        << "DBC send button not enabled after selecting message";
 
     dbcView->sendButton()->click();
 
@@ -250,6 +215,13 @@ TEST_F(SendingSystemTest, FillDbcForm_ClickSend_DbcEventFiresAndSessionCaptures)
     QTest::qWait(50);
 
     EXPECT_TRUE(dbcSent) << "SendCanMessageDbcEvent was never published";
-    EXPECT_GT(dbcEventCount, 0) << "ReceivedCanDbcEvent was never published";
-    EXPECT_GT(capturedInSession, 0) << "Active DBC session did not receive the event";
+    EXPECT_EQ(receivedMsg.messageId, static_cast<uint16_t>(TestHelpers::kTestMsgId))
+        << "Received DBC message ID should match kTestMsgId";
+    ASSERT_FALSE(receivedMsg.signalValues.empty()) << "Received DBC message should contain signals";
+    const bool hasTestSignal =
+        std::any_of(receivedMsg.signalValues.begin(), receivedMsg.signalValues.end(),
+                    [](const Core::DbcCanSignal& s) {
+                        return s.name == TestHelpers::kTestSignalName.toStdString();
+                    });
+    EXPECT_TRUE(hasTestSignal) << "Received DBC event should contain signal \"TestSignal\"";
 }
