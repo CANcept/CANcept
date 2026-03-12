@@ -145,6 +145,10 @@ class LoggingModel final : public QAbstractTableModel
     void onRawMessageReceived(const Core::RawCanMessage& message);
 
    private:
+    /** @brief Updates duration without acquiring the mutex. Caller must hold m_messageReceiveMutex.
+     */
+    void updateActiveDurationLocked();
+
     std::optional<Core::DbcConfig> m_currentDbc;
 
     std::vector<LogSession> m_sessions;
