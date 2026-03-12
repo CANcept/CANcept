@@ -2,8 +2,8 @@
 
 #include <QIcon>
 
-#include "../../core/util/dbc_utils.hpp"
 #include "core/macro/console_logging.hpp"
+#include "core/util/dbc_utils.hpp"
 #include "dbc_file/constants.hpp"
 #include "dbc_roles.hpp"
 
@@ -50,16 +50,18 @@ void DbcModel::setDbcConfig(const Core::DbcConfig& config)
     setupData(config);
     endResetModel();
 }
+
 auto DbcModel::index(int row, int column, const QModelIndex& parent) const -> QModelIndex
 {
-    // Return an invalid index if the requested index is outside model bounds.
-    if (!hasIndex(row, column, parent))
-    {
-        return {};
-    }
+    if (!hasIndex(row, column, parent)) return {};
 
     auto* parentItem = parentItemFromIndex(parent, m_rootItem.get());
-    return createIndex(row, column, parentItem->child(row));
+    if (!parentItem) return {};
+
+    DbcItem* childItem = parentItem->child(row);
+    if (!childItem) return {};
+
+    return createIndex(row, column, childItem);
 }
 
 auto DbcModel::parent(const QModelIndex& child) const -> QModelIndex

@@ -1,8 +1,8 @@
 #include "message_table_delegate.hpp"
 
-#include "../../core/util/dbc_utils.hpp"
 #include "core/macro/theme.hpp"
 #include "core/painters/item_painter.hpp"
+#include "core/util/dbc_utils.hpp"
 #include "dbc_file/constants.hpp"
 #include "dbc_file/model/dbc_roles.hpp"
 

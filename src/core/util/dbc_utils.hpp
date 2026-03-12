@@ -8,7 +8,7 @@ namespace Core {
  * @param id The CAN ID to format.
  * @return Hex string with "0x" prefix and 3 digits, e.g., 255 -> "0x0FF".
  */
-inline QString formatId(uint id)
+inline auto formatId(uint id) -> QString
 {
     return QStringLiteral("0x") + QString("%1").arg(id, 3, 16, QChar('0')).toUpper();
 }
@@ -18,19 +18,20 @@ inline QString formatId(uint id)
  * @param value The numeric value to format.
  * @return A string with no unnecessary trailing zeros, e.g., 40.0 -> "40", 0.125 -> "0.125".
  */
-inline QString formatNumber(double value)
+inline auto formatNumber(double value) -> QString
 {
     return QString::number(value, 'g', 12);
 }
 
 /**
- * @brief Formats a numeric range as a string.
+ * @brief Formats a numeric range with potential fractional values as a string.
  * @param min The minimum value.
  * @param max The maximum value.
- * @return A string in the format "[min, max]", e.g., 0 and 100 -> "[0, 100]".
+ * @return A string in the format "[min, max]", preserving fractional parts, e.g., 0.1 and 100.5 ->
+ * "[0.1, 100.5]".
  */
-inline QString formatRange(const uint min, const uint max)
+inline auto formatRange(const double min, const double max) -> QString
 {
-    return QString("[%1, %2]").arg(min).arg(max);
+    return QString("[%1, %2]").arg(formatNumber(min), formatNumber(max));
 }
 }  // namespace Core

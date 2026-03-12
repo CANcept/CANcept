@@ -22,7 +22,7 @@ inline auto siblingAtColumnQt5(const QModelIndex& idx, int column) -> QModelInde
  * @param filePath The file path to check.
  * @return True if the file ends with ".dbc" (case-insensitive), false otherwise.
  */
-inline bool isValidFile(const QString& filePath)
+inline auto isValidFile(const QString& filePath) -> bool
 {
     return filePath.endsWith(Constants::LoadPage::FileExt, Qt::CaseInsensitive);
 }
@@ -32,7 +32,7 @@ inline bool isValidFile(const QString& filePath)
  * @param files List of file paths.
  * @return True if exactly one valid DBC file is present.
  */
-inline bool canAcceptDrop(const QList<QString>& files)
+inline auto canAcceptDrop(const QList<QString>& files) -> bool
 {
     return files.size() == 1 && isValidFile(files.first());
 }
@@ -42,7 +42,7 @@ inline bool canAcceptDrop(const QList<QString>& files)
  * @param idIdx The QModelIndex containing the ID.
  * @return ID from Role_Id, or fallback to Qt::DisplayRole if 0.
  */
-inline uint resolveMessageId(const QModelIndex& idIdx)
+inline auto resolveMessageId(const QModelIndex& idIdx) -> uint
 {
     uint id = idIdx.data(DbcFile::DbcRoles::Role_Id).toUInt();
     if (id == 0) id = idIdx.data(Qt::DisplayRole).toUInt();
