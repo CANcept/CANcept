@@ -16,7 +16,7 @@ auto FileParser::parseFile(const std::string& filePath) -> std::string*
     std::string line;
     while (std::getline(dbcFile, line))
     {
-        if (line.back() == '\r')
+        if (!line.empty() && line.back() == '\r')
         {
             line.pop_back();
         }

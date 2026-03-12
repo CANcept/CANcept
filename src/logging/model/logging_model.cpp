@@ -310,7 +310,7 @@ void LoggingModel::stopActiveSession()
     }
     updateActiveDuration();
 
-    // emit dataChanged(index(0, 0), index(rowCount() - 1, columnCount() - 1));
+    emit dataChanged(index(0, 0), index(rowCount() - 1, columnCount() - 1));
 }
 
 // Updates the elapsed duration of the active logging session
