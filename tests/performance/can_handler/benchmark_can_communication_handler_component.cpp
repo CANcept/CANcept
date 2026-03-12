@@ -145,15 +145,15 @@ static void BM_CanCommunicationHandler_Receive_ParseMessage(benchmark::State& st
     const int MESSAGE_COUNT = 100;
     for (auto _ : state)
     {
+        messageCount = 0;
+        state.PauseTiming();
         int i = 0;
-        std::chrono::time_point<std::chrono::system_clock> start;
-        std::chrono::time_point<std::chrono::system_clock> end;
         for (; i < MESSAGE_COUNT; i++)
         {
             benchmarkObject.eventBroker->publish(sendEvent);
             if (messageCount > 0)
             {
-                start = std::chrono::high_resolution_clock::now();
+                state.ResumeTiming();
                 break;
             }
         }
@@ -161,13 +161,16 @@ static void BM_CanCommunicationHandler_Receive_ParseMessage(benchmark::State& st
         {
             benchmarkObject.eventBroker->publish(sendEvent);
         }
+        if (messageCount == 0)
+        {
+            while (messageCount == 0)
+            {
+            }
+            state.ResumeTiming();
+        }
         while (messageCount < MESSAGE_COUNT)
         {
         }
-        end = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<double> elapsed = end - start;
-        state.SetIterationTime(elapsed.count());
-        messageCount = 0;
     }
 }
 BENCHMARK(BM_CanCommunicationHandler_Receive_ParseMessage);
