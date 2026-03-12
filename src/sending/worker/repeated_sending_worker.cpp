@@ -89,7 +89,8 @@ void RepeatedSendingWorker::run()
 
     while (!m_shouldStop.load())
     {
-        const auto iterationStart = std::chrono::steady_clock::now();
+        const auto iterationStart = std::chrono::duration_cast<std::chrono::nanoseconds>(
+            std::chrono::high_resolution_clock::now().time_since_epoch());
 
         // Execute the send callback
         {
@@ -111,15 +112,25 @@ void RepeatedSendingWorker::run()
         }
 
         const long long intervalNs = static_cast<long long>(m_intervalMs.load()) * 1'000'000LL;
-        const auto now = std::chrono::steady_clock::now();
+        auto now = std::chrono::duration_cast<std::chrono::nanoseconds>(
+            std::chrono::high_resolution_clock::now().time_since_epoch());
         const auto elapsedNs =
             std::chrono::duration_cast<std::chrono::nanoseconds>(now - iterationStart).count();
-
+        while (std::chrono::duration_cast<std::chrono::nanoseconds>(now - iterationStart).count() <
+               intervalNs)
+        {
+            now = std::chrono::duration_cast<std::chrono::nanoseconds>(
+                std::chrono::high_resolution_clock::now().time_since_epoch());
+        }
+        /*
         if (const long long remainingNs = std::max(0LL, intervalNs - elapsedNs);
             remainingNs > 0 && !m_shouldStop.load())
         {
-            std::this_thread::sleep_for(std::chrono::nanoseconds(remainingNs));
+            usleep(std::chrono::duration_cast<std::chrono::microseconds>(
+                       std::chrono::nanoseconds(remainingNs))
+                       .count());
         }
+        */
     }
 
     emit sendingStopped();
