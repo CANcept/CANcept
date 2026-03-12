@@ -1,6 +1,6 @@
 #include "signal_table_delegate.hpp"
 
-#include "../../core/util/dbc_utils.hpp"
+#include "core/util/dbc_utils.hpp"
 #include "core/macro/theme.hpp"
 #include "core/painters/item_painter.hpp"
 #include "dbc_file/constants.hpp"
