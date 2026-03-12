@@ -336,7 +336,7 @@ class DbcExamples
             .node("ECU1")
             .node("ECU2")
             .node("ECU3")
-            .message(DbcMessageBuilder(0x100, "TestMesssage")
+            .message(DbcMessageBuilder(0x100, "TestMessage")
                          .size(8)
                          .transmitter("ECU1")
                          .signal(DbcSignalBuilder("UnsignedLittleEndSignal")
