@@ -307,6 +307,55 @@ class DbcExamples
     }
 
     /**
+     * @brief DBC containing signals with a wide range of attributes.
+     *
+     * This configuration is intended for testing complex signal setups,
+     * including:
+     *
+     * - Multiple nodes
+     * - Different receivers per signal
+     * - Signed and unsigned signals
+     * - Little- and big-endian byte order
+     * - Scaling (factor/offset)
+     * - Physical ranges and units
+     *
+     * Messages:
+     * - 0x100 TestMessage:
+     *      - UnsignedLittleEndSignal (multi-receiver, scaled, unit, range)
+     *      - SignedBigEndSignal (big-endian, signed)
+     *
+     * Nodes: ECU1, ECU2, ECU3
+     *
+     * Useful for integration tests or validating advanced signal handling.
+     */
+    [[nodiscard]] static Core::DbcConfig fullSignalTest()
+    {
+        return DbcConfigBuilder()
+            .version("1.0")
+            .fileName("full_signal_test.dbc")
+            .node("ECU1")
+            .node("ECU2")
+            .node("ECU3")
+            .message(DbcMessageBuilder(0x100, "TestMessage")
+                         .size(8)
+                         .transmitter("ECU1")
+                         .signal(DbcSignalBuilder("UnsignedLittleEndSignal")
+                                     .startBit(7)
+                                     .size(16)
+                                     .littleEndian()
+                                     .unsigned_()
+                                     .factor(0.5)
+                                     .offset(-10.0)
+                                     .unit("km/h")
+                                     .range(-100, 100)
+                                     .receiver("ECU1")
+                                     .receiver("ECU2")
+                                     .receiver("ECU3"))
+                         .signal(DbcSignalBuilder("SignedBigEndSignal").bigEndian().signed_()))
+            .build();
+    }
+
+    /**
      * @brief DBC with signals using scaling (factor and offset).
      *
      * Messages:
@@ -332,6 +381,92 @@ class DbcExamples
                                      .offset(10.0)
                                      .range(10.0, 6563.5)
                                      .unit("units")))
+            .build();
+    }
+
+    /**
+     * @brief DBC containing a message with an unknown transmitter.
+     *
+     * This configuration simulates an orphan message whose transmitter
+     * is not part of the defined node list.
+     *
+     * Messages:
+     * - 0x100 GhostMsg (transmitter: "Ghost")
+     *
+     * Nodes:
+     * - KnownECU
+     *
+     * Useful for testing validation logic, error handling,
+     * or component robustness when encountering inconsistent configurations.
+     */
+    [[nodiscard]] static Core::DbcConfig orphanTest()
+    {
+        return DbcConfigBuilder()
+            .node("KnownECU")
+            .message(DbcMessageBuilder(0x100, "GhostMsg").transmitter("Ghost"))
+            .build();
+    }
+
+    /**
+     * @brief Comprehensive DBC covering multiple typical and edge-case scenarios.
+     *
+     * This configuration combines various features in a single setup:
+     *
+     * - Multiple nodes
+     * - Standard messages with scaling and units
+     * - Signals with multiple receivers
+     * - Signed and big-endian signals
+     * - Orphan message with unknown transmitter
+     *
+     * Messages:
+     * - 0x100 SpeedMsg (standard signals, multi-receiver)
+     * - 0x200 TorqueMsg (signed, big-endian signal)
+     * - 0x999 OrphanMsg (unknown transmitter)
+     *
+     * Nodes: EngineECU, Dashboard, Logger
+     *
+     * Intended for higher-level component or integration testing.
+     */
+    [[nodiscard]] static Core::DbcConfig comprehensiveTest()
+    {
+        return DbcConfigBuilder()
+            .version("2.0")
+            .fileName("master_test.dbc")
+
+            // --- 1. Nodes ---
+            .node("EngineECU")
+            .node("Dashboard")
+            .node("Logger")
+
+            // --- 2. Standard Message ---
+            .message(DbcMessageBuilder(0x100, "SpeedMsg")
+                         .size(8)
+                         .transmitter("EngineECU")
+                         // Signal A: Standard
+                         .signal(DbcSignalBuilder("Velocity")
+                                     .startBit(0)
+                                     .size(16)
+                                     .unit("km/h")
+                                     .factor(0.1)
+                                     .offset(0.0)
+                                     .receiver("Dashboard"))
+                         // Signal B: Multi-Receiver
+                         .signal(DbcSignalBuilder("Status")
+                                     .startBit(32)
+                                     .size(8)
+                                     .receiver("Dashboard")
+                                     .receiver("Logger")))
+
+            // --- 3. Edge Case Message (Signed, Big Endian) ---
+            .message(
+                DbcMessageBuilder(0x200, "TorqueMsg")
+                    .transmitter("EngineECU")
+                    .signal(DbcSignalBuilder("Torque").startBit(0).size(16).signed_().bigEndian()))
+
+            // --- 4. Orphan Message ---
+            .message(DbcMessageBuilder(0x999, "OrphanMsg")
+                         .transmitter("UnknownNode")
+                         .signal(DbcSignalBuilder("GhostSig").size(8)))
             .build();
     }
 

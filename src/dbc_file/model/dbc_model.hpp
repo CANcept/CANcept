@@ -5,7 +5,6 @@
 
 // Core Interfaces & Events
 #include "core/event/dbc_event.hpp"
-#include "core/interface/i_event_broker.hpp"
 
 // Model Internal Components
 #include "dbc_item.hpp"
@@ -16,12 +15,15 @@ namespace DbcFile {
  * @class DbcModel
  * @brief The hierarchical data model for the DBC file content.
  *
- * This class acts as a "Smart Model":
- * 1. It holds the reference to the Core::IEventBroker.
- * 2. It subscribes to the DbcParsedEvent to automatically update its data
- *    when a file is parsed by the CAN Handler.
- * 3. It serves data to Views and Delegates via standard Qt roles and
- *    custom DbcRoles.
+ * This class serves as the passive data store (Model in MVC) for the DBC visualization.
+ *
+ * Responsibilities:
+ * - Stores the hierarchical structure of the parsed DBC file (Root -> ECU -> Message -> Signal).
+ * - Provides data to Views and Delegates via standard Qt roles and custom DbcRoles.
+ * - Handles the internal logic for grouping orphans and calculating statistics.
+ *
+ * @note This model does not handle event subscriptions. Data must be pushed into it
+ *       via `setDbcConfig()`, typically by the controlling component.
  */
 class DbcModel : public QAbstractItemModel
 {
@@ -29,20 +31,31 @@ class DbcModel : public QAbstractItemModel
 
    public:
     /**
-     * @brief Constructs the model and subscribes to parsed-DBC events.
-     * @param broker Event broker used to subscribe to Core::DBCParsedEvent.
-     * @param parent Optional QObject parent.
+     * @brief Constructs the DBC model.
+     * @param parent Optional QObject parent (usually the DbcComponent).
      *
-     * The constructor creates an initial root item and registers a callback that
-     * rebuilds the model whenever a DBCParsedEvent is published.
+     * Initializes the internal root item structure. The model is initially empty
+     * until `setDbcConfig()` is called.
      */
-    explicit DbcModel(Core::IEventBroker& broker, QObject* parent = nullptr);
+    explicit DbcModel(QObject* parent = nullptr);
     /**
      * @brief Destroys the model.
      *
      * The event subscription connection is released automatically with the model.
      */
     ~DbcModel() override = default;
+
+    /**
+     * @brief Populates the model with a new DBC configuration.
+     *
+     * @details
+     * This method performs a full model reset. It clears all existing data,
+     * rebuilds the internal item tree from the provided configuration, and
+     * notifies all connected views to refresh their content.
+     *
+     * @param config The parsed DBC configuration data containing ECUs, messages, and signals.
+     */
+    void setDbcConfig(const Core::DbcConfig& config);
 
     // --- QAbstractItemModel Interface Implementation ---
 
@@ -88,30 +101,31 @@ class DbcModel : public QAbstractItemModel
     [[nodiscard]] auto columnCount(const QModelIndex& parent) const -> int override;
 
     /**
-     * @brief Returns data for the given index and role.
-     * @param index Model index.
-     * @param role Qt item role (standard or custom).
-     * @return Requested data as QVariant, or an invalid QVariant if not available.
+     * @brief Returns data stored under the given role for the item referred to by @p index.
      *
-     * Supports:
-     * - Qt::DisplayRole for table/tree display
-     * - Qt::DecorationRole for icons based on item type
-     * - Custom roles defined in dbc_roles.hpp (e.g. id, DLC, sender, unit, etc.)
+     * This function provides role-based access to item data in the model.
+     * It dispatches primarily on the requested role and applies type-specific
+     * handling depending on the underlying DbcItem type.
      *
-     * Some values are derived dynamically (e.g. message signal count via childCount()).
+     * Supported roles include:
+     * - Qt::DisplayRole
+     * - Qt::DecorationRole
+     * - Role_ItemType
+     * - Role_ChildCount
+     * - Message-specific roles (e.g. Role_Dlc, Role_Sender, Role_Id)
+     * - Signal-specific roles (e.g. Role_StartBit, Role_Unit, Role_Min, ...)
+     * - ECU-specific roles (e.g. Role_EcuTotalSignals)
+     *
+     * If a role is not applicable to the item's type, an invalid QVariant is returned.
+     *
+     * @param index Model index identifying the item.
+     * @param role  Data role requested.
+     * @return QVariant containing the requested data, or an invalid QVariant if
+     *         the role is not supported or the index is invalid.
      */
     [[nodiscard]] auto data(const QModelIndex& index, int role) const -> QVariant override;
 
    private:
-    /**
-     * @brief Handles Core::DBCParsedEvent and rebuilds the model contents.
-     * @param event Parsed event containing the DBC configuration.
-     *
-     * This method resets the model (beginResetModel/endResetModel) and recreates
-     * the internal item tree from the provided configuration.
-     */
-    void onDbcParsed(const Core::DBCParsedEvent& event);
-
     /**
      * @brief Initializes the root item of the DBC model.
      *
@@ -216,14 +230,6 @@ class DbcModel : public QAbstractItemModel
     void setupData(const Core::DbcConfig& data);
 
     // --- Members ---
-
-    Core::IEventBroker& m_broker;
-
-    /**
-     * @brief RAII handle for the event subscription.
-     * Ensures the subscription stays alive as long as the model exists.
-     */
-    Core::Connection m_dbcParsedConnection;
 
     /** @brief Root item of the internal tree. Owns all children. */
     std::unique_ptr<DbcItem> m_rootItem;

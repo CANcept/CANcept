@@ -17,6 +17,7 @@
 #include "core/widgets/tinted_icon_label.hpp"
 #include "dbc_file/constants.hpp"
 #include "dbc_file/styles.hpp"
+#include "dbc_file/util/util.hpp"
 
 namespace DbcFile {
 LoadPage::LoadPage(QWidget* parent) : QWidget(parent)
@@ -78,20 +79,21 @@ void LoadPage::resetStatus() const
 void LoadPage::dragEnterEvent(QDragEnterEvent* event)
 {
     resetStatus();
-    // extract URLS
-    const QList<QUrl>& urls = event->mimeData()->urls();
-    // Check: only one file dragged? File extension correct?
-    bool isDragValid = urls.size() == 1 && urls.first().toLocalFile().endsWith(
-                                               Constants::LoadPage::FileExt, Qt::CaseInsensitive);
 
-    if (isDragValid)
+    QList<QString> filePaths;
+    for (const QUrl& url : event->mimeData()->urls())
     {
-        // Update drag style to change upload zone border color to indicate dragged data is valid
+        filePaths.append(url.toLocalFile());
+    }
+
+    if (Util::canAcceptDrop(filePaths))
+    {
         updateDragStyle(m_uploadBoxFrame, Constants::LoadPage::Drag::Valid);
     } else
     {
         updateDragStyle(m_uploadBoxFrame, Constants::LoadPage::Drag::Invalid);
     }
+
     event->acceptProposedAction();
 }
 
@@ -115,7 +117,7 @@ void LoadPage::dropEvent(QDropEvent* event)
 
     const QString filePath = urls.first().toLocalFile();
     // Wrong ending warning
-    if (!filePath.endsWith(Constants::LoadPage::FileExt, Qt::CaseInsensitive))
+    if (!Util::isValidFile(filePath))
     {
         showStatusMessage(Constants::LoadPage::Errors::InvalidFileBody, true);
         return;

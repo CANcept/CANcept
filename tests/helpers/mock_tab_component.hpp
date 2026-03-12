@@ -28,5 +28,4 @@ class MockTabComponent : public Core::ITabComponent
         return nullptr;
     }
 };
-
 }  // namespace TestHelpers
