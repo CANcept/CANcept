@@ -1,6 +1,7 @@
 #include "start_stop_button.hpp"
 
 #include <QIcon>
+#include <QPainter>
 #include <QStyle>
 
 #include "core/macro/theme.hpp"
@@ -10,9 +11,8 @@ namespace Logging {
 
 StartStopButton::StartStopButton(QWidget* parent) : QPushButton(parent)
 {
-    const auto& spacing = THEME.spacing();
-    setIconSize(QSize(20, 20));
-    setFixedSize(75, 35);
+    setMinimumHeight(Logging::Constants::BUTTON_MIN_HEIGHT);
+    setMinimumWidth(Logging::Constants::BUTTON_MIN_WIDTH);
     applyStyle();
     setRecordingState(false);
 }
@@ -28,7 +28,7 @@ void StartStopButton::applyStyle()
                                     "   border-radius: %9px;"
                                     "   font-size: %10px;"
                                     "   font-weight: %1;"
-                                    "   padding: %2px %2px;"
+                                    "   padding: %2px %11px;"
                                     "}"
                                     "QPushButton[recording=\"false\"] {"
                                     "   background-color: %3;"
@@ -51,7 +51,7 @@ void StartStopButton::applyStyle()
                                     "   background-color: %8;"
                                     "}")
                                     .arg(spacing.fontWeightMedium)
-                                    .arg(spacing.spacingMd)
+                                    .arg(spacing.spacingLg)
                                     .arg(colors.surfacePrimary.name())
                                     .arg(colors.textPrimary.name())
                                     .arg(colors.colorPrimaryHover.name())
@@ -59,26 +59,43 @@ void StartStopButton::applyStyle()
                                     .arg(colors.textOnPrimary.name())
                                     .arg(colors.statusErrorHover.name())
                                     .arg(spacing.radiusMd)
-                                    .arg(spacing.fontSizeMd);
+                                    .arg(spacing.fontSizeMd)
+                                    .arg(spacing.spacingXl * 2);
     setStyleSheet(buttonStyle);
 }
 
-void StartStopButton::setRecordingState(bool isRecording)
+void StartStopButton::setRecordingState(const bool isRecording)
 {
+    const auto& colors = THEME.colors();
     m_isRecording = isRecording;
+    QColor color;
 
     if (isRecording)
     {
-        // Recording state - Red Stop button
         setProperty("recording", true);
-        setIcon(QIcon(Logging::Constants::STOP_ICON_PATH));
+        color = colors.textOnPrimary;
         setText(" Stop");
     } else
     {
-        // Idle state - Start button
         setProperty("recording", false);
-        setIcon(QIcon(Logging::Constants::START_ICON_PATH));
+        color = colors.textPrimary;
         setText(" Start");
+    }
+
+    const auto& spacing = THEME.spacing();
+    const int iconSize = spacing.spacingLg;
+    setIconSize(QSize(iconSize, iconSize));
+
+    const QString iconPath =
+        isRecording ? Logging::Constants::STOP_ICON_PATH : Logging::Constants::START_ICON_PATH;
+    QPixmap pixmap(iconPath);
+    if (!pixmap.isNull())
+    {
+        QPainter painter(&pixmap);
+        painter.setCompositionMode(QPainter::CompositionMode_SourceIn);
+        painter.fillRect(pixmap.rect(), color);
+        painter.end();
+        setIcon(QIcon(pixmap));
     }
 
     // Force style refresh
@@ -91,6 +108,7 @@ bool StartStopButton::event(QEvent* event)
     if (event->type() == Core::StyleEvent::EventType)
     {
         applyStyle();
+        QTimer::singleShot(0, this, [this]() { setRecordingState(m_isRecording); });
         return true;
     }
     return QPushButton::event(event);
