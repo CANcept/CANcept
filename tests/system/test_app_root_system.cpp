@@ -12,6 +12,8 @@
 #include "app_root/constants.hpp"
 #include "app_root/entry_point/app_root.hpp"
 #include "app_root/view/app_root_view.hpp"
+#include "core/theme/color_themes.hpp"
+#include "core/theme/theme_manager.hpp"
 #include "tests/helpers/socket_can_device_manager.hpp"
 
 class AppRootSystemTest : public ::testing::Test
@@ -145,4 +147,44 @@ TEST_F(AppRootSystemTest, Bootstrap_CanInterfaceSetting_SelectingVcan_UpdatesCom
 
     EXPECT_EQ(interfaceCombo->currentText(), "vcan0")
         << "Interface combo should reflect the selected vcan0 device";
+}
+
+TEST_F(AppRootSystemTest, ThemeChange_AllThemes_ApplyCorrectColorTheme)
+{
+    AppRoot::AppRoot appRoot;
+    appRoot.bootstrap();
+    QTest::qWait(100);
+
+    auto* appRootView = findAppRootView();
+    ASSERT_NE(appRootView, nullptr);
+
+    openSettings(appRootView);
+
+    const struct {
+        std::string name;
+        QColor expectedSurfaceMain;
+    } cases[] = {
+        {AppRoot::Constants::THEME_DARK, QColor(0x1e, 0x1e, 0x2e)},
+        {AppRoot::Constants::THEME_AQUA, QColor(0xf0, 0xf4, 0xf8)},
+        {AppRoot::Constants::THEME_MAROON, QColor(0xf8, 0xf4, 0xed)},
+        {AppRoot::Constants::THEME_DRACULA, QColor(0x28, 0x29, 0x36)},
+        {AppRoot::Constants::THEME_LIGHT, QColor(0xff, 0xff, 0xff)},
+    };
+
+    for (const auto& [name, expectedSurfaceMain] : cases)
+    {
+        // Re-fetch each iteration: SettingsView::rebuild() recreates widgets on StyleEvent
+        auto* combo =
+            findComboWithItem(appRootView, QString::fromStdString(AppRoot::Constants::THEME_LIGHT));
+        ASSERT_NE(combo, nullptr) << "Theme combo not found for: " << name;
+
+        const int idx = combo->findText(QString::fromStdString(name));
+        ASSERT_GE(idx, 0) << "Theme not found in combo: " << name;
+
+        combo->setCurrentIndex(idx);
+        QTest::qWait(0);  // drain: StyleEvents → singleShot(0) scheduled → fires → rebuild()
+
+        EXPECT_EQ(Core::ThemeManager::getInstance().colors().surfaceMain, expectedSurfaceMain)
+            << "Wrong surfaceMain for theme: " << name;
+    }
 }
