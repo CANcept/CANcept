@@ -32,6 +32,8 @@ class StartStopButton final : public QPushButton
     void applyStyle();
 
     bool m_isRecording{false};
+
+    void updateButtonIcon();
 };
 
 }  // namespace Logging

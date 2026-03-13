@@ -1,6 +1,7 @@
 #include "start_stop_button.hpp"
 
 #include <QIcon>
+#include <QPainter>
 #include <QStyle>
 
 #include "core/macro/theme.hpp"
@@ -12,7 +13,7 @@ StartStopButton::StartStopButton(QWidget* parent) : QPushButton(parent)
 {
     const auto& spacing = THEME.spacing();
     setIconSize(QSize(20, 20));
-    setFixedSize(75, 35);
+    // setFixedSize(75, 35);
     applyStyle();
     setRecordingState(false);
 }
@@ -61,25 +62,13 @@ void StartStopButton::applyStyle()
                                     .arg(spacing.radiusMd)
                                     .arg(spacing.fontSizeMd);
     setStyleSheet(buttonStyle);
+    updateButtonIcon();
 }
 
 void StartStopButton::setRecordingState(bool isRecording)
 {
     m_isRecording = isRecording;
-
-    if (isRecording)
-    {
-        // Recording state - Red Stop button
-        setProperty("recording", true);
-        setIcon(QIcon(Logging::Constants::STOP_ICON_PATH));
-        setText(" Stop");
-    } else
-    {
-        // Idle state - Start button
-        setProperty("recording", false);
-        setIcon(QIcon(Logging::Constants::START_ICON_PATH));
-        setText(" Start");
-    }
+    updateButtonIcon();
 
     // Force style refresh
     style()->unpolish(this);
@@ -96,4 +85,31 @@ bool StartStopButton::event(QEvent* event)
     return QPushButton::event(event);
 }
 
+void StartStopButton::updateButtonIcon()
+{
+    const auto& colors = THEME.colors();
+    if (m_isRecording)
+    {
+        QPixmap pixmap(Constants::STOP_ICON_PATH);
+        if (!pixmap.isNull())
+        {
+            QPainter painter(&pixmap);
+            painter.setCompositionMode(QPainter::CompositionMode_SourceIn);
+            painter.fillRect(pixmap.rect(), colors.textSecondary);
+            painter.end();
+            setIcon(QIcon(pixmap));
+        }
+    } else
+    {
+        QPixmap pixmap(Constants::START_ICON_PATH);
+        if (!pixmap.isNull())
+        {
+            QPainter painter(&pixmap);
+            painter.setCompositionMode(QPainter::CompositionMode_SourceIn);
+            painter.fillRect(pixmap.rect(), colors.textSecondary);
+            painter.end();
+            setIcon(QIcon(pixmap));
+        }
+    }
+}
 }  // namespace Logging
