@@ -69,6 +69,7 @@ void StartStopButton::setRecordingState(bool isRecording)
 {
     m_isRecording = isRecording;
     updateButtonIcon();
+    setProperty("recording", m_isRecording);
 
     // Force style refresh
     style()->unpolish(this);
@@ -99,6 +100,7 @@ void StartStopButton::updateButtonIcon()
             painter.end();
             setIcon(QIcon(pixmap));
         }
+        setText("Stop");
     } else
     {
         QPixmap pixmap(Constants::START_ICON_PATH);
@@ -110,6 +112,7 @@ void StartStopButton::updateButtonIcon()
             painter.end();
             setIcon(QIcon(pixmap));
         }
+        setText("Start");
     }
 }
 }  // namespace Logging
