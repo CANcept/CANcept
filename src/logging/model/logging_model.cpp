@@ -177,7 +177,7 @@ QString LoggingModel::getMessageName(uint16_t messageId) const
 {
     if (!m_currentDbc.has_value())
     {
-        return QString("0x%1").arg(messageId, 3, 16, QChar('0')).toUpper();
+        return QString("0x%1").arg(QString::number(messageId, 16).toUpper(), 3, QChar('0'));
     }
 
     for (const auto& msgDef : m_currentDbc->messageDefinitions)
@@ -188,7 +188,7 @@ QString LoggingModel::getMessageName(uint16_t messageId) const
         }
     }
 
-    return QString("UNKNOWN_0x%1").arg(messageId, 3, 16, QChar('0')).toUpper();
+    return QString("UNKNOWN_0x%1").arg(QString::number(messageId, 16).toUpper(), 3, QChar('0'));
 }
 
 // Looks up signal unit from DBC config
@@ -247,12 +247,12 @@ void LoggingModel::startNewDbcLogSession(
     const std::map<uint32_t, QStringList>& selectedSignals,
     const std::map<uint16_t, std::pair<int, int>>& signalsBeforeAfterMessage)
 {
-    std::scoped_lock<std::mutex> lock(m_messageReceiveMutex);
-
     if (isRecording())
     {
         stopActiveSession();
     }
+
+    std::scoped_lock<std::mutex> lock(m_messageReceiveMutex);
     beginInsertRows(QModelIndex(), rowCount(), rowCount());
 
     LogSession newSession;
@@ -273,12 +273,11 @@ void LoggingModel::startNewDbcLogSession(
 
 void LoggingModel::startNewRawLogsSession()
 {
-    std::scoped_lock<std::mutex> lock(m_messageReceiveMutex);
-
     if (isRecording())
     {
         stopActiveSession();
     }
+    std::scoped_lock<std::mutex> lock(m_messageReceiveMutex);
     beginInsertRows(QModelIndex(), rowCount(), rowCount());
     LogSession newSession;
     newSession.id = QString::number(QDateTime::currentMSecsSinceEpoch());

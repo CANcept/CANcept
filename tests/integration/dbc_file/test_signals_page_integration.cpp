@@ -12,7 +12,6 @@
 // Core Widgets
 #include "core/widgets/common/searchable_filter_widgets.hpp"
 #include "core/widgets/common/styled_filter_bar.hpp"
-
 #include "tests/helpers/dbc_config_builder.hpp"
 #include "tests/helpers/mock_event_broker.hpp"
 

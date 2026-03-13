@@ -30,10 +30,10 @@ class CardWidget final : public QFrame
                         const QString& iconPath = QString(), QWidget* parent = nullptr);
 
     /**
- * @brief Returns the title label.
- *
- * May return nullptr if no title label was created (e.g. when constructed with an empty title).
- */
+     * @brief Returns the title label.
+     *
+     * May return nullptr if no title label was created (e.g. when constructed with an empty title).
+     */
     [[nodiscard]] auto getTitle() const -> const QLabel*;
 
     /**

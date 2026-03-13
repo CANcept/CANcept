@@ -56,12 +56,8 @@ class LoggingComponent final : public Core::ITabComponent
                       const std::map<uint32_t, QStringList>& selectedSignals);
     void stopLogging();
     void exportLogSession(const QString& sessionId, const QString& filePath);
-    void onDetailRequested(const QModelIndex& index);
 
    private:
-    /** @brief Builds a detail widget for a specific session */
-    QWidget* createDetailWidget(const LogSession* session);
-
     /** @brief Checks if CAN device is ready and updates overlay accordingly */
     void checkDeviceReadiness() const;
 

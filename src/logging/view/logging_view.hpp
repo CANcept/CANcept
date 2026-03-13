@@ -85,6 +85,7 @@ class LoggingView final : public QWidget
 
    public slots:
     void dbcConfigChanged(const Core::DbcConfig& config);
+    void onDetailRequested(const QModelIndex& index);
 
    protected:
     bool event(QEvent* event) override;
@@ -94,6 +95,8 @@ class LoggingView final : public QWidget
     /** @brief Initializes the persistent header and the swappable content frame. */
     void setupUi();
     void applyStyle();
+    /** @brief Builds a detail widget for a specific session */
+    auto createDetailWidget(const LogSession* session) -> QWidget*;
 
     QWidget* m_headerBox;
     TimerLabel* m_timerLabel;     /**< Displays elapsed time during recording. */
