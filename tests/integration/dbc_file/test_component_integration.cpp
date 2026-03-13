@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <QApplication>
 
 // Module Includes
 #include "dbc_file/constants.hpp"
@@ -107,9 +108,9 @@ TEST_F(DbcComponentIntegrationTest, NavigationIsLockedInitially)
     int loadIdx = findTabIndex(Constants::Sidebar::TitleLoadNew);
 
     ASSERT_GE(overviewIdx, 0) << "Overview Tab not found in model";
-    ASSERT_GE(ecusIdx, 0) << "Overview Tab not found in model";
-    ASSERT_GE(msgIdx, 0) << "Overview Tab not found in model";
-    ASSERT_GE(sigIdx, 0) << "Overview Tab not found in model";
+    ASSERT_GE(ecusIdx, 0) << "ECUs Tab not found in model";
+    ASSERT_GE(msgIdx, 0) << "Messages Tab not found in model";
+    ASSERT_GE(sigIdx, 0) << "Signals Tab not found in model";
     ASSERT_GE(loadIdx, 0) << "Load Tab not found in model";
 
     EXPECT_FALSE(isTabEnabled(overviewIdx)) << "Overview Tab should initially be locked";

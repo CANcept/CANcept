@@ -13,9 +13,6 @@
 #include "core/widgets/common/searchable_filter_widgets.hpp"
 #include "core/widgets/common/styled_filter_bar.hpp"
 
-// Helpers
-#include <ranges>
-
 #include "tests/helpers/dbc_config_builder.hpp"
 #include "tests/helpers/mock_event_broker.hpp"
 
@@ -132,6 +129,8 @@ TEST_F(SignalsPageIntegrationTest, FiltersSignalsByText)
 
     QTableView* table = getTable();
     Core::StyledFilterBar* filterBar = getFilterBar();
+    ASSERT_NE(table, nullptr);
+    ASSERT_NE(table->model(), nullptr);
     ASSERT_NE(filterBar, nullptr);
 
     // 2. Act

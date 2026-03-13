@@ -120,7 +120,7 @@ void SignalList::populateDecodedFromModel()
 
         horizontalLayout->addStretch();
 
-        const QString idText = Core::Util::formatId(
+        const QString idText = Core::formatId(
             m_model->data(messageIndex, MonitoringModel::MonitoringRoles::Role_ID).toInt());
         auto* idLabel = new QLabel(messageCard);
         idLabel->setText(idText);

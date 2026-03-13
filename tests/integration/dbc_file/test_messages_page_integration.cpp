@@ -122,6 +122,8 @@ TEST_F(MessagesPageIntegrationTest, FiltersMasterTable)
 
     QTableView* table = getMasterTable();
     Core::StyledFilterBar* filterBar = getFilterBar();
+    ASSERT_NE(table, nullptr);
+    ASSERT_NE(table->model(), nullptr);
     ASSERT_NE(filterBar, nullptr);
 
     // Pre-Check
@@ -348,8 +350,11 @@ TEST_F(MessagesPageIntegrationTest, ClickingSelectedRowDeselectsIt)
     mockBroker.triggerEvent(Core::DBCParsedEvent(config, "test.dbc"));
 
     QTableView* table = getMasterTable();
+    ASSERT_NE(table, nullptr);
     QAbstractItemModel* model = table->model();
+    ASSERT_NE(model, nullptr);
     MessageDetailView* detailView = getDetailView();
+    ASSERT_NE(detailView, nullptr);
 
     // First Selection
     QModelIndex idx = model->index(0, 0);
@@ -431,6 +436,8 @@ TEST_F(MessagesPageIntegrationTest, ShowsEmptyLabelOnNoSearchResults)
     mockBroker.triggerEvent(Core::DBCParsedEvent(config, "test.dbc"));
 
     QTableView* table = getMasterTable();
+    ASSERT_NE(table, nullptr);
+    ASSERT_NE(table->model(), nullptr);
     // Search empty label
     QLabel* emptyLabel = nullptr;
     auto labels = messagesPage->findChildren<QLabel*>();
@@ -444,6 +451,7 @@ TEST_F(MessagesPageIntegrationTest, ShowsEmptyLabelOnNoSearchResults)
     }
     ASSERT_NE(emptyLabel, nullptr);
     Core::StyledFilterBar* filterBar = getFilterBar();
+    ASSERT_NE(filterBar, nullptr);
 
     // 2. Act: Search for nonsense
     filterBar->setSearchText("Banana");
@@ -470,6 +478,9 @@ TEST_F(MessagesPageIntegrationTest, ShowsNoSignalsLabelForEmptyMessage)
 
     QTableView* masterTable = getMasterTable();
     MessageDetailView* detailView = getDetailView();
+    ASSERT_NE(masterTable, nullptr) << "Master table not found";
+    ASSERT_NE(masterTable->model(), nullptr) << "Model for master table not found";
+    ASSERT_NE(detailView, nullptr) << "MessageDetailView not found";
 
     auto* stack = detailView->findChild<QStackedWidget*>();
     ASSERT_NE(stack, nullptr) << "QStackedWidget in DetailView not found";

@@ -1,8 +1,6 @@
 #include <gtest/gtest.h>
 
 #include <QApplication>
-#include <QLabel>
-#include <QTimer>
 
 // Module Includes
 #include "dbc_file/constants.hpp"

@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 
+#include <QApplication>
 #include <QComboBox>
 #include <QLineEdit>
 #include <QTreeView>
@@ -122,6 +123,9 @@ TEST_F(EcusPageIntegrationTest, FiltersEcusByText)
     mockBroker.triggerEvent(Core::DBCParsedEvent(config, "test.dbc"));
 
     QTreeView* tree = getTreeView();
+    ASSERT_NE(tree, nullptr);
+    QAbstractItemModel* model = tree->model();
+    ASSERT_NE(model, nullptr);
     Core::StyledFilterBar* filterBar = getFilterBar();
     ASSERT_NE(filterBar, nullptr);
 
@@ -129,8 +133,8 @@ TEST_F(EcusPageIntegrationTest, FiltersEcusByText)
     filterBar->setSearchText("Brake");
 
     // 3. Assert
-    EXPECT_EQ(tree->model()->rowCount(), 1);
-    EXPECT_EQ(tree->model()->index(0, 0).data().toString(), "BrakeECU");
+    EXPECT_EQ(model->rowCount(), 1);
+    EXPECT_EQ(model->index(0, 0).data().toString(), "BrakeECU");
 }
 
 /**
@@ -151,18 +155,21 @@ TEST_F(EcusPageIntegrationTest, FiltersActiveEcus)
     mockBroker.triggerEvent(Core::DBCParsedEvent(config, "test.dbc"));
 
     QTreeView* tree = getTreeView();
+    ASSERT_NE(tree, nullptr);
+    QAbstractItemModel* model = tree->model();
+    ASSERT_NE(model, nullptr);
     Core::StyledFilterBar* filterBar = getFilterBar();
     ASSERT_NE(filterBar, nullptr);
 
     // Pre-Check: both visible
-    ASSERT_EQ(tree->model()->rowCount(), 2);
+    ASSERT_EQ(model->rowCount(), 2);
 
     // 2. Act: Set "Active only" filter
     filterBar->setCurrentFilterIndex(Constants::EcusPage::FilterActiveIndex);
 
     // 3. Assert
-    EXPECT_EQ(tree->model()->rowCount(), 1);
-    EXPECT_EQ(tree->model()->index(0, 0).data().toString(), "ActiveECU");
+    EXPECT_EQ(model->rowCount(), 1);
+    EXPECT_EQ(model->index(0, 0).data().toString(), "ActiveECU");
 }
 
 /**
@@ -181,6 +188,7 @@ TEST_F(EcusPageIntegrationTest, ShowsEmptyStateOnNoData)
     QTreeView* tree = getTreeView();
 
     ASSERT_NE(emptyLabel, nullptr);
+    ASSERT_NE(tree, nullptr);
 
     EXPECT_FALSE(emptyLabel->isHidden()) << "Empty label should be visible";
     EXPECT_TRUE(tree->isHidden()) << "TreeView should be hidden";
@@ -203,6 +211,7 @@ TEST_F(EcusPageIntegrationTest, ShowsEmptyLabelOnNoSearchResults)
     Core::StyledFilterBar* filterBar = getFilterBar();
 
     // Pre-Check
+    ASSERT_NE(tree, nullptr);
     ASSERT_FALSE(tree->isHidden());
     ASSERT_TRUE(emptyLabel->isHidden());
 
