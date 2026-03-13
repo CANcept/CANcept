@@ -3,6 +3,7 @@
 
 #include <QDir>
 #include <QFile>
+#include <QPushButton>
 #include <QSignalSpy>
 #include <QTest>
 #include <chrono>
@@ -96,7 +97,9 @@ TEST_F(CanLoggingSystemTest, StartRawLogging_SendVcan_LogFileContainsMessage)
 
     const qint64 testStart = QDateTime::currentMSecsSinceEpoch();
     TestHelpers::acceptDialogAsRaw();
-    QMetaObject::invokeMethod(logging.get(), "startLogging");
+    auto* startBtn = logging->getView()->findChild<QPushButton*>();
+    ASSERT_NE(startBtn, nullptr) << "Could not find start button in LoggingView";
+    startBtn->click();
     QTest::qWait(500);
 
     Core::RawCanMessage msg;
@@ -132,7 +135,9 @@ TEST_F(CanLoggingSystemTest, StartDbcLogging_SendVcan_LogFileContainsDecodedSign
 
     const qint64 testStart = QDateTime::currentMSecsSinceEpoch();
     TestHelpers::acceptDialogAsDbc();
-    QMetaObject::invokeMethod(logging.get(), "startLogging");
+    auto* startBtn = logging->getView()->findChild<QPushButton*>();
+    ASSERT_NE(startBtn, nullptr) << "Could not find start button in LoggingView";
+    startBtn->click();
     QTest::qWait(500);
 
     Core::RawCanMessage msg;

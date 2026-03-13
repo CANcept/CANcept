@@ -110,9 +110,7 @@ static void BM_DbcHandler_Parse_LongDbc(benchmark::State& state)
     Core::Connection successConn = dbcHandler.eventBroker->subscribe<Core::DBCParsedEvent>(
         [](const Core::DBCParsedEvent& event) { successCounter++; });
     Core::Connection errorConn = dbcHandler.eventBroker->subscribe<Core::DBCParseErrorEvent>(
-        [](const Core::DBCParseErrorEvent& event) {
-            failCounter++;
-        });
+        [](const Core::DBCParseErrorEvent& event) { failCounter++; });
     auto file = createTempFile(2048);
     for (auto _ : state)
     {

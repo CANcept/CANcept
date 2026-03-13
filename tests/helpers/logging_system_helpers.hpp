@@ -14,14 +14,7 @@ namespace TestHelpers {
 inline void acceptDialogAsRaw()
 {
     QTimer::singleShot(300, []() {
-        for (auto* w : QApplication::topLevelWidgets())
-        {
-            if (auto* d = qobject_cast<QDialog*>(w); d && d->isVisible())
-            {
-                d->accept();
-                return;
-            }
-        }
+        if (auto* d = qobject_cast<QDialog*>(QApplication::activeModalWidget())) d->accept();
     });
 }
 
@@ -29,17 +22,11 @@ inline void acceptDialogAsRaw()
 inline void acceptDialogAsDbc()
 {
     QTimer::singleShot(300, []() {
-        for (auto* w : QApplication::topLevelWidgets())
-        {
-            if (auto* d = qobject_cast<QDialog*>(w); d && d->isVisible())
-            {
-                if (auto* sw = d->findChild<QAbstractButton*>("logTypeSwitch"))
-                    sw->setChecked(true);
-                if (auto* cb = d->findChild<QAbstractButton*>("messageHeaderCheckbox")) cb->click();
-                d->accept();
-                return;
-            }
-        }
+        auto* d = qobject_cast<QDialog*>(QApplication::activeModalWidget());
+        if (!d) return;
+        if (auto* sw = d->findChild<QAbstractButton*>("logTypeSwitch")) sw->setChecked(true);
+        if (auto* cb = d->findChild<QAbstractButton*>("messageHeaderCheckbox")) cb->click();
+        d->accept();
     });
 }
 
