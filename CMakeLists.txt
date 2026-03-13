@@ -116,7 +116,7 @@ if(ENABLE_TESTS)
     endfunction()
 
     add_bus_test(UnitTests        "tests/unit"        GTest::gtest GTest::gmock Qt6::Test Qt6::Widgets)
-    add_bus_test(IntegrationTests "tests/integration" GTest::gtest)
+    add_bus_test(IntegrationTests "tests/integration" GTest::gtest_main)
     add_bus_test(SystemTests      "tests/system"      GTest::gtest_main)
     add_bus_test(PerformanceTests "tests/performance" benchmark::benchmark_main)
 
