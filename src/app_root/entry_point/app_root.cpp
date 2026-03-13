@@ -202,9 +202,8 @@ void AppRoot::start()
 void AppRoot::shutdown()
 {
     // to prevent being called twice
-    static bool shuttingDown = false;
-    if (shuttingDown) return;
-    shuttingDown = true;
+    if (m_shuttingDown) return;
+    m_shuttingDown = true;
 
     // disconnect to not be called by qt again
     QObject::disconnect(m_qt_quit_connection);

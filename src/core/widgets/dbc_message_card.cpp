@@ -93,6 +93,7 @@ void DbcMessageCard::setupUi(const QString& name, const uint32_t id, const int s
     if (config.showCheckbox)
     {
         m_headerCheckbox = new StyledCheckBox(card);
+        m_headerCheckbox->setObjectName("messageHeaderCheckbox");
         m_headerCheckbox->setTristate(true);
         if (!config.checkboxTooltip.isEmpty())
         {

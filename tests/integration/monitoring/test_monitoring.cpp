@@ -104,7 +104,7 @@ TEST_F(MonitoringIntegrationTest, SwitchingDbcClearsOldData)
 
     ASSERT_GT(model->rowCount(QModelIndex()), 0);
 
-    Core::DbcConfig emptyConfig;  // Keine Nachrichten definiert
+    Core::DbcConfig emptyConfig;
     mockBroker.triggerEvent(Core::DBCParsedEvent(emptyConfig, "empty.dbc"));
     QApplication::processEvents();
 

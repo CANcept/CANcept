@@ -81,6 +81,7 @@ void MessageSelectionDialog::setupUi()
     m_rawLabel = new QLabel("Raw");
     m_rawLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
     m_logTypeSwitch = new Core::StyledSwitch();
+    m_logTypeSwitch->setObjectName("logTypeSwitch");
 
     buttonLayout->addWidget(m_rawLabel);
     buttonLayout->addWidget(m_logTypeSwitch);

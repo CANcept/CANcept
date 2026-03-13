@@ -1,5 +1,8 @@
 #include <gtest/gtest.h>
 
+#include <QPixmap>
+#include <QSignalSpy>
+
 #include "app_root/model/app_root_model.hpp"
 #include "tests/helpers/mock_event_broker.hpp"
 #include "tests/helpers/mock_tab_component.hpp"
@@ -204,4 +207,38 @@ TEST_F(AppRootModelTest, ReplaceTabPreservesOrder)
 
     EXPECT_EQ(model->componentAt(0), tab3.get());
     EXPECT_EQ(model->componentAt(1), tab2.get());
+}
+
+/**
+ * @brief DecorationRole returns the icon set on the component.
+ */
+TEST_F(AppRootModelTest, DataReturnsIconForDecorationRole)
+{
+    QPixmap pixmap(16, 16);
+    pixmap.fill(Qt::red);
+    auto tabWithIcon =
+        std::make_unique<MockTabComponent>(*mockBroker, "icon_tab", "Icon Tab", QIcon(pixmap));
+    model->addTab(tabWithIcon.get());
+
+    const QVariant result = model->data(model->index(0, 0), Qt::DecorationRole);
+
+    EXPECT_TRUE(result.isValid());
+    EXPECT_FALSE(result.value<QIcon>().isNull());
+}
+
+/**
+ * @brief Emitting updated() on a tab causes the model to emit dataChanged for that row.
+ */
+TEST_F(AppRootModelTest, UpdatedSignal_EmitsDataChangedForCorrectRow)
+{
+    model->addTab(tab1.get());
+    model->addTab(tab2.get());
+
+    QSignalSpy spy(model.get(), &AppRootModel::dataChanged);
+
+    emit tab2->updated();
+
+    ASSERT_EQ(spy.count(), 1);
+    const QModelIndex changedIndex = spy.at(0).at(0).value<QModelIndex>();
+    EXPECT_EQ(changedIndex.row(), 1);
 }

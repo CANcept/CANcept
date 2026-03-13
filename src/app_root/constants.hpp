@@ -46,4 +46,8 @@ inline const std::string THEME_MAROON = "Maroon";
 /** @brief Display value for the dracula theme option. */
 inline const std::string THEME_DRACULA = "Dracula";
 
+/** @brief Copyright notice displayed at the bottom of the settings view. */
+inline const QString COPYRIGHT_TEXT =
+    "Copyright 2026 Lino Wertz, Florian Fehrle, Junes Sheikhi, Adrian Rupp and Nele Spatzier";
+
 }  // namespace AppRoot::Constants

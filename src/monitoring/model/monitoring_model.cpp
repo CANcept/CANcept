@@ -290,7 +290,6 @@ void MonitoringModel::onDbcChange(const Core::DbcConfig& config)
     std::scoped_lock<std::mutex> lock(m_dataMutex);
     m_currentDbc = config;
     messageValues = std::make_unique<std::array<MessageTimestamp, 2048>>();
-    int row = 0;
     for (auto& messageDefinition : m_currentDbc->messageDefinitions)
     {
         std::vector<QList<double>> signalValues;
@@ -306,7 +305,6 @@ void MonitoringModel::onDbcChange(const Core::DbcConfig& config)
         }
         messageValues->at(messageDefinition.messageId) = MessageTimestamp{
             .timestamps = {}, .signalValues = signalValues, .signalNames = signalNames};
-        row++;
     }
 }
 
