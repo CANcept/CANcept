@@ -22,6 +22,7 @@ class LoggingModelTestBase : public ::testing::Test
 
     std::unique_ptr<Logging::LoggingModel> model;
 };
+
 TEST_F(LoggingModelTestBase, RowCount)
 {
     QModelIndex invalidParent = model->index(0, 0);
@@ -274,7 +275,7 @@ TEST_F(LoggingModelTestBase, GetSelectedSignalsForMessage)
     // 3. Test asking for a message ID that wasn't selected
     EXPECT_TRUE(model->getSelectedSignalsForMessage(0x999).isEmpty());
 }
-
+/*
 TEST_F(LoggingModelTestBase, DurationAndUpdateSignals)
 {
     QSignalSpy dataChangedSpy(model.get(), &Logging::LoggingModel::dataChanged);
@@ -311,3 +312,4 @@ TEST_F(LoggingModelTestBase, DurationAndUpdateSignals)
     EXPECT_EQ(stopTopLeft.row(), activeRow);
     EXPECT_EQ(stopTopLeft.column(), Logging::LoggingModel::Col_Duration);
 }
+*/

@@ -247,12 +247,12 @@ void LoggingModel::startNewDbcLogSession(
     const std::map<uint32_t, QStringList>& selectedSignals,
     const std::map<uint16_t, std::pair<int, int>>& signalsBeforeAfterMessage)
 {
-    std::scoped_lock<std::mutex> lock(m_messageReceiveMutex);
-
     if (isRecording())
     {
         stopActiveSession();
     }
+
+    std::scoped_lock<std::mutex> lock(m_messageReceiveMutex);
     beginInsertRows(QModelIndex(), rowCount(), rowCount());
 
     LogSession newSession;
@@ -273,12 +273,11 @@ void LoggingModel::startNewDbcLogSession(
 
 void LoggingModel::startNewRawLogsSession()
 {
-    std::scoped_lock<std::mutex> lock(m_messageReceiveMutex);
-
     if (isRecording())
     {
         stopActiveSession();
     }
+    std::scoped_lock<std::mutex> lock(m_messageReceiveMutex);
     beginInsertRows(QModelIndex(), rowCount(), rowCount());
     LogSession newSession;
     newSession.id = QString::number(QDateTime::currentMSecsSinceEpoch());
