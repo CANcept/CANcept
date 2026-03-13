@@ -562,5 +562,4 @@ class DbcExamples
         return builder.build();
     }
 };
-
 }  // namespace TestHelpers

@@ -101,6 +101,7 @@ void MessageDetailView::setupUi()
 
     // Create List
     m_signalList = new QListView(m_stack);
+    m_signalList->setObjectName("DetailList");
     m_signalList->setFrameShape(QFrame::NoFrame);
     m_signalList->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
     m_signalList->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -164,6 +165,7 @@ void MessagesPage::setupUi()
                              Constants::MessagesPage::PageHeaderSubtitle, QString(), this);
 
     m_messagesTable = new Core::SearchableFilterTable(this);
+    m_messagesTable->setObjectName("MsgTable");
     configureMasterTable();
     messageTableCard->layout()->addWidget(m_messagesTable);
 

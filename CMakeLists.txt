@@ -59,7 +59,7 @@ set(RESOURCE_FILE "${CMAKE_CURRENT_SOURCE_DIR}/resources.qrc")
 file(GLOB_RECURSE SOURCE_FILES CONFIGURE_DEPENDS "src/*.cpp")
 list(FILTER SOURCE_FILES EXCLUDE REGEX "src/app_root/entry_point/main.cpp")
 
-add_library(${PROJECT_NAME}Lib STATIC ${SOURCE_FILES})
+add_library(${PROJECT_NAME}Lib STATIC ${SOURCE_FILES} ${RESOURCE_FILE})
 if(CLANG_TIDY_EXE)
     set_target_properties(${PROJECT_NAME}Lib PROPERTIES CXX_CLANG_TIDY "${DO_CLANG_TIDY}")
 endif()

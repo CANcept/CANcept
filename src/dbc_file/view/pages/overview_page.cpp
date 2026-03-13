@@ -68,8 +68,11 @@ void OverviewPage::setupFileInfoSection(QVBoxLayout* parentLayout)
 
     m_fileNameTitle = new QLabel(Constants::OverviewPage::FileNameTitle, fileInfoCard);
     m_lblFileName = new QLabel(Constants::OverviewPage::LabelDefault, fileInfoCard);
+    m_lblFileName->setObjectName(Constants::OverviewPage::LblNames::FileName);
+
     m_fileVersionTitle = new QLabel(Constants::OverviewPage::FileVersionTitle, fileInfoCard);
     m_lblVersion = new QLabel(Constants::OverviewPage::LabelDefault, fileInfoCard);
+    m_lblVersion->setObjectName(Constants::OverviewPage::LblNames::Version);
 
     grid->addWidget(m_fileNameTitle, 0, 0, Qt::AlignLeft);
     grid->addWidget(m_lblFileName, 0, 1, Qt::AlignRight);
@@ -87,15 +90,22 @@ void OverviewPage::setupStatsSection(QVBoxLayout* parentLayout)
     layout->addWidget(createStatCard(Constants::OverviewPage::EcuStatTitle, m_lblEcuCount,
                                      Constants::Sidebar::IconEcus, m_statTitleLabels,
                                      m_statIconLabels, this));
+    m_lblEcuCount->setObjectName(Constants::OverviewPage::LblNames::EcuCount);
+
     layout->addWidget(createStatCard(Constants::OverviewPage::MessagesStatTitle, m_lblMessageCount,
                                      Constants::Sidebar::IconMessages, m_statTitleLabels,
                                      m_statIconLabels, this));
+    m_lblMessageCount->setObjectName(Constants::OverviewPage::LblNames::MsgCount);
+
     layout->addWidget(createStatCard(Constants::OverviewPage::SignalsStatTitle, m_lblSignalCount,
                                      Constants::Sidebar::IconSignals, m_statTitleLabels,
                                      m_statIconLabels, this));
+    m_lblSignalCount->setObjectName(Constants::OverviewPage::LblNames::SigCount);
+
     layout->addWidget(createStatCard(Constants::OverviewPage::OrphansStatTitle, m_lblOrphanCount,
                                      Constants::Sidebar::IconMessages, m_statTitleLabels,
                                      m_statIconLabels, this));
+    m_lblOrphanCount->setObjectName(Constants::OverviewPage::LblNames::OrphanCount);
 
     parentLayout->addLayout(layout);
 }
