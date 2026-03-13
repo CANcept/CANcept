@@ -3,7 +3,7 @@
 #include <QApplication>
 
 /**
- * @brief Custom main for integration tests that require QApplication.
+ * @brief Custom main for system tests that require QApplication.
  */
 auto main(int argc, char** argv) -> int
 {

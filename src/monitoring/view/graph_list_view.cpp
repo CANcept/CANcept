@@ -7,6 +7,7 @@
 #include "core/macro/console_logging.hpp"
 #include "core/macro/theme.hpp"
 #include "core/theme/style_event.hpp"
+#include "core/util/dbc_utils.hpp"
 #include "core/widgets/card_widget.hpp"
 #include "monitoring/constants.hpp"
 #include "monitoring/styles.hpp"
@@ -167,8 +168,8 @@ void GraphListView::updateViewData()
         for (int i = 0; i < m_model->rowCount(QModelIndex()); ++i)
         {
             QModelIndex checkIndex = m_model->index(i, 0, QModelIndex());
-            QString currentId =
-                m_model->data(checkIndex, MonitoringModel::MonitoringRoles::Role_ID).toString();
+            QString currentId = Core::formatId(
+                m_model->data(checkIndex, MonitoringModel::MonitoringRoles::Role_ID).toUInt());
 
             if (currentId == targetMsgId)
             {

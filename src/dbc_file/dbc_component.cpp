@@ -4,6 +4,15 @@
 #include "util/util.hpp"
 
 namespace DbcFile {
+
+DbcComponent::~DbcComponent()
+{
+    if (m_view && m_view->parent())
+    {
+        m_view.release();
+    }
+}
+
 DbcComponent::DbcComponent(Core::IEventBroker& broker)
     : Core::ITabComponent(broker, Constants::Component::TabId, Constants::Component::TabTitle,
                           QIcon(Constants::Component::TabIcon))

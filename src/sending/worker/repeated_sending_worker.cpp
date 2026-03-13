@@ -2,6 +2,7 @@
 
 #include <QThread>
 #include <chrono>
+#include <thread>
 
 #include "sending/constants.hpp"
 
@@ -46,7 +47,7 @@ void RepeatedSendingWorker::startSending(SendCallback callback, const int interv
     m_shouldStop.store(false);
     m_isActive.store(true);
 
-    start();
+    start(QThread::TimeCriticalPriority);
 }
 
 void RepeatedSendingWorker::stopSending()
@@ -80,16 +81,23 @@ void RepeatedSendingWorker::updateInterval(const int intervalMs)
     if (intervalMs > 0)
     {
         m_intervalMs.store(intervalMs);
+        m_resetGuard.store(true);
     }
 }
 
 void RepeatedSendingWorker::run()
 {
+    using Clock = std::chrono::high_resolution_clock;
+    using Ns = std::chrono::nanoseconds;
+    auto guardNs = static_cast<double>(Constants::INITIAL_SLEEP_GUARD_NS);
+
     emit sendingStarted();
 
     while (!m_shouldStop.load())
     {
-        // Execute the send callback
+        const auto deadline =
+            Clock::now() + Ns(static_cast<long long>(m_intervalMs.load()) * 1'000'000LL);
+
         {
             std::lock_guard lock(m_callbackMutex);
             if (m_callback)
@@ -108,15 +116,30 @@ void RepeatedSendingWorker::run()
             }
         }
 
-        // Sleep for the specified interval, also checks periodicallly for stop signal
-        const int intervalMs = m_intervalMs.load();
-        int remainingMs = intervalMs;
-
-        while (remainingMs > 0 && !m_shouldStop.load())
+        if (m_resetGuard.exchange(false))
         {
-            const int sleepMs = std::min(remainingMs, Constants::POLLING_CHECK_INTERVAL_MS);
-            msleep(sleepMs);
-            remainingMs -= sleepMs;
+            guardNs = static_cast<double>(Constants::INITIAL_SLEEP_GUARD_NS);
+        }
+
+        const long long remainingNs =
+            std::chrono::duration_cast<Ns>(deadline - Clock::now()).count();
+
+        if (remainingNs > static_cast<long long>(guardNs))
+        {
+            const auto sleepTarget = deadline - Ns(static_cast<long long>(guardNs));
+            std::this_thread::sleep_until(sleepTarget);
+            const long long overshootNs =
+                std::chrono::duration_cast<Ns>(Clock::now() - sleepTarget).count();
+
+            const double newEstimate =
+                Constants::SLEEP_GUARD_ALPHA * static_cast<double>(overshootNs) +
+                (1.0 - Constants::SLEEP_GUARD_ALPHA) * guardNs;
+            guardNs = std::max(static_cast<double>(Constants::MIN_SLEEP_GUARD_NS),
+                               std::max(guardNs * 0.99, newEstimate));
+        }
+
+        while (Clock::now() < deadline && !m_shouldStop.load())
+        {
         }
     }
 

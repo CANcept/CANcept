@@ -205,7 +205,7 @@ inline constexpr int REPEATED_SENDING_MAX_FREQUENCY = 10000;
 
 /** @brief Template for the repeated sending input title */
 inline const QString REPEATED_SENDING_TRANSMISSION_INPUT_TITLE =
-    QString("Transmission Interval (0 - %1 ms)").arg(MAX_CYCLE_INTERVAL_MS);
+    QString("Transmission Interval (1 - %1 ms)").arg(MAX_CYCLE_INTERVAL_MS);
 
 /** @brief Time to wait (in ms) for the thread to stop gracefully before forcing termination. */
 inline constexpr int THREAD_TERMINATION_WAIT_MS = 5000;
@@ -230,6 +230,15 @@ inline const QString ERR_UNKNOWN_CALLBACK_ERROR = "Unknown error in send callbac
 
 /** @brief Name for the repeated sending worker thread. */
 inline const QString REPEATED_SENDING_THREAD_NAME = "RepeatedSendingWorker";
+
+/** @brief Initial sleep guard duration in nanoseconds. */
+inline constexpr long long INITIAL_SLEEP_GUARD_NS = 20'000'000LL;  // 20ms
+
+/** @brief Minimum sleep guard duration in nanoseconds (hard floor). */
+inline constexpr long long MIN_SLEEP_GUARD_NS = 500'000LL;  // 0.5ms
+
+/** @brief EMA weight for sleep overshoot adaptation (higher = adapts faster). */
+inline constexpr double SLEEP_GUARD_ALPHA = 0.25;
 
 }  // namespace Constants
 

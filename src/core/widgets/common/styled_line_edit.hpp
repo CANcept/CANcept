@@ -31,6 +31,17 @@ class StyledLineEdit : public QLineEdit
      */
     explicit StyledLineEdit(const QString& text, QWidget* parent = nullptr);
 
+    /**
+     * @brief Overrides the default theme padding for this instance.
+     *
+     * Must be called after construction. The values are preserved across theme switches
+     * because applyStyle() reads them instead of the theme defaults.
+     *
+     * @param vertical   Top/bottom padding in pixels.
+     * @param horizontal Left/right padding in pixels.
+     */
+    void setPadding(int vertical, int horizontal);
+
    protected:
     /**
      * @brief Custom paint event to draw high-fidelity borders.
@@ -49,6 +60,9 @@ class StyledLineEdit : public QLineEdit
      * stylesheet string (CSS) accordingly.
      */
     void applyStyle();
+
+    int m_paddingV{-1};
+    int m_paddingH{-1};
 };
 
 }  // namespace Core

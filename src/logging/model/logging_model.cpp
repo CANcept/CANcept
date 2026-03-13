@@ -263,6 +263,8 @@ void LoggingModel::startNewDbcLogSession(
     newSession.selectedSignals = selectedSignals;
     newSession.signalsBeforeAfterMessage = signalsBeforeAfterMessage;
     newSession.type = DBC_BASED;
+    newSession.logger = Core::LogService::getInstance().getLogger(Core::LogContext::CanLogging,
+                                                                  newSession.id.toStdString());
 
     m_sessions.push_back(newSession);
     m_activeSessionIndex = static_cast<int>(m_sessions.size()) - 1;
@@ -284,6 +286,8 @@ void LoggingModel::startNewRawLogsSession()
     newSession.duration = "00:00:00";
     newSession.isRecording = true;
     newSession.type = RAW;
+    newSession.logger = Core::LogService::getInstance().getLogger(Core::LogContext::CanLogging,
+                                                                  newSession.id.toStdString());
 
     m_sessions.push_back(newSession);
     m_activeSessionIndex = static_cast<int>(m_sessions.size()) - 1;
@@ -293,17 +297,18 @@ void LoggingModel::startNewRawLogsSession()
 // Stops the currently active logging session
 void LoggingModel::stopActiveSession()
 {
-    std::scoped_lock<std::mutex> lock(m_messageReceiveMutex);
-
-    if (!isRecording())
     {
-        return;
+        std::scoped_lock<std::mutex> lock(m_messageReceiveMutex);
+
+        if (!isRecording())
+        {
+            return;
+        }
+
+        m_sessions[m_activeSessionIndex].isRecording = false;
+        m_activeSessionIndex = -1;
     }
-
-    m_sessions[m_activeSessionIndex].isRecording = false;
     updateActiveDuration();
-
-    m_activeSessionIndex = -1;
 
     emit dataChanged(index(0, 0), index(rowCount() - 1, columnCount() - 1));
 }
@@ -376,9 +381,7 @@ void LoggingModel::onDbcMessageReceived(const Core::DbcCanMessage& message)
     messageLine.append(logSession->signalsBeforeAfterMessage.at(message.messageId).second, ',');
     messageLine.pop_back();
 
-    Core::LogService::getInstance()
-        .getLogger(Core::LogContext::CanLogging, activeSession.id.toStdString())
-        ->info(messageLine.c_str());
+    activeSession.logger->info(messageLine.c_str());
 }
 
 void LoggingModel::onRawMessageReceived(const Core::RawCanMessage& message)
@@ -407,8 +410,6 @@ void LoggingModel::onRawMessageReceived(const Core::RawCanMessage& message)
     }
     messageLine.pop_back();
 
-    Core::LogService::getInstance()
-        .getLogger(Core::LogContext::CanLogging, activeSession.id.toStdString())
-        ->info(messageLine.c_str());
+    activeSession.logger->info(messageLine.c_str());
 }
 }  // namespace Logging

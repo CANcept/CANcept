@@ -24,7 +24,13 @@ MonitoringComponent::MonitoringComponent(Core::IEventBroker& broker)
     connectSignals();
 }
 
-MonitoringComponent::~MonitoringComponent() = default;
+MonitoringComponent::~MonitoringComponent()
+{
+    if (m_view && m_view->parent())
+    {
+        m_view.release();
+    }
+}
 
 auto MonitoringComponent::getView() -> QWidget*
 {

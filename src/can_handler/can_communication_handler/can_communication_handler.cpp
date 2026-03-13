@@ -51,11 +51,6 @@ void CanCommunicationHandler::onStop()
 {
     _execute = false;
     message_check_thread.join();
-    for (std::unique_ptr<ICanParser> &parser : can_handlers)
-    {
-        parser.reset();
-    }
-    deviceHandler.reset();
 }
 
 void CanCommunicationHandler::registerSettings(Core::ISettingsRegistry &registry)
