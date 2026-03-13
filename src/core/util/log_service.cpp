@@ -14,6 +14,7 @@ namespace Core {
 LogService::LogService()
 {
     spdlog::init_thread_pool(65536, 2);
+    m_canThreadPool = std::make_shared<spdlog::details::thread_pool>(262144, 5);
 }
 
 // Private destructor - ensures clean shutdown
@@ -52,13 +53,11 @@ std::shared_ptr<spdlog::logger> LogService::getLogger(const LogContext context,
             // Create rotating file sink (50MB max, 5 files for stress testing)
             auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(logFilePath);
 
-            // Format: timestamp|level|data (for easy CSV parsing)
             file_sink->set_pattern("%v");
 
             // Create async logger with overrun policy (drops messages if queue full)
             logger = std::make_shared<spdlog::async_logger>(
-                key, file_sink, spdlog::thread_pool(),
-                spdlog::async_overflow_policy::overrun_oldest);
+                key, file_sink, m_canThreadPool, spdlog::async_overflow_policy::overrun_oldest);
 
             logger->set_level(spdlog::level::info);  // Info and above (skip trace/debug)
             logger->flush_on(spdlog::level::err);    // Only flush on errors (performance)

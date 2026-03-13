@@ -1,6 +1,7 @@
 #include "monitoring_model.hpp"
 
 #include <memory>
+#include <mutex>
 
 #include "monitoring/constants.hpp"
 
@@ -256,6 +257,7 @@ auto MonitoringModel::data(const QModelIndex& index, int role) const -> QVariant
 
 void MonitoringModel::onIncomingDbcFrame(const Core::DbcCanMessage& message)
 {
+    std::scoped_lock<std::mutex> lock(m_dataMutex);
     if (!m_currentDbc.has_value() || !deleteOldData || message.messageId >= messageValues->size())
     {
         return;
@@ -285,6 +287,7 @@ void MonitoringModel::onIncomingDbcFrame(const Core::DbcCanMessage& message)
 
 void MonitoringModel::onDbcChange(const Core::DbcConfig& config)
 {
+    std::scoped_lock<std::mutex> lock(m_dataMutex);
     m_currentDbc = config;
     messageValues = std::make_unique<std::array<MessageTimestamp, 2048>>();
     int row = 0;
@@ -309,6 +312,7 @@ void MonitoringModel::onDbcChange(const Core::DbcConfig& config)
 
 void MonitoringModel::eraseOldData()
 {
+    std::scoped_lock<std::mutex> lock(m_dataMutex);
     const auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(
                                   std::chrono::system_clock::now().time_since_epoch())
                                   .count();
@@ -320,7 +324,10 @@ void MonitoringModel::eraseOldData()
         {
             for (auto& j : messageValue.signalValues)
             {
-                j.pop_front();
+                if (!j.empty())
+                {
+                    j.pop_front();
+                }
             }
             messageValue.timestamps.pop_front();
         }
