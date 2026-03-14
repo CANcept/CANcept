@@ -18,8 +18,8 @@
 #include "dbc_file/constants.hpp"
 #include "dbc_file/delegate/message_detail_delegate.hpp"
 #include "dbc_file/delegate/message_table_delegate.hpp"
-#include "dbc_file/model/dbc_roles.hpp"
 #include "dbc_file/styles.hpp"
+#include "dbc_file/util/util.hpp"
 
 namespace DbcFile {
 
@@ -81,7 +81,7 @@ void MessageDetailView::updateHeaderInfo(const QString& name, uint id, const QSt
     m_card->setTitle(QString(Constants::MessagesPage::DetailTitle).arg(name));
 
     const QString subtitle = QString(Constants::MessagesPage::DetailSubtitle)
-                                 .arg(Core::Util::formatId(id), sender, QString::number(dlc));
+                                 .arg(Core::formatId(id), sender, QString::number(dlc));
     m_card->setSubtitle(subtitle);
 }
 
@@ -101,6 +101,7 @@ void MessageDetailView::setupUi()
 
     // Create List
     m_signalList = new QListView(m_stack);
+    m_signalList->setObjectName("DetailList");
     m_signalList->setFrameShape(QFrame::NoFrame);
     m_signalList->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
     m_signalList->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -164,6 +165,7 @@ void MessagesPage::setupUi()
                              Constants::MessagesPage::PageHeaderSubtitle, QString(), this);
 
     m_messagesTable = new Core::SearchableFilterTable(this);
+    m_messagesTable->setObjectName("MsgTable");
     configureMasterTable();
     messageTableCard->layout()->addWidget(m_messagesTable);
 
@@ -328,19 +330,14 @@ void MessagesPage::selectMessageIndex(const QModelIndex& index)
 {
     if (!m_detailView || !index.isValid()) return;
 
-    const QModelIndex nameIdx = Core::Util::siblingAtColumnQt5(index, Constants::Columns::MsgName);
-    const QModelIndex idIdx = Core::Util::siblingAtColumnQt5(index, Constants::Columns::MsgId);
-    const QModelIndex senderIdx =
-        Core::Util::siblingAtColumnQt5(index, Constants::Columns::MsgSender);
-    const QModelIndex dlcIdx = Core::Util::siblingAtColumnQt5(index, Constants::Columns::MsgDlc);
+    const QModelIndex nameIdx = Util::siblingAtColumnQt5(index, Constants::Columns::MsgName);
+    const QModelIndex idIdx = Util::siblingAtColumnQt5(index, Constants::Columns::MsgId);
+    const QModelIndex senderIdx = Util::siblingAtColumnQt5(index, Constants::Columns::MsgSender);
+    const QModelIndex dlcIdx = Util::siblingAtColumnQt5(index, Constants::Columns::MsgDlc);
 
     const QString name = nameIdx.data(Qt::DisplayRole).toString();
 
-    uint id = idIdx.data(DbcRoles::Role_Id).toUInt();
-    if (id == 0)
-    {
-        id = idIdx.data(Qt::DisplayRole).toUInt();
-    }
+    uint id = Util::resolveMessageId(idIdx);
 
     const QString sender = senderIdx.data(Qt::DisplayRole).toString();
     const int dlc = dlcIdx.data(Qt::DisplayRole).toInt();

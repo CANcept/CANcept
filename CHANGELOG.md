@@ -1,6 +1,66 @@
 # Changelog
 
 All notable changes to this project will be documented in this file.
+## [1.1.0] - 2026-03-14
+
+### Added
+#### Tests
+ - Added unit tests for all application modules covering all core logic with high code coverage, including edge cases and error handling scenarios.
+ - Added integration tests for critical user flows across modules, including DBC file loading, message sending.
+ - Added system tests for end-to-end application behavior, including UI interactions and theme switching.
+ - Added performance tests to ensure application speed under heavy load and with large DBC files.
+ - Implemented test utilities for mocking app components, events, and CAN interactions to facilitate testing.
+
+### Fixed
+
+#### General
+
+- Hex decimal numbers for the message ids are represented with a small x in 0x... (DBCView, MonitoringView, Sending)
+- Resolved a segmentation fault caused by redundant ownership of module main views.
+- Corrected an incorrect color gradient rendering specifically within the Dracula theme.
+
+
+#### App Root
+
+- Patched a segmentation fault in the app root shutdown logic triggered by double-invocation.
+
+
+#### DBC File
+
+- Search texts and selected filters are now reset after a new DBC file is loaded in the DBC File Tab, preventing items being filtered out based on filters set for the previously loaded file.
+- Some hidden logic functions within the DBC-File Module have been outsourced into dedicated util files (e.g. unit-, sender-extraction logic for filtering, file validation logic).
+- ECU items in the ECUs section are no longer filtered out when children of the ECU do not match the filter.
+
+
+#### Sending
+
+- Fixed a display error where the repeated sending range was rendered incorrectly.
+- Fixed timing discrepancies in the repeated sending module and improved scheduler granularity.
+- Fixed a UI regression in the Sending tab where input padding broke after a theme change.
+
+
+#### Monitoring
+
+- Hex Decimal numbers are correctly converted in the MonitoringView
+- The GraphList in the Monitoring tab is correctly aligned to the top.
+- Removed redundant row counter.
+- Fixed a concurrency issue in the monitoring model.
+- Fixed a possible segmentation fault in the monitoring model.
+
+
+#### Logging
+
+- Fixed a bug where the start button icon color failed to update during a theme switch
+- Fixed a concurrency issue in the logging model.
+- Refactored the monitoring model and component to be more easily usable.
+
+
+#### Can Handler
+
+- Fixed a bug when parsing CAN messages with big endian values.
+- Made FileParser also parse CRLF file endings correctly.
+- Fixed a bug that made the DBC parser parse some files not correctly.
+
 
 ## [1.0.0] - 2026-02-16
 

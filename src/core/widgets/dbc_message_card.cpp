@@ -2,11 +2,11 @@
 
 #include <QHBoxLayout>
 
+#include "../util/dbc_utils.hpp"
 #include "card_widget.hpp"
 #include "common/styled_checkbox.hpp"
 #include "core/macro/theme.hpp"
 #include "core/theme/style_event.hpp"
-#include "core/util/dbc_utils.hpp"
 #include "dbc_signal_row.hpp"
 
 namespace Core {
@@ -79,7 +79,7 @@ void DbcMessageCard::setupUi(const QString& name, const uint32_t id, const int s
     headerRow->addWidget(m_nameLabel);
 
     // CAN ID with 0x prefix
-    m_idLabel = new QLabel(Util::formatId(id), card);
+    m_idLabel = new QLabel(Core::formatId(id), card);
     headerRow->addWidget(m_idLabel);
 
     headerRow->addStretch();
@@ -93,6 +93,7 @@ void DbcMessageCard::setupUi(const QString& name, const uint32_t id, const int s
     if (config.showCheckbox)
     {
         m_headerCheckbox = new StyledCheckBox(card);
+        m_headerCheckbox->setObjectName("messageHeaderCheckbox");
         m_headerCheckbox->setTristate(true);
         if (!config.checkboxTooltip.isEmpty())
         {

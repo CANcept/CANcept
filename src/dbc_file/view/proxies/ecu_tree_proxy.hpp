@@ -27,6 +27,14 @@ class EcuTreeProxy : public QSortFilterProxyModel
      */
     explicit EcuTreeProxy(QObject* parent = nullptr);
 
+    [[nodiscard]] auto getSearchFilter() const -> QString
+    {
+        return m_filterText;
+    }
+    [[nodiscard]] auto getFilterCategory() const -> int
+    {
+        return m_filterCategory;
+    }
     /**
      * @brief Set the text used for filtering by name.
      * @param text Filter string
@@ -39,7 +47,6 @@ class EcuTreeProxy : public QSortFilterProxyModel
      */
     void setFilterCategory(int index);
 
-   protected:
     /**
      * @brief Overrides default child handling for Messages.
      * Messages are considered leaf nodes.
@@ -49,6 +56,12 @@ class EcuTreeProxy : public QSortFilterProxyModel
     [[nodiscard]] auto hasChildren(const QModelIndex& parent) const -> bool override;
 
     /**
+     * @brief Returns always 1 so there is only on column.
+     */
+    int columnCount(const QModelIndex& parent) const override;
+
+   protected:
+    /**
      * @brief Determines whether a row should be visible based on search text and category.
      * @param sourceRow Row in the source model
      * @param sourceParent Parent index in the source model
@@ -56,10 +69,6 @@ class EcuTreeProxy : public QSortFilterProxyModel
      */
     [[nodiscard]] auto filterAcceptsRow(int sourceRow,
                                         const QModelIndex& sourceParent) const -> bool override;
-    /**
-     * @brief Returns always 1 so there is only on column.
-     */
-    int columnCount(const QModelIndex& parent) const override;
 
    private:
     QString m_filterText;    ///< Current search text

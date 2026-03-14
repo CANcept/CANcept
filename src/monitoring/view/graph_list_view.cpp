@@ -7,6 +7,7 @@
 #include "core/macro/console_logging.hpp"
 #include "core/macro/theme.hpp"
 #include "core/theme/style_event.hpp"
+#include "core/util/dbc_utils.hpp"
 #include "core/widgets/card_widget.hpp"
 #include "monitoring/constants.hpp"
 #include "monitoring/styles.hpp"
@@ -52,12 +53,12 @@ void GraphListView::applyStyle()
     m_scrollArea->setWidgetResizable(true);
     m_scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     m_scrollArea->setFrameShape(QFrame::NoFrame);
+    m_scrollArea->setAlignment(Qt::AlignTop);
 
     if (!m_layout) return;
     m_layout->setContentsMargins(0, 0, 0, 0);
     m_layout->setSpacing(spacing.spacingSm);
-    m_layout->addStretch();
-
+    m_layout->setAlignment(Qt::AlignTop);
     // Apply vertical scrollbar style
     if (m_scrollArea->verticalScrollBar())
         m_scrollArea->verticalScrollBar()->setStyleSheet(Style::Common::verticalScrollBar());
@@ -93,8 +94,9 @@ void GraphListView::addGraph(const QString& messageId, const QString& signalName
     LOG_INF("MonitoringComponent", "GraphList graph added for signal");
 
     auto* graph = new SignalGraph(messageId, signalName, this);
-    graph->setContainer(new Core::CardWidget(QString("0x%1:  %2").arg(messageId, signalName),
+    graph->setContainer(new Core::CardWidget(QString("%1:  %2").arg(messageId, signalName),
                                              QString(), Constants::SIGNAL_GRAPH_ICON_PATH, this));
+    graph->getContainer()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     graph->getContainer()->contentLayout()->addWidget(graph);
 
     m_signal_graphs.append(graph);
@@ -105,8 +107,8 @@ void GraphListView::deleteGraph(const QString& messageId, const QString& signalN
 {
     for (int i = 0; i < m_signal_graphs.size(); ++i)
     {
-        SignalGraph* graph = m_signal_graphs[i];
-        if (graph->getSignalName() == signalName && graph->getMessageId() == messageId)
+        if (SignalGraph* graph = m_signal_graphs[i];
+            graph->getSignalName() == signalName && graph->getMessageId() == messageId)
         {
             QWidget* container = graph->getContainer();
 
@@ -145,7 +147,7 @@ void GraphListView::signalChecked(bool checked, const QString& messageId, const 
 
 void GraphListView::onDbcChange()
 {
-    for (SignalGraph* graph : m_signal_graphs)
+    for (const SignalGraph* graph : m_signal_graphs)
     {
         deleteGraph(graph->getMessageId(), graph->getSignalName());
     }
@@ -166,8 +168,8 @@ void GraphListView::updateViewData()
         for (int i = 0; i < m_model->rowCount(QModelIndex()); ++i)
         {
             QModelIndex checkIndex = m_model->index(i, 0, QModelIndex());
-            QString currentId =
-                m_model->data(checkIndex, MonitoringModel::MonitoringRoles::Role_ID).toString();
+            QString currentId = Core::formatId(
+                m_model->data(checkIndex, MonitoringModel::MonitoringRoles::Role_ID).toUInt());
 
             if (currentId == targetMsgId)
             {
@@ -182,7 +184,7 @@ void GraphListView::updateViewData()
             continue;
         }
 
-        int signalCount = m_model->rowCount(messageIndex);
+        const int signalCount = m_model->rowCount(messageIndex);
 
         for (int j = 0; j < signalCount; ++j)
         {
@@ -193,10 +195,10 @@ void GraphListView::updateViewData()
 
             if (currentSignalName == targetSignalName)
             {
-                QVariant timestamps =
+                const QVariant timestamps =
                     m_model->data(messageIndex, MonitoringModel::MonitoringRoles::Role_ValueList);
 
-                QVariant signalValues =
+                const QVariant signalValues =
                     m_model->data(signalIndex, MonitoringModel::MonitoringRoles::Role_ValueList);
 
                 graph->updateGraphData(timestamps, signalValues);

@@ -88,6 +88,8 @@ class AppRoot
         }
     }
 
+    bool m_shuttingDown = false;
+
     /**
      * @brief A Connection to the QT Quit command.
      */

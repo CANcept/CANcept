@@ -57,6 +57,14 @@ class MonitoringComponent final : public Core::ITabComponent
     auto getView() -> QWidget* override;
 
     /**
+     * @brief Returns the model
+     */
+    MonitoringModel* getModel()
+    {
+        return m_model.get();
+    };
+
+    /**
      * @brief Called when the application starts/module is activated.
      */
     void onStart() override;
@@ -94,15 +102,6 @@ class MonitoringComponent final : public Core::ITabComponent
     void rawFrameReceived(const Core::RawCanMessage& message);
 
     void tick();
-
-   private slots:
-
-    /**
-     * @brief Triggered when the user selects a different CAN device/interface.
-     * It also publishes the CanDriverChangeEvent.
-     * @param deviceName The identifier of the newly selected hardware.
-     */
-    void onDeviceChanged(const std::string& deviceName) const;
 
    private:
     void connectSignals();

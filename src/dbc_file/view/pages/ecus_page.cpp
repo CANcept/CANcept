@@ -102,6 +102,7 @@ void EcusPage::createHeaderCard()
 void EcusPage::createTreeSection()
 {
     m_treeWidget = new Core::SearchableFilterTree(this);
+    m_treeWidget->setObjectName("EcuTree");
 
     // Setup search/filter
     m_treeWidget->setSearchPlaceholder(Constants::EcusPage::SearchbarText);

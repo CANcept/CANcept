@@ -89,11 +89,13 @@ auto CanDbcHandler::parseReceivedSignal(const Core::DbcSignalDescription& signal
                                                  // data ( +signal.startBit)
     } else                                       // big endian
     {
-        rawValue = dataBigEndian << (64 - signal.startBit -
-                                     signal.signalSize)  // remove all data in front of data
-                   >> (64 - signal.signalSize);  // shift back (sizeof(int64_t) - signal.startBit
-                                                 // - signal.signalSize), remove all data behind
-                                                 // data ( +signal.startBit)
+        const char spaceInFront = signal.startBit % 8;
+        const char frontSize = 8 - spaceInFront;
+        const uint64_t frontBits = dataBigEndian << (8 * (signal.startBit / 8)) >>
+                                   (56 + spaceInFront) << (signal.signalSize - frontSize);
+        const uint64_t backBits = dataBigEndian << (8 * ((signal.startBit / 8) + 1)) >>
+                                  (64 - signal.signalSize + frontSize);
+        rawValue = frontBits | backBits;
     }
     if (signal.valueType)  // signed
     {
@@ -204,10 +206,18 @@ void CanDbcHandler::parseSendSignal(const Core::DbcSignalDescription& signal,
         dataLittleEndian |= (maskedRawValue << signal.startBit);
     } else  // Big endian (Motorola)
     {
+        char spaceInFront = signal.startBit % 8;
+        char frontBits = maskedRawValue >> (signal.signalSize - (8 - spaceInFront));
+        uint64_t backBits = (maskedRawValue << (64 - signal.signalSize + (8 - spaceInFront))) >>
+                            (64 - signal.signalSize + (8 - spaceInFront));
+        uint64_t convertedRawValue =
+            static_cast<uint64_t>(frontBits)
+                << (signal.signalSize - (8 - spaceInFront) + spaceInFront) |
+            backBits;
         // Decode: rawValue = dataBE << (64 - startBit) >> (64 - signalSize)
         // This extracts signal from bits [startBit - signalSize + 1, startBit]
         // Encode (inverse): place value at those bits
-        dataBigEndian |= (maskedRawValue << signal.startBit);
+        dataBigEndian |= (convertedRawValue << (64 - signal.startBit - signal.signalSize));
     }
 }
 
@@ -256,6 +266,8 @@ CanDbcHandler::~CanDbcHandler()
             delete dbcMessage;
         }
     }
+    dbcConfigChangeConnection.release();
+    dbcSendEventConnection.release();
 }
 
 }  // namespace CanHandler

@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=CAN Bus Manager
+Comment=CAN Bus Manager
+Icon=CanBusManager
+Exec=CanBusManager
+Terminal=false
+Categories=Development;Engineering;
+Keywords=CAN;Bus;DBC;Automotive;Simulation;Monitoring;Logging;
+StartupNotify=true

@@ -9,6 +9,7 @@
 
 #include "core/dto/can_dto.hpp"
 #include "core/dto/dbc_dto.hpp"
+#include "spdlog/spdlog.h"
 
 namespace Logging {
 
@@ -28,6 +29,8 @@ struct LogSession {
     std::map<uint32_t, QStringList> selectedSignals;  // Map of message ID to selected signal names
                                                       // (for filtering during logging)
     std::map<uint16_t, std::pair<int, int>> signalsBeforeAfterMessage;
+
+    std::shared_ptr<spdlog::logger> logger;
 };
 
 /**
@@ -127,11 +130,30 @@ class LoggingModel final : public QAbstractTableModel
     /** @brief Updates the duration string of the active session based on current time. */
     void updateActiveDuration();
 
+    /**
+     * @brief Handler for incoming DBC-decoded CAN messages. Adds the message to the active session
+     * if it's a DBC-based session.
+     * @param message The received DBC-decoded CAN message to be logged.
+     */
+    void onDbcMessageReceived(const Core::DbcCanMessage& message);
+
+    /**
+     * @brief Handler for incoming raw CAN messages. Adds the message to the active session if it's
+     * a RAW session.
+     * @param message The received raw CAN message to be logged.
+     */
+    void onRawMessageReceived(const Core::RawCanMessage& message);
+
    private:
+    /** @brief Updates duration without acquiring the mutex. Caller must hold m_messageReceiveMutex.
+     */
+    void updateActiveDurationLocked();
+
     std::optional<Core::DbcConfig> m_currentDbc;
 
     std::vector<LogSession> m_sessions;
     int m_activeSessionIndex = -1;
+    std::mutex m_messageReceiveMutex;
 };
 
 }  // namespace Logging

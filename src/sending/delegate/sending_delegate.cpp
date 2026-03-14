@@ -18,8 +18,8 @@ void SendingDelegate::paint(QPainter* painter, const QStyleOptionViewItem& optio
     QStyledItemDelegate::paint(painter, option, index);
 }
 
-QWidget* SendingDelegate::createEditor(QWidget* parent, const QStyleOptionViewItem&,
-                                       const QModelIndex& index) const
+auto SendingDelegate::createEditor(QWidget* parent, const QStyleOptionViewItem&,
+                                   const QModelIndex& index) const -> QWidget*
 {
     // Check if this is a signal index (has internal pointer)
     if (index.internalPointer() != nullptr)
@@ -36,8 +36,7 @@ QWidget* SendingDelegate::createEditor(QWidget* parent, const QStyleOptionViewIt
 void SendingDelegate::setModelData(QWidget* editor, QAbstractItemModel* model,
                                    const QModelIndex& index) const
 {
-    auto* spinBox = qobject_cast<QDoubleSpinBox*>(editor);
-    if (spinBox)
+    if (const auto* spinBox = qobject_cast<QDoubleSpinBox*>(editor))
     {
         model->setData(index, spinBox->value(), SendingModel::Role_SignalValue);
     }

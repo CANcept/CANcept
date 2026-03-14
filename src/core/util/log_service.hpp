@@ -85,6 +85,7 @@ class LogService
 
     std::mutex m_registryMutex;
     std::unordered_map<std::string, std::shared_ptr<spdlog::logger>> m_loggers;
+    std::shared_ptr<spdlog::details::thread_pool> m_canThreadPool;
 };
 
 }  // namespace Core

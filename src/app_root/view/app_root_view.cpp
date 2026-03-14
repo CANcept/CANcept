@@ -49,6 +49,7 @@ void AppRootView::setupUi()
     m_tabView->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
     m_settingsButton->setCursor(Qt::PointingHandCursor);
+    m_settingsButton->setObjectName("settingsButton");
     connect(m_settingsButton, &QPushButton::clicked, this, &AppRootView::onSettingsClicked);
 
     m_mainLayout->setContentsMargins(0, 0, 0, 0);
@@ -175,6 +176,11 @@ void AppRootView::setSettingsModel(SettingsModel* settingsModel)
 
 void AppRootView::handleTabChanged(const int index)
 {
+    if (index < 0)
+    {
+        return;
+    }
+
     LOG_INF("AppRoot", "Switching tab...")
     if (m_settingsActive)
     {
@@ -182,7 +188,7 @@ void AppRootView::handleTabChanged(const int index)
         updateSettingsButtonStyle(false);
     }
 
-    if (index >= 0 && index < m_contentStack->count() - 1)
+    if (index < m_contentStack->count() - 1)
     {
         m_lastTabIndex = index;
         m_contentStack->setCurrentIndex(index);

@@ -30,13 +30,14 @@ class CanDbcHandler final : public ICanParser
     };
     ~CanDbcHandler() override;
 
-   private:
     /**
      * @brief Parses a CAN message based on the current DBC config, publishes the parsed message to
      * the event broker
      * @param canMessage The message to be parsed
      */
     void parseReceivedMessage(const sockcanpp::CanMessage* canMessage) override;
+
+   private:
     /**
      * @brief Encodes a dbc based decoded message into CAN form. It then publishes it to the CAN
      * device via the CanCommunicationHandler.

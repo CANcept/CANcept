@@ -32,7 +32,20 @@ class FlatListProxy : public QAbstractProxyModel
      * @param targetType The type of DBC item to expose in this flat proxy
      * @param parent Optional parent QObject
      */
-    explicit FlatListProxy(const Core::DbcItemType targetType, QObject* parent = nullptr);
+    explicit FlatListProxy(Core::DbcItemType targetType, QObject* parent = nullptr);
+
+    [[nodiscard]] auto getSearchFilter() const -> QString
+    {
+        return m_filterText;
+    }
+    [[nodiscard]] auto getSignalFilterUnit() const -> QString
+    {
+        return m_filterSignalUnit;
+    }
+    [[nodiscard]] auto getFilterMessageSender() const -> QString
+    {
+        return m_filterMessageSender;
+    }
 
     /** Set the search text for filtering items */
     void setSearchFilter(const QString& text);

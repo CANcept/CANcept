@@ -111,5 +111,6 @@ class MonitoringModel final : public QAbstractItemModel
     std::atomic<bool> _execute;
     std::atomic<bool> deleteOldData;
     std::thread message_check_thread;
+    std::mutex m_dataMutex;
 };
 }  // namespace Monitoring

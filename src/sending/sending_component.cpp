@@ -30,6 +30,10 @@ SendingComponent::~SendingComponent()
     stopRepeatedSending();
     m_parseErrorConn.release();
     m_parseSuccessConn.release();
+    if (m_view && m_view->parent())
+    {
+        m_view.release();
+    }
     LOG_INF(Constants::MODULE_IDENTIFIER, "Sending Component destroyed");
 }
 

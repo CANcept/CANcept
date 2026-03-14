@@ -24,7 +24,13 @@ MonitoringComponent::MonitoringComponent(Core::IEventBroker& broker)
     connectSignals();
 }
 
-MonitoringComponent::~MonitoringComponent() = default;
+MonitoringComponent::~MonitoringComponent()
+{
+    if (m_view && m_view->parent())
+    {
+        m_view.release();
+    }
+}
 
 auto MonitoringComponent::getView() -> QWidget*
 {
@@ -84,12 +90,6 @@ void MonitoringComponent::onStop()
     m_parseErrorConn = {};
     m_decodedFrameReceivedConn = {};
     m_canDriverChangeConn = {};
-}
-
-void MonitoringComponent::onDeviceChanged(const std::string& deviceName) const
-{
-    LOG_INF("MonitoringComponent", "CAN device changed to: {}", deviceName);
-    m_eventBroker.publish<Core::CanDriverChangeEvent>(Core::CanDriverChangeEvent(deviceName));
 }
 
 void MonitoringComponent::checkDeviceReadiness() const

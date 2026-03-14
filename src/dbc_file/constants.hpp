@@ -44,6 +44,8 @@ constexpr int SigValueType = 10;
 constexpr int SigReceivers = 11;
 
 // Helper
+constexpr int EcuColumnCount = 2;
+constexpr int OvColumnCount = 6;
 constexpr int MsgColumnCount = 5;
 constexpr int SignalColumnCount = 12;
 }  // namespace Columns
@@ -98,6 +100,14 @@ static const QString TitleEcus = "ECUs";
 static const QString TitleMessages = "Messages";
 static const QString TitleSignals = "Signals";
 
+constexpr int INDEX_LOAD = 0;
+constexpr int INDEX_OVERVIEW = 1;
+constexpr int INDEX_ECUS = 2;
+constexpr int INDEX_MESSAGES = 3;
+constexpr int INDEX_SIGNALS = 4;
+
+constexpr int STACK_COUNT = 5;
+
 static const QString HoverText = "Load DBC file first";
 // Icons
 static const QString IconLoadNew = ":/assets/icon/dbc_file/load_new.svg";
@@ -143,27 +153,26 @@ constexpr const char* None = "";
 // --- Overview Page Specifics ---
 namespace OverviewPage {
 
-static const QString FileInfoTitle = QStringLiteral("File Information");
+static const auto FileInfoTitle = QStringLiteral("File Information");
+static const auto FileInfoSubTitle = QStringLiteral("Basic information about the DBC file");
+static const auto FileNameTitle = QStringLiteral("Filename: ");
+static const auto FileVersionTitle = QStringLiteral("Version: ");
+static const auto LabelDefault = QStringLiteral("-");
+static const auto EcuStatTitle = QStringLiteral("ECUs");
+static const auto MessagesStatTitle = QStringLiteral("Messages");
+static const auto SignalsStatTitle = QStringLiteral("Signals");
+static const auto OrphansStatTitle = QStringLiteral("Orphan Messages");
+static const auto OverviewSuffix = QStringLiteral(" Overview");
+static const auto OverviewDescription = QStringLiteral("All defined %1 in the network");
 
-static const QString FileInfoSubTitle = QStringLiteral("Basic information about the DBC file");
-
-static const QString FileNameTitle = QStringLiteral("Filename: ");
-
-static const QString FileVersionTitle = QStringLiteral("Version: ");
-
-static const QString LabelDefault = QStringLiteral("-");
-
-static const QString EcuStatTitle = QStringLiteral("ECUs");
-
-static const QString MessagesStatTitle = QStringLiteral("Messages");
-
-static const QString SignalsStatTitle = QStringLiteral("Signals");
-
-static const QString OrphansStatTitle = QStringLiteral("Orphan Messages");
-
-static const QString OverviewSuffix = QStringLiteral(" Overview");
-
-static const QString OverviewDescription = QStringLiteral("All defined %1 in the network");
+namespace LblNames {
+constexpr const char* FileName = "lblFileName";
+constexpr const char* Version = "lblVersion";
+constexpr const char* EcuCount = "lblEcuCount";
+constexpr const char* MsgCount = "lblMessageCount";
+constexpr const char* SigCount = "lblSignalCount";
+constexpr const char* OrphanCount = "lblOrphanCount";
+}  // namespace LblNames
 }  // namespace OverviewPage
 
 // --- ECUs Page Specifics ---

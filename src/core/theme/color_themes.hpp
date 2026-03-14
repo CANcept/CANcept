@@ -160,7 +160,7 @@ struct DraculaTheme : public ColorTheme {
         // Text Colors (Dracula fg colors)
         textPrimary = QColor(0xf8, 0xf8, 0xf2);
         textSecondary = QColor(0x6f, 0x72, 0x88);
-        textDisabled = QColor(0x44, 0x47, 0x5a);
+        textDisabled = QColor(0x62, 0x72, 0xa4);
         textOnPrimary = QColor(0xf8, 0xf8, 0xf2);
 
         // Surfaces (Dracula background colors)

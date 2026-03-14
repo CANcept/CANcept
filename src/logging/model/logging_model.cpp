@@ -177,7 +177,7 @@ QString LoggingModel::getMessageName(uint16_t messageId) const
 {
     if (!m_currentDbc.has_value())
     {
-        return QString("0x%1").arg(messageId, 3, 16, QChar('0')).toUpper();
+        return QString("0x%1").arg(QString::number(messageId, 16).toUpper(), 3, QChar('0'));
     }
 
     for (const auto& msgDef : m_currentDbc->messageDefinitions)
@@ -188,7 +188,7 @@ QString LoggingModel::getMessageName(uint16_t messageId) const
         }
     }
 
-    return QString("UNKNOWN_0x%1").arg(messageId, 3, 16, QChar('0')).toUpper();
+    return QString("UNKNOWN_0x%1").arg(QString::number(messageId, 16).toUpper(), 3, QChar('0'));
 }
 
 // Looks up signal unit from DBC config
@@ -238,7 +238,8 @@ QStringList LoggingModel::getSelectedSignalsForMessage(uint16_t messageId) const
 // Updates the stored DBC configuration reference
 void LoggingModel::updateDbcConfig(const Core::DbcConfig& config)
 {
-    m_currentDbc = config;  // Store a copy in std::optional
+    stopActiveSession();
+    m_currentDbc = config;
 }
 
 // Creates and starts a new logging session with selected signals
@@ -250,6 +251,8 @@ void LoggingModel::startNewDbcLogSession(
     {
         stopActiveSession();
     }
+
+    std::scoped_lock<std::mutex> lock(m_messageReceiveMutex);
     beginInsertRows(QModelIndex(), rowCount(), rowCount());
 
     LogSession newSession;
@@ -260,6 +263,8 @@ void LoggingModel::startNewDbcLogSession(
     newSession.selectedSignals = selectedSignals;
     newSession.signalsBeforeAfterMessage = signalsBeforeAfterMessage;
     newSession.type = DBC_BASED;
+    newSession.logger = Core::LogService::getInstance().getLogger(Core::LogContext::CanLogging,
+                                                                  newSession.id.toStdString());
 
     m_sessions.push_back(newSession);
     m_activeSessionIndex = static_cast<int>(m_sessions.size()) - 1;
@@ -272,6 +277,7 @@ void LoggingModel::startNewRawLogsSession()
     {
         stopActiveSession();
     }
+    std::scoped_lock<std::mutex> lock(m_messageReceiveMutex);
     beginInsertRows(QModelIndex(), rowCount(), rowCount());
     LogSession newSession;
     newSession.id = QString::number(QDateTime::currentMSecsSinceEpoch());
@@ -279,6 +285,8 @@ void LoggingModel::startNewRawLogsSession()
     newSession.duration = "00:00:00";
     newSession.isRecording = true;
     newSession.type = RAW;
+    newSession.logger = Core::LogService::getInstance().getLogger(Core::LogContext::CanLogging,
+                                                                  newSession.id.toStdString());
 
     m_sessions.push_back(newSession);
     m_activeSessionIndex = static_cast<int>(m_sessions.size()) - 1;
@@ -288,15 +296,18 @@ void LoggingModel::startNewRawLogsSession()
 // Stops the currently active logging session
 void LoggingModel::stopActiveSession()
 {
-    if (!isRecording())
     {
-        return;
+        std::scoped_lock<std::mutex> lock(m_messageReceiveMutex);
+
+        if (!isRecording())
+        {
+            return;
+        }
+
+        m_sessions[m_activeSessionIndex].isRecording = false;
+        m_activeSessionIndex = -1;
     }
-
-    m_sessions[m_activeSessionIndex].isRecording = false;
     updateActiveDuration();
-
-    m_activeSessionIndex = -1;
 
     emit dataChanged(index(0, 0), index(rowCount() - 1, columnCount() - 1));
 }
@@ -304,6 +315,8 @@ void LoggingModel::stopActiveSession()
 // Updates the elapsed duration of the active logging session
 void LoggingModel::updateActiveDuration()
 {
+    std::scoped_lock<std::mutex> lock(m_messageReceiveMutex);
+
     if (!isRecording())
     {
         return;
@@ -322,4 +335,80 @@ void LoggingModel::updateActiveDuration()
     emit dataChanged(durationIndex, durationIndex);
 }
 
+void LoggingModel::onDbcMessageReceived(const Core::DbcCanMessage& message)
+{
+    std::scoped_lock<std::mutex> lock(m_messageReceiveMutex);
+
+    if (!isRecording() || m_activeSessionIndex < 0 ||
+        m_activeSessionIndex >= static_cast<int>(m_sessions.size()) ||
+        m_sessions[m_activeSessionIndex].type != DBC_BASED)
+    {
+        return;
+    }
+    LogSession& activeSession = m_sessions[m_activeSessionIndex];
+    auto* logSession = getSession(activeSession.id);
+    if (!logSession) [[unlikely]]
+    {
+        return;
+    }
+    if (!logSession->selectedSignals.contains(message.messageId))
+    {
+        return;
+    }
+
+    std::string messageLine = "";
+    messageLine += fmt::format("{},", message.receiveTime.count());
+    messageLine.append(logSession->signalsBeforeAfterMessage.at(message.messageId).first, ',');
+    for (const auto& signal : logSession->selectedSignals.at(message.messageId))
+    {
+        bool containsValue = false;
+        for (const auto& [name, value] : message.signalValues)
+        {
+            if (signal.toStdString() == name)
+            {
+                messageLine += fmt::format("{:.3f},", value);
+                containsValue = true;
+                break;
+            }
+        }
+        if (!containsValue)
+        {
+            messageLine += ",";
+        }
+    }
+
+    messageLine.append(logSession->signalsBeforeAfterMessage.at(message.messageId).second, ',');
+    messageLine.pop_back();
+
+    activeSession.logger->info(messageLine.c_str());
+}
+
+void LoggingModel::onRawMessageReceived(const Core::RawCanMessage& message)
+{
+    std::scoped_lock<std::mutex> lock(m_messageReceiveMutex);
+
+    if (!isRecording() || m_activeSessionIndex < 0 ||
+        m_activeSessionIndex >= static_cast<int>(m_sessions.size()) ||
+        m_sessions[m_activeSessionIndex].type != RAW)
+    {
+        return;
+    }
+    LogSession& activeSession = m_sessions[m_activeSessionIndex];
+    auto* logSession = getSession(activeSession.id);
+    if (!logSession) [[unlikely]]
+    {
+        return;
+    }
+
+    std::string messageLine = "";
+    messageLine += fmt::format("{},", message.receiveTime.count());
+    messageLine += fmt::format("{:x},", message.messageId);
+    for (uint8_t data : message.data)
+    {
+        messageLine += fmt::format("{:x} ", data);
+    }
+    messageLine.pop_back();
+
+    activeSession.logger->info(messageLine.c_str());
+}
 }  // namespace Logging

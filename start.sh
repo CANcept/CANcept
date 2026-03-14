@@ -7,11 +7,12 @@ PROJECT_NAME="CanBusManager"
 CORES=$(nproc 2>/dev/null || echo 4)
 
 CLEAN_BUILD=false
-RUN_TESTS=true
-GEN_DOCS=true
+RUN_TESTS=false
+GEN_DOCS=false
 ENABLE_COV=false
 BUILD_TYPE="Release"
 GENERATOR=""
+TEST_ONLY=false
 
 if grep -q Microsoft /proc/version; then
     export DISPLAY=:0
@@ -20,23 +21,32 @@ fi
 usage() {
     echo "Usage: $0 [options]"
     echo "Options:"
-    echo "  -c,  --clean      Remove build directory before starting"
-    echo "  -d,  --dev        Dev Mode: Use Ninja generator and Debug build"
-    echo "  -cov, --coverage  Enable Coverage (forces Debug mode)"
-    echo "  -nt, --no-tests   Skip building and running tests"
-    echo "  -nd, --no-docs    Skip generating documentation"
-    echo "  -h,  --help       Show this help message"
+    echo "  -c,   --clean       Remove build directory before starting"
+    echo "  -d,   --dev-mode    Dev Mode: Use Ninja generator and Debug build"
+    echo "  -t,   --tests       Enable building and running tests"
+    echo "  -doc, --docs        Enable generating documentation"
+    echo "  -cov, --coverage    Enable Coverage (forces Debug mode, implies -t)"
+    echo "  -to,  --test-only   Test-Only Mode: Tests + Coverage, no docs, no app launch"
+    echo "  -h,   --help        Show this help message"
+    echo ""
+    echo "Examples:"
+    echo "  $0                  Build app only (no tests, no docs)"
+    echo "  $0 -t               Build app with tests"
+    echo "  $0 -t -d            Build app with tests and docs"
+    echo "  $0 -to              Quick test iteration (tests + coverage only)"
+    echo "  $0 -dev -t          Dev mode with tests"
     exit 0
 }
 
 while [[ "$#" -gt 0 ]]; do
     case $1 in
-        -c|--clean)    CLEAN_BUILD=true ;;
-        -d|--dev)      BUILD_TYPE="Debug"; GENERATOR="-G Ninja" ;;
-        -cov|--coverage) ENABLE_COV=true; BUILD_TYPE="Debug"; GENERATOR="-G Ninja" ;;
-        -nt|--no-tests) RUN_TESTS=false ;;
-        -nd|--no-docs)  GEN_DOCS=false ;;
-        -h|--help)     usage ;;
+        -c|--clean)      CLEAN_BUILD=true ;;
+        -d|--dev-mode)   BUILD_TYPE="Debug"; GENERATOR="-G Ninja" ;;
+        -t|--tests)      RUN_TESTS=true ;;
+        -doc|--docs)     GEN_DOCS=true ;;
+        -cov|--coverage) ENABLE_COV=true; RUN_TESTS=true; BUILD_TYPE="Debug"; GENERATOR="-G Ninja" ;;
+        -to|--test-only) TEST_ONLY=true; RUN_TESTS=true; GEN_DOCS=false; ENABLE_COV=true; BUILD_TYPE="Debug"; GENERATOR="-G Ninja" ;;
+        -h|--help)       usage ;;
         *) echo "Unknown option: $1"; usage ;;
     esac
     shift
@@ -99,6 +109,12 @@ if [ "$RUN_TESTS" = true ]; then
         fi
 else
     echo "--- 5. Skipping Tests ---"
+fi
+
+if [ "$TEST_ONLY" = true ]; then
+    echo "--- Test-only mode: Skipping app launch ---"
+    echo "Tests complete! Coverage report at: $BUILD_DIR/coverage_html/index.html"
+    exit 0
 fi
 
 echo "--- 6. Launching App ---"

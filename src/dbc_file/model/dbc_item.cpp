@@ -17,7 +17,7 @@ void DbcItem::setData(int column, const QVariant& value)
     m_data[column] = value;
 }
 
-const std::vector<std::unique_ptr<DbcItem>>& DbcItem::getChildren() const
+auto DbcItem::getChildren() const -> const std::vector<std::unique_ptr<DbcItem>>&
 {
     return m_children;
 }

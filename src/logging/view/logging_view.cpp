@@ -5,6 +5,7 @@
 #include <QLabel>
 #include <QSpacerItem>
 
+#include "components/message_selection_dialog.hpp"
 #include "core/macro/theme.hpp"
 #include "core/theme/style_event.hpp"
 #include "core/widgets/tinted_icon_label.hpp"
@@ -107,6 +108,9 @@ void LoggingView::setupUi()
     m_deviceNotConfiguredOverlay->hide();
     m_deviceNotConfiguredOverlay->raise();
 
+    // Message selection dialog
+    m_selectionDialog = std::make_unique<MessageSelectionDialog>(this);
+
     applyStyle();
     // ===== Connections =====
     connect(m_btnAction, &QPushButton::clicked, this, [this]() {
@@ -115,9 +119,16 @@ void LoggingView::setupUi()
             emit stopRequested();
         } else
         {
-            emit startRequested();
+            // Show message selection dialog
+            if (m_selectionDialog->exec() != QDialog::Accepted)
+            {
+                return;  // User cancelled
+            }
+            emit startRequested(m_selectionDialog->getSelectedLogSessionType(),
+                                m_selectionDialog->getSelectedSignals());
         }
     });
+    connect(this, &LoggingView::detailRequested, this, &LoggingView::onDetailRequested);
 }
 
 void LoggingView::setModel(LoggingModel* model)
@@ -293,6 +304,141 @@ void LoggingView::resizeEvent(QResizeEvent* event)
     {
         m_deviceNotConfiguredOverlay->setGeometry(0, 0, width(), height());
     }
+}
+
+void LoggingView::dbcConfigChanged(const Core::DbcConfig& config)
+{
+    m_selectionDialog->setDbcConfig(config);
+}
+
+// Handles detail view request for a specific session
+void LoggingView::onDetailRequested(const QModelIndex& index)
+{
+    const QString sessionId = this->m_currentModel->sessionIdAt(index);
+    const LogSession* session = this->m_currentModel->getSession(sessionId);
+
+    if (!session)
+    {
+        return;
+    }
+
+    QWidget* detailWidget = createDetailWidget(session);
+    showDetailView(detailWidget);
+}
+
+// Creates a detail view widget for displaying session information
+auto LoggingView::createDetailWidget(const LogSession* session) -> QWidget*
+{
+    const auto& colors = THEME.colors();
+    const auto& spacing = THEME.spacing();
+
+    auto* detailView = new QWidget(nullptr);
+    auto* layout = new QVBoxLayout(detailView);
+    layout->setContentsMargins(spacing.spacingLg, spacing.spacingLg, spacing.spacingLg,
+                               spacing.spacingLg);
+    layout->setSpacing(spacing.spacingMd);
+
+    // ===== Title Section =====
+    auto* title = new QLabel(QString("Session Details: %1").arg(session->id), detailView);
+    const QString titleStyle = QString(
+                                   "QLabel {"
+                                   "   font-size: %3px;"
+                                   "   font-weight: %1;"
+                                   "   color: %2;"
+                                   "}")
+                                   .arg(spacing.fontWeightMedium)
+                                   .arg(colors.textPrimary.name())
+                                   .arg(spacing.fontSizeLg);
+    title->setStyleSheet(titleStyle);
+
+    layout->addWidget(title);
+
+    // ===== Session Information Card =====
+    auto* infoCard = new QWidget(detailView);
+    const QString cardStyle = QString(
+                                  "QWidget {"
+                                  "   border: %1px solid %2;"
+                                  "   border-radius: %3px;"
+                                  "   background-color: %4;"
+                                  "   padding: %5px;"
+                                  "}")
+                                  .arg(spacing.borderThin)
+                                  .arg(colors.borderSubtle.name())
+                                  .arg(spacing.radiusMd)
+                                  .arg(colors.surfaceMain.name())
+                                  .arg(spacing.spacingLg);
+    infoCard->setStyleSheet(cardStyle);
+
+    auto* infoLayout = new QVBoxLayout(infoCard);
+    infoLayout->setContentsMargins(spacing.spacingLg, spacing.spacingLg, spacing.spacingLg,
+                                   spacing.spacingLg);
+    infoLayout->setSpacing(spacing.spacingSm);
+
+    const QString labelStyle = QString(
+                                   "QLabel {"
+                                   "   font-family: 'Roboto';"
+                                   "   font-size: 16px;"
+                                   "   color: %1;"
+                                   "   border: none;"
+                                   "}")
+                                   .arg(colors.textPrimary.name());
+
+    auto* capturedLabel =
+        new QLabel(QString("<b>Captured on:</b> %1")
+                       .arg(session->startDateTime.toString("dd.MM.yyyy HH:mm:ss")),
+                   infoCard);
+    capturedLabel->setStyleSheet(labelStyle);
+
+    auto* durationLabel =
+        new QLabel(QString("<b>Duration:</b> %1").arg(session->duration), infoCard);
+    durationLabel->setStyleSheet(labelStyle);
+
+    auto* logFileLabel = new QLabel(
+        QString("<b>Log File:</b> logs/session_%1_CanLogging.log").arg(session->id), infoCard);
+    logFileLabel->setStyleSheet(labelStyle);
+
+    infoLayout->addWidget(capturedLabel);
+    infoLayout->addWidget(durationLabel);
+    infoLayout->addWidget(logFileLabel);
+
+    layout->addWidget(infoCard);
+    layout->addStretch();
+
+    // ===== Back Button =====
+    auto* backBtn = new QPushButton("Back to History", detailView);
+    backBtn->setFixedSize(200, 50);
+    const QString btnStyle = QString(
+                                 "QPushButton {"
+                                 "   background-color: %1;"
+                                 "   border: none;"
+                                 "   border-radius: 25px;"
+                                 "   color: %2;"
+                                 "   font-family: 'Roboto';"
+                                 "   font-size: %3px;"
+                                 "   font-weight: %4;"
+                                 "}"
+                                 "QPushButton:hover {"
+                                 "   background-color: %5;"
+                                 "}"
+                                 "QPushButton:pressed {"
+                                 "   background-color: %5;"
+                                 "}")
+                                 .arg(colors.surfacePrimary.name())
+                                 .arg(colors.textPrimary.name())
+                                 .arg(spacing.fontSizeLg)
+                                 .arg(spacing.fontWeightMedium)
+                                 .arg(colors.surfaceHover.name());
+    backBtn->setStyleSheet(btnStyle);
+    connect(backBtn, &QPushButton::clicked, this, &LoggingView::hideDetailView);
+
+    auto* buttonLayout = new QHBoxLayout();
+    buttonLayout->addStretch();
+    buttonLayout->addWidget(backBtn);
+    buttonLayout->addStretch();
+
+    layout->addLayout(buttonLayout);
+
+    return detailView;
 }
 
 }  // namespace Logging

@@ -8,7 +8,6 @@
 namespace DbcFile {
 
 namespace {
-constexpr int kLoadPageIndex = 0;
 
 // Creates, configures and rebuilds a flat proxy for a given item type.
 auto makeFlatProxy(Core::DbcItemType type, QObject* parent,
@@ -111,7 +110,8 @@ void DbcView::onSidebarSelectionChanged(int index) const
     if (m_contentStack->currentIndex() == index) return;
 
     // Reset load page UI state when leaving the load page.
-    if (m_contentStack->currentIndex() == kLoadPageIndex && index != kLoadPageIndex)
+    if (m_contentStack->currentIndex() == Constants::Sidebar::INDEX_LOAD &&
+        index != Constants::Sidebar::INDEX_LOAD)
     {
         m_loadPage->resetStatus();
     }

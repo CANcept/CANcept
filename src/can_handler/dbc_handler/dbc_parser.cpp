@@ -99,10 +99,6 @@ auto DbcParser::parseDbc() -> std::unique_ptr<Core::DbcConfig>
             IF_PARSING_INVALID_RETURN({nullptr})
             break;
         }
-        if (valueDescription.messageId == static_cast<uint>(-1))
-        {
-            continue;
-        }
         valueDescriptions.push_back(valueDescription);
     }
     while (parseSignalTypeReference())
@@ -171,7 +167,7 @@ auto DbcParser::parseComment() -> std::string
 auto DbcParser::parseMessage() -> Core::DbcMessageDescription
 {
     eraseSpaces();
-    if (!file.starts_with("BO_"))
+    if (!file.starts_with("BO_") || file.starts_with("BO_TX_BU_"))
     {
         parsedObject = false;
         return {};
@@ -276,6 +272,8 @@ auto DbcParser::parseSignal() -> Core::DbcSignalDescription
     if (!file.starts_with(":"))
     {
         parsingValid = false;
+        parsedObject = false;
+        return {};
     }
     file = file.substr(1);
     startBit = parseUInt();
@@ -283,6 +281,8 @@ auto DbcParser::parseSignal() -> Core::DbcSignalDescription
     if (!file.starts_with("|"))
     {
         parsingValid = false;
+        parsedObject = false;
+        return {};
     }
     file = file.substr(1);
     signalSize = parseUInt();
@@ -290,6 +290,8 @@ auto DbcParser::parseSignal() -> Core::DbcSignalDescription
     if (!file.starts_with("@"))
     {
         parsingValid = false;
+        parsedObject = false;
+        return {};
     }
     file = file.substr(1);
     byteOrderInt = parseUInt();
@@ -305,11 +307,15 @@ auto DbcParser::parseSignal() -> Core::DbcSignalDescription
     } else
     {
         parsingValid = false;
+        parsedObject = false;
+        return {};
     }
     eraseSpaces();
     if (!file.starts_with("("))
     {
         parsingValid = false;
+        parsedObject = false;
+        return {};
     }
     file = file.substr(1);
     factor = parseDouble();
@@ -317,6 +323,8 @@ auto DbcParser::parseSignal() -> Core::DbcSignalDescription
     if (!file.starts_with(","))
     {
         parsingValid = false;
+        parsedObject = false;
+        return {};
     }
     file = file.substr(1);
     offset = parseDouble();
@@ -324,12 +332,16 @@ auto DbcParser::parseSignal() -> Core::DbcSignalDescription
     if (!file.starts_with(")"))
     {
         parsingValid = false;
+        parsedObject = false;
+        return {};
     }
     file = file.substr(1);
     eraseSpaces();
     if (!file.starts_with("["))
     {
         parsingValid = false;
+        parsedObject = false;
+        return {};
     }
     file = file.substr(1);
     minimum = parseDouble();
@@ -337,6 +349,8 @@ auto DbcParser::parseSignal() -> Core::DbcSignalDescription
     if (!file.starts_with("|"))
     {
         parsingValid = false;
+        parsedObject = false;
+        return {};
     }
     file = file.substr(1);
     maximum = parseDouble();
@@ -344,6 +358,8 @@ auto DbcParser::parseSignal() -> Core::DbcSignalDescription
     if (!file.starts_with("]"))
     {
         parsingValid = false;
+        parsedObject = false;
+        return {};
     }
     file = file.substr(1);
     unit = parseString();
@@ -719,36 +735,6 @@ auto DbcParser::parseDouble() -> double
     parsingValid = true;
     parsedObject = true;
     return strtod(possibleDouble.c_str(), nullptr);
-}
-auto DbcParser::parseInt() -> int
-{
-    eraseSpaces();
-    const size_t pos = file.find_first_of(" :;,|]@)");
-    if (pos == std::string::npos)
-    {
-        parsingValid = false;
-        parsedObject = false;
-        return 0;
-    }
-    const std::string possibleInt = file.substr(0, pos);
-    if (!std::regex_match(possibleInt, INT_REGEX))
-    {
-        parsingValid = false;
-        parsedObject = false;
-        return 0;
-    }
-    file = file.substr(pos);
-    parsingValid = true;
-    parsedObject = true;
-    try
-    {
-        return std::stoi(possibleInt);
-    } catch (...)
-    {
-        LOG_ERR(1, "Error while parsing integer in DBC: %s", possibleInt.c_str());
-        parsingValid = false;
-        return 0;
-    }
 }
 auto DbcParser::parseUInt() -> uint
 {

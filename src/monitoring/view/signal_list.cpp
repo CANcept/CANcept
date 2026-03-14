@@ -10,6 +10,7 @@
 #include "core/macro/console_logging.hpp"
 #include "core/macro/theme.hpp"
 #include "core/theme/style_event.hpp"
+#include "core/util/dbc_utils.hpp"
 #include "core/widgets/card_widget.hpp"
 #include "core/widgets/common/styled_checkbox.hpp"
 #include "core/widgets/common/styled_line_edit.hpp"
@@ -119,10 +120,10 @@ void SignalList::populateDecodedFromModel()
 
         horizontalLayout->addStretch();
 
-        const QString idText =
-            m_model->data(messageIndex, MonitoringModel::MonitoringRoles::Role_ID).toString();
+        const QString idText = Core::formatId(
+            m_model->data(messageIndex, MonitoringModel::MonitoringRoles::Role_ID).toInt());
         auto* idLabel = new QLabel(messageCard);
-        idLabel->setText(QString("0x%1").arg(idText));
+        idLabel->setText(idText);
         horizontalLayout->addWidget(idLabel);
 
         messageCard->contentLayout()->addLayout(horizontalLayout);

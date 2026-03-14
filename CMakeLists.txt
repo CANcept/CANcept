@@ -19,6 +19,7 @@ option(ENABLE_TESTS "Build tests using GoogleTest and Benchmark" ON)
 option(ENABLE_CLANG_TIDY "Enable static analysis with Clang-Tidy" OFF)
 option(ENABLE_DOCS "Enable the documentation target" ON)
 option(ENABLE_COVERAGE "Enable code coverage reporting" OFF)
+option(DISABLE_TEST_LOGGING "Disable console logging during tests" ON)
 
 # Compiler Flags
 if(ENABLE_COVERAGE)
@@ -40,7 +41,7 @@ if(ENABLE_CLANG_TIDY)
 endif()
 
 # 4. Dependencies (Runtime Libraries)
-find_package(Qt6 COMPONENTS Widgets PrintSupport OpenGL Svg REQUIRED)
+find_package(Qt6 COMPONENTS Widgets PrintSupport OpenGL Svg Test REQUIRED)
 find_package(Threads REQUIRED)
 
 add_subdirectory(external/spdlog)
@@ -58,7 +59,7 @@ set(RESOURCE_FILE "${CMAKE_CURRENT_SOURCE_DIR}/resources.qrc")
 file(GLOB_RECURSE SOURCE_FILES CONFIGURE_DEPENDS "src/*.cpp")
 list(FILTER SOURCE_FILES EXCLUDE REGEX "src/app_root/entry_point/main.cpp")
 
-add_library(${PROJECT_NAME}Lib STATIC ${SOURCE_FILES})
+add_library(${PROJECT_NAME}Lib STATIC ${SOURCE_FILES} ${RESOURCE_FILE})
 if(CLANG_TIDY_EXE)
     set_target_properties(${PROJECT_NAME}Lib PROPERTIES CXX_CLANG_TIDY "${DO_CLANG_TIDY}")
 endif()
@@ -80,7 +81,7 @@ target_link_libraries(${PROJECT_NAME}Lib PUBLIC
 
 target_compile_definitions(${PROJECT_NAME}Lib
         PUBLIC
-        LOGGING_LEVEL=$<IF:$<CONFIG:Debug>,2,1>
+        LOGGING_LEVEL=$<IF:$<BOOL:${ENABLE_TESTS}>,$<IF:$<BOOL:${DISABLE_TEST_LOGGING}>,0,$<IF:$<CONFIG:Debug>,2,1>>,$<IF:$<CONFIG:Debug>,2,1>>
 )
 
 # 6. Executable
@@ -108,15 +109,16 @@ if(ENABLE_TESTS)
         file(GLOB_RECURSE TEST_SOURCES "${TEST_DIR}/*.cpp")
         if(TEST_SOURCES)
             add_executable(${TEST_NAME} ${TEST_SOURCES})
-            target_link_libraries(${TEST_NAME} PRIVATE ${PROJECT_NAME}Lib ${LINK_LIB})
+            target_link_libraries(${TEST_NAME} PRIVATE ${PROJECT_NAME}Lib ${LINK_LIB} GTest::gmock Qt6::Test)
+            target_include_directories(${TEST_NAME} PRIVATE ${CMAKE_SOURCE_DIR})
             add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
         endif()
     endfunction()
 
-    add_bus_test(UnitTests        "tests/unit"        GTest::gtest_main)
-    add_bus_test(IntegrationTests "tests/integration" GTest::gtest_main)
-    add_bus_test(SystemTests      "tests/system"      GTest::gtest_main)
-    add_bus_test(PerformanceTests "tests/performance" benchmark::benchmark_main)
+    add_bus_test(UnitTests        "tests/unit"        GTest::gtest GTest::gmock Qt6::Test Qt6::Widgets)
+    add_bus_test(IntegrationTests "tests/integration" GTest::gtest GTest::gmock Qt6::Test Qt6::Widgets)
+    add_bus_test(SystemTests      "tests/system"      GTest::gtest Qt6::Widgets)
+    add_bus_test(PerformanceTests "tests/performance" benchmark::benchmark_main Qt6::Test Qt6::Widgets)
 
     if(TARGET UnitTests AND TARGET IntegrationTests)
         set_tests_properties(IntegrationTests PROPERTIES DEPENDS UnitTests)
@@ -136,9 +138,25 @@ if(ENABLE_TESTS)
 
         if(LCOV_PATH AND GENHTML_PATH)
             add_custom_target(coverage_report
-                    COMMAND ${LCOV_PATH} --directory . --capture --output-file coverage.info --ignore-errors mismatch,empty
-                    COMMAND ${LCOV_PATH} --remove coverage.info '/usr/*' '${CMAKE_SOURCE_DIR}/external/*' '${CMAKE_SOURCE_DIR}/tests/*' --output-file coverage.info --ignore-errors empty
-                    COMMAND ${GENHTML_PATH} coverage.info --output-directory coverage_html --ignore-errors empty
+                    COMMAND find . -name '*.gcda' -delete 2>/dev/null || true
+                    COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure
+                    COMMAND find . -path '*_autogen*' -name '*.gcda' -delete 2>/dev/null || true
+                    COMMAND ${LCOV_PATH} --quiet --directory . --capture --output-file coverage_raw.info --ignore-errors gcov,mismatch,empty,negative --rc branch_coverage=1 2>/dev/null
+                    COMMAND ${LCOV_PATH} --quiet --extract coverage_raw.info '${CMAKE_SOURCE_DIR}/src/*' --output-file coverage_filtered.info --ignore-errors empty --rc branch_coverage=1
+                    COMMAND ${LCOV_PATH} --quiet --remove coverage_filtered.info
+                            '*/view/*' '*/delegate/*'
+                            '*/core/constants.hpp'
+                            '*/core/delegates/*'
+                            '*/core/dto/*'
+                            '*/core/enum/*'
+                            '*/core/event/*'
+                            '*/core/macro/*'
+                            '*/core/painters/*'
+                            '*/core/theme/*'
+                            '*/core/util/*'
+                            '*/core/widgets/*'
+                            --output-file coverage.info --ignore-errors empty,unused --rc branch_coverage=1
+                    COMMAND ${GENHTML_PATH} --quiet --branch-coverage coverage.info --output-directory coverage_html --ignore-errors empty,unused
                     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
                     COMMENT "Processing coverage data into HTML..."
             )
@@ -161,3 +179,12 @@ if(CLANG_FORMAT_EXE)
 else()
     message(WARNING "clang-format not found. 'format' target will not be available.")
 endif()
+
+include(GNUInstallDirs)
+install(TARGETS CanBusManager
+        DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(FILES "assets/icon/app_root/can_bus.svg"
+        DESTINATION "${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps"
+        RENAME "CanBusManager.svg")
+install(FILES "can_bus_manager.desktop"
+        DESTINATION "${CMAKE_INSTALL_DATADIR}/applications")
