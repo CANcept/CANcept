@@ -18,6 +18,7 @@ html {
     --spacing-large: 19px;
 
     --top-height: 125px;
+    --tree-item-height: 26px;
 }
 
 html.dark-mode {
@@ -39,20 +40,30 @@ html.dark-mode {
     --searchbar-background: var(--page-background-color);
 }
 
-#projectlogo {
-    display: inline-block;
-    width: 30px;
-    height: 30px;
-    /* Use the variable you defined earlier */
-    background-color: var(--header-foreground);
-
-    /* The magic: use the SVG as a mask */
-    -webkit-mask: url("vector.svg") no-repeat center;
-    mask: url("vector.svg") no-repeat center;
-    -webkit-mask-size: contain;
-    mask-size: contain;
+#projectlogo svg {
+    color: var(--page-foreground-color);
+    display: block;
 }
 
-#projectlogo img {
-    display: none;
+#nav-tree span.arrow {
+    font-size: 14px;
+    font-family: serif;
+}
+
+#page-nav #page-nav-resize-handle {
+    min-width: 8px;
+    width: 8px;
+    cursor: col-resize;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#page-nav #page-nav-resize-handle::after {
+    content: "";
+    display: block;
+    height: 24px;
+    width: 4px;
+    min-width: 4px;
+    flex-shrink: 0;
 }
