@@ -1,0 +1,35 @@
+.plotly-graph-div {
+    min-height: 80vh;
+    flex-grow: 1;
+}
+
+.plotly-graph-div .g-gtitle text,
+.plotly-graph-div .colorbar text,
+.plotly-graph-div .cbaxis text {
+    fill: var(--page-foreground-color) !important;
+}
+
+.modebar,
+.modebar-group {
+    background: transparent !important;
+}
+
+.modebar-btn path {
+    fill: var(--page-foreground-color) !important;
+    opacity: 0.5;
+}
+
+.modebar-btn:hover path {
+    opacity: 1;
+}
+
+.modebar-btn:hover {
+    background: transparent !important;
+}
+
+.modebar-group a path,
+.modebar-group a rect,
+.modebar-group a polygon {
+    fill: var(--page-foreground-color) !important;
+    opacity: 0.5;
+}
