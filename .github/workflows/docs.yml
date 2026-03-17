@@ -1,0 +1,96 @@
+name: Deploy Doxygen to Pages
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y \
+            qt6-base-dev \
+            qt6-tools-dev \
+            qt6-tools-dev-tools \
+            libqt6svg6-dev \
+            cmake \
+            ninja-build \
+            build-essential \
+            doxygen \
+            graphviz \
+            lcov \
+            python3-pip
+          pip3 install --break-system-packages plotly
+
+      - name: Set up virtual CAN interface
+        run: |
+          sudo modprobe vcan
+          sudo ip link add dev vcan0 type vcan
+          sudo ip link set up vcan0
+
+      - name: Configure CMake
+        run: |
+          cmake -S . -B build \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DENABLE_TESTS=ON \
+            -DENABLE_COVERAGE=ON \
+            -DENABLE_DOCS=ON \
+            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+
+      - name: Build
+        run: cmake --build build -j$(nproc)
+
+      - name: Run tests and collect coverage
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: sudo -E cmake --build build --target coverage_report
+
+      - name: Generate coverage treemap
+        run: python3 scripts/coverage_treemap.py build/coverage.info doc/test/coverage_treemap.html
+
+      - name: Run performance benchmarks
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: sudo -E timeout 600 ./build/PerformanceTests --benchmark_repetitions=10 --benchmark_out=build/benchmark_results.json --benchmark_out_format=json >/dev/null 2>&1 || true
+
+      - name: Generate performance plots
+        run: python3 scripts/gen_performance_plots.py build/benchmark_results.json doc/test/performance_plots.html
+
+      - name: Run Doxygen
+        run: |
+          DOXYFILE=$(find build -name Doxyfile | head -n 1)
+          echo "Found Doxyfile at: $DOXYFILE"
+          doxygen "$DOXYFILE"
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: 'doc/html'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
