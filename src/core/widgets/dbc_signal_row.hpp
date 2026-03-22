@@ -17,10 +17,10 @@
 
 #include <QCheckBox>
 #include <QLabel>
-#include <QTimer>
 #include <QWidget>
 
 #include "card_widget.hpp"
+#include "math/ui/view/math_input_view.hpp"
 
 namespace Core {
 
@@ -78,14 +78,9 @@ class DbcSignalRowWidget final : public QWidget
     explicit DbcSignalRowWidget(const QString& name, const QString& unit, double min, double max,
                                 QWidget* parent = nullptr);
 
-    [[nodiscard]] auto valueEditor() const -> StyledLineEdit*
+    [[nodiscard]] auto valueEditor() const -> Math::MathInputView*
     {
         return m_valueEditor;
-    }
-
-    [[nodiscard]] auto functionToggle() const -> QCheckBox*
-    {
-        return m_funcToggle;
     }
 
     [[nodiscard]] auto selectionCheckbox() const -> StyledCheckBox*
@@ -103,19 +98,13 @@ class DbcSignalRowWidget final : public QWidget
                        const Config& config);
     void setupSelectionMode(const QString& name, const QString& unit, const Config& config);
     void applyStyle() const;
-    void clampInput() const;
 
     CardWidget* m_cardContainer;
     StyledCheckBox* m_selectionCheckbox;
     QLabel* m_nameLabel;
     QLabel* m_rangeLabel;
-    StyledLineEdit* m_valueEditor;
+    Math::MathInputView* m_valueEditor;
     QLabel* m_unitLabel;
-    QCheckBox* m_funcToggle;
-    QTimer* m_clampTimer;
-
-    double m_minValue;
-    double m_maxValue;
 };
 
 }  // namespace Core

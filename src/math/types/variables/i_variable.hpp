@@ -2,15 +2,14 @@
 
 #include <string>
 
-namespace Math
-{
+namespace Math {
 
 /**
  * @brief Contract for a variable whose value is updated each cycle before evaluation.
  */
 class IVariable
 {
-public:
+   public:
     virtual ~IVariable() = default;
 
     /** @brief Single-token identifier used in expressions and registered with exprtk. */

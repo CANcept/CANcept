@@ -2,26 +2,24 @@
 
 #include <string>
 
-#include "math/types/tokens/Token.hpp"
+#include "math/types/tokens/expression_visitor.hpp"
+#include "math/types/tokens/token.hpp"
 
-namespace Math
-{
+namespace Math {
 
-/**
- * @brief Leaf token bound to an external double pointer registered at parse time.
- */
 class VariableToken final : public Token<TokenKind::Leaf>
 {
-public:
+   public:
     VariableToken(std::string name, double* ptr) : m_name(std::move(name)), m_ptr(ptr) {}
 
-    std::string toExpression() const override
+    [[nodiscard]] auto toExpression() const -> std::string override
     {
         return m_name;
     }
-    std::string label() const override
+
+    void accept(IExpressionVisitor& visitor) const override
     {
-        return m_name;
+        visitor.visit(*this);
     }
 
     void collectVariables(std::vector<std::pair<std::string, double*>>& out) const override
@@ -29,12 +27,12 @@ public:
         out.emplace_back(m_name, m_ptr);
     }
 
-    double* get() const
+    [[nodiscard]] auto get() const -> double*
     {
         return m_ptr;
     }
 
-private:
+   private:
     std::string m_name;
     double* m_ptr;
 };

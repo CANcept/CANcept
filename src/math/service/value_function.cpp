@@ -1,16 +1,12 @@
 #include "math/service/value_function.hpp"
 
-namespace Math
-{
+namespace Math {
 
-ValueFunction::ValueFunction(std::unique_ptr<TokenBase> root)
-    : m_root(std::move(root))
-{
-}
+ValueFunction::ValueFunction(const TokenBase* root) : m_root(root) {}
 
-ValueFunction::ParseResult ValueFunction::parse()
+auto ValueFunction::parse() -> ParseResult
 {
-    m_symbolTable = {};
+    m_symbolTable.clear();
     m_expression = {};
     m_expressionStr = m_root->toExpression();
     m_lastResult = {};
@@ -20,24 +16,35 @@ ValueFunction::ParseResult ValueFunction::parse()
     std::vector<std::pair<std::string, double*>> variables;
     m_root->collectVariables(variables);
 
-    for (auto& [name, ptr] : variables)
-        m_symbolTable.add_variable(name, *ptr);
+    for (auto& [name, ptr] : variables) m_symbolTable.add_variable(name, *ptr);
 
     m_expression.register_symbol_table(m_symbolTable);
 
     if (exprtk::parser<double> parser; !parser.compile(m_expressionStr, m_expression))
     {
-        m_lastResult = {false, parser.error()};
+        m_lastResult = {.success = false, .error = parser.error()};
         return m_lastResult;
     }
 
-    m_lastResult = {true, {}};
+    m_lastResult = {.success = true, .error = {}};
     return m_lastResult;
 }
 
-double ValueFunction::evaluate() const { return m_expression.value(); }
-bool ValueFunction::isParsed() const { return m_lastResult.success; }
-const ValueFunction::ParseResult& ValueFunction::lastResult() const { return m_lastResult; }
-std::string_view ValueFunction::expression() const { return m_expressionStr; }
+auto ValueFunction::evaluate() const -> double
+{
+    return m_expression.value();
+}
+auto ValueFunction::isParsed() const -> bool
+{
+    return m_lastResult.success;
+}
+auto ValueFunction::lastResult() const -> const ParseResult&
+{
+    return m_lastResult;
+}
+auto ValueFunction::expression() const -> std::string_view
+{
+    return m_expressionStr;
+}
 
 }  // namespace Math

@@ -17,6 +17,7 @@
 
 #include <QAbstractItemModel>
 #include <functional>
+#include <mutex>
 #include <optional>
 #include <set>
 #include <string>
@@ -118,6 +119,17 @@ class SendingModel final : public QAbstractItemModel
     void setSignalValue(uint16_t messageId, const std::string& signalName, double value);
 
     /**
+     * @brief Registers a callable that provides a signal's value dynamically (e.g. from a
+     * ValueFunction). Called on every send cycle in repeated sending for up-to-date values.
+     */
+    using SignalEvaluator = std::function<double()>;
+    void setSignalEvaluator(uint16_t messageId, const std::string& signalName,
+                            SignalEvaluator evaluator);
+
+    /** @brief Removes all evaluators (call before destroying widgets that evaluators reference). */
+    void clearEvaluators();
+
+    /**
      * @brief Gets the current DBC config pointer.
      */
     [[nodiscard]] auto currentDbcConfig() const -> const Core::DbcConfig*
@@ -194,6 +206,10 @@ class SendingModel final : public QAbstractItemModel
      * Key: "messageId:signalName" (unique identifier)
      */
     std::set<std::string> m_selectedSignalNames;
+
+    /** @brief Dynamic evaluators per signal (e.g. math expressions). Guarded by m_evalMutex. */
+    mutable std::mutex m_evalMutex;
+    std::map<std::string, SignalEvaluator> m_signalEvaluators;
 
     /** @brief Current DBC config (owned by this model) */
     std::optional<Core::DbcConfig> m_currentDbc;

@@ -2,58 +2,48 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
-namespace Math
-{
+namespace Math {
 
-/**
- * @brief Defines whether a token is a terminal node or an operator with children.
- */
-enum class TokenKind
-{
-    Leaf,
-    Internal
-};
+enum class TokenKind { Leaf, Internal };
 
-/**
- * @brief Type-erased base for storing mixed token kinds in a single collection.
- */
-struct TokenBase
-{
+class IExpressionVisitor;
+
+template <TokenKind>
+class Token;
+
+struct TokenBase {
     virtual ~TokenBase() = default;
-    virtual std::string toExpression() const = 0;
-    virtual std::string label() const = 0;
+    [[nodiscard]] virtual auto toExpression() const -> std::string = 0;
 
-    /** @brief Contributes name/ptr pairs of any variable tokens in this subtree. */
     virtual void collectVariables(std::vector<std::pair<std::string, double*>>& out) const {}
+
+    virtual void accept(IExpressionVisitor& visitor) const = 0;
 };
 
-/**
- * @brief Terminal token with no children, represents a single atomic operand.
- */
-template<TokenKind Kind>
+template <TokenKind Kind>
 class Token : public TokenBase
 {
-public:
-    std::string toExpression() const override = 0;
-    std::string label() const override = 0;
+   public:
+    [[nodiscard]] auto toExpression() const -> std::string override = 0;
 };
 
-/**
- * @brief Branch token that owns child tokens and composes them into a sub-expression.
- */
-template<>
+template <>
 class Token<TokenKind::Internal> : public TokenBase
 {
-public:
-    std::string toExpression() const override = 0;
-    std::string label() const override = 0;
+   public:
+    [[nodiscard]] auto toExpression() const -> std::string override = 0;
+
+    [[nodiscard]] virtual auto expectedChildCount() const -> int = 0;
 
     void collectVariables(std::vector<std::pair<std::string, double*>>& out) const override
     {
         for (const auto& child : m_children)
-            child->collectVariables(out);
+        {
+            if (child) child->collectVariables(out);
+        }
     }
 
     void addChild(std::unique_ptr<TokenBase> child)
@@ -61,12 +51,24 @@ public:
         m_children.push_back(std::move(child));
     }
 
-    const std::vector<std::unique_ptr<TokenBase>>& children() const
+    void setChild(const int index, std::unique_ptr<TokenBase> child)
+    {
+        if (std::cmp_greater_equal(index, m_children.size()))
+            m_children.resize(static_cast<std::size_t>(index) + 1);
+        m_children[static_cast<std::size_t>(index)] = std::move(child);
+    }
+
+    void removeChild(const std::size_t index)
+    {
+        if (index < m_children.size()) m_children[index].reset();
+    }
+
+    [[nodiscard]] auto children() const -> const std::vector<std::unique_ptr<TokenBase>>&
     {
         return m_children;
     }
 
-protected:
+   protected:
     std::vector<std::unique_ptr<TokenBase>> m_children;
 };
 

@@ -2,8 +2,7 @@
 
 #include <algorithm>
 
-namespace Math
-{
+namespace Math {
 
 void VariableRegistry::add(std::unique_ptr<IVariable> variable)
 {
@@ -12,15 +11,14 @@ void VariableRegistry::add(std::unique_ptr<IVariable> variable)
 
 double* VariableRegistry::resolve(const std::string& name) const
 {
-    const auto it = std::ranges::find_if(m_variables,
-                                   [&](const auto& v) { return v->symbol() == name; });
+    const auto it =
+        std::ranges::find_if(m_variables, [&](const auto& v) { return v->symbol() == name; });
     return it != m_variables.end() ? (*it)->ptr() : nullptr;
 }
 
 void VariableRegistry::updateAll() const
 {
-    for (auto& variable : m_variables)
-        variable->update();
+    for (auto& variable : m_variables) variable->update();
 }
 
 const std::vector<std::unique_ptr<IVariable>>& VariableRegistry::variables() const

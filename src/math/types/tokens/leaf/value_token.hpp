@@ -2,34 +2,32 @@
 
 #include <string>
 
-#include "math/types/tokens/Token.hpp"
+#include "math/types/tokens/expression_visitor.hpp"
+#include "math/types/tokens/token.hpp"
 
-namespace Math
-{
+namespace Math {
 
-/**
- * @brief Leaf token holding a fixed numeric constant.
- */
 class ValueToken final : public Token<TokenKind::Leaf>
 {
-public:
+   public:
     explicit ValueToken(const double value) : m_value(value) {}
 
-    std::string toExpression() const override
-    {
-        return std::to_string(m_value);
-    }
-    std::string label() const override
+    [[nodiscard]] auto toExpression() const -> std::string override
     {
         return std::to_string(m_value);
     }
 
-    double value() const
+    void accept(IExpressionVisitor& visitor) const override
+    {
+        visitor.visit(*this);
+    }
+
+    [[nodiscard]] auto value() const -> double
     {
         return m_value;
     }
 
-private:
+   private:
     double m_value;
 };
 

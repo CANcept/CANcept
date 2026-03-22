@@ -156,7 +156,7 @@ bool DbcSendingSubView::event(QEvent* event)
     return QWidget::event(event);
 }
 
-void DbcSendingSubView::populateFromModel(const SendingModel* model)
+void DbcSendingSubView::populateFromModel(SendingModel* model)
 {
     if (!model)
     {
@@ -214,21 +214,14 @@ void DbcSendingSubView::populateFromModel(const SendingModel* model)
                         });
             }
 
-            connect(signalRow->valueEditor(), &QLineEdit::textChanged, this,
-                    [this, msgId, signalName](const QString& text) {
-                        if (text.isEmpty())
-                        {
-                            return;
-                        }
-                        bool ok = false;
-                        const double value = text.toDouble(&ok);
-                        if (ok)
-                        {
-                            emit signalValueChanged(msgId, signalName, value);
-                        }
-                    });
-
             card->addSignalRow(signalRow);
+
+            // Register evaluator: reads the atomic cached value from the signal row's
+            // MathInputView (thread-safe)
+            auto* mathInput = signalRow->valueEditor();
+            std::string sigNameStd = sigDef.signalName;
+            model->setSignalEvaluator(msgId, sigNameStd,
+                                      [mathInput]() { return mathInput->lastValue(); });
         }
 
         card->updateHeaderFromSignals();

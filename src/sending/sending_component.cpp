@@ -97,6 +97,7 @@ void SendingComponent::onDbcConfigReceived(const Core::DbcConfig& config)
 
 void SendingComponent::onDbcParseError() const
 {
+    m_model->clearEvaluators();
     m_view->dbcSubView()->clearMessages();
 }
 
