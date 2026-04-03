@@ -25,6 +25,10 @@
 #include "components/send_message_button.hpp"
 #include "core/widgets/dbc_message_card.hpp"
 
+namespace Math {
+class VariableRegistry;
+}
+
 namespace Core {
 class CardWidget;
 }
@@ -49,7 +53,10 @@ class DbcSendingSubView final : public QWidget
      * Creates message cards and signal rows based on model data.
      * This maintains MVD separation - View reads Model, doesn't modify it.
      */
-    void populateFromModel(SendingModel* model);
+    /**
+     * @brief Populates the view with message cards and signal rows from the model.
+     */
+    void populateFromModel(SendingModel* model, Math::VariableRegistry& registry);
 
     /**
      * @brief Clears all message cards.

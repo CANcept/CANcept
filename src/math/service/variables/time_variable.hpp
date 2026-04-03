@@ -1,6 +1,7 @@
 #pragma once
 
 #include <chrono>
+#include <memory>
 #include <string>
 
 #include "math/types/variables/i_variable.hpp"
@@ -18,31 +19,68 @@ enum class TimeUnit { Seconds, Milliseconds, Nanoseconds };
 class TimeVariable final : public IVariable
 {
    public:
-    TimeVariable(std::string symbol, std::string name, const TimeUnit unit)
-        : m_symbol(std::move(symbol)),
-          m_name(std::move(name)),
+    explicit TimeVariable(const TimeUnit unit)
+        : m_unit(unit),
           m_factor(factorFor(unit)),
+          m_value(std::make_shared<double>(0.0)),
           m_start(std::chrono::steady_clock::now())
     {
     }
 
-    const std::string& symbol() const override
+    auto configKey() const -> std::string override
     {
-        return m_symbol;
+        return "time:" + unitSuffix(m_unit);
     }
-    const std::string& name() const override
+
+    auto displayName() const -> std::string override
     {
-        return m_name;
+        switch (m_unit)
+        {
+            case TimeUnit::Seconds:
+                return "Time (s)";
+            case TimeUnit::Milliseconds:
+                return "Time (ms)";
+            case TimeUnit::Nanoseconds:
+                return "Time (ns)";
+        }
+        return "Time";
     }
-    double* ptr() override
+
+    auto ptr() -> double* override
     {
-        return &m_value;
+        return m_value.get();
+    }
+
+    auto sharedPtr() -> std::shared_ptr<double> override
+    {
+        return m_value;
     }
 
     void update() override
     {
         const auto elapsed = std::chrono::steady_clock::now() - m_start;
-        m_value = std::chrono::duration<double, std::nano>(elapsed).count() * m_factor;
+        *m_value = std::chrono::duration<double, std::nano>(elapsed).count() * m_factor;
+    }
+
+    static auto unitSuffix(const TimeUnit unit) -> std::string
+    {
+        switch (unit)
+        {
+            case TimeUnit::Seconds:
+                return "seconds";
+            case TimeUnit::Milliseconds:
+                return "milliseconds";
+            case TimeUnit::Nanoseconds:
+                return "nanoseconds";
+        }
+        return "seconds";
+    }
+
+    static auto unitFromSuffix(const std::string& suffix) -> TimeUnit
+    {
+        if (suffix == "milliseconds") return TimeUnit::Milliseconds;
+        if (suffix == "nanoseconds") return TimeUnit::Nanoseconds;
+        return TimeUnit::Seconds;
     }
 
    private:
@@ -64,10 +102,9 @@ class TimeVariable final : public IVariable
         return NANOS_TO_SECONDS;
     }
 
-    std::string m_symbol;
-    std::string m_name;
+    TimeUnit m_unit;
     double m_factor;
-    double m_value = 0.0;
+    std::shared_ptr<double> m_value;
     std::chrono::steady_clock::time_point m_start;
 };
 

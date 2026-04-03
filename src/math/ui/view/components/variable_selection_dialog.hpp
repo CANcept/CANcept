@@ -1,0 +1,66 @@
+#pragma once
+
+#include <QDialog>
+#include <QPushButton>
+#include <QScrollArea>
+#include <QVBoxLayout>
+#include <memory>
+#include <string>
+#include <vector>
+
+#include "../providers/variable_type_provider.hpp"
+#include "math/ui/model/math_input_model.hpp"
+#include "variable_row_widget.hpp"
+
+namespace Math {
+
+/**
+ * @brief Dialog for configuring expression variables.
+ *
+ * Each row lets the user assign a symbol, pick a variable type, and configure
+ * type-specific options.
+ */
+class VariableSelectionDialog final : public QDialog
+{
+    Q_OBJECT
+
+   public:
+    using Providers = std::vector<std::unique_ptr<IVariableTypeProvider>>;
+
+    explicit VariableSelectionDialog(Providers providers,
+                                     const std::vector<VariableBinding>& currentBindings,
+                                     QWidget* parent = nullptr);
+
+    /**
+     * @brief Returns the valid rows as (VariableBinding, row-index) pairs.
+     */
+    [[nodiscard]] auto resultBindings() const
+        -> std::vector<std::pair<VariableBinding, std::size_t>>;
+
+    /**
+     * @brief Creates a variable for the row at the given index into m_rows.
+     */
+    [[nodiscard]] auto createVariableForRow(std::size_t rowIndex) const
+        -> std::unique_ptr<IVariable>;
+
+   protected:
+    auto event(QEvent* event) -> bool override;
+
+   private:
+    void setupUi(const std::vector<VariableBinding>& currentBindings);
+    void addRow(const VariableBinding* binding = nullptr);
+    void removeRow(VariableRowWidget* row);
+    void applyStyle();
+
+    Providers m_providers;
+
+    QScrollArea* m_scrollArea = nullptr;
+    QWidget* m_scrollContent = nullptr;
+    QVBoxLayout* m_scrollLayout = nullptr;
+    QPushButton* m_addButton = nullptr;
+    QPushButton* m_confirmButton = nullptr;
+
+    std::vector<VariableRowWidget*> m_rows;
+};
+
+}  // namespace Math

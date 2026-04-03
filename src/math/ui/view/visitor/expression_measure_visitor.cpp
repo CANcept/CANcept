@@ -3,12 +3,14 @@
 #include <algorithm>
 
 #include "core/macro/theme.hpp"
+#include "math/constants.hpp"
 #include "math/types/tokens/leaf/value_token.hpp"
 #include "math/types/tokens/leaf/variable_token.hpp"
 #include "math/ui/model/math_input_model.hpp"
 #include "math/ui/model/token_registry.hpp"
 
 namespace Math {
+using namespace Constants;
 
 ExpressionMeasureVisitor::ExpressionMeasureVisitor(const QFontMetrics& fm,
                                                    const MathInputModel* model)
@@ -31,7 +33,8 @@ auto ExpressionMeasureVisitor::measureSlot(const Token<TokenKind::Internal>* par
                                                   slot->childIndex == childIndex &&
                                                   !m_model->typeBuffer().isEmpty())
     {
-        const int width = m_fontMetric.horizontalAdvance(m_model->typeBuffer()) + spacing.radiusXs + 4;
+        const int width =
+            m_fontMetric.horizontalAdvance(m_model->typeBuffer()) + spacing.radiusXs + 4;
         return {static_cast<qreal>(std::max(width, spacing.HeightXs)),
                 static_cast<qreal>(spacing.HeightXs)};
     }

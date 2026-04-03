@@ -1,0 +1,62 @@
+#pragma once
+
+#include "core/widgets/common/styled_combo_box.hpp"
+#include "math/service/variables/time_variable.hpp"
+
+namespace Math {
+
+/**
+ * @brief Provider for time variables with unit selection.
+ */
+class TimeVariableProvider final : public IVariableTypeProvider
+{
+   public:
+    auto typeName() const -> QString override
+    {
+        return QStringLiteral("Time");
+    }
+
+    auto createOptionsWidget(QWidget* parent) -> QWidget* override
+    {
+        auto* combo = new Core::StyledComboBox(parent);
+        combo->addItem("Seconds", static_cast<int>(TimeUnit::Seconds));
+        combo->addItem("Milliseconds", static_cast<int>(TimeUnit::Milliseconds));
+        combo->addItem("Nanoseconds", static_cast<int>(TimeUnit::Nanoseconds));
+        return combo;
+    }
+
+    auto configKey(const QWidget* optionsWidget) const -> std::string override
+    {
+        const auto* combo = qobject_cast<const QComboBox*>(optionsWidget);
+        if (!combo) return {};
+        const auto unit = static_cast<TimeUnit>(combo->currentData().toInt());
+        return "time:" + TimeVariable::unitSuffix(unit);
+    }
+
+    auto displayName(const QWidget* optionsWidget) const -> std::string override
+    {
+        const auto* combo = qobject_cast<const QComboBox*>(optionsWidget);
+        if (!combo) return "Time";
+        const auto unit = static_cast<TimeUnit>(combo->currentData().toInt());
+        switch (unit)
+        {
+            case TimeUnit::Seconds:
+                return "Time (s)";
+            case TimeUnit::Milliseconds:
+                return "Time (ms)";
+            case TimeUnit::Nanoseconds:
+                return "Time (ns)";
+        }
+        return "Time";
+    }
+
+    auto createVariable(const QWidget* optionsWidget) const -> std::unique_ptr<IVariable> override
+    {
+        const auto* combo = qobject_cast<const QComboBox*>(optionsWidget);
+        if (!combo) return std::make_unique<TimeVariable>(TimeUnit::Seconds);
+        const auto unit = static_cast<TimeUnit>(combo->currentData().toInt());
+        return std::make_unique<TimeVariable>(unit);
+    }
+};
+
+}  // namespace Math

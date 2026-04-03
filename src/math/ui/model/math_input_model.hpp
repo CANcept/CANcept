@@ -2,14 +2,17 @@
 
 #include <QObject>
 #include <QString>
-#include <map>
 #include <memory>
 #include <optional>
 #include <string>
+#include <vector>
 
 #include "math/types/tokens/token.hpp"
+#include "math/types/variables/i_variable.hpp"
 
 namespace Math {
+
+class VariableRegistry;
 
 struct SlotAddress {
     const Token<TokenKind::Internal>* parent = nullptr;
@@ -18,90 +21,57 @@ struct SlotAddress {
     auto operator==(const SlotAddress& other) const -> bool = default;
 };
 
+/**
+ * @brief Binds a single-char symbol to a variable instance in the global registry.
+ */
+struct VariableBinding {
+    char symbol = '\0';
+    std::string configKey;
+    int typeIndex = 0;
+    IVariable* variable = nullptr;
+};
+
 class MathInputModel final : public QObject
 {
     Q_OBJECT
 
    public:
-    /**
-     * @brief Constructs an empty model with no expression tree.
-     */
-    explicit MathInputModel(QObject* parent = nullptr);
+    explicit MathInputModel(VariableRegistry& registry, QObject* parent = nullptr);
+    ~MathInputModel() override;
 
-    /**
-     * @brief Inserts a token as a child of the given parent at the specified index.
-     */
     void addNode(std::unique_ptr<TokenBase> token, Token<TokenKind::Internal>* parent,
                  int childIndex = -1);
-
-    /**
-     * @brief Removes the given token from the tree and resets its slot to empty.
-     */
     void removeNode(const TokenBase* token);
 
-    /**
-     * @brief Returns the root token of the expression tree, or nullptr if empty.
-     */
     [[nodiscard]] auto root() const -> const TokenBase*;
 
     /**
-     * @brief Creates a variable token whose value is backed by this model's variable store.
+     * @brief Creates a variable token for the given symbol character.
+     *
+     * Looks up the symbol in the current bindings and creates a VariableToken
+     * with shared ownership of the variable's value.
      */
-    [[nodiscard]] auto makeVariableToken(const std::string& name) -> std::unique_ptr<TokenBase>;
+    [[nodiscard]] auto makeVariableToken(const std::string& symbolStr)
+        -> std::unique_ptr<TokenBase>;
 
     /**
-     * @brief Inserts a token into the currently active slot, or as root if the tree is empty.
+     * @brief Replaces the variable bindings, handling acquire/release with the registry.
      */
+    void setVariableBindings(std::vector<VariableBinding> bindings);
+
+    [[nodiscard]] auto variableBindings() const -> const std::vector<VariableBinding>&;
+
     void insertToken(std::unique_ptr<TokenBase> token);
-
-    /**
-     * @brief Sets the active editing slot to the given parent and child index.
-     */
     void activateSlot(const Token<TokenKind::Internal>* parent, int childIndex);
-
-    /**
-     * @brief Clears the active slot and type buffer, leaving no slot selected.
-     */
     void clearEditorState();
-
-    /**
-     * @brief Advances the active slot to the next unfilled child in the tree.
-     */
     void selectNextEmptySlot();
-
-    /**
-     * @brief Appends text to the inline type buffer of the active slot.
-     */
     void appendToTypeBuffer(const QString& text);
-
-    /**
-     * @brief Removes the last character from the type buffer.
-     */
     void chopTypeBuffer();
-
-    /**
-     * @brief Parses the type buffer and inserts the resulting token into the active slot.
-     */
     void commitTypeBuffer();
 
-    /**
-     * @brief Returns the currently active slot address, if any.
-     */
     [[nodiscard]] auto activeSlot() const -> const std::optional<SlotAddress>&;
-
-    /**
-     * @brief Returns the current inline type buffer contents.
-     */
     [[nodiscard]] auto typeBuffer() const -> const QString&;
-
-    /**
-     * @brief Returns whether any slot is currently active for editing.
-     */
     [[nodiscard]] auto isSlotActive() const -> bool;
-
-    /**
-     * @brief Returns whether the expression tree is fully filled with no empty slots.
-     */
     [[nodiscard]] auto isComplete() const -> bool;
 
    signals:
@@ -113,8 +83,9 @@ class MathInputModel final : public QObject
                                   Token<TokenKind::Internal>* node) -> Token<TokenKind::Internal>*;
     [[nodiscard]] auto findNextEmptySlot(TokenBase* node) const -> std::optional<SlotAddress>;
 
+    VariableRegistry& m_registry;
     std::unique_ptr<TokenBase> m_root;
-    std::map<std::string, double> m_variableValues;
+    std::vector<VariableBinding> m_bindings;
     std::optional<SlotAddress> m_activeSlot;
     QString m_typeBuffer;
 };

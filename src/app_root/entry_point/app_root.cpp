@@ -36,6 +36,7 @@
 #include "dbc_file/dbc_component.hpp"
 #include "event_broker/event_broker.hpp"
 #include "logging/logging_component.hpp"
+#include "math/service/variable_registry.hpp"
 #include "monitoring/monitoring_component.hpp"
 #include "sending/sending_component.hpp"
 
@@ -115,6 +116,9 @@ void AppRoot::bootstrap()
     m_dbc_handler = std::make_unique<CanHandler::DbcHandler>(*m_broker);
     m_dbc_handler->registerSettings(*m_settingsService);
 
+    LOG_INF("AppRoot", "Instantiating Variable Registry...");
+    m_variableRegistry = std::make_unique<Math::VariableRegistry>(*m_broker);
+
     LOG_INF("AppRoot", "Instantiating App Root MVD...");
     m_model = std::make_unique<AppRootModel>();
     m_settingsModel = std::make_unique<SettingsModel>(*m_settingsService, *m_broker);
@@ -138,6 +142,16 @@ void AppRoot::bootstrap()
     initTab<Monitoring::MonitoringComponent>();
     initTab<Sending::SendingComponent>();
     initTab<Logging::LoggingComponent>();
+
+    // Inject variable registry into sending component
+    for (const auto& tab : m_tabs)
+    {
+        if (auto* sending = dynamic_cast<Sending::SendingComponent*>(tab.get()))
+        {
+            sending->setVariableRegistry(
+                dynamic_cast<Math::VariableRegistry*>(m_variableRegistry.get()));
+        }
+    }
 
     for (const auto& tab : m_tabs)
     {
@@ -236,6 +250,7 @@ void AppRoot::shutdown()
     m_delegate.reset();
     m_settingsModel.reset();
     m_model.reset();
+    m_variableRegistry.reset();
     m_can_communication_handler.reset();
     m_dbc_handler.reset();
     m_settingsService.reset();

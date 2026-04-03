@@ -37,9 +37,6 @@ class ExpressionMeasureVisitor final : public IExpressionVisitor
     void visit(const FunctionToken& token) override;
 
    private:
-    static constexpr double PAD_VERTICAL_FACTOR = 0.75;
-    static constexpr double MARGIN_FACTOR = 1.25;
-    static constexpr double BAR_PAD_FACTOR = 0.5;
     auto childSize(const Token<TokenKind::Internal>& parent, int index) -> QSizeF;
 
     QSizeF m_size;

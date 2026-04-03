@@ -4,10 +4,12 @@
 #include <QPen>
 
 #include "core/macro/theme.hpp"
+#include "math/constants.hpp"
 #include "math/ui/model/math_input_model.hpp"
 #include "math/ui/model/token_registry.hpp"
 
 namespace Math {
+using namespace Constants;
 
 ExpressionRenderVisitor::ExpressionRenderVisitor(QPainter& painter, const QFontMetrics& fontMetrics,
                                                  MathInputModel* model,

@@ -6,6 +6,7 @@
 #include <atomic>
 #include <functional>
 #include <memory>
+#include <mutex>
 #include <optional>
 
 #include "components/math_input_button.hpp"
@@ -18,6 +19,7 @@ class MathInputModel;
 class MathExpressionWidget;
 class MathInputAdditionalVariables;
 class MathInputStatusIndicator;
+class VariableRegistry;
 
 class MathInputView final : public QWidget
 {
@@ -27,13 +29,15 @@ class MathInputView final : public QWidget
     /**
      * @brief Constructs the complete math input panel with expression area, buttons, and status.
      */
-    explicit MathInputView(QWidget* parent = nullptr);
+    explicit MathInputView(VariableRegistry& registry, QWidget* parent = nullptr);
     ~MathInputView() override = default;
 
     /**
-     * @brief Returns the most recently evaluated numeric result of the expression.
+     * @brief Updates all variables, re-evaluates the expression, and returns the result.
+     *
+     * Thread-safe: called from the sending worker thread at up to 1000+ Hz.
      */
-    [[nodiscard]] auto lastValue() const -> double;
+    [[nodiscard]] auto lastValue() -> double;
 
     /**
      * @brief Returns whether the current expression parses and evaluates successfully.
@@ -58,6 +62,7 @@ class MathInputView final : public QWidget
     void applyStyle();
     void reparse();
 
+    VariableRegistry& m_registry;
     MathInputModel* m_model;
     MathExpressionWidget* m_expressionWidget;
     QHBoxLayout* m_buttonLayout;
@@ -66,6 +71,7 @@ class MathInputView final : public QWidget
     MathInputStatusIndicator* m_statusIndicator;
     QWidget* m_buttonBar = nullptr;
 
+    mutable std::mutex m_evalMutex;
     std::optional<ValueFunction> m_cachedFunction;
     std::atomic<double> m_lastValue{0.0};
 };

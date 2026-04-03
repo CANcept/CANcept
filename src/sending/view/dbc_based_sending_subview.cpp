@@ -156,7 +156,7 @@ bool DbcSendingSubView::event(QEvent* event)
     return QWidget::event(event);
 }
 
-void DbcSendingSubView::populateFromModel(SendingModel* model)
+void DbcSendingSubView::populateFromModel(SendingModel* model, Math::VariableRegistry& registry)
 {
     if (!model)
     {
@@ -199,8 +199,8 @@ void DbcSendingSubView::populateFromModel(SendingModel* model)
         for (const auto& sigDef : msgDef.signalDescriptions)
         {
             auto* signalRow = new Core::DbcSignalRowWidget(
-                QString::fromStdString(sigDef.signalName), QString::fromStdString(sigDef.unit),
-                sigDef.minimum, sigDef.maximum, card);
+                registry, QString::fromStdString(sigDef.signalName),
+                QString::fromStdString(sigDef.unit), sigDef.minimum, sigDef.maximum, card);
 
             QString signalName = QString::fromStdString(sigDef.signalName);
 

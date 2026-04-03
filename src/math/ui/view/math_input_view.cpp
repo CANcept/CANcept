@@ -9,16 +9,21 @@
 #include "components/math_input_additional_variables.hpp"
 #include "components/math_input_button.hpp"
 #include "components/math_input_status_indicator.hpp"
+#include "components/variable_selection_dialog.hpp"
 #include "core/macro/theme.hpp"
 #include "core/theme/style_event.hpp"
+#include "math/service/variable_registry.hpp"
 #include "math/ui/model/math_input_model.hpp"
 #include "math/ui/model/token_registry.hpp"
+#include "providers/signal_variable_provider.hpp"
+#include "providers/time_variable_provider.hpp"
 
 namespace Math {
 
-MathInputView::MathInputView(QWidget* parent)
+MathInputView::MathInputView(VariableRegistry& registry, QWidget* parent)
     : QWidget(parent),
-      m_model(new MathInputModel(this)),
+      m_registry(registry),
+      m_model(new MathInputModel(registry, this)),
       m_expressionWidget(new MathExpressionWidget(m_model, this)),
       m_buttonLayout(nullptr),
       m_variablesButton(
@@ -48,6 +53,33 @@ MathInputView::MathInputView(QWidget* parent)
     m_buttonBar = new QWidget(this);
     setupButtonBar(m_buttonBar);
     mainLayout->addWidget(m_buttonBar);
+
+    // Open variable configuration dialog on "+" button click
+    connect(m_variablesButton, &MathInputButton::clicked, this, [this] {
+        // Build providers fresh each time (picks up latest DBC config)
+        VariableSelectionDialog::Providers providers;
+        providers.push_back(std::make_unique<TimeVariableProvider>());
+        providers.push_back(std::make_unique<SignalVariableProvider>(m_registry.dbcConfig()));
+
+        VariableSelectionDialog dialog(std::move(providers), m_model->variableBindings(), window());
+        if (dialog.exec() == QDialog::Accepted)
+        {
+            auto pairs = dialog.resultBindings();
+
+            // Acquire each variable from the registry using the correct row index.
+            std::vector<VariableBinding> bindings;
+            bindings.reserve(pairs.size());
+            for (auto& [binding, rowIdx] : pairs)
+            {
+                binding.variable = m_registry.acquire(binding.configKey, [&dialog, rowIdx]() {
+                    return dialog.createVariableForRow(rowIdx);
+                });
+                bindings.push_back(std::move(binding));
+            }
+
+            m_model->setVariableBindings(std::move(bindings));
+        }
+    });
 
     // Reparse on tree changes to ensure correct value function
     connect(m_model, &MathInputModel::changed, this, &MathInputView::reparse);
@@ -128,8 +160,12 @@ auto MathInputView::event(QEvent* event) -> bool
 
 void MathInputView::reparse()
 {
-    const bool wasParsed = m_cachedFunction.has_value() && m_cachedFunction->isParsed();
-    m_cachedFunction.reset();
+    bool wasParsed = false;
+    {
+        std::lock_guard lock(m_evalMutex);
+        wasParsed = m_cachedFunction.has_value() && m_cachedFunction->isParsed();
+        m_cachedFunction.reset();
+    }
 
     if (!m_model->root() || !m_model->isComplete())
     {
@@ -145,8 +181,12 @@ void MathInputView::reparse()
 
     if (result.success)
     {
-        m_cachedFunction = std::move(vf);
-        m_lastValue.store(m_cachedFunction->evaluate(), std::memory_order_relaxed);
+        {
+            std::lock_guard lock(m_evalMutex);
+            m_cachedFunction = std::move(vf);
+            m_registry.updateAll();
+            m_lastValue.store(m_cachedFunction->evaluate(), std::memory_order_relaxed);
+        }
         if (!wasParsed)
         {
             emit validityChanged(true);
@@ -160,8 +200,14 @@ void MathInputView::reparse()
     }
 }
 
-auto MathInputView::lastValue() const -> double
+auto MathInputView::lastValue() -> double
 {
+    std::lock_guard lock(m_evalMutex);
+    if (m_cachedFunction.has_value() && m_cachedFunction->isParsed())
+    {
+        m_registry.updateAll();
+        m_lastValue.store(m_cachedFunction->evaluate(), std::memory_order_relaxed);
+    }
     return m_lastValue.load(std::memory_order_relaxed);
 }
 

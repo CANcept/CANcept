@@ -25,22 +25,11 @@
 
 namespace Core {
 
-DbcSignalRowWidget::DbcSignalRowWidget(const QString& name, const QString& unit, double min,
-                                       double max, const Config& config, QWidget* parent)
+DbcSignalRowWidget::DbcSignalRowWidget(Math::VariableRegistry& registry, const QString& name,
+                                       const QString& unit, const double min, const double max,
+                                       QWidget* parent)
     : QWidget(parent),
-      m_cardContainer(nullptr),
-      m_selectionCheckbox(nullptr),
-      m_nameLabel(nullptr),
-      m_rangeLabel(nullptr),
-      m_valueEditor(nullptr),
-      m_unitLabel(nullptr)
-{
-    setupUi(name, unit, min, max, config);
-}
-
-DbcSignalRowWidget::DbcSignalRowWidget(const QString& name, const QString& unit, const double min,
-                                       const double max, QWidget* parent)
-    : QWidget(parent),
+      m_registry(&registry),
       m_cardContainer(nullptr),
       m_selectionCheckbox(nullptr),
       m_nameLabel(nullptr),
@@ -53,6 +42,20 @@ DbcSignalRowWidget::DbcSignalRowWidget(const QString& name, const QString& unit,
     defaultConfig.showRange = true;
     defaultConfig.showSelectionCheckbox = false;
     setupUi(name, unit, min, max, defaultConfig);
+}
+
+DbcSignalRowWidget::DbcSignalRowWidget(const QString& name, const QString& unit, double min,
+                                       double max, const Config& config, QWidget* parent)
+    : QWidget(parent),
+      m_registry(nullptr),
+      m_cardContainer(nullptr),
+      m_selectionCheckbox(nullptr),
+      m_nameLabel(nullptr),
+      m_rangeLabel(nullptr),
+      m_valueEditor(nullptr),
+      m_unitLabel(nullptr)
+{
+    setupUi(name, unit, min, max, config);
 }
 
 void DbcSignalRowWidget::setupUi(const QString& name, const QString& unit, double min, double max,
@@ -108,7 +111,7 @@ void DbcSignalRowWidget::setupFullMode(const QString& name, const QString& unit,
     cardLayout->addLayout(firstRow);
     cardLayout->addSpacing(spacing.spacingXs);
 
-    m_valueEditor = new Math::MathInputView(m_cardContainer);
+    m_valueEditor = new Math::MathInputView(*m_registry, m_cardContainer);
     cardLayout->addWidget(m_valueEditor);
 
     mainLayout->addWidget(m_cardContainer);

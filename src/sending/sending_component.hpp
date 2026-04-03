@@ -30,6 +30,10 @@
 #include "view/sending_view.hpp"
 #include "worker/repeated_sending_worker.hpp"
 
+namespace Math {
+class VariableRegistry;
+}
+
 namespace Sending {
 /**
  * @brief Tab component responsible for sending CAN frames.
@@ -79,6 +83,11 @@ class SendingComponent final : public Core::ITabComponent
      * @return Pointer to the root QWidget of the SendingView.
      */
     auto getView() -> QWidget* override;
+
+    /**
+     * @brief Injects the global variable registry for expression variable resolution.
+     */
+    void setVariableRegistry(Math::VariableRegistry* registry);
 
    signals:
     /**
@@ -140,6 +149,9 @@ class SendingComponent final : public Core::ITabComponent
      * @brief Sends the current message once (offloaded to a thread).
      */
     void sendOnce() const;
+
+    /** @brief Global variable registry for expression variables. */
+    Math::VariableRegistry* m_variableRegistry = nullptr;
 
     /** @brief Model holding CAN sending configuration and data */
     std::unique_ptr<SendingModel> m_model;

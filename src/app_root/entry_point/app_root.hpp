@@ -119,6 +119,7 @@ class AppRoot
     std::unique_ptr<SettingsService> m_settingsService;
     std::unique_ptr<Core::ILifecycle> m_can_communication_handler;
     std::unique_ptr<Core::ILifecycle> m_dbc_handler;
+    std::unique_ptr<Core::ILifecycle> m_variableRegistry;
 
     /**
      * @brief A tab factory which safes the initialization procedure of tabs.

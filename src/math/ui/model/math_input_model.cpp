@@ -1,14 +1,27 @@
 #include "math/ui/model/math_input_model.hpp"
 
+#include <algorithm>
 #include <utility>
 
+#include "math/service/variable_registry.hpp"
 #include "math/types/tokens/leaf/value_token.hpp"
 #include "math/types/tokens/leaf/variable_token.hpp"
 #include "math/ui/model/token_registry.hpp"
 
 namespace Math {
 
-MathInputModel::MathInputModel(QObject* parent) : QObject(parent) {}
+MathInputModel::MathInputModel(VariableRegistry& registry, QObject* parent)
+    : QObject(parent), m_registry(registry)
+{
+}
+
+MathInputModel::~MathInputModel()
+{
+    for (const auto& binding : m_bindings)
+    {
+        m_registry.release(binding.configKey);
+    }
+}
 
 void MathInputModel::addNode(std::unique_ptr<TokenBase> token, Token<TokenKind::Internal>* parent,
                              const int childIndex)
@@ -61,10 +74,36 @@ auto MathInputModel::root() const -> const TokenBase*
     return m_root.get();
 }
 
-auto MathInputModel::makeVariableToken(const std::string& name) -> std::unique_ptr<TokenBase>
+auto MathInputModel::makeVariableToken(const std::string& symbolStr) -> std::unique_ptr<TokenBase>
 {
-    double& value = m_variableValues[name];
-    return std::make_unique<VariableToken>(name, &value);
+    if (symbolStr.size() != 1) return nullptr;
+
+    const char sym = symbolStr[0];
+    for (const auto& binding : m_bindings)
+    {
+        if (binding.symbol == sym && binding.variable)
+        {
+            return std::make_unique<VariableToken>(symbolStr, binding.variable->sharedPtr());
+        }
+    }
+    return nullptr;
+}
+
+void MathInputModel::setVariableBindings(std::vector<VariableBinding> bindings)
+{
+    // Release ALL old bindings — the caller has already called acquire() for the new set,
+    // so each retained variable's refcount was incremented before this call.
+    for (const auto& old : m_bindings)
+    {
+        m_registry.release(old.configKey);
+    }
+
+    m_bindings = std::move(bindings);
+}
+
+auto MathInputModel::variableBindings() const -> const std::vector<VariableBinding>&
+{
+    return m_bindings;
 }
 
 void MathInputModel::insertToken(std::unique_ptr<TokenBase> token)

@@ -6,6 +6,7 @@
 #include <QPainter>
 
 #include "core/macro/theme.hpp"
+#include "math/constants.hpp"
 #include "math/ui/model/math_input_model.hpp"
 #include "math/ui/view/visitor/expression_measure_visitor.hpp"
 #include "math/ui/view/visitor/expression_render_visitor.hpp"
@@ -56,7 +57,7 @@ void MathExpressionWidget::paintEvent(QPaintEvent*)
 
     ExpressionRenderVisitor renderer(painter, fm, m_model, m_hitRegions, m_mousePos,
                                      m_cursorVisible);
-    const int margin = static_cast<int>(THEME.spacing().spacingSm * MARGIN_FACTOR);
+    const int margin = static_cast<int>(THEME.spacing().spacingSm * Constants::MARGIN_FACTOR);
     renderer.renderToken(m_model->root(), QPointF(margin, margin));
 }
 
@@ -138,7 +139,7 @@ auto MathExpressionWidget::sizeHint() const -> QSize
 {
     const QFontMetrics fontMetrics(font());
     ExpressionMeasureVisitor measurer(fontMetrics, m_model);
-    const int margin = static_cast<int>(THEME.spacing().spacingSm * MARGIN_FACTOR);
+    const int margin = static_cast<int>(THEME.spacing().spacingSm * Constants::MARGIN_FACTOR);
     const QSizeF s = measurer.measureToken(m_model->root());
     return {static_cast<int>(s.width()) + 2 * margin, static_cast<int>(s.height()) + 2 * margin};
 }

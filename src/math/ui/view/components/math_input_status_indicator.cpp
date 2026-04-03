@@ -4,6 +4,7 @@
 
 #include "core/macro/theme.hpp"
 #include "core/theme/style_event.hpp"
+#include "math/constants.hpp"
 
 namespace Math {
 
@@ -12,7 +13,7 @@ MathInputStatusIndicator::MathInputStatusIndicator(QWidget* parent)
 {
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     connect(m_spinTimer, &QTimer::timeout, this, [this] {
-        m_spinAngle = (m_spinAngle + SPIN_STEP_DEG) % 360;
+        m_spinAngle = (m_spinAngle + Constants::SPIN_STEP_DEG) % 360;
         update();
     });
     applyStyle();
@@ -28,7 +29,7 @@ void MathInputStatusIndicator::startParsing()
 {
     m_state = State::Parsing;
     m_spinAngle = 0;
-    m_spinTimer->start(SPIN_INTERVAL_MS);
+    m_spinTimer->start(Constants::SPIN_INTERVAL_MS);
     update();
 }
 
@@ -64,29 +65,36 @@ void MathInputStatusIndicator::paintEvent(QPaintEvent*)
 
 void MathInputStatusIndicator::drawSpinner(QPainter& painter) const
 {
-    painter.setPen(QPen(m_spinColor, STROKE_WIDTH, Qt::SolidLine, Qt::RoundCap));
+    painter.setPen(QPen(m_spinColor, Constants::STROKE_WIDTH, Qt::SolidLine, Qt::RoundCap));
     painter.setBrush(Qt::NoBrush);
-    const QRectF r = QRectF(rect()).adjusted(MARGIN, MARGIN, -MARGIN, -MARGIN);
-    painter.drawArc(r, m_spinAngle * 16, -SPIN_SPAN_DEG * 16);
+    const QRectF r =
+        QRectF(rect()).adjusted(Constants::INDICATOR_MARGIN, Constants::INDICATOR_MARGIN,
+                                -Constants::INDICATOR_MARGIN, -Constants::INDICATOR_MARGIN);
+    painter.drawArc(r, m_spinAngle * 16, -Constants::SPIN_SPAN_DEG * 16);
 }
 
 void MathInputStatusIndicator::drawCheck(QPainter& painter) const
 {
     const auto r = QRectF(rect());
-    painter.setPen(QPen(m_successColor, STROKE_WIDTH, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+    painter.setPen(
+        QPen(m_successColor, Constants::STROKE_WIDTH, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
     painter.setBrush(Qt::NoBrush);
-    painter.drawLine(
-        r.topLeft() + QPointF(r.width() * CHECK_RATIO_START_X, r.height() * CHECK_RATIO_START_Y),
-        r.topLeft() + QPointF(r.width() * CHECK_RATIO_MID_X, r.height() * CHECK_RATIO_MID_Y));
-    painter.drawLine(
-        r.topLeft() + QPointF(r.width() * CHECK_RATIO_MID_X, r.height() * CHECK_RATIO_MID_Y),
-        r.topLeft() + QPointF(r.width() * CHECK_RATIO_END_X, r.height() * CHECK_RATIO_END_Y));
+    painter.drawLine(r.topLeft() + QPointF(r.width() * Constants::CHECK_RATIO_START_X,
+                                           r.height() * Constants::CHECK_RATIO_START_Y),
+                     r.topLeft() + QPointF(r.width() * Constants::CHECK_RATIO_MID_X,
+                                           r.height() * Constants::CHECK_RATIO_MID_Y));
+    painter.drawLine(r.topLeft() + QPointF(r.width() * Constants::CHECK_RATIO_MID_X,
+                                           r.height() * Constants::CHECK_RATIO_MID_Y),
+                     r.topLeft() + QPointF(r.width() * Constants::CHECK_RATIO_END_X,
+                                           r.height() * Constants::CHECK_RATIO_END_Y));
 }
 
 void MathInputStatusIndicator::drawCross(QPainter& painter) const
 {
-    const QRectF r = QRectF(rect()).adjusted(MARGIN, MARGIN, -MARGIN, -MARGIN);
-    painter.setPen(QPen(m_errorColor, STROKE_WIDTH, Qt::SolidLine, Qt::RoundCap));
+    const QRectF r =
+        QRectF(rect()).adjusted(Constants::INDICATOR_MARGIN, Constants::INDICATOR_MARGIN,
+                                -Constants::INDICATOR_MARGIN, -Constants::INDICATOR_MARGIN);
+    painter.setPen(QPen(m_errorColor, Constants::STROKE_WIDTH, Qt::SolidLine, Qt::RoundCap));
     painter.setBrush(Qt::NoBrush);
     painter.drawLine(r.topLeft(), r.bottomRight());
     painter.drawLine(r.topRight(), r.bottomLeft());

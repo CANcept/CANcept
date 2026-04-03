@@ -377,7 +377,6 @@ void SendingModel::forEachPendingMessage(
                     }
                 }
 
-                // Clamp at runtime since expression values aren't known until evaluation
                 signal.value = std::clamp(signal.value, sigDef.minimum, sigDef.maximum);
 
                 message.signalValues.push_back(signal);

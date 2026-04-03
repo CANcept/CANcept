@@ -5,13 +5,13 @@
 #include <QPoint>
 #include <QSizeF>
 
-#include "../components/math_expression_widget.hpp"
 #include "expression_measure_visitor.hpp"
 #include "math/types/tokens/expression_visitor.hpp"
 #include "math/types/tokens/internal/function_token.hpp"
 #include "math/types/tokens/internal/operator_token.hpp"
 #include "math/types/tokens/leaf/value_token.hpp"
 #include "math/types/tokens/leaf/variable_token.hpp"
+#include "math/ui/view/components/math_expression_widget.hpp"
 
 namespace Math {
 
@@ -42,9 +42,6 @@ class ExpressionRenderVisitor final : public IExpressionVisitor
     void visit(const FunctionToken& token) override;
 
    private:
-    static constexpr double PAD_VERTICAL_FACTOR = 0.75;
-    static constexpr double MARGIN_FACTOR = 1.25;
-    static constexpr double BAR_PAD_FACTOR = 0.5;
     void renderFraction(const OperatorToken& token);
     void renderInlineOp(const OperatorToken& token);
     void renderFunction(const FunctionToken& token);

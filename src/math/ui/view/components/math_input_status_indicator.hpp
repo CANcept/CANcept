@@ -42,18 +42,6 @@ class MathInputStatusIndicator final : public QWidget
     auto event(QEvent* event) -> bool override;
 
    private:
-    static constexpr int SPIN_INTERVAL_MS = 30;
-    static constexpr int SPIN_STEP_DEG = 12;
-    static constexpr int SPIN_SPAN_DEG = 270;
-    static constexpr qreal STROKE_WIDTH = 2.0;
-    static constexpr qreal MARGIN = 2.0;
-    static constexpr qreal CHECK_RATIO_START_X = 0.15;
-    static constexpr qreal CHECK_RATIO_MID_X = 0.4;
-    static constexpr qreal CHECK_RATIO_END_X = 0.85;
-    static constexpr qreal CHECK_RATIO_START_Y = 0.5;
-    static constexpr qreal CHECK_RATIO_MID_Y = 0.75;
-    static constexpr qreal CHECK_RATIO_END_Y = 0.25;
-
     void applyStyle();
     void drawSpinner(QPainter& painter) const;
     void drawCheck(QPainter& painter) const;

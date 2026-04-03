@@ -83,12 +83,20 @@ auto SendingComponent::getView() -> QWidget*
     return m_view.get();
 }
 
+void SendingComponent::setVariableRegistry(Math::VariableRegistry* registry)
+{
+    m_variableRegistry = registry;
+}
+
 void SendingComponent::onDbcConfigReceived(const Core::DbcConfig& config)
 {
     LOG_INF(Constants::MODULE_IDENTIFIER, "Processing DBC config on UI thread");
 
     m_model->updateDbcConfig(config);
-    m_view->dbcSubView()->populateFromModel(m_model.get());
+    if (m_variableRegistry)
+    {
+        m_view->dbcSubView()->populateFromModel(m_model.get(), *m_variableRegistry);
+    }
 
     LOG_INF(Constants::MODULE_IDENTIFIER, "Created {} message cards",
             config.messageDefinitions.size());

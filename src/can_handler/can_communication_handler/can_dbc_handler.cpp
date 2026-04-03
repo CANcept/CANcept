@@ -104,13 +104,8 @@ auto CanDbcHandler::parseReceivedSignal(const Core::DbcSignalDescription& signal
                                                  // data ( +signal.startBit)
     } else                                       // big endian
     {
-        const char spaceInFront = signal.startBit % 8;
-        const char frontSize = 8 - spaceInFront;
-        const uint64_t frontBits = dataBigEndian << (8 * (signal.startBit / 8)) >>
-                                   (56 + spaceInFront) << (signal.signalSize - frontSize);
-        const uint64_t backBits = dataBigEndian << (8 * ((signal.startBit / 8) + 1)) >>
-                                  (64 - signal.signalSize + frontSize);
-        rawValue = frontBits | backBits;
+        const uint8_t linearStart = 63 - (56 - 8 * (signal.startBit / 8) + signal.startBit % 8);
+        rawValue = static_cast<int64_t>((dataBigEndian << linearStart) >> (64 - signal.signalSize));
     }
     if (signal.valueType)  // signed
     {
@@ -175,11 +170,11 @@ void CanDbcHandler::handleSendMessage(const Core::SendCanMessageDbcEvent& event)
     for (int i = 0; i < 8; i++)
     {
         // Extract byte i from little-endian representation
-        const uint8_t byteLittleEndian = static_cast<uint8_t>((dataLittleEndian >> (i * 8)) & 0xFF);
+        const auto byteLittleEndian = static_cast<uint8_t>((dataLittleEndian >> (i * 8)) & 0xFF);
         // Extract byte i from big-endian representation
-        const uint8_t byteBigEndian = static_cast<uint8_t>((dataBigEndian >> ((7 - i) * 8)) & 0xFF);
+        const auto byteBigEndian = static_cast<uint8_t>((dataBigEndian >> ((7 - i) * 8)) & 0xFF);
         // Combine with OR (signals should not overlap in well-formed DBC)
-        data += static_cast<char>(byteLittleEndian | byteBigEndian);
+        data += static_cast<uint8_t>(byteLittleEndian | byteBigEndian);
     }
 
     LOG_INF("CanDbcHandler", "Encoded data LE=0x{:016X} BE=0x{:016X}", dataLittleEndian,
@@ -221,18 +216,8 @@ void CanDbcHandler::parseSendSignal(const Core::DbcSignalDescription& signal,
         dataLittleEndian |= (maskedRawValue << signal.startBit);
     } else  // Big endian (Motorola)
     {
-        char spaceInFront = signal.startBit % 8;
-        char frontBits = maskedRawValue >> (signal.signalSize - (8 - spaceInFront));
-        uint64_t backBits = (maskedRawValue << (64 - signal.signalSize + (8 - spaceInFront))) >>
-                            (64 - signal.signalSize + (8 - spaceInFront));
-        uint64_t convertedRawValue =
-            static_cast<uint64_t>(frontBits)
-                << (signal.signalSize - (8 - spaceInFront) + spaceInFront) |
-            backBits;
-        // Decode: rawValue = dataBE << (64 - startBit) >> (64 - signalSize)
-        // This extracts signal from bits [startBit - signalSize + 1, startBit]
-        // Encode (inverse): place value at those bits
-        dataBigEndian |= (convertedRawValue << (64 - signal.startBit - signal.signalSize));
+        const uint8_t linearStart = 8 * (signal.startBit / 8) + (7 - signal.startBit % 8);
+        dataBigEndian |= static_cast<uint64_t>(rawValue) << (64 - linearStart - signal.signalSize);
     }
 }
 

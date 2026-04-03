@@ -7,10 +7,9 @@
 #include <QWidget>
 
 #include "math/types/tokens/token.hpp"
+#include "math/ui/model/math_input_model.hpp"
 
 namespace Math {
-
-class MathInputModel;
 
 struct HitRegion {
     QRect rect;
@@ -39,7 +38,6 @@ class MathExpressionWidget final : public QWidget
     [[nodiscard]] auto sizeHint() const -> QSize override;
 
    private:
-    static constexpr double MARGIN_FACTOR = 1.25;
     void resetCursorBlink();
 
     MathInputModel* m_model;
