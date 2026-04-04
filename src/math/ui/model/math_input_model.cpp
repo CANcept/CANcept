@@ -19,7 +19,7 @@ MathInputModel::~MathInputModel()
 {
     for (const auto& binding : m_bindings)
     {
-        m_registry.release(binding.configKey);
+        if (binding.variable) m_registry.release(binding.variable->configKey());
     }
 }
 
@@ -91,11 +91,9 @@ auto MathInputModel::makeVariableToken(const std::string& symbolStr) -> std::uni
 
 void MathInputModel::setVariableBindings(std::vector<VariableBinding> bindings)
 {
-    // Release ALL old bindings — the caller has already called acquire() for the new set,
-    // so each retained variable's refcount was incremented before this call.
     for (const auto& old : m_bindings)
     {
-        m_registry.release(old.configKey);
+        if (old.variable) m_registry.release(old.variable->configKey());
     }
 
     m_bindings = std::move(bindings);

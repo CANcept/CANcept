@@ -104,6 +104,9 @@ auto CanDbcHandler::parseReceivedSignal(const Core::DbcSignalDescription& signal
                                                  // data ( +signal.startBit)
     } else                                       // big endian
     {
+        // DBC bit N sits at linear position (56 - 8*(N/8) + N%8) in a MSB-first 64-bit word.
+        // Shifting by 63 - pos(startBit) aligns the signal MSB to bit 63;
+        // >> (64 - signalSize) then isolates the signal at bits [signalSize-1 : 0]
         const uint8_t linearStart = 63 - (56 - 8 * (signal.startBit / 8) + signal.startBit % 8);
         rawValue = static_cast<int64_t>((dataBigEndian << linearStart) >> (64 - signal.signalSize));
     }
@@ -216,7 +219,8 @@ void CanDbcHandler::parseSendSignal(const Core::DbcSignalDescription& signal,
         dataLittleEndian |= (maskedRawValue << signal.startBit);
     } else  // Big endian (Motorola)
     {
-        const uint8_t linearStart = 8 * (signal.startBit / 8) + (7 - signal.startBit % 8);
+        // DBC bit N maps to linear position 56 - 8*(N/8) + N%8 in a MSB-first 64-bit word.
+        const uint8_t linearStart = 63 - (56 - 8 * (signal.startBit / 8) + signal.startBit % 8);
         dataBigEndian |= static_cast<uint64_t>(rawValue) << (64 - linearStart - signal.signalSize);
     }
 }

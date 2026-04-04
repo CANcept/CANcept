@@ -23,7 +23,8 @@
 
 namespace Core {
 
-StyledLineEdit::StyledLineEdit(QWidget* parent) : QLineEdit(parent)
+StyledLineEdit::StyledLineEdit(QWidget* parent, Variant variant)
+    : QLineEdit(parent), m_variant(variant)
 {
     setFrame(false);
     setAttribute(Qt::WA_StyledBackground, true);
@@ -31,7 +32,8 @@ StyledLineEdit::StyledLineEdit(QWidget* parent) : QLineEdit(parent)
     applyStyle();
 }
 
-StyledLineEdit::StyledLineEdit(const QString& text, QWidget* parent) : QLineEdit(text, parent)
+StyledLineEdit::StyledLineEdit(const QString& text, QWidget* parent, Variant variant)
+    : QLineEdit(text, parent), m_variant(variant)
 {
     setFrame(false);
     setAttribute(Qt::WA_StyledBackground, true);
@@ -42,6 +44,9 @@ StyledLineEdit::StyledLineEdit(const QString& text, QWidget* parent) : QLineEdit
 void StyledLineEdit::paintEvent(QPaintEvent* event)
 {
     QLineEdit::paintEvent(event);
+
+    if (m_variant == Variant::Flat) return;
+
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
 
@@ -83,6 +88,10 @@ void StyledLineEdit::applyStyle()
     const int paddingV = m_paddingV >= 0 ? m_paddingV : spacing.spacingLg;
     const int paddingH = m_paddingH >= 0 ? m_paddingH : spacing.spacingXl;
 
+    const bool flat = m_variant == Variant::Flat;
+    const auto bgColor = flat ? colors.surfaceSecondary : colors.surfaceMain;
+    const auto radius = spacing.radiusSm;
+
     const QString style = QString(
                               "QLineEdit {"
                               "  background-color: %1;"
@@ -100,8 +109,8 @@ void StyledLineEdit::applyStyle()
                               "QLineEdit:disabled {"
                               "  background-color: %7;"
                               "}")
-                              .arg(colors.surfaceMain.name(), colors.textSecondary.name())
-                              .arg(spacing.radiusSm)
+                              .arg(bgColor.name(), colors.textSecondary.name())
+                              .arg(radius)
                               .arg(paddingV)
                               .arg(paddingH)
                               .arg(spacing.fontSizeSm)

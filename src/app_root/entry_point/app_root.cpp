@@ -36,7 +36,6 @@
 #include "dbc_file/dbc_component.hpp"
 #include "event_broker/event_broker.hpp"
 #include "logging/logging_component.hpp"
-#include "math/service/variable_registry.hpp"
 #include "monitoring/monitoring_component.hpp"
 #include "sending/sending_component.hpp"
 
@@ -140,18 +139,8 @@ void AppRoot::bootstrap()
 
     initTab<DbcFile::DbcComponent>();
     initTab<Monitoring::MonitoringComponent>();
-    initTab<Sending::SendingComponent>();
+    initTab<Sending::SendingComponent>(m_variableRegistry.get());
     initTab<Logging::LoggingComponent>();
-
-    // Inject variable registry into sending component
-    for (const auto& tab : m_tabs)
-    {
-        if (auto* sending = dynamic_cast<Sending::SendingComponent*>(tab.get()))
-        {
-            sending->setVariableRegistry(
-                dynamic_cast<Math::VariableRegistry*>(m_variableRegistry.get()));
-        }
-    }
 
     for (const auto& tab : m_tabs)
     {

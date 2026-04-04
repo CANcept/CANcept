@@ -24,6 +24,7 @@
 #include "core/interface/i_event_broker.hpp"
 #include "core/interface/i_lifecycle.hpp"
 #include "core/interface/i_tab_component.hpp"
+#include "math/service/variable_registry.hpp"
 #include "tab_factory.hpp"
 
 namespace AppRoot {
@@ -88,12 +89,14 @@ class AppRoot
     /**
      * @brief Registers a tab type in the factory and spawns the initial instance.
      * @tparam T Concrete class inheriting from ITabComponent.
+     * @tparam Args additional dependencies
      */
-    template <typename T>
-    void initTab()
+    template <typename T, typename... Args>
+        requires std::is_base_of_v<Core::ITabComponent, T>
+    void initTab(Args&&... args)
     {
-        m_tabFactory.registerCreator<T>([this]() -> std::unique_ptr<Core::ITabComponent> {
-            return std::make_unique<T>(*m_broker);
+        m_tabFactory.registerCreator<T>([this, ... args = std::forward<Args>(args)]() {
+            return std::make_unique<T>(*m_broker, args...);
         });
 
         if (auto tab = m_tabFactory.create<T>())
@@ -119,7 +122,7 @@ class AppRoot
     std::unique_ptr<SettingsService> m_settingsService;
     std::unique_ptr<Core::ILifecycle> m_can_communication_handler;
     std::unique_ptr<Core::ILifecycle> m_dbc_handler;
-    std::unique_ptr<Core::ILifecycle> m_variableRegistry;
+    std::unique_ptr<Math::VariableRegistry> m_variableRegistry;
 
     /**
      * @brief A tab factory which safes the initialization procedure of tabs.

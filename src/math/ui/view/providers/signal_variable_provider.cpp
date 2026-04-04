@@ -88,6 +88,40 @@ auto SignalVariableProvider::findCombos(const QWidget* optionsWidget)
     return {msgCombo, sigCombo};
 }
 
+void SignalVariableProvider::restoreFromVariable(QWidget* optionsWidget,
+                                                 const IVariable* variable) const
+{
+    if (!optionsWidget || !variable) return;
+
+    const auto* sig = dynamic_cast<const CanSignalVariable*>(variable);
+    if (!sig) return;
+
+    auto* msgCombo = optionsWidget->findChild<QComboBox*>(MSG_COMBO_NAME);
+    auto* sigCombo = optionsWidget->findChild<QComboBox*>(SIG_COMBO_NAME);
+    if (!msgCombo || !sigCombo) return;
+
+    // Find and select the matching message
+    for (int i = 0; i < msgCombo->count(); ++i)
+    {
+        if (msgCombo->itemData(i).toUInt() == sig->messageId())
+        {
+            msgCombo->setCurrentIndex(i);
+            break;
+        }
+    }
+
+    // Find and select the matching signal
+    const auto sigName = QString::fromStdString(sig->signalName());
+    for (int i = 0; i < sigCombo->count(); ++i)
+    {
+        if (sigCombo->itemText(i) == sigName)
+        {
+            sigCombo->setCurrentIndex(i);
+            break;
+        }
+    }
+}
+
 auto SignalVariableProvider::configKey(const QWidget* optionsWidget) const -> std::string
 {
     const auto [msgCombo, sigCombo] = findCombos(optionsWidget);

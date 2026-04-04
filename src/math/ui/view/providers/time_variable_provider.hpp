@@ -25,6 +25,24 @@ class TimeVariableProvider final : public IVariableTypeProvider
         return combo;
     }
 
+    void restoreFromVariable(QWidget* optionsWidget, const IVariable* variable) const override
+    {
+        auto* combo = qobject_cast<QComboBox*>(optionsWidget);
+        if (!combo || !variable) return;
+
+        const auto* tv = dynamic_cast<const TimeVariable*>(variable);
+        if (!tv) return;
+
+        for (int i = 0; i < combo->count(); ++i)
+        {
+            if (static_cast<TimeUnit>(combo->itemData(i).toInt()) == tv->unit())
+            {
+                combo->setCurrentIndex(i);
+                return;
+            }
+        }
+    }
+
     auto configKey(const QWidget* optionsWidget) const -> std::string override
     {
         const auto* combo = qobject_cast<const QComboBox*>(optionsWidget);

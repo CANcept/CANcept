@@ -31,20 +31,28 @@ class StyledLineEdit : public QLineEdit
     Q_OBJECT
 
    public:
+    enum class Variant {
+        Default,  ///< Bordered input with surfaceMain background
+        Flat      ///< Borderless input with surfaceSecondary background (matches combo boxes)
+    };
+
     /**
      * @brief Constructs a new Styled Line Edit.
      *
      * @param parent The parent widget (default is nullptr).
+     * @param variant The visual variant (default is Default).
      */
-    explicit StyledLineEdit(QWidget* parent = nullptr);
+    explicit StyledLineEdit(QWidget* parent = nullptr, Variant variant = Variant::Default);
 
     /**
      * @brief Constructs a new Styled Line Edit with initial text.
      *
      * @param text The initial text to display in the line edit.
      * @param parent The parent widget (default is nullptr).
+     * @param variant The visual variant (default is Default).
      */
-    explicit StyledLineEdit(const QString& text, QWidget* parent = nullptr);
+    explicit StyledLineEdit(const QString& text, QWidget* parent = nullptr,
+                            Variant variant = Variant::Default);
 
     /**
      * @brief Overrides the default theme padding for this instance.
@@ -76,6 +84,7 @@ class StyledLineEdit : public QLineEdit
      */
     void applyStyle();
 
+    Variant m_variant{Variant::Default};
     int m_paddingV{-1};
     int m_paddingH{-1};
 };

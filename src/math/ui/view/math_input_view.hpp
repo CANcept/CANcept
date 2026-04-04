@@ -67,7 +67,7 @@ class MathInputView final : public QWidget
     MathExpressionWidget* m_expressionWidget;
     QHBoxLayout* m_buttonLayout;
     QList<MathInputButton*> m_buttons;
-    MathInputAdditionalVariables* m_variablesButton;
+    MathInputButton* m_variablesButton;
     MathInputStatusIndicator* m_statusIndicator;
     QWidget* m_buttonBar = nullptr;
 

@@ -1,6 +1,7 @@
 #include "math/ui/view/components/variable_row_widget.hpp"
 
 #include <QRegularExpressionValidator>
+#include <QSizePolicy>
 
 #include "core/constants.hpp"
 #include "core/macro/theme.hpp"
@@ -20,12 +21,15 @@ VariableRowWidget::VariableRowWidget(const Providers& providers, QWidget* parent
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(spacing.spacingSm);
 
-    // Symbol input: single lowercase letter
-    m_symbolInput = new Core::StyledLineEdit(this);
+    const int rowHeight = spacing.HeightSm;
+
+    // Symbol input: single lowercase letter (flat variant to match combo boxes)
+    m_symbolInput = new Core::StyledLineEdit(this, Core::StyledLineEdit::Variant::Flat);
     m_symbolInput->setMaxLength(1);
     m_symbolInput->setPlaceholderText("x");
     m_symbolInput->setPadding(spacing.spacingXs, spacing.spacingSm);
     m_symbolInput->setFixedWidth(spacing.spacingXl * 2);
+    m_symbolInput->setFixedHeight(rowHeight);
     m_symbolInput->setValidator(
         new QRegularExpressionValidator(QRegularExpression("[a-z]"), m_symbolInput));
     layout->addWidget(m_symbolInput);
@@ -37,6 +41,7 @@ VariableRowWidget::VariableRowWidget(const Providers& providers, QWidget* parent
         m_typeDropdown->addItem(provider->typeName());
     }
     m_typeDropdown->setFixedWidth(spacing.spacingXl * 4);
+    m_typeDropdown->setFixedHeight(rowHeight);
     connect(m_typeDropdown, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
             &VariableRowWidget::onTypeChanged);
     layout->addWidget(m_typeDropdown);
@@ -48,8 +53,9 @@ VariableRowWidget::VariableRowWidget(const Providers& providers, QWidget* parent
     layout->addLayout(m_optionsLayout, 1);
 
     // Delete button
-    m_deleteButton = new QPushButton(QString::fromUtf8("\u00D7"), this);
-    m_deleteButton->setFixedSize(spacing.spacingXl, spacing.spacingXl);
+    m_deleteButton = new QPushButton("X", this);
+    m_deleteButton->setFixedHeight(rowHeight);
+    m_deleteButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     connect(m_deleteButton, &QPushButton::clicked, this, &VariableRowWidget::removeRequested);
     layout->addWidget(m_deleteButton);
 
@@ -69,6 +75,14 @@ void VariableRowWidget::setFromBinding(const VariableBinding& binding)
     if (binding.typeIndex >= 0 && binding.typeIndex < m_typeDropdown->count())
     {
         m_typeDropdown->setCurrentIndex(binding.typeIndex);
+    }
+
+    // Restore the type-specific options (e.g. message/signal combo selections)
+    if (m_currentOptions && binding.variable && binding.typeIndex >= 0 &&
+        static_cast<std::size_t>(binding.typeIndex) < m_providers.size())
+    {
+        m_providers[static_cast<std::size_t>(binding.typeIndex)]->restoreFromVariable(
+            m_currentOptions, binding.variable);
     }
 }
 
@@ -137,7 +151,7 @@ void VariableRowWidget::applyStyle()
     // Compact padding for symbol input to match row height
     m_symbolInput->setPadding(spacing.spacingXs, spacing.spacingSm);
 
-    // Uniform combo box styling within the row (compact padding, matching radius)
+    // Uniform combo box styling within the row (radiusMd to match flat input)
     const QString comboStyle = QString(
                                    "QComboBox {"
                                    "  background-color: %1;"
@@ -178,17 +192,24 @@ void VariableRowWidget::applyStyle()
 
     m_typeDropdown->setStyleSheet(comboStyle);
 
-    // Apply same compact style to any combo boxes inside the options widget
+    // Apply same compact style and uniform height to option combo boxes
     if (m_currentOptions)
     {
+        // Check if the options widget itself is a combo box (e.g. TimeVariableProvider)
+        if (auto* self = qobject_cast<QComboBox*>(m_currentOptions))
+        {
+            self->setStyleSheet(comboStyle);
+            self->setFixedHeight(spacing.HeightSm);
+        }
         const auto combos = m_currentOptions->findChildren<QComboBox*>();
         for (auto* combo : combos)
         {
             combo->setStyleSheet(comboStyle);
+            combo->setFixedHeight(spacing.HeightSm);
         }
     }
 
-    // Delete button: transparent, circle on hover
+    // Delete button: transparent, circle on hover, textPrimary for visibility
     m_deleteButton->setStyleSheet(QString("QPushButton {"
                                           "   background-color: transparent;"
                                           "   border: none;"
@@ -200,9 +221,9 @@ void VariableRowWidget::applyStyle()
                                           "   background-color: %4;"
                                           "   border-radius: %5px;"
                                           "}")
-                                      .arg(spacing.fontSizeLg)
-                                      .arg(spacing.fontWeightBold)
-                                      .arg(colors.textSecondary.name())
+                                      .arg(spacing.fontSizeSm)
+                                      .arg(spacing.fontWeightNormal)
+                                      .arg(colors.textPrimary.name())
                                       .arg(colors.surfaceHover.name())
                                       .arg(spacing.radiusSm));
 }

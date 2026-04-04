@@ -3,6 +3,7 @@
 #include <QHBoxLayout>
 #include <QIcon>
 #include <QPainter>
+#include <set>
 
 #include "core/macro/theme.hpp"
 #include "core/theme/style_event.hpp"
@@ -102,21 +103,26 @@ void VariableSelectionDialog::removeRow(VariableRowWidget* row)
     row->deleteLater();
 }
 
-auto VariableSelectionDialog::resultBindings() const
-    -> std::vector<std::pair<VariableBinding, std::size_t>>
+auto VariableSelectionDialog::resultBindings() const -> std::vector<RowResult>
 {
-    std::vector<std::pair<VariableBinding, std::size_t>> result;
+    std::vector<RowResult> result;
+    std::set<char> usedSymbols;
+
     for (std::size_t i = 0; i < m_rows.size(); ++i)
     {
         const auto* row = m_rows[i];
         if (!row->isValid()) continue;
 
+        const char sym = row->symbol();
+        if (usedSymbols.contains(sym)) continue;
+        usedSymbols.insert(sym);
+
         VariableBinding binding;
-        binding.symbol = row->symbol();
-        binding.configKey = row->configKey();
+        binding.symbol = sym;
         binding.typeIndex = row->typeIndex();
         binding.variable = nullptr;
-        result.emplace_back(std::move(binding), i);
+
+        result.push_back({std::move(binding), row->configKey(), i});
     }
     return result;
 }

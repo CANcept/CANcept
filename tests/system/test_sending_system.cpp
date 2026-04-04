@@ -32,6 +32,7 @@
 #include "core/widgets/common/styled_switch.hpp"
 #include "core/widgets/dbc_message_card.hpp"
 #include "event_broker/event_broker.hpp"
+#include "math/service/variable_registry.hpp"
 #include "sending/sending_component.hpp"
 #include "sending/view/components/repeated_sending_card.hpp"
 #include "sending/view/dbc_based_sending_subview.hpp"
@@ -64,7 +65,8 @@ class SendingSystemTest : public ::testing::Test
         broker = std::make_unique<EventBroker::EventBroker>();
         canHandler = std::make_unique<CanHandler::CanCommunicationHandler>(*broker);
         dbcHandler = std::make_unique<CanHandler::DbcHandler>(*broker);
-        sending = std::make_unique<Sending::SendingComponent>(*broker);
+        variableRegistry = std::make_unique<Math::VariableRegistry>(*broker);
+        sending = std::make_unique<Sending::SendingComponent>(*broker, variableRegistry.get());
 
         broker->publish<Core::AppStartedEvent>({});
         QTest::qWait(100);
@@ -79,6 +81,7 @@ class SendingSystemTest : public ::testing::Test
         }
 
         sending.reset();
+        variableRegistry.reset();
         dbcHandler.reset();
         canHandler.reset();
         broker.reset();
@@ -111,6 +114,7 @@ class SendingSystemTest : public ::testing::Test
     std::unique_ptr<EventBroker::EventBroker> broker;
     std::unique_ptr<CanHandler::CanCommunicationHandler> canHandler;
     std::unique_ptr<CanHandler::DbcHandler> dbcHandler;
+    std::unique_ptr<Math::VariableRegistry> variableRegistry;
     std::unique_ptr<Sending::SendingComponent> sending;
     bool vcanCreated = false;
 };

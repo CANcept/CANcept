@@ -165,7 +165,7 @@ TEST_F(DbcSystemTest, LoadDbc_ParsedSignal_HasCorrectAttributes)
 
     const auto& sig = capturedConfig.messageDefinitions.front().signalDescriptions.front();
     EXPECT_EQ(sig.signalName, TestHelpers::kTestSignalName.toStdString());
-    EXPECT_EQ(sig.startBit, 0u);
+    EXPECT_EQ(sig.startBit, 7u);
     EXPECT_EQ(sig.signalSize, 8u);
     EXPECT_DOUBLE_EQ(sig.factor, 1.0);
     EXPECT_DOUBLE_EQ(sig.offset, 0.0);

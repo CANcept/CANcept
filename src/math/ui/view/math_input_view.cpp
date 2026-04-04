@@ -6,12 +6,12 @@
 #include <QVBoxLayout>
 
 #include "components/math_expression_widget.hpp"
-#include "components/math_input_additional_variables.hpp"
 #include "components/math_input_button.hpp"
 #include "components/math_input_status_indicator.hpp"
 #include "components/variable_selection_dialog.hpp"
 #include "core/macro/theme.hpp"
 #include "core/theme/style_event.hpp"
+#include "math/constants.hpp"
 #include "math/service/variable_registry.hpp"
 #include "math/ui/model/math_input_model.hpp"
 #include "math/ui/model/token_registry.hpp"
@@ -26,8 +26,7 @@ MathInputView::MathInputView(VariableRegistry& registry, QWidget* parent)
       m_model(new MathInputModel(registry, this)),
       m_expressionWidget(new MathExpressionWidget(m_model, this)),
       m_buttonLayout(nullptr),
-      m_variablesButton(
-          new MathInputAdditionalVariables(":/assets/icon/monitoring/monitoring_tab.svg", this)),
+      m_variablesButton(new MathInputButton(MathInputButton::AsLabel{}, "α", this)),
       m_statusIndicator(new MathInputStatusIndicator(this))
 {
     const auto& spacing = THEME.spacing();
@@ -40,6 +39,8 @@ MathInputView::MathInputView(VariableRegistry& registry, QWidget* parent)
     inputRow->setContentsMargins(0, 0, 0, 0);
     inputRow->setSpacing(spacing.spacingXs);
     inputRow->addWidget(m_expressionWidget, 1);
+
+    m_variablesButton->setFixedSize(spacing.spacingXl, spacing.spacingXl);
 
     auto* actionsPanel = new QHBoxLayout();
     actionsPanel->setContentsMargins(0, 0, 0, 0);
@@ -61,18 +62,19 @@ MathInputView::MathInputView(VariableRegistry& registry, QWidget* parent)
         providers.push_back(std::make_unique<TimeVariableProvider>());
         providers.push_back(std::make_unique<SignalVariableProvider>(m_registry.dbcConfig()));
 
-        VariableSelectionDialog dialog(std::move(providers), m_model->variableBindings(), window());
-        if (dialog.exec() == QDialog::Accepted)
+        if (VariableSelectionDialog dialog(std::move(providers), m_model->variableBindings(),
+                                           window());
+            dialog.exec() == QDialog::Accepted)
         {
-            auto pairs = dialog.resultBindings();
+            auto rows = dialog.resultBindings();
 
             // Acquire each variable from the registry using the correct row index.
             std::vector<VariableBinding> bindings;
-            bindings.reserve(pairs.size());
-            for (auto& [binding, rowIdx] : pairs)
+            bindings.reserve(rows.size());
+            for (auto& [binding, configKey, rowIndex] : rows)
             {
-                binding.variable = m_registry.acquire(binding.configKey, [&dialog, rowIdx]() {
-                    return dialog.createVariableForRow(rowIdx);
+                binding.variable = m_registry.acquire(configKey, [&dialog, idx = rowIndex]() {
+                    return dialog.createVariableForRow(idx);
                 });
                 bindings.push_back(std::move(binding));
             }
@@ -80,8 +82,6 @@ MathInputView::MathInputView(VariableRegistry& registry, QWidget* parent)
             m_model->setVariableBindings(std::move(bindings));
         }
     });
-
-    // Reparse on tree changes to ensure correct value function
     connect(m_model, &MathInputModel::changed, this, &MathInputView::reparse);
 
     // Populate token buttons from registry

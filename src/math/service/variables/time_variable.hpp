@@ -76,6 +76,11 @@ class TimeVariable final : public IVariable
         return "seconds";
     }
 
+    [[nodiscard]] auto unit() const -> TimeUnit
+    {
+        return m_unit;
+    }
+
     static auto unitFromSuffix(const std::string& suffix) -> TimeUnit
     {
         if (suffix == "milliseconds") return TimeUnit::Milliseconds;

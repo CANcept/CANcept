@@ -26,7 +26,6 @@ struct SlotAddress {
  */
 struct VariableBinding {
     char symbol = '\0';
-    std::string configKey;
     int typeIndex = 0;
     IVariable* variable = nullptr;
 };

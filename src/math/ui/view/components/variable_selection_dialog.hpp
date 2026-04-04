@@ -31,11 +31,18 @@ class VariableSelectionDialog final : public QDialog
                                      const std::vector<VariableBinding>& currentBindings,
                                      QWidget* parent = nullptr);
 
+    struct RowResult {
+        VariableBinding binding;
+        std::string configKey;
+        std::size_t rowIndex;
+    };
+
     /**
-     * @brief Returns the valid rows as (VariableBinding, row-index) pairs.
+     * @brief Returns the valid, deduplicated rows.
+     *
+     * Duplicate symbols are dropped (first occurrence wins).
      */
-    [[nodiscard]] auto resultBindings() const
-        -> std::vector<std::pair<VariableBinding, std::size_t>>;
+    [[nodiscard]] auto resultBindings() const -> std::vector<RowResult>;
 
     /**
      * @brief Creates a variable for the row at the given index into m_rows.

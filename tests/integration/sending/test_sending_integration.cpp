@@ -110,7 +110,7 @@ class SendingIntegrationTest : public ::testing::Test
                 events.dbc.push_back(e);
             });
 
-        component = std::make_unique<Sending::SendingComponent>(*broker);
+        component = std::make_unique<Sending::SendingComponent>(*broker, nullptr);
         component->onStart();
 
         view = static_cast<Sending::SendingView*>(component->getView());

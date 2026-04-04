@@ -27,6 +27,11 @@ class IVariableTypeProvider
     virtual auto createOptionsWidget(QWidget* parent) -> QWidget* = 0;
 
     /**
+     * @brief Restores the options widget state from an existing variable.
+     */
+    virtual void restoreFromVariable(QWidget* optionsWidget, const IVariable* variable) const = 0;
+
+    /**
      * @brief Builds the config key from the current state of the options widget.
      *
      * Returns an empty string if the options are incomplete or invalid.

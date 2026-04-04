@@ -27,13 +27,14 @@
 
 namespace Sending {
 
-SendingComponent::SendingComponent(Core::IEventBroker& broker)
+SendingComponent::SendingComponent(Core::IEventBroker& broker, Math::VariableRegistry* registry)
     : ITabComponent(broker, QString::fromStdString(Constants::MODULE_IDENTIFIER),
                     Constants::TAB_TITLE, QIcon(Constants::SENDING_ICON_PATH)),
       m_model(std::make_unique<SendingModel>()),
       m_view(std::make_unique<SendingView>()),
       m_delegate(new SendingDelegate(this)),
-      m_sendingWorker(std::make_unique<RepeatedSendingWorker>())
+      m_sendingWorker(std::make_unique<RepeatedSendingWorker>()),
+      m_variableRegistry(registry)
 {
     m_view->setModel(m_model.get());
 
@@ -81,11 +82,6 @@ void SendingComponent::onStop()
 auto SendingComponent::getView() -> QWidget*
 {
     return m_view.get();
-}
-
-void SendingComponent::setVariableRegistry(Math::VariableRegistry* registry)
-{
-    m_variableRegistry = registry;
 }
 
 void SendingComponent::onDbcConfigReceived(const Core::DbcConfig& config)

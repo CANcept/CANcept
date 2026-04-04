@@ -27,6 +27,7 @@ class SignalVariableProvider final : public IVariableTypeProvider
     auto createOptionsWidget(QWidget* parent) -> QWidget* override;
 
     auto configKey(const QWidget* optionsWidget) const -> std::string override;
+    void restoreFromVariable(QWidget* optionsWidget, const IVariable* variable) const override;
     auto displayName(const QWidget* optionsWidget) const -> std::string override;
     auto createVariable(const QWidget* optionsWidget) const -> std::unique_ptr<IVariable> override;
 
