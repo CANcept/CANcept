@@ -188,19 +188,19 @@ void VariableSelectionDialog::applyStyle()
             background-color: %1;
             color: %8;
         }
-        QScrollArea,
-        QScrollArea > QWidget,
-        QScrollArea #qt_scrollarea_viewport,
-        QWidget#varScrollContent {
+        #variableDialog QScrollArea,
+        #variableDialog QScrollArea > QWidget,
+        #variableDialog QScrollArea #qt_scrollarea_viewport,
+        #variableDialog QWidget#varScrollContent {
             background: transparent;
             background-color: transparent;
             border: none;
         }
-        QScrollArea {
+        #variableDialog QScrollArea {
             background-color: %1;
             border: none;
         }
-        QPushButton {
+        #variableDialog QPushButton {
             background-color: %7;
             color: %8;
             border: none;
@@ -210,29 +210,31 @@ void VariableSelectionDialog::applyStyle()
             font-size: %13px;
             text-align: center;
         }
-        QPushButton:hover {
+        #variableDialog QPushButton:hover {
             background-color: %14;
         }
-        QPushButton:pressed {
+        #variableDialog QPushButton:pressed {
             background-color: %14;
         }
-        QScrollBar:vertical {
+        #variableDialog QScrollBar:vertical {
             background: %1;
             width: %2px;
             margin: 0px 0px 0px 0px;
         }
-        QScrollBar::handle:vertical {
+        #variableDialog QScrollBar::handle:vertical {
             background: %3;
             min-height: %4px;
             border-radius: %5px;
         }
-        QScrollBar::handle:vertical:hover {
+        #variableDialog QScrollBar::handle:vertical:hover {
             background: %6;
         }
-        QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+        #variableDialog QScrollBar::add-line:vertical,
+        #variableDialog QScrollBar::sub-line:vertical {
             height: 0px;
         }
-        QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+        #variableDialog QScrollBar::add-page:vertical,
+        #variableDialog QScrollBar::sub-page:vertical {
             background: none;
         }
     )")
