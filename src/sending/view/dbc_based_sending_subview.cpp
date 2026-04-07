@@ -17,6 +17,7 @@
 
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QScreen>
 #include <QScrollArea>
 #include <QScrollBar>
 #include <QVBoxLayout>
@@ -42,6 +43,7 @@ DbcSendingSubView::DbcSendingSubView(QWidget* parent)
       m_cardsLayout(nullptr),
       m_noDbcLabel(nullptr),
       m_repeatedSendingCard(nullptr),
+      m_faultInjector(nullptr),
       m_sendButton(nullptr)
 {
     setupUi();
@@ -93,11 +95,18 @@ void DbcSendingSubView::setupUi()
         messagesCardLayout->addWidget(m_scrollArea);
     }
 
-    mainLayout->addWidget(m_messagesCard, 1);
+    const int messagesCardMaxHeight =
+        static_cast<int>(this->screen()->availableGeometry().height() * 0.6);
+    m_messagesCard->setMaximumHeight(messagesCardMaxHeight);
+    mainLayout->addWidget(m_messagesCard);
 
     // Repeated sending configuration
     m_repeatedSendingCard = new RepeatedSendingCard(scrollContent);
     mainLayout->addWidget(m_repeatedSendingCard);
+
+    // fault injector
+    m_faultInjector = new FaultInjector::FaultInjectorView(scrollContent);
+    mainLayout->addWidget(m_faultInjector);
 
     mainLayout->addStretch();
 
@@ -144,6 +153,8 @@ void DbcSendingSubView::applyStyle() const
     // Apply vertical scrollbar style
     if (m_scrollArea->verticalScrollBar())
         m_scrollArea->verticalScrollBar()->setStyleSheet(Style::Common::verticalScrollBar());
+    if (m_outerScrollArea->verticalScrollBar())
+        m_outerScrollArea->verticalScrollBar()->setStyleSheet(Style::Common::verticalScrollBar());
 }
 
 bool DbcSendingSubView::event(QEvent* event)

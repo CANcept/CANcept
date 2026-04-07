@@ -24,6 +24,7 @@
 #include "components/repeated_sending_card.hpp"
 #include "components/send_message_button.hpp"
 #include "core/widgets/dbc_message_card.hpp"
+#include "fault_injector/ui/view/fault_injector_view.hpp"
 
 namespace Math {
 class VariableRegistry;
@@ -105,6 +106,7 @@ class DbcSendingSubView final : public QWidget
     QLabel* m_noDbcLabel;
 
     RepeatedSendingCard* m_repeatedSendingCard;
+    FaultInjector::FaultInjectorView* m_faultInjector;
     QPushButton* m_sendButton;
 };
 
