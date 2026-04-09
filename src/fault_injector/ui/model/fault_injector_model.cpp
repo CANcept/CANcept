@@ -1,7 +1,10 @@
 
 #include "fault_injector_model.hpp"
 
+#include <ranges>
+
 #include "entt/core/utility.hpp"
+#include "fault_injector/service/fault_handler.hpp"
 namespace FaultInjector {
 
 FaultInjectorModel::FaultInjectorModel(QObject* parent) : QAbstractTableModel(parent) {}
@@ -12,6 +15,21 @@ void FaultInjectorModel::addFault(const Fault& fault)
     beginInsertRows(QModelIndex(), row, row);
     m_faults.push_back(fault);
     endInsertRows();
+}
+
+FaultHandler FaultInjectorModel::get()
+{
+    std::vector<RawFault> rawFaults;
+    std::vector<DbcFault> dbcFaults;
+
+    std::ranges::for_each(m_faults, [&](const Fault& fault) {
+        std::visit(entt::overloaded{
+            [&](const RawFault& f) { rawFaults.push_back(f); },
+            [&](const DbcFault& f) { dbcFaults.push_back(f); },
+        }, fault);
+    });
+
+    return FaultHandler(std::move(rawFaults), std::move(dbcFaults));
 }
 
 int FaultInjectorModel::rowCount(const QModelIndex& parent = QModelIndex()) const
@@ -84,6 +102,11 @@ QVariant FaultInjectorModel::data(const QModelIndex& index, const int role) cons
                               },
                           },
                           fault);
+    }
+
+    if (role == Qt::UserRole + 1)
+    {
+        return std::holds_alternative<RawFault>(fault) ? 0 : 1;
     }
 
     if (role == Qt::DisplayRole)

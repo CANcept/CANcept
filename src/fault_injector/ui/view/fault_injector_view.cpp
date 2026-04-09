@@ -2,13 +2,16 @@
 #include "fault_injector_view.hpp"
 
 #include <QHeaderView>
+#include <QScrollBar>
 
 #include "core/macro/theme.hpp"
 #include "core/theme/style_event.hpp"
 #include "fault_injector/constants.hpp"
+#include "fault_injector/styles.hpp"
 #include "fault_injector/ui/delegate/fault_display.hpp"
 #include "fault_injector/ui/delegate/fault_injector_dynamic_delegate.hpp"
 #include "fault_injector/ui/delegate/fault_injector_type_delegate.hpp"
+#include "fault_injector/ui/model/fault_injector_sort_proxy.hpp"
 
 namespace FaultInjector {
 
@@ -103,15 +106,28 @@ void FaultInjectorView::setupUi()
 
     // fault list
     m_faults = new QTableView(m_card);
+    m_faults->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     m_faults->setVisible(false);
-    m_faults->setModel(m_model);
 
-    m_faults->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    // apply the sort proxy
+    auto* proxy = new FaultInjectorSortProxyModel(this);
+    proxy->setSourceModel(m_model);
+    m_faults->setModel(proxy);
+    proxy->sort(0);
+
+    m_faults->horizontalHeader()->setSectionResizeMode(static_cast<int>(FaultListColumn::Type),
+                                                       QHeaderView::Fixed);
+    m_faults->horizontalHeader()->setSectionResizeMode(static_cast<int>(FaultListColumn::Triggers),
+                                                       QHeaderView::Stretch);
+    m_faults->horizontalHeader()->setSectionResizeMode(static_cast<int>(FaultListColumn::Effects),
+                                                       QHeaderView::Stretch);
+    m_faults->horizontalHeader()->setSectionResizeMode(static_cast<int>(FaultListColumn::Strategy),
+                                                       QHeaderView::Fixed);
     m_faults->horizontalHeader()->hide();
     m_faults->verticalHeader()->hide();
     m_faults->setShowGrid(false);
+    m_faults->setMouseTracking(true);
     m_faults->setSelectionBehavior(QAbstractItemView::SelectRows);
-    m_faults->setSelectionMode(QAbstractItemView::SingleSelection);
 
     // column style
     m_faults->setItemDelegateForColumn(static_cast<int>(FaultListColumn::Type),
@@ -146,9 +162,16 @@ void FaultInjectorView::setupUi()
             [](const QVariant& v) { return QStringList{strategyLabel(v.value<Strategy>())}; },
             m_faults));
 
-    cardLayout->addWidget(m_faults, 0, Qt::AlignVCenter);
+    m_tableCardWidget = new Core::CardWidget(QString(), QString(), QString(), m_card);
+    m_tableCardWidget->setVisible(false);
+    m_tableCardWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    if (auto* tableCardLayout = m_tableCardWidget->contentLayout())
+    {
+        tableCardLayout->addWidget(m_faults);
+    }
+    cardLayout->addWidget(m_tableCardWidget);
 
-    mainLayout->addWidget(m_card);
+    mainLayout->addWidget(m_card, 1);
 
     // Connect toggle signal
     connect(m_toggleSwitch, &Core::StyledSwitch::toggled, this,
@@ -160,6 +183,30 @@ void FaultInjectorView::setupUi()
 void FaultInjectorView::applyStyle() const
 {
     const auto& colors = THEME.colors();
+
+    m_faults->setStyleSheet(QString("QTableView {"
+                                    "  background-color: transparent;"
+                                    "  border: none;"
+                                    "  outline: none;"
+                                    "}"
+                                    "QTableView::item {"
+                                    "  border: none;"
+                                    "  color: %1;"
+                                    "}"
+                                    "QTableView::item:selected {"
+                                    "  background-color: %2;"
+                                    "  color: %1;"
+                                    "}"
+                                    "QTableView::item:hover {"
+                                    "  background-color: %3;"
+                                    "}")
+                                .arg(colors.textPrimary.name())
+                                .arg(colors.surfaceSelected.name())
+                                .arg(colors.surfaceHover.name()));
+
+    // Apply scrollbar style
+    if (m_faults->verticalScrollBar())
+        m_faults->verticalScrollBar()->setStyleSheet(Style::Common::verticalScrollBar());
 
     // Apply text colors
     if (m_titleLabel)
@@ -183,14 +230,21 @@ bool FaultInjectorView::event(QEvent* event)
     return QWidget::event(event);
 }
 
-void FaultInjectorView::onToggleChanged(const bool checked) const
+void FaultInjectorView::onToggleChanged(const bool checked)
 {
     m_faults->setVisible(checked);
+    m_tableCardWidget->setVisible(checked);
+    setMinimumHeight(checked ? maximumHeight() : 0);
 }
 
 auto FaultInjectorView::isFaultInjection() const -> bool
 {
     return m_toggleSwitch->isChecked();
+}
+
+auto FaultInjectorView::getFaultHandler() const -> FaultHandler
+{
+    return m_model->get();
 }
 
 }  // namespace FaultInjector

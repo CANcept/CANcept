@@ -15,25 +15,27 @@ FaultInjectorTypeDelegate::FaultInjectorTypeDelegate(QObject* parent) : QStyledI
 void FaultInjectorTypeDelegate::paint(QPainter* painter, const QStyleOptionViewItem& option,
                                       const QModelIndex& index) const
 {
-    QStyleOptionViewItem opt = option;
-    initStyleOption(&opt, index);
-
     const auto& colors = THEME.colors();
     const auto& spacing = THEME.spacing();
     painter->save();
 
     const QString label = index.data(Qt::UserRole).toString();
-    const QRect chipRect = option.rect.adjusted(spacing.spacingSm, spacing.spacingSm,
-                                                -spacing.spacingSm, -spacing.spacingSm);
 
     QFont font = option.font;
-    font.setBold(true);
+    font.setPointSize(spacing.fontSizeXs);
+    painter->setFont(font);
+
+    const QFontMetrics fontMetrics(font);
+    const int chipW = fontMetrics.horizontalAdvance(label) + spacing.spacingMd;
+    const int chipH = fontMetrics.height() + spacing.spacingXs;
+    const int cx = option.rect.left() + spacing.spacingXs;
+    const int cy = option.rect.top() + (option.rect.height() - chipH) / 2;
+    const QRect chipRect(cx, cy, chipW, chipH);
 
     painter->setRenderHint(QPainter::Antialiasing);
-    painter->setPen(Qt::NoPen);
-    painter->setBrush(colors.colorPrimary);
+    painter->setPen(QPen(colors.colorPrimary, 2));
+    painter->setBrush(Qt::NoBrush);
     painter->drawRoundedRect(chipRect, spacing.radiusXs, spacing.radiusXs);
-    painter->setFont(font);
     painter->setPen(colors.textPrimary);
     painter->drawText(chipRect, Qt::AlignCenter, label);
 
@@ -44,10 +46,11 @@ QSize FaultInjectorTypeDelegate::sizeHint(const QStyleOptionViewItem& option,
                                           const QModelIndex& index) const
 {
     Q_UNUSED(index)
-
     const auto& spacing = THEME.spacing();
-    const QFontMetrics fontMetrics(option.font);
-    return {option.rect.width(), fontMetrics.height() + spacing.spacingSm * 2};
+    QFont font = option.font;
+    font.setPointSize(spacing.fontSizeXs);
+    const QFontMetrics fm(font);
+    return {option.rect.width(), fm.height() + spacing.spacingXs + spacing.spacingSm * 2};
 }
 
 }  // namespace FaultInjector

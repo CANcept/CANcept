@@ -97,7 +97,7 @@ void DbcSendingSubView::setupUi()
 
     const int messagesCardMaxHeight =
         static_cast<int>(this->screen()->availableGeometry().height() * 0.6);
-    m_messagesCard->setMaximumHeight(messagesCardMaxHeight);
+    m_messagesCard->setFixedHeight(messagesCardMaxHeight);
     mainLayout->addWidget(m_messagesCard);
 
     // Repeated sending configuration
@@ -106,6 +106,9 @@ void DbcSendingSubView::setupUi()
 
     // fault injector
     m_faultInjector = new FaultInjector::FaultInjectorView(scrollContent);
+    const int faultInjectorMaxHeight =
+        static_cast<int>(this->screen()->availableGeometry().height() * 0.3);
+    m_faultInjector->setMaximumHeight(faultInjectorMaxHeight);
     mainLayout->addWidget(m_faultInjector);
 
     mainLayout->addStretch();

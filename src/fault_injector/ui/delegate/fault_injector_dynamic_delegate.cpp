@@ -17,29 +17,34 @@ FaultInjectorDynamicDelegate::FaultInjectorDynamicDelegate(
 void FaultInjectorDynamicDelegate::paint(QPainter* painter, const QStyleOptionViewItem& option,
                                          const QModelIndex& index) const
 {
+    const auto& spacing = THEME.spacing();
+
     QStyleOptionViewItem opt = option;
     initStyleOption(&opt, index);
-
-    const auto& spacing = THEME.spacing();
 
     const QStringList labels = m_extractor(index.data(Qt::UserRole));
     painter->save();
 
+    QFont font = option.font;
+    font.setPointSize(spacing.fontSizeXs);
+    painter->setFont(font);
+    const QFontMetrics fm(font);
+
+    const int chipH = fm.height() + spacing.spacingXs;
+    const int cy = opt.rect.top() + (opt.rect.height() - chipH) / 2;
+    int x = opt.rect.left() + spacing.spacingXs;
     const int visible = qMin(labels.size(), Constants::MAX_NUMBER_DYNAMIC_COMPONENTS);
-    int y = opt.rect.top() + spacing.spacingSm;
 
     for (int i = 0; i < visible; ++i)
     {
-        const QRect chipRect(opt.rect.left() + spacing.spacingSm, y,
-                             opt.rect.width() - spacing.spacingSm * 2, spacing.spacingLg);
-        paintChip(painter, chipRect, labels[i]);
-        y += spacing.spacingLg + spacing.spacingXs;
+        const int chipW = fm.horizontalAdvance(labels[i]) + spacing.spacingSm * 2;
+        paintChip(painter, QRect(x, cy, chipW, chipH), labels[i]);
+        x += chipW + spacing.spacingXs;
     }
 
     if (const int remaining = labels.size() - visible; remaining > 0)
     {
-        const QRect overflowRect(opt.rect.left() + spacing.spacingSm, y,
-                                 opt.rect.width() - spacing.spacingSm * 2, spacing.spacingLg);
+        const QRect overflowRect(x, cy, spacing.spacingXl, chipH);
         paintOverflow(painter, overflowRect, remaining);
     }
 
@@ -49,16 +54,12 @@ void FaultInjectorDynamicDelegate::paint(QPainter* painter, const QStyleOptionVi
 QSize FaultInjectorDynamicDelegate::sizeHint(const QStyleOptionViewItem& option,
                                              const QModelIndex& index) const
 {
+    Q_UNUSED(index)
     const auto& spacing = THEME.spacing();
-    const QStringList labels = m_extractor(index.data(Qt::UserRole));
-
-    const int visible = qMin(labels.size(), Constants::MAX_NUMBER_DYNAMIC_COMPONENTS);
-    int h = spacing.spacingSm * 2;
-    h += visible * (spacing.spacingLg + spacing.spacingXs);
-    if (labels.size() > Constants::MAX_NUMBER_DYNAMIC_COMPONENTS)
-        h += spacing.spacingLg + spacing.spacingXs;
-
-    return {option.rect.width(), h};
+    QFont font = option.font;
+    font.setPointSize(spacing.fontSizeXs);
+    const QFontMetrics fm(font);
+    return {option.rect.width(), fm.height() + spacing.spacingXs + spacing.spacingSm * 2};
 }
 
 void FaultInjectorDynamicDelegate::paintChip(QPainter* painter, const QRect& rect,
@@ -67,13 +68,14 @@ void FaultInjectorDynamicDelegate::paintChip(QPainter* painter, const QRect& rec
     const auto& spacing = THEME.spacing();
     const auto& colors = THEME.colors();
 
+    QFont font = painter->font();  // already set to fontSizeXs by paint()
     painter->setRenderHint(QPainter::Antialiasing);
     painter->setPen(QPen(colors.borderSubtle, 1));
     painter->setBrush(colors.surfaceSecondary);
     painter->drawRoundedRect(rect, spacing.radiusXs, spacing.radiusXs);
     painter->setPen(colors.textPrimary);
-    painter->drawText(rect.adjusted(spacing.spacingXs, 0, -spacing.spacingXs, 0), Qt::AlignVCenter,
-                      label);
+    painter->drawText(rect.adjusted(spacing.spacingXs, 0, -spacing.spacingXs, 0),
+                      Qt::AlignVCenter | Qt::AlignCenter, label);
 }
 
 void FaultInjectorDynamicDelegate::paintOverflow(QPainter* painter, const QRect& rect,
@@ -83,7 +85,7 @@ void FaultInjectorDynamicDelegate::paintOverflow(QPainter* painter, const QRect&
     QFont font = painter->font();
     font.setBold(true);
     painter->setFont(font);
-    painter->setPen(colors.colorPrimary);
+    painter->setPen(colors.textSecondary);
     painter->drawText(rect, Qt::AlignVCenter | Qt::AlignLeft, QStringLiteral("+ %1").arg(count));
 }
 

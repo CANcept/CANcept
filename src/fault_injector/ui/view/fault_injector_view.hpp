@@ -26,7 +26,7 @@ class FaultInjectorView final : public QWidget
      * @brief Returns the fault handler.
      * @return the current fault handler.
      */
-    [[nodiscard]] auto getFaultHandler() const -> FaultHandler*;
+    [[nodiscard]] auto getFaultHandler() const -> FaultHandler;
 
    protected:
     auto event(QEvent* event) -> bool override;
@@ -34,7 +34,7 @@ class FaultInjectorView final : public QWidget
    private:
     void setupUi();
     void applyStyle() const;
-    void onToggleChanged(bool checked) const;
+    void onToggleChanged(bool checked);
 
     FaultInjectorModel* m_model;
 
@@ -42,6 +42,7 @@ class FaultInjectorView final : public QWidget
     QLabel* m_titleLabel = nullptr;
     QLabel* m_subtitleLabel = nullptr;
     Core::StyledSwitch* m_toggleSwitch = nullptr;
+    Core::CardWidget* m_tableCardWidget = nullptr;
     QTableView* m_faults = nullptr;
 };
 
