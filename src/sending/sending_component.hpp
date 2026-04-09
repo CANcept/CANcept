@@ -24,6 +24,7 @@
 #include "core/dto/can_dto.hpp"
 #include "core/dto/dbc_dto.hpp"
 #include "core/interface/i_event_broker.hpp"
+#include "core/interface/i_fault_handler.hpp"
 #include "core/interface/i_tab_component.hpp"
 #include "delegate/sending_delegate.hpp"
 #include "model/sending_model.hpp"
@@ -175,6 +176,11 @@ class SendingComponent final : public Core::ITabComponent
 
     /** @brief Cached state of device readiness to avoid redundant overlay updates. */
     mutable bool m_lastDeviceReadyState = true;
+
+    /**
+     * @brief Fault handler built once per send session (single send or repeated send start).
+     */
+    mutable std::shared_ptr<Core::IFaultHandler> m_activeFaultHandler;
 };
 
 }  // namespace Sending

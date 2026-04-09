@@ -1,6 +1,7 @@
 #pragma once
 #include <QAbstractListModel>
 
+#include "fault_injector/service/fault_handler.hpp"
 #include "fault_injector/types/Fault.hpp"
 
 namespace FaultInjector {

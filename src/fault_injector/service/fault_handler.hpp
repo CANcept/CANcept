@@ -3,21 +3,25 @@
 #include <vector>
 
 #include "core/dto/can_dto.hpp"
+#include "core/interface/i_fault_handler.hpp"
 #include "fault_injector/types/Fault.hpp"
 
 namespace FaultInjector {
 
 /**
- * @brief Applies registered faults to outgoing CAN messages.
+ * @brief Concrete implementation of Core::IFaultHandler.
  *
- * Holds two independent fault lists — one for raw bit-level injection
- * and one for decoded signal-level injection.
+ * Raw faults operate at the byte level (bit flips, random corruption).
+ * DBC faults operate at the decoded signal level (value overrides).
+ *
+ * Each fault evaluates its trigger chain first; only matching faults are
+ * applied. Faults are applied in the order they were added.
  */
-class FaultHandler
+class FaultHandler final : public Core::IFaultHandler
 {
    public:
     /**
-     * @brief Constructs the FaultHandler with a fixed set of faults.
+     * @brief Constructs the FaultHandler with a fixed snapshot of faults.
      * @param rawFaults Faults applied at the raw byte level.
      * @param dbcFaults Faults applied at the decoded signal level.
      */
@@ -26,19 +30,29 @@ class FaultHandler
     {
         m_random.seed(std::random_device()());
     }
-    ~FaultHandler() = default;
+    ~FaultHandler() override = default;
 
     /**
      * @brief Applies all matching raw faults to the given message in place.
-     * @param message The raw CAN message to mutate.
+     *
+     * Each RawFault checks its trigger conditions against the message
+     * and, if they match, applies its effects to the raw bytes.
+     *
+     * @param id the identifier
+     * @param dlc the dlc
+     * @param data the data of the message
      */
-    void inject(Core::RawCanMessage &message);
+    void inject(uint16_t& id, uint8_t& dlc, std::array<char, 8>& data) override;
 
     /**
      * @brief Applies all matching DBC faults to the given message in place.
+     *
+     * Each DbcFault checks its trigger conditions against the decoded
+     * signal values and, if they match, applies its effects.
+     *
      * @param message The decoded CAN message to mutate.
      */
-    void inject(Core::DbcCanMessage &message);
+    void inject(Core::DbcCanMessage& message) override;
 
    private:
     std::vector<RawFault> m_rawFaults;

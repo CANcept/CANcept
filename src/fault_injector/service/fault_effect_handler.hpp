@@ -14,23 +14,27 @@ namespace FaultInjector {
  *  This function applies raw effects to the given message. It is not Thread safe.
  *
  * @param effect the effect to apply
- * @param message the message the effect should be applied to
+ * @param id the identifier of the message
+ * @param dlc the dlc
+ * @param data the data of the message
  * @param random the curent random instance for probability
  */
-inline void applyRawEffect(const RawEffect& effect, Core::RawCanMessage& message,
-                           std::mt19937& random)
+inline void applyRawEffect(const RawEffect& effect, const uint16_t& id, const uint8_t& dlc,
+                           std::array<char, 8>& data, std::mt19937& random)
 {
-    std::visit(entt::overloaded{
-                   // lambda for flipping a pre determined bit
-                   [&](const BitFlipEffect& e) { message.data[e.byteIndex] ^= (1 << e.bitIndex); },
+    (void)id;
+    (void)dlc;
+    std::visit(
+        entt::overloaded{// lambda for flipping a pre determined bit
+                         [&](const BitFlipEffect& e) { data[e.byteIndex] ^= (1 << e.bitIndex); },
 
-                   // lambda for flipping a random bit
-                   [&](const RandomBitFlipEffect&) {
-                       static std::uniform_int_distribution<size_t> byteDist(0, 7);
-                       static std::uniform_int_distribution<uint8_t> bitDist(0, 7);
-                       message.data[byteDist(random)] ^= (1U << bitDist(random));
-                   }},
-               effect);
+                         // lambda for flipping a random bit
+                         [&](const RandomBitFlipEffect&) {
+                             static std::uniform_int_distribution<size_t> byteDist(0, 7);
+                             static std::uniform_int_distribution<uint8_t> bitDist(0, 7);
+                             data[byteDist(random)] ^= (1U << bitDist(random));
+                         }},
+        effect);
 }
 
 /**

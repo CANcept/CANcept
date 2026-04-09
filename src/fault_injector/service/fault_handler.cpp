@@ -7,17 +7,17 @@
 
 namespace FaultInjector {
 
-void FaultHandler::inject(Core::RawCanMessage& message)
+void FaultHandler::inject(uint16_t& id, uint8_t& dlc, std::array<char, 8>& data)
 {
     for (const auto& fault : m_rawFaults)
     {
         const bool triggered = std::ranges::all_of(fault.trigger, [&](const RawTrigger& trigger) {
-            return firesRawTrigger(trigger, message, m_random);
+            return firesRawTrigger(trigger, id, dlc, data, m_random);
         });
         if (!triggered) continue;
 
         std::ranges::for_each(fault.effect, [&](const RawEffect& effect) {
-            applyRawEffect(effect, message, m_random);
+            applyRawEffect(effect, id, dlc, data, m_random);
         });
     }
 }

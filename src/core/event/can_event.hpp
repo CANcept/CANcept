@@ -16,10 +16,12 @@
 #pragma once
 #include <array>
 #include <ctime>
+#include <memory>
 #include <string>
 #include <unordered_map>
 
 #include "core/dto/can_dto.hpp"
+#include "core/interface/i_fault_handler.hpp"
 #include "event.hpp"
 namespace Core {
 /**
@@ -40,20 +42,29 @@ struct ReceivedCanDbcEvent final : public Event {
     explicit ReceivedCanDbcEvent(const DbcCanMessage& canMessage) : canMessage(canMessage){};
 };
 /**
- * @brief Structure of the send can event, when an already encoded message should be sent
+ * @brief Structure of the send can event, when an already encoded message should be sent.
+ * The optional fault Handler only applies raw faults here.
  */
 struct SendCanMessageRawEvent final : public Event {
     RawCanMessage canMessage;
+    std::shared_ptr<IFaultHandler> faultHandler = nullptr;
 
-    explicit SendCanMessageRawEvent(const RawCanMessage& canMessage) : canMessage(canMessage){};
+    explicit SendCanMessageRawEvent(const RawCanMessage& canMessage,
+                                    std::shared_ptr<IFaultHandler> faultHandler = nullptr)
+        : canMessage(canMessage), faultHandler(std::move(faultHandler)){};
 };
 /**
  * @brief Structure of the send can event, when a message should be sent based on the current DBC
- * config
+ * config.
+ *
+ *
  */
 struct SendCanMessageDbcEvent final : public Event {
     DbcCanMessage canMessage;
+    std::shared_ptr<IFaultHandler> faultHandler = nullptr;
 
-    explicit SendCanMessageDbcEvent(const DbcCanMessage& canMessage) : canMessage(canMessage){};
+    explicit SendCanMessageDbcEvent(const DbcCanMessage& canMessage,
+                                    std::shared_ptr<IFaultHandler> faultHandler = nullptr)
+        : canMessage(canMessage), faultHandler(std::move(faultHandler)){};
 };
 };  // namespace Core

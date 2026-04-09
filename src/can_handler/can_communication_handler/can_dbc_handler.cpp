@@ -149,12 +149,16 @@ void CanDbcHandler::handleSendMessage(const Core::SendCanMessageDbcEvent& event)
         messageDescCopy = *currentMessageDescription;
     }  // Lock release
 
+    // Signal-level injection: mutate decoded values before encoding
+    Core::DbcCanMessage messageToEncode = event.canMessage;
+    if (event.faultHandler) event.faultHandler->inject(messageToEncode);
+
     // Data frames for little-endian and big-endian signals
     u_int64_t dataLittleEndian = 0;
     u_int64_t dataBigEndian = 0;
 
     // Encode all signals into the appropriate data frame
-    for (const auto& [name, value] : event.canMessage.signalValues)
+    for (const auto& [name, value] : messageToEncode.signalValues)
     {
         for (const Core::DbcSignalDescription& signalDescription :
              messageDescCopy.signalDescriptions)
@@ -167,9 +171,13 @@ void CanDbcHandler::handleSendMessage(const Core::SendCanMessageDbcEvent& event)
         }
     }
 
-    // Convert both representations to actual CAN frame bytes
-    std::string data;
-    data.reserve(8);
+    LOG_INF("CanDbcHandler", "Encoded data LE=0x{:016X} BE=0x{:016X}", dataLittleEndian,
+            dataBigEndian);
+
+    // Build raw byte array from encoded signals
+    uint16_t id = messageToEncode.messageId;
+    uint8_t dlc = 8;
+    std::array<char, 8> data{};
     for (int i = 0; i < 8; i++)
     {
         // Extract byte i from little-endian representation
@@ -177,16 +185,18 @@ void CanDbcHandler::handleSendMessage(const Core::SendCanMessageDbcEvent& event)
         // Extract byte i from big-endian representation
         const auto byteBigEndian = static_cast<uint8_t>((dataBigEndian >> ((7 - i) * 8)) & 0xFF);
         // Combine with OR (signals should not overlap in well-formed DBC)
-        data += static_cast<uint8_t>(byteLittleEndian | byteBigEndian);
+        data[i] = static_cast<uint8_t>(byteLittleEndian | byteBigEndian);
     }
 
-    LOG_INF("CanDbcHandler", "Encoded data LE=0x{:016X} BE=0x{:016X}", dataLittleEndian,
-            dataBigEndian);
+    // Raw byte-level injection: mutate encoded bytes before sending
+    if (event.faultHandler)
+    {
+        event.faultHandler->inject(id, dlc, data);
+    }
 
-    // Transform to CAN message
-    const CanMessage message{static_cast<uint32_t>(event.canMessage.messageId), data};
-
-    // Send message to CAN interface
+    // Transform to CAN message and send
+    const std::string msgData(data.begin(), data.begin() + dlc);
+    const CanMessage message{static_cast<uint32_t>(id), msgData};
     sendFunction(message);
 }
 

@@ -19,42 +19,44 @@ FaultInjectorView::FaultInjectorView(QWidget* parent) : QWidget(parent)
 {
     m_model = new FaultInjectorModel(this);
 
+    // Corrupt CARSIDE_CONTROD (0x102) frames with 25% probability
     m_model->addFault(RawFault{
         .trigger =
             {
-                IDTrigger(0x14A),
+                IDTrigger(0x102),
                 DLCTrigger(8),
                 RandomTrigger(0.25f),
             },
         .effect =
             {
                 BitFlipEffect(1, 4),
-                RandomBitFlipEffect(),
             },
         .strategy = ImmediateStrategy{},
     });
 
+    // Zero out RequestedAmps on 50% of sends to simulate a charging request fault
     m_model->addFault(DbcFault{
         .trigger =
             {
-                SignalNameTrigger("EngineSpeed"),
+                SignalNameTrigger("RequestedAmps"),
                 RandomTrigger(0.5f),
             },
         .effect =
             {
-                ValueSetEffect("EngineSpeed", 42.0),
+                ValueSetEffect("RequestedAmps", 0.0),
             },
         .strategy = ImmediateStrategy{},
     });
 
+    // Randomly corrupt EVSE_STATUS (0x109) frames
     m_model->addFault(RawFault{
         .trigger =
             {
-                IDTrigger(0x7FF),
+                IDTrigger(0x109),
             },
         .effect =
             {
-                BitFlipEffect(0, 0),
+                RandomBitFlipEffect(),
             },
         .strategy = ImmediateStrategy{},
     });

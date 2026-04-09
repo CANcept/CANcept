@@ -24,9 +24,10 @@ FaultHandler FaultInjectorModel::get()
 
     std::ranges::for_each(m_faults, [&](const Fault& fault) {
         std::visit(entt::overloaded{
-            [&](const RawFault& f) { rawFaults.push_back(f); },
-            [&](const DbcFault& f) { dbcFaults.push_back(f); },
-        }, fault);
+                       [&](const RawFault& f) { rawFaults.push_back(f); },
+                       [&](const DbcFault& f) { dbcFaults.push_back(f); },
+                   },
+                   fault);
     });
 
     return FaultHandler(std::move(rawFaults), std::move(dbcFaults));

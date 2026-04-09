@@ -108,22 +108,24 @@ void SendingComponent::onDbcParseError() const
 
 void SendingComponent::publishRawMessageAsync(const Core::RawCanMessage& message)
 {
+    auto handler = m_activeFaultHandler;
     QPointer<SendingComponent> self = this;
-    (void)QtConcurrent::run([self, message]() {
+    (void)QtConcurrent::run([self, message, handler]() {
         if (!self)
         {
             return;
         }
         // Subscribers must ensure thread-safety and proper thread affinity.
         std::scoped_lock lock(self->m_brokerMutex);
-        self->m_eventBroker.publish(Core::SendCanMessageRawEvent(message));
+        self->m_eventBroker.publish(Core::SendCanMessageRawEvent(message, handler));
     });
 }
 
 void SendingComponent::publishDbcMessageAsync(const Core::DbcCanMessage& message)
 {
+    auto handler = m_activeFaultHandler;
     QPointer<SendingComponent> self = this;
-    (void)QtConcurrent::run([self, message]() -> void {
+    (void)QtConcurrent::run([self, message, handler]() -> void {
         if (!self)
         {
             return;  // Component was destroyed
@@ -131,7 +133,7 @@ void SendingComponent::publishDbcMessageAsync(const Core::DbcCanMessage& message
 
         // Subscribers must ensure thread-safety and proper thread affinity.
         std::scoped_lock lock(self->m_brokerMutex);
-        self->m_eventBroker.publish(Core::SendCanMessageDbcEvent(message));
+        self->m_eventBroker.publish(Core::SendCanMessageDbcEvent(message, handler));
     });
 }
 
@@ -194,16 +196,17 @@ void SendingComponent::startRepeatedSending(const int intervalMs) const
 
     LOG_INF(Constants::MODULE_IDENTIFIER, "Starting repeated sending, interval={}ms", intervalMs);
 
-    auto callback = [this]() {
+    auto handler = m_view->dbcSubView()->getFaultHandler();
+    auto callback = [this, handler]() {
         // Called from worker thread - build messages and publish directly to broker
         m_model->forEachPendingMessage(
-            [this](const Core::RawCanMessage& message) {
+            [this, &handler](const Core::RawCanMessage& message) {
                 std::scoped_lock lock(m_brokerMutex);
-                m_eventBroker.publish(Core::SendCanMessageRawEvent(message));
+                m_eventBroker.publish(Core::SendCanMessageRawEvent(message, handler));
             },
-            [this](const Core::DbcCanMessage& message) {
+            [this, &handler](const Core::DbcCanMessage& message) {
                 std::scoped_lock lock(m_brokerMutex);
-                m_eventBroker.publish(Core::SendCanMessageDbcEvent(message));
+                m_eventBroker.publish(Core::SendCanMessageDbcEvent(message, handler));
             });
     };
 
@@ -230,6 +233,7 @@ void SendingComponent::sendOnce() const
     {
         m_variableRegistry->reset();
     }
+    m_activeFaultHandler = m_view->dbcSubView()->getFaultHandler();
     m_model->transmitCurrent();
 }
 
