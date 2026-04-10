@@ -56,6 +56,7 @@ static void BM_LoggingComponent_DbcSession(benchmark::State& state)
     const LoggingComponentBenchmark benchmark;
     const Core::DbcConfig dbc = TestHelpers::DbcExamples::longDbc();
     benchmark.eventBroker->publish(Core::DBCParsedEvent(dbc, "test.dbc"));
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
     std::map<uint32_t, QStringList> selectedSignals = {};
     QStringList signalList = {};
@@ -83,6 +84,7 @@ static void BM_LoggingComponent_RawSession(benchmark::State& state)
     const LoggingComponentBenchmark benchmark;
     const Core::DbcConfig dbc = TestHelpers::DbcExamples::longDbc();
     benchmark.eventBroker->publish(Core::DBCParsedEvent(dbc, "test.dbc"));
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
     emit benchmark.component->getView()->startRequested(Logging::RAW, {});
 

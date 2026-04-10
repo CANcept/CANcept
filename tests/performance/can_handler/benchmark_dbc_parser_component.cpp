@@ -109,11 +109,12 @@ static void BM_DbcHandler_Parse_ShortDbc(benchmark::State& state)
         [](const Core::DBCParsedEvent& event) { successCounter++; });
     Core::Connection errorConn = dbcHandler.eventBroker->subscribe<Core::DBCParseErrorEvent>(
         [](const Core::DBCParseErrorEvent& event) { failCounter++; });
-    auto file = createTempFile(20);
+    const auto file = createTempFile(20);
     for (auto _ : state)
     {
         dbcHandler.eventBroker->publish(Core::ParseDBCRequestEvent(file.string()));
     }
+    dbcHandler.eventBroker->publish(Core::AppStoppedEvent{});
 }
 BENCHMARK(BM_DbcHandler_Parse_ShortDbc);
 
@@ -126,10 +127,11 @@ static void BM_DbcHandler_Parse_LongDbc(benchmark::State& state)
         [](const Core::DBCParsedEvent& event) { successCounter++; });
     Core::Connection errorConn = dbcHandler.eventBroker->subscribe<Core::DBCParseErrorEvent>(
         [](const Core::DBCParseErrorEvent& event) { failCounter++; });
-    auto file = createTempFile(2048);
+    const auto file = createTempFile(2048);
     for (auto _ : state)
     {
         dbcHandler.eventBroker->publish(Core::ParseDBCRequestEvent(absolute(file)));
     }
+    dbcHandler.eventBroker->publish(Core::AppStoppedEvent{});
 }
-BENCHMARK(BM_DbcHandler_Parse_LongDbc);
+BENCHMARK(BM_DbcHandler_Parse_LongDbc)->Iterations(2);

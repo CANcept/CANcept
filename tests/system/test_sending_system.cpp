@@ -99,7 +99,7 @@ class SendingSystemTest : public ::testing::Test
     void loadDbc(const std::string& path) const
     {
         broker->publish<Core::ParseDBCRequestEvent>(Core::ParseDBCRequestEvent{path});
-        QTest::qWait(200);
+        QTest::qWait(2000);
     }
 
     auto getSendingView() const -> Sending::SendingView*

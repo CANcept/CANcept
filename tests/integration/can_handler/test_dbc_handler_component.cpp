@@ -61,9 +61,13 @@ class DbcHandlerTest : public ::testing::Test
             eventBroker->subscribe<Core::DBCParsedEvent>([this](const Core::DBCParsedEvent& event) {
                 lastDbc = std::make_unique<Core::DbcConfig>(event.config);
                 validDbcCounter++;
+                messageReceived = true;
             });
         invalidDbcConnection = eventBroker->subscribe<Core::DBCParseErrorEvent>(
-            [this](const Core::DBCParseErrorEvent& event) { invalidDbcCounter++; });
+            [this](const Core::DBCParseErrorEvent& event) {
+                invalidDbcCounter++;
+                messageReceived = true;
+            });
         eventBroker->publish(Core::AppStartedEvent{});
     }
 
@@ -76,10 +80,23 @@ class DbcHandlerTest : public ::testing::Test
         eventBroker.reset();
     }
 
+    void sleepTenSecondsOrUntilMessageReceived()
+    {
+        for (int i = 0; i < 100 && !messageReceived; i++)
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+        if (messageReceived)
+        {
+            messageReceived = false;
+        }
+    }
+
     std::unique_ptr<TestHelpers::MockEventBroker> eventBroker;
     std::unique_ptr<DbcHandler> dbcHandler;
     Core::Connection validDbcConnection;
     Core::Connection invalidDbcConnection;
+    std::atomic_bool messageReceived = false;
     int validDbcCounter = 0;
     int invalidDbcCounter = 0;
     std::unique_ptr<Core::DbcConfig> lastDbc;
@@ -89,6 +106,7 @@ TEST_F(DbcHandlerTest, HandlesValidDbc)
 {
     const auto filePath = createTempFile(kMinimalValidDbc);
     EXPECT_NO_THROW(eventBroker->publish(Core::ParseDBCRequestEvent(filePath)));
+    sleepTenSecondsOrUntilMessageReceived();
     EXPECT_EQ(validDbcCounter, 1);
     EXPECT_EQ(invalidDbcCounter, 0);
     EXPECT_EQ(lastDbc->messageDefinitions.front().messageId, 100);
@@ -98,6 +116,7 @@ TEST_F(DbcHandlerTest, HandlesInvalidDbc)
 {
     const auto filePath = createTempFile(kInvalidDbc);
     EXPECT_NO_THROW(eventBroker->publish(Core::ParseDBCRequestEvent(filePath)));
+    sleepTenSecondsOrUntilMessageReceived();
     EXPECT_EQ(validDbcCounter, 0);
     EXPECT_EQ(invalidDbcCounter, 1);
 }
@@ -105,6 +124,7 @@ TEST_F(DbcHandlerTest, HandlesInvalidFile)
 {
     EXPECT_NO_THROW(
         eventBroker->publish(Core::ParseDBCRequestEvent("definitely_not_a_real_file_123.dbc")));
+    sleepTenSecondsOrUntilMessageReceived();
     EXPECT_EQ(validDbcCounter, 0);
     EXPECT_EQ(invalidDbcCounter, 1);
 }
