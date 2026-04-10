@@ -42,6 +42,8 @@ class CanSignalVariable final : public IVariable
         return "signal:" + std::to_string(m_messageId) + ":" + m_signalName;
     }
 
+    void reset() override {};
+
     auto displayName() const -> std::string override
     {
         return m_messageName + "." + m_signalName;

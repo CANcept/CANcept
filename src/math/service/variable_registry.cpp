@@ -16,6 +16,7 @@
 #include "math/service/variable_registry.hpp"
 
 #include <cassert>
+#include <ranges>
 
 #include "core/event/can_event.hpp"
 #include "core/event/dbc_event.hpp"
@@ -65,6 +66,15 @@ auto VariableRegistry::acquire(const std::string& configKey,
     }
 
     return raw;
+}
+
+void VariableRegistry::reset()
+{
+    std::scoped_lock lock(m_mutex);
+    for (const auto& [variable, refCount] : m_entries | std::views::values)
+    {
+        variable->reset();
+    }
 }
 
 void VariableRegistry::release(const std::string& configKey)

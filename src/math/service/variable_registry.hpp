@@ -66,6 +66,11 @@ class VariableRegistry final : public Core::ILifecycle
     void updateAll() const;
 
     /**
+     * @brief Resets all variables.
+     */
+    void reset();
+
+    /**
      * @brief Returns the currently loaded DBC config, or nullptr if none loaded.
      */
     [[nodiscard]] auto dbcConfig() const -> const Core::DbcConfig*;

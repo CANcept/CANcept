@@ -73,4 +73,7 @@ inline constexpr int DIALOG_MIN_WIDTH = 700;
 /** @brief Minimum height in pixels for the scrollable variable list area */
 inline constexpr int SCROLL_MIN_HEIGHT = 250;
 
+/** @brief Allowed symbol shortcuts */
+constexpr char WHITELIST_SHORTCUTS[] = {'+', '-', '*', '/'};
+
 }  // namespace Math::Constants

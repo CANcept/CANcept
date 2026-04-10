@@ -42,12 +42,12 @@ class TimeVariable final : public IVariable
     {
     }
 
-    auto configKey() const -> std::string override
+    [[nodiscard]] auto configKey() const -> std::string override
     {
         return "time:" + unitSuffix(m_unit);
     }
 
-    auto displayName() const -> std::string override
+    [[nodiscard]] auto displayName() const -> std::string override
     {
         switch (m_unit)
         {
@@ -59,6 +59,11 @@ class TimeVariable final : public IVariable
                 return "Time (ns)";
         }
         return "Time";
+    }
+
+    void reset()
+    {
+        m_start = std::chrono::steady_clock::now();
     }
 
     auto ptr() -> double* override

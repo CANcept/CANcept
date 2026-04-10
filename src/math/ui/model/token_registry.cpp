@@ -22,13 +22,13 @@ namespace Math::TokenRegistry {
 auto tokens() -> const std::list<TokenEntry>&
 {
     static const std::list<TokenEntry> list = {
-        // ── operators ────────────────────────────────────────────────────────
-        {"+", "+", 'p', [] { return std::make_unique<OperatorToken>(Operation::Add); }},
-        {"-", "\u2212", 'm', [] { return std::make_unique<OperatorToken>(Operation::Sub); }},
-        {"\u22C5", "\u22C5", 't', [] { return std::make_unique<OperatorToken>(Operation::Mul); }},
-        {"\u00BD", "", 'd', [] { return std::make_unique<OperatorToken>(Operation::Div); }},
+        // operators allows + as well as \+ etc.
+        {"+", "+", '+', [] { return std::make_unique<OperatorToken>(Operation::Add); }},
+        {"-", "\u2212", '-', [] { return std::make_unique<OperatorToken>(Operation::Sub); }},
+        {"\u22C5", "\u22C5", '*', [] { return std::make_unique<OperatorToken>(Operation::Mul); }},
+        {"\u00BD", "", '/', [] { return std::make_unique<OperatorToken>(Operation::Div); }},
 
-        // ── functions ────────────────────────────────────────────────────────
+        // functions only with \
         {"sin", "sin", 's', [] { return std::make_unique<FunctionToken>(Function::Sin); }},
         {"cos", "cos", 'c', [] { return std::make_unique<FunctionToken>(Function::Cos); }},
         {"\u007C\u2B1A\u007C", "", 'a',

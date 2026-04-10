@@ -55,6 +55,8 @@ class MathExpressionWidget final : public QWidget
    private:
     void resetCursorBlink();
 
+    [[nodiscard]] static auto isWhitelisted(QChar symbol) -> bool;
+
     MathInputModel* m_model;
     QList<HitRegion> m_hitRegions;
     QPoint m_mousePos = {-1, -1};

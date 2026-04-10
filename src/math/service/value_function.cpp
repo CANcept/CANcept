@@ -15,6 +15,8 @@
 
 #include "math/service/value_function.hpp"
 
+#include <iostream>
+
 namespace Math {
 
 ValueFunction::ValueFunction(const TokenBase* root) : m_root(root) {}
@@ -24,6 +26,7 @@ auto ValueFunction::parse() -> ParseResult
     m_symbolTable.clear();
     m_expression = {};
     m_expressionStr = m_root->toExpression();
+    std::cout << m_expressionStr << std::endl;
     m_lastResult = {};
 
     m_symbolTable.add_constants();

@@ -24,6 +24,7 @@
 #include "core/event/dbc_event.hpp"
 #include "core/event/lifecycle_event.hpp"
 #include "core/macro/console_logging.hpp"
+#include "math/service/variable_registry.hpp"
 
 namespace Sending {
 
@@ -186,6 +187,11 @@ void SendingComponent::startRepeatedSending(const int intervalMs) const
         return;
     }
 
+    if (m_variableRegistry)
+    {
+        m_variableRegistry->reset();
+    }
+
     LOG_INF(Constants::MODULE_IDENTIFIER, "Starting repeated sending, interval={}ms", intervalMs);
 
     auto callback = [this]() {
@@ -220,6 +226,10 @@ void SendingComponent::stopRepeatedSending() const
 
 void SendingComponent::sendOnce() const
 {
+    if (m_variableRegistry)
+    {
+        m_variableRegistry->reset();
+    }
     m_model->transmitCurrent();
 }
 

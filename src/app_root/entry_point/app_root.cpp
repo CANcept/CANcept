@@ -53,6 +53,11 @@ void AppRoot::bootstrap()
 {
     LOG_INF("AppRoot", "Starting bootstrap...");
 
+    // fixate std locale
+    std::setlocale(LC_ALL, "C");
+    std::locale::global(std::locale::classic());
+    QLocale::setDefault(QLocale::c());
+
     const auto& THEME = Core::ThemeManager::getInstance();
     const auto& colors = THEME.colors();
     const auto& spacing = THEME.spacing();

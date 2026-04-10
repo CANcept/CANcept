@@ -153,13 +153,11 @@ void ExpressionRenderVisitor::renderInlineOp(const OperatorToken& token)
     const double rowH = total.height();
     const int bracketW = m_fm.horizontalAdvance('(') + spacing.radiusXs;
     auto centerY = [&](double h) { return origin.y() + (rowH - h) / 2.0; };
-    auto resetPainter = [&]()
-    {
+    auto resetPainter = [&]() {
         m_painter.setPen(THEME.colors().textPrimary);
         m_painter.setBrush(Qt::NoBrush);
     };
-    auto needsBrackets = [&](const int index) -> bool
-    {
+    auto needsBrackets = [&](const int index) -> bool {
         const auto& children = token.children();
         if (std::cmp_less_equal(children.size(), index) || !children[index])
         {
@@ -168,18 +166,18 @@ void ExpressionRenderVisitor::renderInlineOp(const OperatorToken& token)
         const auto* child = dynamic_cast<const OperatorToken*>(children[index].get());
         return child != nullptr && child->operation() != Operation::Div;
     };
-    auto renderChildWithBrackets = [&](const int index, const QPointF pos, const QSizeF size)
-    -> void {
+    auto renderChildWithBrackets = [&](const int index, const QPointF pos,
+                                       const QSizeF size) -> void {
         if (needsBrackets(index))
         {
             resetPainter();
             m_painter.drawText(QRectF(pos.x(), centerY(opH), bracketW, opH), Qt::AlignCenter, "(");
             renderChild(&token, index, {pos.x() + bracketW, pos.y()});
             resetPainter();
-            m_painter.drawText(QRectF(pos.x() + bracketW + size.width(), centerY(opH), bracketW, opH),
-                               Qt::AlignCenter, ")");
-        }
-        else
+            m_painter.drawText(
+                QRectF(pos.x() + bracketW + size.width(), centerY(opH), bracketW, opH),
+                Qt::AlignCenter, ")");
+        } else
         {
             renderChild(&token, index, pos);
         }
@@ -188,7 +186,8 @@ void ExpressionRenderVisitor::renderInlineOp(const OperatorToken& token)
     const double lhsBracketOffset = needsBrackets(0) ? bracketW * 2 : 0;
     renderChildWithBrackets(0, {origin.x(), centerY(lhs.height())}, lhs);
 
-    const QRectF opRect(origin.x() + lhs.width() + lhsBracketOffset + spacing.spacingXs, centerY(opH), opW, opH);
+    const QRectF opRect(origin.x() + lhs.width() + lhsBracketOffset + spacing.spacingXs,
+                        centerY(opH), opW, opH);
     resetPainter();
     m_painter.drawText(opRect, Qt::AlignCenter, sym);
     m_hitRegions.append({opRect.toRect(), &token, nullptr, -1});

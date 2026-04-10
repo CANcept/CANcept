@@ -22,6 +22,3 @@
 [submodule "external/spdlog"]
 	path = external/spdlog
 	url = https://github.com/gabime/spdlog.git
-[submodule "external/exprtk"]
-	path = external/exprtk
-	url = https://github.com/ArashPartow/exprtk.git

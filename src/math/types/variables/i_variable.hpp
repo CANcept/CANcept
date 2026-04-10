@@ -47,6 +47,11 @@ class IVariable
     virtual auto displayName() const -> std::string = 0;
 
     /**
+     * @brief Resets the variable to the value from the start.
+     */
+    virtual void reset() = 0;
+
+    /**
      * @brief Returns a raw pointer to the underlying value for exprtk registration.
      */
     virtual auto ptr() -> double* = 0;

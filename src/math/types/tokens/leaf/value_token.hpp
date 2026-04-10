@@ -29,7 +29,9 @@ class ValueToken final : public Token<TokenKind::Leaf>
 
     [[nodiscard]] auto toExpression() const -> std::string override
     {
-        return std::to_string(m_value);
+        char buf[64];
+        std::snprintf(buf, sizeof(buf), "%.17g", m_value);
+        return buf;
     }
 
     void accept(IExpressionVisitor& visitor) const override

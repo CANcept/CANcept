@@ -47,7 +47,7 @@ class DbcSendingSubView final : public QWidget
    public:
     explicit DbcSendingSubView(QWidget* parent = nullptr);
     ~DbcSendingSubView() override = default;
-    
+
     /**
      * @brief Populates the view with message cards and signal rows from the model.
      */

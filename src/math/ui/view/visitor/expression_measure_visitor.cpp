@@ -93,8 +93,7 @@ void ExpressionMeasureVisitor::visit(const OperatorToken& token)
         const int opW = m_fontMetric.horizontalAdvance(sym) + 2 * spacing.radiusXs;
         const int opH = m_fontMetric.height() + 2 * spacing.spacingXs * PAD_VERTICAL_FACTOR;
         const int bracketW = m_fontMetric.horizontalAdvance('(') + spacing.radiusXs;
-        const auto needsBrackets = [&](const int index) -> bool
-        {
+        const auto needsBrackets = [&](const int index) -> bool {
             const auto& children = token.children();
             if (std::cmp_less_equal(children.size(), index) || !children[index])
             {
@@ -106,7 +105,8 @@ void ExpressionMeasureVisitor::visit(const OperatorToken& token)
 
         const double lhsExtra = needsBrackets(0) ? bracketW * 2 : 0;
         const double rhsExtra = needsBrackets(1) ? bracketW * 2 : 0;
-        m_size = {lhsExtra + lhs.width() + spacing.spacingXs + opW + spacing.spacingXs + rhsExtra + rhs.width(),
+        m_size = {lhsExtra + lhs.width() + spacing.spacingXs + opW + spacing.spacingXs + rhsExtra +
+                      rhs.width(),
                   std::max({lhs.height(), static_cast<double>(opH), rhs.height()})};
     }
 }

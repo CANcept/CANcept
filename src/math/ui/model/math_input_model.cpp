@@ -18,6 +18,7 @@
 #include <algorithm>
 #include <utility>
 
+#include "math/constants.hpp"
 #include "math/service/variable_registry.hpp"
 #include "math/types/tokens/leaf/value_token.hpp"
 #include "math/types/tokens/leaf/variable_token.hpp"
@@ -197,6 +198,19 @@ void MathInputModel::commitTypeBuffer()
         {
             addNode(entry->factory(), parent, childIdx);
             return;
+        }
+    } else if (text.size() == 1)
+    {
+        if (const QChar symbol = text[0];
+            std::find(std::begin(Constants::WHITELIST_SHORTCUTS),
+                      std::end(Constants::WHITELIST_SHORTCUTS),
+                      symbol) != std::end(Constants::WHITELIST_SHORTCUTS))
+        {
+            if (const auto* entry = TokenRegistry::findByShortcut(symbol))
+            {
+                addNode(entry->factory(), parent, childIdx);
+                return;
+            }
         }
     }
 

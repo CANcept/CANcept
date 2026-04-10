@@ -120,7 +120,8 @@ void MathExpressionWidget::keyPressEvent(QKeyEvent* event)
             default: {
                 if (const QString text = event->text();
                     !text.isEmpty() &&
-                    (text[0].isLetterOrNumber() || text[0] == '.' || text[0] == '\\'))
+                    (text[0].isLetterOrNumber() || text[0] == '.' || text[0] == '\\' ||
+                     isWhitelisted(text[0]) || (text.size() > 1 && isWhitelisted(text[1]))))
                 {
                     m_model->appendToTypeBuffer(text);
                     resetCursorBlink();
@@ -129,6 +130,16 @@ void MathExpressionWidget::keyPressEvent(QKeyEvent* event)
         }
     }
     QWidget::keyPressEvent(event);
+}
+
+auto MathExpressionWidget::isWhitelisted(const QChar symbol) -> bool
+{
+    for (const char shortcut : Constants::WHITELIST_SHORTCUTS)
+    {
+        if (symbol == shortcut) return true;
+    }
+
+    return false;
 }
 
 void MathExpressionWidget::focusOutEvent(QFocusEvent* event)
