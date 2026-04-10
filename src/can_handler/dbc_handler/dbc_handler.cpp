@@ -21,9 +21,9 @@ namespace CanHandler {
 void DbcHandler::onStart()
 {
     dbcParsingThread = std::thread([this]() {
+        std::unique_lock lock(dbcParsingMutex);
         while (true)
         {
-            std::unique_lock lock(dbcParsingMutex);
             dbcParsingCondition.wait(lock);
             if (stop_thread) [[unlikely]]
             {
@@ -59,8 +59,14 @@ void DbcHandler::onStop()
 {
     parseNewDbcConnection.release();
     stop_thread = true;
+    {
+        std::unique_lock lock(dbcParsingMutex);
+    }
     dbcParsingCondition.notify_one();
-    dbcParsingThread.join();
+    if (dbcParsingThread.joinable())
+    {
+        dbcParsingThread.join();
+    }
 }
 DbcHandler::~DbcHandler()
 {
