@@ -221,7 +221,8 @@ void CanDbcHandler::parseSendSignal(const Core::DbcSignalDescription& signal,
     {
         // DBC bit N maps to linear position 56 - 8*(N/8) + N%8 in a MSB-first 64-bit word.
         const uint8_t linearStart = 63 - (56 - 8 * (signal.startBit / 8) + signal.startBit % 8);
-        dataBigEndian |= static_cast<uint64_t>(rawValue) << (64 - linearStart - signal.signalSize);
+        dataBigEndian |= static_cast<uint64_t>(maskedRawValue)
+                         << (64 - linearStart - signal.signalSize);
     }
 }
 

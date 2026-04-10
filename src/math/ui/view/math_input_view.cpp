@@ -228,6 +228,7 @@ auto MathInputView::lastValue() -> double
 
 auto MathInputView::isValid() const -> bool
 {
+    std::lock_guard lock(m_evalMutex);
     return m_cachedFunction.has_value() && m_cachedFunction->isParsed();
 }
 
