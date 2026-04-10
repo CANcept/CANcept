@@ -14,6 +14,9 @@
  */
 
 #pragma once
+#include <condition_variable>
+#include <thread>
+
 #include "core/event/dbc_event.hpp"
 #include "core/interface/i_lifecycle.hpp"
 #include "dbc_parser.hpp"
@@ -25,7 +28,8 @@ namespace CanHandler {
 class DbcHandler final : public Core::ILifecycle
 {
    public:
-    explicit DbcHandler(Core::IEventBroker& eventBroker) : Core::ILifecycle(eventBroker){};
+    explicit DbcHandler(Core::IEventBroker& eventBroker)
+        : ILifecycle(eventBroker), parseDBCRequestEvent(""){};
     ~DbcHandler() override;
 
    protected:
@@ -39,5 +43,10 @@ class DbcHandler final : public Core::ILifecycle
     FileParser fileParser;
     Core::Connection parseNewDbcConnection;
     std::unique_ptr<Core::DbcConfig> currentDbc;
+    std::condition_variable dbcParsingCondition;
+    std::atomic_bool stop_thread = false;
+    std::mutex dbcParsingMutex;
+    Core::ParseDBCRequestEvent parseDBCRequestEvent;
+    std::thread dbcParsingThread;
 };
 }  // namespace CanHandler

@@ -74,9 +74,13 @@ void MonitoringComponent::connectSignals()
 void MonitoringComponent::onStart()
 {
     // subscribe to DBC Parsing successes
-    m_parseSuccessConn = m_eventBroker.subscribe<Core::DBCParsedEvent>(
-        [this](const Core::DBCParsedEvent& event) -> void {
-            emit dbcConfigurationChanged(event.config);
+    m_parseSuccessConn =
+        m_eventBroker.subscribe<Core::DBCParsedEvent>([this](const Core::DBCParsedEvent& event) {
+            LOG_INF(Constants::MODULE_IDENTIFIER, "DBC parse succeeded, queuing to UI thread");
+            Core::DbcConfig configCopy = event.config;
+            QMetaObject::invokeMethod(
+                this, [this, configCopy]() { emit dbcConfigurationChanged(configCopy); },
+                Qt::QueuedConnection);
         });
 
     // subscribe to incoming dbc decoded CAN traffic
