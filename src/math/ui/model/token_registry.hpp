@@ -29,9 +29,6 @@ namespace Math {
 /**
  * @brief Single source of truth for token metadata: display, rendering, shortcuts, and factories.
  */
-/**
- * @brief Single source of truth for token metadata: display, rendering, shortcuts, and factories.
- */
 struct TokenEntry {
     QString label;                     ///< Button-bar display text.
     QString renderSymbol;              ///< Symbol drawn inside the expression tree.

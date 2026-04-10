@@ -19,6 +19,6 @@ namespace CanHandler {
 class FileParser
 {
    public:
-    static auto parseFile(const std::string &filePath) -> std::string *;
+    static auto parseFile(const std::string& filePath) -> std::string*;
 };
 }  // namespace CanHandler

@@ -17,6 +17,7 @@
 
 #include <QPainterPath>
 #include <QPen>
+#include <utility>
 
 #include "core/macro/theme.hpp"
 #include "math/constants.hpp"
@@ -142,7 +143,6 @@ void ExpressionRenderVisitor::renderInlineOp(const OperatorToken& token)
 {
     const auto& spacing = THEME.spacing();
     const int padV = static_cast<int>(spacing.spacingXs * PAD_VERTICAL_FACTOR);
-
     const QPointF origin = m_origin;
     const QString sym = TokenRegistry::operatorSymbol(token.operation());
     const QSizeF lhs = childSize(token, 0);
@@ -151,20 +151,50 @@ void ExpressionRenderVisitor::renderInlineOp(const OperatorToken& token)
     const int opW = m_fm.horizontalAdvance(sym) + 2 * spacing.radiusXs;
     const int opH = m_fm.height() + 2 * padV;
     const double rowH = total.height();
-
+    const int bracketW = m_fm.horizontalAdvance('(') + spacing.radiusXs;
     auto centerY = [&](double h) { return origin.y() + (rowH - h) / 2.0; };
+    auto resetPainter = [&]()
+    {
+        m_painter.setPen(THEME.colors().textPrimary);
+        m_painter.setBrush(Qt::NoBrush);
+    };
+    auto needsBrackets = [&](const int index) -> bool
+    {
+        const auto& children = token.children();
+        if (std::cmp_less_equal(children.size(), index) || !children[index])
+        {
+            return false;
+        }
+        const auto* child = dynamic_cast<const OperatorToken*>(children[index].get());
+        return child != nullptr && child->operation() != Operation::Div;
+    };
+    auto renderChildWithBrackets = [&](const int index, const QPointF pos, const QSizeF size)
+    -> void {
+        if (needsBrackets(index))
+        {
+            resetPainter();
+            m_painter.drawText(QRectF(pos.x(), centerY(opH), bracketW, opH), Qt::AlignCenter, "(");
+            renderChild(&token, index, {pos.x() + bracketW, pos.y()});
+            resetPainter();
+            m_painter.drawText(QRectF(pos.x() + bracketW + size.width(), centerY(opH), bracketW, opH),
+                               Qt::AlignCenter, ")");
+        }
+        else
+        {
+            renderChild(&token, index, pos);
+        }
+    };
 
-    renderChild(&token, 0, {origin.x(), centerY(lhs.height())});
+    const double lhsBracketOffset = needsBrackets(0) ? bracketW * 2 : 0;
+    renderChildWithBrackets(0, {origin.x(), centerY(lhs.height())}, lhs);
 
-    const QRectF opRect(origin.x() + lhs.width() + spacing.spacingXs, centerY(opH), opW, opH);
-    m_painter.setPen(THEME.colors().textPrimary);
-    m_painter.setBrush(Qt::NoBrush);
+    const QRectF opRect(origin.x() + lhs.width() + lhsBracketOffset + spacing.spacingXs, centerY(opH), opW, opH);
+    resetPainter();
     m_painter.drawText(opRect, Qt::AlignCenter, sym);
     m_hitRegions.append({opRect.toRect(), &token, nullptr, -1});
 
-    renderChild(&token, 1,
-                {origin.x() + lhs.width() + spacing.spacingXs + opW + spacing.spacingXs,
-                 centerY(rhs.height())});
+    const double rhsX = opRect.right() + spacing.spacingXs;
+    renderChildWithBrackets(1, {rhsX, centerY(rhs.height())}, rhs);
 }
 
 void ExpressionRenderVisitor::renderFunction(const FunctionToken& token)

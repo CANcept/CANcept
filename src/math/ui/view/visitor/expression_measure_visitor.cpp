@@ -16,6 +16,7 @@
 #include "math/ui/view/visitor/expression_measure_visitor.hpp"
 
 #include <algorithm>
+#include <utility>
 
 #include "core/macro/theme.hpp"
 #include "math/constants.hpp"
@@ -91,7 +92,21 @@ void ExpressionMeasureVisitor::visit(const OperatorToken& token)
         const QSizeF rhs = childSize(token, 1);
         const int opW = m_fontMetric.horizontalAdvance(sym) + 2 * spacing.radiusXs;
         const int opH = m_fontMetric.height() + 2 * spacing.spacingXs * PAD_VERTICAL_FACTOR;
-        m_size = {lhs.width() + spacing.spacingXs + opW + spacing.spacingXs + rhs.width(),
+        const int bracketW = m_fontMetric.horizontalAdvance('(') + spacing.radiusXs;
+        const auto needsBrackets = [&](const int index) -> bool
+        {
+            const auto& children = token.children();
+            if (std::cmp_less_equal(children.size(), index) || !children[index])
+            {
+                return false;
+            }
+            const auto* child = dynamic_cast<const OperatorToken*>(children[index].get());
+            return child != nullptr && child->operation() != Operation::Div;
+        };
+
+        const double lhsExtra = needsBrackets(0) ? bracketW * 2 : 0;
+        const double rhsExtra = needsBrackets(1) ? bracketW * 2 : 0;
+        m_size = {lhsExtra + lhs.width() + spacing.spacingXs + opW + spacing.spacingXs + rhsExtra + rhs.width(),
                   std::max({lhs.height(), static_cast<double>(opH), rhs.height()})};
     }
 }
