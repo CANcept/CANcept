@@ -145,10 +145,9 @@ void RepeatedSendingWorker::run()
             nextDeadline = Clock::now() + Ns(intervalNs);
         }
 
-        // If the callback overran the deadline, resync
+        // If the callback overran the deadline, catch up immediately
         if (Clock::now() >= nextDeadline)
         {
-            nextDeadline = Clock::now();
             continue;
         }
 
