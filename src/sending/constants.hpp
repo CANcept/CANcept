@@ -138,14 +138,14 @@ inline constexpr int MAX_CAN_ID_HEX_LENGTH = 3;
 
 // NETWORK CONFIGURATION
 
-/** @brief Default cyclic transmission interval in milliseconds */
-inline constexpr int DEFAULT_CYCLE_INTERVAL_MS = 100;
+/** @brief Default cyclic transmission interval in microseconds */
+inline constexpr int DEFAULT_CYCLE_INTERVAL_US = 1000;
 
 /** @brief Minimum allowed cyclic interval to prevent system overload */
-inline constexpr int MIN_CYCLE_INTERVAL_MS = 1;
+inline constexpr int MIN_CYCLE_INTERVAL_US = 100;
 
 /** @brief Maximum allowed cyclic interval */
-inline constexpr int MAX_CYCLE_INTERVAL_MS = 10000;
+inline constexpr int MAX_CYCLE_INTERVAL_US = 100000;
 
 // HEX INPUT & VALIDATION
 
@@ -220,7 +220,7 @@ inline constexpr int REPEATED_SENDING_MAX_FREQUENCY = 10000;
 
 /** @brief Template for the repeated sending input title */
 inline const QString REPEATED_SENDING_TRANSMISSION_INPUT_TITLE =
-    QString("Transmission Interval (1 - %1 ms)").arg(MAX_CYCLE_INTERVAL_MS);
+    QString("Transmission Interval (100 - %1 µs)").arg(MAX_CYCLE_INTERVAL_US);
 
 /** @brief Time to wait (in ms) for the thread to stop gracefully before forcing termination. */
 inline constexpr int THREAD_TERMINATION_WAIT_MS = 5000;

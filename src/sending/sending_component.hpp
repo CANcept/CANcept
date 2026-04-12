@@ -130,7 +130,7 @@ class SendingComponent final : public Core::ITabComponent
     /**
      * @brief Starts repeated sending at the given interval using the worker thread.
      */
-    void startRepeatedSending(int intervalMs) const;
+    void startRepeatedSending(int intervalUs) const;
 
     /**
      * @brief Stops the repeated sending worker.

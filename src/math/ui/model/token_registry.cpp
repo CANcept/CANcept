@@ -28,7 +28,7 @@ auto tokens() -> const std::list<TokenEntry>&
         {"\u22C5", "\u22C5", '*', [] { return std::make_unique<OperatorToken>(Operation::Mul); }},
         {"\u00BD", "", '/', [] { return std::make_unique<OperatorToken>(Operation::Div); }},
 
-        // functions only with \
+        // functions only with
         {"sin", "sin", 's', [] { return std::make_unique<FunctionToken>(Function::Sin); }},
         {"cos", "cos", 'c', [] { return std::make_unique<FunctionToken>(Function::Cos); }},
         {"\u007C\u2B1A\u007C", "", 'a',

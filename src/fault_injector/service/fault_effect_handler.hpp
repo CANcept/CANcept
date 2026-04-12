@@ -1,12 +1,29 @@
+/** Copyright 2026 Lino Wertz, Florian Fehrle, Junes Sheikhi, Adrian Rupp and Nele Spatzier
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #pragma once
 #include <cstring>
 #include <random>
+#include <string>
+#include <unordered_map>
 
 #include "core/dto/can_dto.hpp"
 #include "entt/core/utility.hpp"
-#include "fault_injector/types/Fault.hpp"
 #include "fault_injector/types/effect/bit_flip_effect.hpp"
 #include "fault_injector/types/effect/random_bit_flip_effect.hpp"
+#include "fault_injector/types/fault.hpp"
 
 namespace FaultInjector {
 
@@ -41,27 +58,36 @@ inline void applyRawEffect(const RawEffect& effect, const uint16_t& id, const ui
  *  This function applies dbc based effects to the given message. It is not Thread safe.
  *
  * @param effect the effect to apply
- * @param message the message the effect should be applied to
+ * @param signalMap the signals
  * @param random the curent random instance for probability
  */
-inline void applyDbcEffect(const DbcEffect& effect, Core::DbcCanMessage& message,
-                           const std::mt19937& random)
+inline void applyDbcEffect(const DbcEffect& effect,
+                           std::unordered_map<std::string, Core::DbcCanSignal*>& signalMap,
+                           std::mt19937& random)
 {
-    std::visit(
-        entt::overloaded{
-            // lambda for setting the value of a certain signal
-            [&](const ValueSetEffect& e) {
-                const auto it = std::ranges::find_if(message.signalValues, [&](const auto& signal) {
-                    return signal.name == e.signal_name;
-                });
-                if (it != message.signalValues.end())
-                {
-                    it->value = e.value;
-                }
-            },
-        },
-        effect);
-    (void)random;
+    std::visit(entt::overloaded{
+                   [&](const ValueSetEffect& e) {
+                       if (const auto it = signalMap.find(e.signal_name); it != signalMap.end())
+                       {
+                           it->second->value = e.value;
+                       }
+                   },
+                   [&](const ClampEffect& e) {
+                       if (const auto it = signalMap.find(e.signal_name); it != signalMap.end())
+                       {
+                           it->second->value =
+                               std::clamp(it->second->value, e.min_value, e.max_value);
+                       }
+                   },
+                   [&](const NoiseEffect& e) {
+                       std::uniform_real_distribution<double> dist(-e.amplitude, e.amplitude);
+                       if (const auto it = signalMap.find(e.signal_name); it != signalMap.end())
+                       {
+                           it->second->value += dist(random);
+                       }
+                   },
+               },
+               effect);
 }
 
 }  // namespace FaultInjector

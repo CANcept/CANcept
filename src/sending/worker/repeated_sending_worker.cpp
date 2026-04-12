@@ -33,7 +33,7 @@ RepeatedSendingWorker::~RepeatedSendingWorker()
     stopSending();
 }
 
-void RepeatedSendingWorker::startSending(SendCallback callback, const int intervalMs)
+void RepeatedSendingWorker::startSending(SendCallback callback, const int intervalUs)
 {
     if (m_isActive.load())
     {
@@ -47,7 +47,7 @@ void RepeatedSendingWorker::startSending(SendCallback callback, const int interv
         return;
     }
 
-    if (intervalMs <= 0)
+    if (intervalUs <= 0)
     {
         emit errorOccurred(Constants::ERR_INVALID_INTERVAL);
         return;
@@ -58,7 +58,7 @@ void RepeatedSendingWorker::startSending(SendCallback callback, const int interv
         m_callback = std::move(callback);
     }
 
-    m_intervalMs.store(intervalMs);
+    m_intervalUs.store(intervalUs);
     m_shouldStop.store(false);
     m_isActive.store(true);
 
@@ -91,11 +91,11 @@ void RepeatedSendingWorker::stopSending()
     }
 }
 
-void RepeatedSendingWorker::updateInterval(const int intervalMs)
+void RepeatedSendingWorker::updateInterval(const int intervalUs)
 {
-    if (intervalMs > 0)
+    if (intervalUs > 0)
     {
-        m_intervalMs.store(intervalMs);
+        m_intervalUs.store(intervalUs);
         m_resetGuard.store(true);
     }
 }
@@ -108,40 +108,56 @@ void RepeatedSendingWorker::run()
 
     emit sendingStarted();
 
+    // Snapshot the callback once
+    SendCallback localCallback;
+    {
+        std::lock_guard lock(m_callbackMutex);
+        localCallback = m_callback;
+    }
+
+    // Anchor the tick timeline, also helpful for variable interval later
+    auto nextDeadline = Clock::now();
+
     while (!m_shouldStop.load())
     {
-        const auto deadline =
-            Clock::now() + Ns(static_cast<long long>(m_intervalMs.load()) * 1'000'000LL);
+        const long long intervalNs = static_cast<long long>(m_intervalUs.load()) * 1'000LL;
+        nextDeadline += Ns(intervalNs);
 
+        if (localCallback)
         {
-            std::lock_guard lock(m_callbackMutex);
-            if (m_callback)
+            try
             {
-                try
-                {
-                    m_callback();
-                } catch (const std::exception& e)
-                {
-                    emit errorOccurred(
-                        QString(Constants::ERR_CALLBACK_EXCEPTION_TEMPLATE).arg(e.what()));
-                } catch (...)
-                {
-                    emit errorOccurred(Constants::ERR_UNKNOWN_CALLBACK_ERROR);
-                }
+                localCallback();
+            } catch (const std::exception& e)
+            {
+                emit errorOccurred(
+                    QString(Constants::ERR_CALLBACK_EXCEPTION_TEMPLATE).arg(e.what()));
+            } catch (...)
+            {
+                emit errorOccurred(Constants::ERR_UNKNOWN_CALLBACK_ERROR);
             }
         }
 
         if (m_resetGuard.exchange(false))
         {
+            // Interval changed — resync the timeline to prevent an immediate burst.
             guardNs = static_cast<double>(Constants::INITIAL_SLEEP_GUARD_NS);
+            nextDeadline = Clock::now() + Ns(intervalNs);
+        }
+
+        // If the callback overran the deadline, resync
+        if (Clock::now() >= nextDeadline)
+        {
+            nextDeadline = Clock::now();
+            continue;
         }
 
         const long long remainingNs =
-            std::chrono::duration_cast<Ns>(deadline - Clock::now()).count();
+            std::chrono::duration_cast<Ns>(nextDeadline - Clock::now()).count();
 
         if (remainingNs > static_cast<long long>(guardNs))
         {
-            const auto sleepTarget = deadline - Ns(static_cast<long long>(guardNs));
+            const auto sleepTarget = nextDeadline - Ns(static_cast<long long>(guardNs));
             std::this_thread::sleep_until(sleepTarget);
             const long long overshootNs =
                 std::chrono::duration_cast<Ns>(Clock::now() - sleepTarget).count();
@@ -153,7 +169,7 @@ void RepeatedSendingWorker::run()
                                std::max(guardNs * 0.99, newEstimate));
         }
 
-        while (Clock::now() < deadline && !m_shouldStop.load())
+        while (Clock::now() < nextDeadline && !m_shouldStop.load())
         {
         }
     }

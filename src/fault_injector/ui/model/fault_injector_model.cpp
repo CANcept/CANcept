@@ -1,3 +1,17 @@
+/** Copyright 2026 Lino Wertz, Florian Fehrle, Junes Sheikhi, Adrian Rupp and Nele Spatzier
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 #include "fault_injector_model.hpp"
 
@@ -15,6 +29,17 @@ void FaultInjectorModel::addFault(const Fault& fault)
     beginInsertRows(QModelIndex(), row, row);
     m_faults.push_back(fault);
     endInsertRows();
+}
+
+void FaultInjectorModel::removeFault(const int row)
+{
+    if (row < 0 || row >= static_cast<int>(m_faults.size()))
+    {
+        return;
+    }
+    beginRemoveRows(QModelIndex(), row, row);
+    m_faults.erase(m_faults.begin() + row);
+    endRemoveRows();
 }
 
 FaultHandler FaultInjectorModel::get()
@@ -40,7 +65,7 @@ int FaultInjectorModel::rowCount(const QModelIndex& parent = QModelIndex()) cons
 
 int FaultInjectorModel::columnCount(const QModelIndex& parent = QModelIndex()) const
 {
-    return parent.isValid() ? 0 : static_cast<int>(FaultListColumn::Strategy) + 1;
+    return parent.isValid() ? 0 : static_cast<int>(FaultListColumn::Mutation) + 1;
 }
 
 QVariant FaultInjectorModel::headerData(int section, const Qt::Orientation orientation,
@@ -57,6 +82,8 @@ QVariant FaultInjectorModel::headerData(int section, const Qt::Orientation orien
             return "Effects";
         case FaultListColumn::Strategy:
             return "Strategy";
+        case FaultListColumn::Mutation:
+            return "Mutation";
     }
     return {};
 }
@@ -84,6 +111,8 @@ QVariant FaultInjectorModel::data(const QModelIndex& index, const int role) cons
                                           return QVariant::fromValue(f.effect);
                                       case FaultListColumn::Strategy:
                                           return QVariant::fromValue(f.strategy);
+                                      case FaultListColumn::Mutation:
+                                          return QVariant::fromValue(f.mutation);
                                   }
                                   return {};
                               },
@@ -98,6 +127,8 @@ QVariant FaultInjectorModel::data(const QModelIndex& index, const int role) cons
                                           return QVariant::fromValue(f.effect);
                                       case FaultListColumn::Strategy:
                                           return QVariant::fromValue(f.strategy);
+                                      case FaultListColumn::Mutation:
+                                          return QVariant::fromValue(f.mutation);
                                   }
                                   return {};
                               },
@@ -125,6 +156,8 @@ QVariant FaultInjectorModel::data(const QModelIndex& index, const int role) cons
                             return QStringLiteral("%1 effects").arg(f.effect.size());
                         case FaultListColumn::Strategy:
                             return QStringLiteral("Strategy");
+                        case FaultListColumn::Mutation:
+                            return QStringLiteral("Mutation");
                     }
                     return {};
                 },
@@ -139,6 +172,8 @@ QVariant FaultInjectorModel::data(const QModelIndex& index, const int role) cons
                             return QStringLiteral("%1 effects").arg(f.effect.size());
                         case FaultListColumn::Strategy:
                             return QStringLiteral("Strategy");
+                        case FaultListColumn::Mutation:
+                            return QStringLiteral("Mutation");
                     }
                     return {};
                 },

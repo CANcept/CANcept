@@ -132,8 +132,8 @@ auto SendingModel::data(const QModelIndex& index, int role) const -> QVariant
             return static_cast<int>(m_currentMode);
         case Role_IsCyclicEnabled:
             return m_cyclicState.isEnabled;
-        case Role_CycleIntervalMs:
-            return m_cyclicState.intervalMs;
+        case Role_CycleIntervalUs:
+            return m_cyclicState.intervalUs;
         case Role_IsCurrentlySending:
             return m_cyclicState.isSending;
         default:
@@ -217,17 +217,17 @@ auto SendingModel::setData(const QModelIndex& index, const QVariant& value, int 
             emit dataChanged(index, index, {role});
             return true;
 
-        case Role_CycleIntervalMs: {
+        case Role_CycleIntervalUs: {
             int interval = value.toInt();
-            if (interval < Constants::MIN_CYCLE_INTERVAL_MS)
+            if (interval < Constants::MIN_CYCLE_INTERVAL_US)
             {
-                interval = Constants::MIN_CYCLE_INTERVAL_MS;
+                interval = Constants::MIN_CYCLE_INTERVAL_US;
             }
-            if (interval > Constants::MAX_CYCLE_INTERVAL_MS)
+            if (interval > Constants::MAX_CYCLE_INTERVAL_US)
             {
-                interval = Constants::MAX_CYCLE_INTERVAL_MS;
+                interval = Constants::MAX_CYCLE_INTERVAL_US;
             }
-            m_cyclicState.intervalMs = interval;
+            m_cyclicState.intervalUs = interval;
             emit dataChanged(index, index, {role});
             return true;
         }

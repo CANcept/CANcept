@@ -17,10 +17,9 @@
 
 #include "core/macro/theme.hpp"
 
-namespace FaultInjector::Style {
-namespace Common {
+namespace FaultInjector::Style::Common {
 
-QString verticalScrollBar()
+auto verticalScrollBar() -> QString
 {
     const auto& colors = THEME.colors();
     const auto& spacing = THEME.spacing();
@@ -54,5 +53,4 @@ QString verticalScrollBar()
         .arg(colors.surfaceHover.name());                    // hover color
 }
 
-}  // namespace Common
-}  // namespace FaultInjector::Style
+}  // namespace FaultInjector::Style::Common

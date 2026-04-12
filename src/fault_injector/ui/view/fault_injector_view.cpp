@@ -1,3 +1,17 @@
+/** Copyright 2026 Lino Wertz, Florian Fehrle, Junes Sheikhi, Adrian Rupp and Nele Spatzier
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 #include "fault_injector_view.hpp"
 
@@ -15,52 +29,11 @@
 
 namespace FaultInjector {
 
-FaultInjectorView::FaultInjectorView(QWidget* parent) : QWidget(parent)
+FaultInjectorView::FaultInjectorView(QWidget* parent)
+    : QWidget(parent),
+      m_model(new FaultInjectorModel(this)),
+      m_dialog(new FaultInjectorDialog(this))
 {
-    m_model = new FaultInjectorModel(this);
-
-    // Corrupt CARSIDE_CONTROD (0x102) frames with 25% probability
-    m_model->addFault(RawFault{
-        .trigger =
-            {
-                IDTrigger(0x102),
-                DLCTrigger(8),
-                RandomTrigger(0.25f),
-            },
-        .effect =
-            {
-                BitFlipEffect(1, 4),
-            },
-        .strategy = ImmediateStrategy{},
-    });
-
-    // Zero out RequestedAmps on 50% of sends to simulate a charging request fault
-    m_model->addFault(DbcFault{
-        .trigger =
-            {
-                SignalNameTrigger("RequestedAmps"),
-                RandomTrigger(0.5f),
-            },
-        .effect =
-            {
-                ValueSetEffect("RequestedAmps", 0.0),
-            },
-        .strategy = ImmediateStrategy{},
-    });
-
-    // Randomly corrupt EVSE_STATUS (0x109) frames
-    m_model->addFault(RawFault{
-        .trigger =
-            {
-                IDTrigger(0x109),
-            },
-        .effect =
-            {
-                RandomBitFlipEffect(),
-            },
-        .strategy = ImmediateStrategy{},
-    });
-
     setupUi();
 }
 
@@ -101,6 +74,15 @@ void FaultInjectorView::setupUi()
     headerLayout->addLayout(textLayout);
     headerLayout->addStretch();
 
+    // Add fault buttons
+    m_addRawButton = new QPushButton(Constants::FAULT_INJECTOR_ADD_RAW_BUTTON_LABEL, m_card);
+    m_addRawButton->setVisible(false);
+    headerLayout->addWidget(m_addRawButton, 0, Qt::AlignVCenter);
+
+    m_addDbcButton = new QPushButton(Constants::FAULT_INJECTOR_ADD_DBC_BUTTON_LABEL, m_card);
+    m_addDbcButton->setVisible(false);
+    headerLayout->addWidget(m_addDbcButton, 0, Qt::AlignVCenter);
+
     // Toggle switch on the right
     m_toggleSwitch = new Core::StyledSwitch(m_card);
     headerLayout->addWidget(m_toggleSwitch, 0, Qt::AlignVCenter);
@@ -137,7 +119,7 @@ void FaultInjectorView::setupUi()
     m_faults->setItemDelegateForColumn(
         static_cast<int>(FaultListColumn::Triggers),
         new FaultInjectorDynamicDelegate(
-            [](const QVariant& v) {
+            [](const QVariant& v) -> QStringList {
                 QStringList labels;
                 if (const auto raw = v.value<std::vector<RawTrigger>>(); !raw.empty())
                     for (const auto& t : raw) labels << triggerLabel(t);
@@ -149,7 +131,7 @@ void FaultInjectorView::setupUi()
     m_faults->setItemDelegateForColumn(
         static_cast<int>(FaultListColumn::Effects),
         new FaultInjectorDynamicDelegate(
-            [](const QVariant& v) {
+            [](const QVariant& v) -> QStringList {
                 QStringList labels;
                 if (const auto raw = v.value<std::vector<RawEffect>>(); !raw.empty())
                     for (const auto& e : raw) labels << effectLabel(e);
@@ -161,7 +143,16 @@ void FaultInjectorView::setupUi()
     m_faults->setItemDelegateForColumn(
         static_cast<int>(FaultListColumn::Strategy),
         new FaultInjectorDynamicDelegate(
-            [](const QVariant& v) { return QStringList{strategyLabel(v.value<Strategy>())}; },
+            [](const QVariant& v) -> QStringList {
+                return QStringList{strategyLabel(v.value<Strategy>())};
+            },
+            m_faults));
+    m_faults->setItemDelegateForColumn(
+        static_cast<int>(FaultListColumn::Mutation),
+        new FaultInjectorDynamicDelegate(
+            [](const QVariant& v) -> QStringList {
+                return QStringList{mutationLabel(v.value<Mutation>())};
+            },
             m_faults));
 
     m_tableCardWidget = new Core::CardWidget(QString(), QString(), QString(), m_card);
@@ -179,12 +170,17 @@ void FaultInjectorView::setupUi()
     connect(m_toggleSwitch, &Core::StyledSwitch::toggled, this,
             &FaultInjectorView::onToggleChanged);
 
+    connect(m_addRawButton, &QPushButton::clicked, this, &FaultInjectorView::onAddRawClicked);
+    connect(m_addDbcButton, &QPushButton::clicked, this, &FaultInjectorView::onAddDbcClicked);
+    connect(m_faults, &QTableView::clicked, this, &FaultInjectorView::onFaultClicked);
+
     applyStyle();
 }
 
 void FaultInjectorView::applyStyle() const
 {
     const auto& colors = THEME.colors();
+    const auto& spacing = THEME.spacing();
 
     m_faults->setStyleSheet(QString("QTableView {"
                                     "  background-color: transparent;"
@@ -202,9 +198,8 @@ void FaultInjectorView::applyStyle() const
                                     "QTableView::item:hover {"
                                     "  background-color: %3;"
                                     "}")
-                                .arg(colors.textPrimary.name())
-                                .arg(colors.surfaceSelected.name())
-                                .arg(colors.surfaceHover.name()));
+                                .arg(colors.textPrimary.name(), colors.surfaceSelected.name(),
+                                     colors.surfaceHover.name()));
 
     // Apply scrollbar style
     if (m_faults->verticalScrollBar())
@@ -220,9 +215,43 @@ void FaultInjectorView::applyStyle() const
     {
         m_subtitleLabel->setStyleSheet(QString("color: %1;").arg(colors.textSecondary.name()));
     }
+
+    const QString buttonStyle = QString(
+                                    "QPushButton {"
+                                    "   border: none;"
+                                    "   border-radius: %1px;"
+                                    "   font-size: %2px;"
+                                    "   font-weight: %3;"
+                                    "   padding: %4px %5px;"
+                                    "   background-color: %6;"
+                                    "   color: %7;"
+                                    "}"
+                                    "QPushButton:hover {"
+                                    "   background-color: %8;"
+                                    "}"
+                                    "QPushButton:pressed {"
+                                    "   background-color: %8;"
+                                    "}")
+                                    .arg(spacing.radiusSm)
+                                    .arg(spacing.fontSizeMd)
+                                    .arg(spacing.fontWeightMedium)
+                                    .arg(spacing.spacingXs)
+                                    .arg(spacing.spacingLg)
+                                    .arg(colors.surfacePrimary.name(), colors.textPrimary.name(),
+                                         colors.colorPrimaryHover.name());
+
+    if (m_addRawButton)
+    {
+        m_addRawButton->setStyleSheet(buttonStyle);
+    }
+
+    if (m_addDbcButton)
+    {
+        m_addDbcButton->setStyleSheet(buttonStyle);
+    }
 }
 
-bool FaultInjectorView::event(QEvent* event)
+auto FaultInjectorView::event(QEvent* event) -> bool
 {
     if (event->type() == Core::StyleEvent::EventType)
     {
@@ -232,11 +261,50 @@ bool FaultInjectorView::event(QEvent* event)
     return QWidget::event(event);
 }
 
+void FaultInjectorView::onAddRawClicked() const
+{
+    if (m_dialog->open(true) != QDialog::Accepted)
+    {
+        return;
+    }
+
+    if (const auto fault = m_dialog->acquire())
+    {
+        m_model->addFault(*fault);
+    }
+}
+
+void FaultInjectorView::onAddDbcClicked() const
+{
+    if (m_dialog->open(false) != QDialog::Accepted)
+    {
+        return;
+    }
+
+    if (const auto fault = m_dialog->acquire())
+    {
+        m_model->addFault(*fault);
+    }
+}
+
 void FaultInjectorView::onToggleChanged(const bool checked)
 {
     m_faults->setVisible(checked);
     m_tableCardWidget->setVisible(checked);
+    m_addRawButton->setVisible(checked);
+    m_addDbcButton->setVisible(checked);
     setMinimumHeight(checked ? maximumHeight() : 0);
+}
+
+void FaultInjectorView::onFaultClicked(const QModelIndex& index) const
+{
+    if (!index.isValid())
+    {
+        return;
+    }
+    const auto* proxy = qobject_cast<const QSortFilterProxyModel*>(m_faults->model());
+    const int sourceRow = proxy ? proxy->mapToSource(index).row() : index.row();
+    m_model->removeFault(sourceRow);
 }
 
 auto FaultInjectorView::isFaultInjection() const -> bool

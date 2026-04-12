@@ -32,7 +32,7 @@ struct DbcCanSignal {
 };
 struct DbcCanMessage {
     std::chrono::milliseconds receiveTime;
-    std::list<DbcCanSignal> signalValues;
+    std::vector<DbcCanSignal> signalValues;
     uint16_t messageId;  // CAN ID: 11-bit standard (0x000-0x7FF)
 };
 }  // namespace Core

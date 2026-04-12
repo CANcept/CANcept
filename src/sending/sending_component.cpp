@@ -182,7 +182,7 @@ void SendingComponent::setupConnections()
         Qt::QueuedConnection);
 }
 
-void SendingComponent::startRepeatedSending(const int intervalMs) const
+void SendingComponent::startRepeatedSending(const int intervalUs) const
 {
     if (m_sendingWorker->isSending())
     {
@@ -194,23 +194,22 @@ void SendingComponent::startRepeatedSending(const int intervalMs) const
         m_variableRegistry->reset();
     }
 
-    LOG_INF(Constants::MODULE_IDENTIFIER, "Starting repeated sending, interval={}ms", intervalMs);
+    LOG_INF(Constants::MODULE_IDENTIFIER, "Starting repeated sending, interval={}µs", intervalUs);
 
     auto handler = m_view->dbcSubView()->getFaultHandler();
     auto callback = [this, handler]() {
-        // Called from worker thread - build messages and publish directly to broker
+        // Called from worker thread, lock not needed under invariant that channel exists since
+        // startup
         m_model->forEachPendingMessage(
             [this, &handler](const Core::RawCanMessage& message) {
-                std::scoped_lock lock(m_brokerMutex);
                 m_eventBroker.publish(Core::SendCanMessageRawEvent(message, handler));
             },
             [this, &handler](const Core::DbcCanMessage& message) {
-                std::scoped_lock lock(m_brokerMutex);
                 m_eventBroker.publish(Core::SendCanMessageDbcEvent(message, handler));
             });
     };
 
-    m_sendingWorker->startSending(callback, intervalMs);
+    m_sendingWorker->startSending(callback, intervalUs);
     m_model->setTransmissionStatus(true);
 }
 

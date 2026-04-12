@@ -35,6 +35,6 @@
         <file>assets/icon/monitoring/arrow_down.svg</file>
         <file>assets/icon/sending/stop.svg</file>
         <file>assets/icon/math/add.svg</file>
-        <file>assets/icon/math/save.svg</file>
+        <file>assets/icon/save.svg</file>
     </qresource>
 </RCC>

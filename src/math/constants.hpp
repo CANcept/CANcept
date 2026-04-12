@@ -23,7 +23,7 @@ namespace Math::Constants {
 inline const QString ADD_VARIABLE_ICON_PATH = ":/assets/icon/math/add.svg";
 
 /** @brief Icon for the "Confirm" button in the variable selection dialog */
-inline const QString CONFIRM_ICON_PATH = ":/assets/icon/math/save.svg";
+inline const QString CONFIRM_ICON_PATH = ":/assets/icon/save.svg";
 
 /** @brief Vertical padding multiplier relative to spacingXs for token cells */
 inline constexpr double PAD_VERTICAL_FACTOR = 0.75;

@@ -42,9 +42,9 @@ class RepeatedSendingWorker final : public QThread
     /**
      * @brief Starts the worker with the given callback and interval.
      * @param callback Function to call at each interval
-     * @param intervalMs Interval in milliseconds between sends
+     * @param intervalUs Interval in microseconds between sends
      */
-    void startSending(SendCallback callback, int intervalMs);
+    void startSending(SendCallback callback, int intervalUs);
 
     /**
      * @brief Stops the worker gracefully.
@@ -53,9 +53,9 @@ class RepeatedSendingWorker final : public QThread
 
     /**
      * @brief Updates the send interval while running.
-     * @param intervalMs New interval in milliseconds
+     * @param intervalUs New interval in microseconds
      */
-    void updateInterval(int intervalMs);
+    void updateInterval(int intervalUs);
 
     /**
      * @brief Checks if the worker is currently sending.
@@ -89,7 +89,7 @@ class RepeatedSendingWorker final : public QThread
     std::atomic<bool> m_isActive{false};
     std::atomic<bool> m_shouldStop{false};
     std::atomic<bool> m_resetGuard{false};
-    std::atomic<int> m_intervalMs{100};
+    std::atomic<int> m_intervalUs{1000};
 
     mutable std::mutex m_callbackMutex;
     SendCallback m_callback;

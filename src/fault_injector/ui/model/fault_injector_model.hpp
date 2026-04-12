@@ -1,15 +1,30 @@
+/** Copyright 2026 Lino Wertz, Florian Fehrle, Junes Sheikhi, Adrian Rupp and Nele Spatzier
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #pragma once
 #include <QAbstractListModel>
 
 #include "fault_injector/service/fault_handler.hpp"
-#include "fault_injector/types/Fault.hpp"
+#include "fault_injector/types/fault.hpp"
 
 namespace FaultInjector {
 
 /**
  * @brief Identifies the columns of the fault list table.
  */
-enum class FaultListColumn : int { Type, Triggers, Effects, Strategy };
+enum class FaultListColumn : int { Type, Triggers, Effects, Strategy, Mutation };
 
 /**
  * @brief Table model backing the fault injector view.
@@ -30,6 +45,12 @@ class FaultInjectorModel final : public QAbstractTableModel
     void addFault(const Fault& fault);
 
     /**
+     * @brief Removes the fault at the given row index.
+     * @param row Zero-based row index. No-op if out of range.
+     */
+    void removeFault(int row);
+
+    /**
      * @brief Builds a FaultHandler snapshot from the current fault list.
      *
      * Partitions the stored faults into raw and DBC lists and constructs
@@ -37,7 +58,7 @@ class FaultInjectorModel final : public QAbstractTableModel
      *
      * @return A FaultHandler populated with the current faults.
      */
-    [[nodiscard]] FaultHandler get();
+    [[nodiscard]] auto get() -> FaultHandler;
 
     [[nodiscard]] auto headerData(int section, Qt::Orientation orientation,
                                   int role) const -> QVariant override;

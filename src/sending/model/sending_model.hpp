@@ -45,7 +45,7 @@ class SendingModel final : public QAbstractItemModel
         Role_SignalValue,
         Role_ActiveMode,
         Role_IsCyclicEnabled,
-        Role_CycleIntervalMs,
+        Role_CycleIntervalUs,
         Role_IsCurrentlySending
     };
 
@@ -74,7 +74,7 @@ class SendingModel final : public QAbstractItemModel
     }
     [[nodiscard]] auto cycleInterval() const -> int
     {
-        return m_cyclicState.intervalMs;
+        return m_cyclicState.intervalUs;
     }
     [[nodiscard]] auto isCurrentlySending() const -> bool
     {
@@ -185,7 +185,7 @@ class SendingModel final : public QAbstractItemModel
     // Cyclic Transmission State
     struct CyclicState {
         bool isEnabled = false;  // The user "intent" to send cyclically
-        int intervalMs = 100;    // Default interval
+        int intervalUs = 1000;   // Default interval
         bool isSending = false;  // Whether the component is actively sending
     } m_cyclicState;
 
