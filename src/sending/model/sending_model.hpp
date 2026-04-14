@@ -168,9 +168,8 @@ class SendingModel final : public QAbstractItemModel
     /**
      * @brief Builds pending messages and passes them to the provided handlers.
      */
-    void forEachPendingMessage(
-        const std::function<void(const Core::RawCanMessage&)>& rawHandler,
-        const std::function<void(const Core::DbcCanMessage&)>& dbcHandler) const;
+    void forEachPendingMessage(const std::function<void(Core::RawCanMessage&)>& rawHandler,
+                               const std::function<void(Core::DbcCanMessage&)>& dbcHandler) const;
 
    private:
     /**

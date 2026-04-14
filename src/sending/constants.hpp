@@ -245,8 +245,20 @@ inline const QString ERR_CALLBACK_EXCEPTION_TEMPLATE = "Send callback error: %1"
 /** @brief Generic error message for unknown/unhandled exceptions in the worker loop. */
 inline const QString ERR_UNKNOWN_CALLBACK_ERROR = "Unknown error in send callback";
 
-/** @brief Name for the repeated sending worker thread. */
-inline const QString REPEATED_SENDING_THREAD_NAME = "RepeatedSendingWorker";
+/** @brief Template string for exceptions caught during item creation. */
+inline const QString ERR_CREATE_EXCEPTION_TEMPLATE = "Item creation error: %1";
+
+/** @brief Generic error message for unknown exceptions during item creation. */
+inline const QString ERR_UNKNOWN_CREATE_ERROR = "Unknown error in item creation";
+
+/** @brief Name for the sending consumer worker thread. */
+inline const QString SENDING_CONSUMER_WORKER_THREAD_NAME = "SendingConsumerWorker";
+
+/** @brief Name for the repeated producer worker thread. */
+inline const QString REPEATED_PRODUCER_WORKER_THREAD_NAME = "RepeatedProducerWorker";
+
+/** @brief Priority assigned to cyclically scheduled send items. */
+inline constexpr int CYCLIC_SEND_PRIORITY = 10;
 
 /** @brief Initial sleep guard duration in nanoseconds. */
 inline constexpr long long INITIAL_SLEEP_GUARD_NS = 20'000'000LL;  // 20ms
@@ -256,6 +268,17 @@ inline constexpr long long MIN_SLEEP_GUARD_NS = 500'000LL;  // 0.5ms
 
 /** @brief EMA weight for sleep overshoot adaptation (higher = adapts faster). */
 inline constexpr double SLEEP_GUARD_ALPHA = 0.25;
+
+// SCHEDULED ITEM QUEUE
+
+/** @brief Maximum number of items the scheduled item queue must be able to hold. */
+inline constexpr int QUEUE_MAX_CAPACITY = 4096;
+
+/** @brief Priority increase per millisecond an item waits in the queue (aging). */
+inline constexpr int QUEUE_AGING_FACTOR_PER_MS = 1;
+
+/** @brief Hard cap on the priority boost an item can accumulate through aging. */
+inline constexpr int QUEUE_MAX_AGING_BOOST = 1000;
 
 }  // namespace Constants
 

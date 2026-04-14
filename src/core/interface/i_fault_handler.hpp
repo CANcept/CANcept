@@ -15,6 +15,8 @@
 
 #pragma once
 
+#include <chrono>
+
 #include "core/dto/can_dto.hpp"
 
 namespace Core {
@@ -22,15 +24,26 @@ namespace Core {
 /**
  * @brief Contract for applying fault injection to outgoing CAN messages.
  *
- * It covers the two meanigful point of injection. before encoding and after encoding.
+ * It covers the two meaningful points of injection: before encoding and after encoding.
+ * Per-frame state is accumulated across inject() calls and consumed by evaluate().
  */
 class IFaultHandler
 {
    public:
+    /**
+     * @brief Result of how the frame should be sent or not.
+     */
+    struct FrameResult {
+        bool drop;
+        std::chrono::microseconds delayOffset;
+    };
+
     virtual ~IFaultHandler() = default;
 
     /**
      * @brief Applies raw byte-level faults to the given message.
+     *
+     * Also records the strategy of every fault that fires into per-frame state.
      *
      * @param id   CAN frame identifier
      * @param dlc  Data Length Code (0–8). May be modified by the handler.
@@ -41,9 +54,17 @@ class IFaultHandler
     /**
      * @brief Applies signal-level faults to the given decoded message.
      *
+     * Also records the strategy of every fault that fires into per-frame state.
+     *
      * @param message The decoded CAN message to mutate in place.
      */
     virtual void inject(DbcCanMessage& message) = 0;
+
+    /**
+     * @brief Returns the aggregated timing decision for the current frame and resets per-frame
+     * state.
+     */
+    virtual auto evaluate() -> FrameResult = 0;
 };
 
 }  // namespace Core

@@ -74,12 +74,33 @@ class FaultHandler final : public Core::IFaultHandler
      */
     void inject(Core::DbcCanMessage& message) override;
 
+    /**
+     * @brief Aggregates per-frame strategies and resets per-frame state.
+     *
+     * @return FrameResult with drop flag and maximum delay offset.
+     */
+    FrameResult evaluate() override;
+
    private:
+    /**
+     * @brief Updates per-frame strategy state when a fault fires.
+     *
+     * Priority: Drop wins over everything; among delayed, the maximum delay wins.
+     *
+     * @param strategy The strategy of the fault that just fired.
+     */
+    void updateFrameStrategy(const Strategy& strategy);
+
     std::vector<RawFault> m_rawFaults;
     std::vector<bool> m_rawLatched;
     std::vector<DbcFault> m_dbcFaults;
     std::vector<bool> m_dbcLatched;
     std::mt19937 m_random;
+
+    /** @brief Per-frame drop flag, set by updateFrameStrategy(), cleared by evaluate(). */
+    bool m_frameDrop{false};
+    /** @brief Per-frame maximum requested delay in microseconds, cleared by evaluate(). */
+    uint16_t m_frameMaxDelayUs{0};
 };
 
 }  // namespace FaultInjector

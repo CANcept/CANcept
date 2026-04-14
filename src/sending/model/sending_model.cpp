@@ -314,8 +314,8 @@ void SendingModel::transmitCurrent()
 }
 
 void SendingModel::forEachPendingMessage(
-    const std::function<void(const Core::RawCanMessage&)>& rawHandler,
-    const std::function<void(const Core::DbcCanMessage&)>& dbcHandler) const
+    const std::function<void(Core::RawCanMessage&)>& rawHandler,
+    const std::function<void(Core::DbcCanMessage&)>& dbcHandler) const
 {
     if (m_currentMode == Mode::Raw)
     {

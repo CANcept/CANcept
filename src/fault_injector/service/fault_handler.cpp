@@ -28,22 +28,21 @@ void FaultHandler::inject(uint16_t& id, uint8_t& dlc, std::array<char, 8>& data)
 {
     for (size_t i = 0; i < m_rawFaults.size(); ++i)
     {
-        const auto& fault = m_rawFaults[i];
+        const auto& [trigger, effect, strategy, mutation] = m_rawFaults[i];
 
         if (!m_rawLatched[i])
         {
-            const bool triggered =
-                std::ranges::all_of(fault.trigger, [&](const RawTrigger& trigger) {
-                    return firesRawTrigger(trigger, id, dlc, data, m_random);
-                });
+            const bool triggered = std::ranges::all_of(trigger, [&](const RawTrigger& t) {
+                return firesRawTrigger(t, id, dlc, data, m_random);
+            });
             if (!triggered) continue;
 
-            if (std::holds_alternative<LatchMutation>(fault.mutation)) m_rawLatched[i] = true;
+            if (std::holds_alternative<LatchMutation>(mutation)) m_rawLatched[i] = true;
         }
 
-        std::ranges::for_each(fault.effect, [&](const RawEffect& effect) {
-            applyRawEffect(effect, id, dlc, data, m_random);
-        });
+        std::ranges::for_each(
+            effect, [&](const RawEffect& e) { applyRawEffect(e, id, dlc, data, m_random); });
+        updateFrameStrategy(strategy);
     }
 }
 
@@ -58,23 +57,48 @@ void FaultHandler::inject(Core::DbcCanMessage& message)
 
     for (size_t i = 0; i < m_dbcFaults.size(); ++i)
     {
-        const auto& fault = m_dbcFaults[i];
+        const auto& [trigger, effect, strategy, mutation] = m_dbcFaults[i];
 
         if (!m_dbcLatched[i])
         {
-            const bool triggered =
-                std::ranges::all_of(fault.trigger, [&](const DbcTrigger& trigger) {
-                    return firesDbcTrigger(trigger, signalMap, m_random);
-                });
+            const bool triggered = std::ranges::all_of(trigger, [&](const DbcTrigger& t) {
+                return firesDbcTrigger(t, signalMap, m_random);
+            });
             if (!triggered) continue;
 
-            if (std::holds_alternative<LatchMutation>(fault.mutation)) m_dbcLatched[i] = true;
+            if (std::holds_alternative<LatchMutation>(mutation)) m_dbcLatched[i] = true;
         }
 
-        std::ranges::for_each(fault.effect, [&](const DbcEffect& effect) {
-            applyDbcEffect(effect, signalMap, m_random);
-        });
+        std::ranges::for_each(effect,
+                              [&](const DbcEffect& e) { applyDbcEffect(e, signalMap, m_random); });
+        updateFrameStrategy(strategy);
     }
+}
+
+void FaultHandler::updateFrameStrategy(const Strategy& strategy)
+{
+    if (m_frameDrop) return;
+
+    std::visit(entt::overloaded{
+                   [](const ImmediateStrategy&) {},
+                   [this](const DelayedStrategy& s) {
+                       m_frameMaxDelayUs = std::max(m_frameMaxDelayUs, s.delayUs);
+                   },
+                   [this](const DropStrategy&) {
+                       m_frameDrop = true;
+                       m_frameMaxDelayUs = 0;
+                   },
+               },
+               strategy);
+}
+
+Core::IFaultHandler::FrameResult FaultHandler::evaluate()
+{
+    const bool drop = m_frameDrop;
+    const auto delayOffset = std::chrono::microseconds(m_frameMaxDelayUs);
+    m_frameDrop = false;
+    m_frameMaxDelayUs = 0;
+    return {.drop = drop, .delayOffset = delayOffset};
 }
 
 }  // namespace FaultInjector

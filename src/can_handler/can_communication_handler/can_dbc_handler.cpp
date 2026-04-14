@@ -118,7 +118,7 @@ auto CanDbcHandler::parseReceivedSignal(const Core::DbcSignalDescription& signal
     return rawValue * signal.factor + signal.offset;
 }
 
-void CanDbcHandler::handleSendMessage(const Core::SendCanMessageDbcEvent& event)
+void CanDbcHandler::handleEncodeMessage(const Core::EncodeCanMessageDbcEvent& event)
 {
     LOG_INF("CanDbcHandler", "handleSendMessage called for message ID 0x{:X}",
             event.canMessage.messageId);
@@ -149,9 +149,7 @@ void CanDbcHandler::handleSendMessage(const Core::SendCanMessageDbcEvent& event)
         messageDescCopy = *currentMessageDescription;
     }  // Lock release
 
-    // Signal-level injection: mutate decoded values before encoding
     Core::DbcCanMessage messageToEncode = event.canMessage;
-    if (event.faultHandler) event.faultHandler->inject(messageToEncode);
 
     // Data frames for little-endian and big-endian signals
     u_int64_t dataLittleEndian = 0;
@@ -188,16 +186,10 @@ void CanDbcHandler::handleSendMessage(const Core::SendCanMessageDbcEvent& event)
         data[i] = static_cast<uint8_t>(byteLittleEndian | byteBigEndian);
     }
 
-    // Raw byte-level injection: mutate encoded bytes before sending
-    if (event.faultHandler)
-    {
-        event.faultHandler->inject(id, dlc, data);
-    }
-
-    // Transform to CAN message and send
-    const std::string msgData(data.begin(), data.begin() + dlc);
-    const CanMessage message{static_cast<uint32_t>(id), msgData};
-    sendFunction(message);
+    // Populate the output reference with the encoded raw frame
+    event.encodedMessage.messageId = id;
+    event.encodedMessage.dlc = dlc;
+    event.encodedMessage.data = data;
 }
 
 void CanDbcHandler::parseSendSignal(const Core::DbcSignalDescription& signal,
