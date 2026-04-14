@@ -115,8 +115,14 @@ auto LoggingComponent::getView() -> LoggingView*
 void LoggingComponent::onStart()
 {
     // Listen for successful DBC parsing
-    m_parseSuccessConn = m_eventBroker.subscribe<Core::DBCParsedEvent>(
-        [this](const Core::DBCParsedEvent& event) { emit dbcConfigurationChanged(event.config); });
+    m_parseSuccessConn =
+        m_eventBroker.subscribe<Core::DBCParsedEvent>([this](const Core::DBCParsedEvent& event) {
+            LOG_INF(Constants::MODULE_IDENTIFIER, "DBC parse succeeded, queuing to UI thread");
+            Core::DbcConfig configCopy = event.config;
+            QMetaObject::invokeMethod(
+                this, [this, configCopy]() { emit dbcConfigurationChanged(configCopy); },
+                Qt::QueuedConnection);
+        });
 
     // Listen for DBC parse errors
     m_parseErrorConn = m_eventBroker.subscribe<Core::DBCParseErrorEvent>(

@@ -95,7 +95,7 @@ class CanLoggingSystemTest : public ::testing::Test
     void loadDbc(const std::string& path) const
     {
         broker->publish<Core::ParseDBCRequestEvent>(Core::ParseDBCRequestEvent{path});
-        QTest::qWait(100);
+        QTest::qWait(1000);
     }
 
     std::unique_ptr<TestHelpers::SocketCanDeviceManager> deviceManager;
