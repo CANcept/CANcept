@@ -276,9 +276,13 @@ void SendingModel::updateDbcConfig(const Core::DbcConfig& config)
     // Make a copy of the config (owned by this model)
     m_currentDbc = config;
 
-    // Clear selection and values
+    // Clear selection, values, and evaluators
     m_dynamicSignalValues.clear();
     m_selectedSignalNames.clear();
+    {
+        std::lock_guard lock(m_evalMutex);
+        m_signalEvaluators.clear();
+    }
 
     // Initialize signal values to their minimums
     for (const auto& msg : m_currentDbc->messageDefinitions)
@@ -352,16 +356,28 @@ void SendingModel::forEachPendingMessage(
 
                 Core::DbcCanSignal signal;
                 signal.name = sigDef.signalName;
+                signal.value = sigDef.minimum;
 
                 const std::string key = makeSignalKey(msgDef.messageId, sigDef.signalName);
-                if (auto valIt = m_dynamicSignalValues.find(key);
-                    valIt != m_dynamicSignalValues.end())
+                bool hasEvaluator = false;
                 {
-                    signal.value = valIt->second;
-                } else
-                {
-                    signal.value = sigDef.minimum;
+                    std::lock_guard lock(m_evalMutex);
+                    if (auto evIt = m_signalEvaluators.find(key); evIt != m_signalEvaluators.end())
+                    {
+                        signal.value = evIt->second();
+                        hasEvaluator = true;
+                    }
                 }
+                if (!hasEvaluator)
+                {
+                    if (auto valIt = m_dynamicSignalValues.find(key);
+                        valIt != m_dynamicSignalValues.end())
+                    {
+                        signal.value = valIt->second;
+                    }
+                }
+
+                signal.value = std::clamp(signal.value, sigDef.minimum, sigDef.maximum);
 
                 message.signalValues.push_back(signal);
             }
@@ -472,6 +488,23 @@ void SendingModel::setSignalValue(const uint16_t messageId, const std::string& s
 
     const std::string key = makeSignalKey(messageId, signalName);
     m_dynamicSignalValues[key] = clamped;
+}
+
+void SendingModel::setSignalEvaluator(const uint16_t messageId, const std::string& signalName,
+                                      SignalEvaluator evaluator)
+{
+    const std::string key = makeSignalKey(messageId, signalName);
+    std::lock_guard lock(m_evalMutex);
+    if (evaluator)
+        m_signalEvaluators[key] = std::move(evaluator);
+    else
+        m_signalEvaluators.erase(key);
+}
+
+void SendingModel::clearEvaluators()
+{
+    std::lock_guard lock(m_evalMutex);
+    m_signalEvaluators.clear();
 }
 
 void SendingModel::setRawCanId(const uint16_t canId)

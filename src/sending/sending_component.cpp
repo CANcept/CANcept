@@ -24,16 +24,18 @@
 #include "core/event/dbc_event.hpp"
 #include "core/event/lifecycle_event.hpp"
 #include "core/macro/console_logging.hpp"
+#include "math/service/variable_registry.hpp"
 
 namespace Sending {
 
-SendingComponent::SendingComponent(Core::IEventBroker& broker)
+SendingComponent::SendingComponent(Core::IEventBroker& broker, Math::VariableRegistry* registry)
     : ITabComponent(broker, QString::fromStdString(Constants::MODULE_IDENTIFIER),
                     Constants::TAB_TITLE, QIcon(Constants::SENDING_ICON_PATH)),
       m_model(std::make_unique<SendingModel>()),
       m_view(std::make_unique<SendingView>()),
       m_delegate(new SendingDelegate(this)),
-      m_sendingWorker(std::make_unique<RepeatedSendingWorker>())
+      m_sendingWorker(std::make_unique<RepeatedSendingWorker>()),
+      m_variableRegistry(registry)
 {
     m_view->setModel(m_model.get());
 
@@ -88,7 +90,10 @@ void SendingComponent::onDbcConfigReceived(const Core::DbcConfig& config)
     LOG_INF(Constants::MODULE_IDENTIFIER, "Processing DBC config on UI thread");
 
     m_model->updateDbcConfig(config);
-    m_view->dbcSubView()->populateFromModel(m_model.get());
+    if (m_variableRegistry)
+    {
+        m_view->dbcSubView()->populateFromModel(m_model.get(), *m_variableRegistry);
+    }
 
     LOG_INF(Constants::MODULE_IDENTIFIER, "Created {} message cards",
             config.messageDefinitions.size());
@@ -97,6 +102,7 @@ void SendingComponent::onDbcConfigReceived(const Core::DbcConfig& config)
 
 void SendingComponent::onDbcParseError() const
 {
+    m_model->clearEvaluators();
     m_view->dbcSubView()->clearMessages();
 }
 
@@ -181,6 +187,11 @@ void SendingComponent::startRepeatedSending(const int intervalMs) const
         return;
     }
 
+    if (m_variableRegistry)
+    {
+        m_variableRegistry->reset();
+    }
+
     LOG_INF(Constants::MODULE_IDENTIFIER, "Starting repeated sending, interval={}ms", intervalMs);
 
     auto callback = [this]() {
@@ -215,6 +226,10 @@ void SendingComponent::stopRepeatedSending() const
 
 void SendingComponent::sendOnce() const
 {
+    if (m_variableRegistry)
+    {
+        m_variableRegistry->reset();
+    }
     m_model->transmitCurrent();
 }
 

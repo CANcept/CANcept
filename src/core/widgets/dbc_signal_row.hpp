@@ -17,15 +17,19 @@
 
 #include <QCheckBox>
 #include <QLabel>
-#include <QTimer>
 #include <QWidget>
 
 #include "card_widget.hpp"
+#include "math/ui/view/math_input_view.hpp"
+
+namespace Math {
+class VariableRegistry;
+}
 
 namespace Core {
 
 class StyledLineEdit;
-class StyledCheckBox;  // Forward declaration
+class StyledCheckBox;
 
 /**
  * @class DbcSignalRowWidget
@@ -64,28 +68,22 @@ class DbcSignalRowWidget final : public QWidget
      * @param config Configuration for signal row behavior
      * @param parent Parent widget
      */
+    /**
+     * @brief Constructs a full-mode signal row with expression editor (requires registry).
+     */
+    explicit DbcSignalRowWidget(Math::VariableRegistry& registry, const QString& name,
+                                const QString& unit, double min, double max,
+                                QWidget* parent = nullptr);
+
+    /**
+     * @brief Constructs a signal row in selection mode (no expression editor needed).
+     */
     explicit DbcSignalRowWidget(const QString& name, const QString& unit, double min, double max,
                                 const Config& config, QWidget* parent = nullptr);
 
-    /**
-     * @brief Constructs a signal row widget with default configuration.
-     * @param name Signal name (e.g., "EngineRPM")
-     * @param unit Physical unit (e.g., "rpm")
-     * @param min Minimum value
-     * @param max Maximum value
-     * @param parent Parent widget
-     */
-    explicit DbcSignalRowWidget(const QString& name, const QString& unit, double min, double max,
-                                QWidget* parent = nullptr);
-
-    [[nodiscard]] auto valueEditor() const -> StyledLineEdit*
+    [[nodiscard]] auto valueEditor() const -> Math::MathInputView*
     {
         return m_valueEditor;
-    }
-
-    [[nodiscard]] auto functionToggle() const -> QCheckBox*
-    {
-        return m_funcToggle;
     }
 
     [[nodiscard]] auto selectionCheckbox() const -> StyledCheckBox*
@@ -103,19 +101,14 @@ class DbcSignalRowWidget final : public QWidget
                        const Config& config);
     void setupSelectionMode(const QString& name, const QString& unit, const Config& config);
     void applyStyle() const;
-    void clampInput() const;
 
+    Math::VariableRegistry* m_registry;
     CardWidget* m_cardContainer;
     StyledCheckBox* m_selectionCheckbox;
     QLabel* m_nameLabel;
     QLabel* m_rangeLabel;
-    StyledLineEdit* m_valueEditor;
+    Math::MathInputView* m_valueEditor;
     QLabel* m_unitLabel;
-    QCheckBox* m_funcToggle;
-    QTimer* m_clampTimer;
-
-    double m_minValue;
-    double m_maxValue;
 };
 
 }  // namespace Core

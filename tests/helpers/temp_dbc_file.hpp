@@ -28,7 +28,7 @@ constexpr std::string_view kMinimalDbcContent =
     "BS_:\n"
     "BU_: TestNode\n"
     "BO_ 291 TestMessage: 8 TestNode\n"
-    "SG_ TestSignal : 0|8@1+ (1,0) [0|255] \"units\" TestNode\n";
+    "SG_ TestSignal : 7|8@1+ (1,0) [0|255] \"units\" TestNode\n";
 
 constexpr uint32_t kTestMsgId = 0x123;
 inline const QString kTestSignalName = QStringLiteral("TestSignal");

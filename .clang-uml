@@ -98,6 +98,7 @@ diagrams:
           - EventBroker
           - Sending
           - Logging
+          - Math
       exclude:
         element_types:
           - enum

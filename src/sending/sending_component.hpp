@@ -54,7 +54,7 @@ class SendingComponent final : public Core::ITabComponent
      *
      * @param broker Event broker used for inter-component communication.
      */
-    explicit SendingComponent(Core::IEventBroker& broker);
+    explicit SendingComponent(Core::IEventBroker& broker, Math::VariableRegistry* registry);
 
     /**
      * @brief Destructor.
@@ -140,6 +140,9 @@ class SendingComponent final : public Core::ITabComponent
      * @brief Sends the current message once (offloaded to a thread).
      */
     void sendOnce() const;
+
+    /** @brief Global variable registry for expression variables. */
+    Math::VariableRegistry* m_variableRegistry = nullptr;
 
     /** @brief Model holding CAN sending configuration and data */
     std::unique_ptr<SendingModel> m_model;
