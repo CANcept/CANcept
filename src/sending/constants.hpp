@@ -257,9 +257,6 @@ inline const QString SENDING_CONSUMER_WORKER_THREAD_NAME = "SendingConsumerWorke
 /** @brief Name for the repeated producer worker thread. */
 inline const QString REPEATED_PRODUCER_WORKER_THREAD_NAME = "RepeatedProducerWorker";
 
-/** @brief Priority assigned to cyclically scheduled send items. */
-inline constexpr int CYCLIC_SEND_PRIORITY = 10;
-
 /** @brief Initial sleep guard duration in nanoseconds. */
 inline constexpr long long INITIAL_SLEEP_GUARD_NS = 20'000'000LL;  // 20ms
 
@@ -272,7 +269,7 @@ inline constexpr double SLEEP_GUARD_ALPHA = 0.25;
 // SCHEDULED ITEM QUEUE
 
 /** @brief Maximum number of items the scheduled item queue must be able to hold. */
-inline constexpr int QUEUE_MAX_CAPACITY = 4096;
+inline constexpr int QUEUE_MAX_CAPACITY = 32;
 
 /** @brief Priority increase per millisecond an item waits in the queue (aging). */
 inline constexpr int QUEUE_AGING_FACTOR_PER_MS = 1;

@@ -34,7 +34,6 @@ struct ScheduledItem {
     Clock::time_point scheduledAt;
     void (*onSend)(void*) = nullptr;
     std::shared_ptr<void> context;
-    int priority{0};
 };
 
 }  // namespace Sending

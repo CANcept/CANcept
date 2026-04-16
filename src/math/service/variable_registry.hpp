@@ -17,8 +17,8 @@
 
 #include <functional>
 #include <memory>
-#include <mutex>
 #include <optional>
+#include <shared_mutex>
 #include <string>
 #include <unordered_map>
 
@@ -51,7 +51,7 @@ class VariableRegistry final : public Core::ILifecycle
      * Otherwise, creates it via the factory, sets refcount to 1, and returns it.
      */
     auto acquire(const std::string& configKey,
-                 std::function<std::unique_ptr<IVariable>()> factory) -> IVariable*;
+                 const std::function<std::unique_ptr<IVariable>()>& factory) -> IVariable*;
 
     /**
      * @brief Decrements the refcount for the given config key.
@@ -89,9 +89,9 @@ class VariableRegistry final : public Core::ILifecycle
     void onCanDbcReceived(const Core::ReceivedCanDbcEvent& event);
     void rebuildCanSignalMap();
 
-    mutable std::recursive_mutex m_mutex;
+    mutable std::shared_mutex m_mutex;
     std::unordered_map<std::string, Entry> m_entries;
-    std::unordered_map<std::string, CanSignalVariable*> m_canSignalMap;
+    std::unordered_map<uint32_t, std::vector<CanSignalVariable*>> m_canSignalMap;
     std::optional<Core::DbcConfig> m_dbcConfig;
 
     Core::Connection m_dbcParsedConn;

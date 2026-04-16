@@ -49,14 +49,14 @@ TEST(ValueTokenTest, ZeroValue)
 TEST(VariableTokenTest, ToExpressionReturnsName)
 {
     const auto val = std::make_shared<double>(5.0);
-    const VariableToken token("x", val);
+    const VariableToken token("x", val.get());
     EXPECT_EQ(token.toExpression(), "x");
 }
 
 TEST(VariableTokenTest, GetReturnsPointerToValue)
 {
     const auto val = std::make_shared<double>(10.0);
-    const VariableToken token("y", val);
+    const VariableToken token("y", val.get());
     EXPECT_EQ(token.get(), val.get());
     EXPECT_DOUBLE_EQ(*token.get(), 10.0);
 }
@@ -64,7 +64,7 @@ TEST(VariableTokenTest, GetReturnsPointerToValue)
 TEST(VariableTokenTest, SharedOwnershipKeepsValueAlive)
 {
     auto val = std::make_shared<double>(42.0);
-    const VariableToken token("z", val);
+    const VariableToken token("z", val.get());
     const double* raw = token.get();
     val.reset();
     EXPECT_DOUBLE_EQ(*raw, 42.0);
@@ -73,7 +73,7 @@ TEST(VariableTokenTest, SharedOwnershipKeepsValueAlive)
 TEST(VariableTokenTest, CollectVariablesAddsEntry)
 {
     const auto val = std::make_shared<double>(1.0);
-    const VariableToken token("a", val);
+    const VariableToken token("a", val.get());
 
     std::vector<std::pair<std::string, double*>> vars;
     token.collectVariables(vars);
@@ -142,7 +142,7 @@ TEST_F(OperatorTokenTest, CollectsVariablesFromChildren)
 {
     auto token = std::make_unique<OperatorToken>(Operation::Add);
     auto val = std::make_shared<double>(1.0);
-    token->setChild(0, std::make_unique<VariableToken>("x", val));
+    token->setChild(0, std::make_unique<VariableToken>("x", val.get()));
     token->setChild(1, std::make_unique<ValueToken>(2.0));
 
     std::vector<std::pair<std::string, double*>> vars;
@@ -209,7 +209,7 @@ TEST_F(FunctionTokenTest, CollectsVariablesFromChild)
 {
     auto token = std::make_unique<FunctionToken>(Function::Sin);
     auto val = std::make_shared<double>(1.0);
-    token->setChild(0, std::make_unique<VariableToken>("t", val));
+    token->setChild(0, std::make_unique<VariableToken>("t", val.get()));
 
     std::vector<std::pair<std::string, double*>> vars;
     token->collectVariables(vars);

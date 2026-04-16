@@ -16,6 +16,7 @@
 #include "math/service/variable_registry.hpp"
 
 #include <cassert>
+#include <mutex>
 #include <ranges>
 
 #include "core/event/can_event.hpp"
@@ -42,12 +43,12 @@ void VariableRegistry::onStop()
 }
 
 auto VariableRegistry::acquire(const std::string& configKey,
-                               std::function<std::unique_ptr<IVariable>()> factory) -> IVariable*
+                               const std::function<std::unique_ptr<IVariable>()>& factory)
+    -> IVariable*
 {
-    std::lock_guard lock(m_mutex);
+    std::unique_lock lock(m_mutex);  // Blocks all readers and writers
 
-    auto it = m_entries.find(configKey);
-    if (it != m_entries.end())
+    if (const auto it = m_entries.find(configKey); it != m_entries.end())
     {
         ++it->second.refCount;
         return it->second.variable.get();
@@ -57,98 +58,88 @@ auto VariableRegistry::acquire(const std::string& configKey,
     auto* raw = var.get();
     m_entries[configKey] = Entry{std::move(var), 1};
 
-    // If it's a CAN signal variable, register in the fast lookup map
-    if (auto* canVar = dynamic_cast<CanSignalVariable*>(raw))
-    {
-        const std::string lookupKey =
-            std::to_string(canVar->messageId()) + ":" + canVar->signalName();
-        m_canSignalMap[lookupKey] = canVar;
-    }
-
+    rebuildCanSignalMap();
     return raw;
-}
-
-void VariableRegistry::reset()
-{
-    std::scoped_lock lock(m_mutex);
-    for (const auto& [variable, refCount] : m_entries | std::views::values)
-    {
-        variable->reset();
-    }
 }
 
 void VariableRegistry::release(const std::string& configKey)
 {
-    std::lock_guard lock(m_mutex);
+    std::unique_lock lock(m_mutex);
 
     auto it = m_entries.find(configKey);
     if (it == m_entries.end()) return;
 
-    assert(it->second.refCount > 0 && "release() called without matching acquire()");
+    assert(it->second.refCount > 0);
     --it->second.refCount;
+
     if (it->second.refCount == 0)
     {
-        // Clean up CAN signal map entry if applicable
-        if (auto* canVar = dynamic_cast<CanSignalVariable*>(it->second.variable.get()))
-        {
-            const std::string lookupKey =
-                std::to_string(canVar->messageId()) + ":" + canVar->signalName();
-            m_canSignalMap.erase(lookupKey);
-        }
         m_entries.erase(it);
-    }
-}
-
-void VariableRegistry::updateAll() const
-{
-    std::lock_guard lock(m_mutex);
-
-    for (const auto& [key, entry] : m_entries)
-    {
-        entry.variable->update();
+        rebuildCanSignalMap();  // Refresh fast map after removal
     }
 }
 
 auto VariableRegistry::dbcConfig() const -> const Core::DbcConfig*
 {
-    std::lock_guard lock(m_mutex);
+    std::shared_lock lock(m_mutex);
     return m_dbcConfig.has_value() ? &m_dbcConfig.value() : nullptr;
+}
+
+void VariableRegistry::reset()
+{
+    std::unique_lock lock(m_mutex);
+    for (const auto& entry : m_entries | std::views::values)
+    {
+        entry.variable->reset();
+    }
+}
+
+void VariableRegistry::updateAll() const
+{
+    std::shared_lock lock(m_mutex);  // Parallel friendly
+    for (const auto& entry : m_entries | std::views::values)
+    {
+        entry.variable->update();
+    }
 }
 
 void VariableRegistry::onDbcParsed(const Core::DBCParsedEvent& event)
 {
-    std::lock_guard lock(m_mutex);
+    std::unique_lock lock(m_mutex);  // Writer lock for structural change
     m_dbcConfig = event.config;
     rebuildCanSignalMap();
 }
 
 void VariableRegistry::onCanDbcReceived(const Core::ReceivedCanDbcEvent& event)
 {
-    std::lock_guard lock(m_mutex);
-
+    std::shared_lock lock(m_mutex);
     const auto& msg = event.canMessage;
-    for (const auto& signal : msg.signalValues)
+
+    const auto it = m_canSignalMap.find(msg.messageId);
+    if (it == m_canSignalMap.end()) return;
+
+    for (auto* var : it->second)
     {
-        const std::string key = std::to_string(msg.messageId) + ":" + signal.name;
-        const auto it = m_canSignalMap.find(key);
-        if (it != m_canSignalMap.end())
+        for (const auto& [name, value] : msg.signalValues)
         {
-            it->second->setValue(signal.value);
+            if (name == var->signalName())
+            {
+                var->setValue(value);  // This call is atomic
+                break;
+            }
         }
     }
 }
 
 void VariableRegistry::rebuildCanSignalMap()
 {
-    // Called with m_mutex already held
     m_canSignalMap.clear();
-    for (const auto& [configKey, entry] : m_entries)
+
+    for (const auto& [variable, refCount] : m_entries | std::views::values)
     {
-        if (auto* canVar = dynamic_cast<CanSignalVariable*>(entry.variable.get()))
+        if (auto* canVar = dynamic_cast<CanSignalVariable*>(variable.get()))
         {
-            const std::string lookupKey =
-                std::to_string(canVar->messageId()) + ":" + canVar->signalName();
-            m_canSignalMap[lookupKey] = canVar;
+            m_canSignalMap[canVar->messageId()].push_back(canVar);
         }
     }
 }

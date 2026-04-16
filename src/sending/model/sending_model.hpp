@@ -171,6 +171,17 @@ class SendingModel final : public QAbstractItemModel
     void forEachPendingMessage(const std::function<void(Core::RawCanMessage&)>& rawHandler,
                                const std::function<void(Core::DbcCanMessage&)>& dbcHandler) const;
 
+    /**
+     * @brief Builds the send cache for the current selection.
+     */
+    void buildSendCache();
+
+    /**
+     * @brief Iterates the pre-built message cache, updating signal values and invoking handlers.
+     */
+    void forEachCachedMessage(const std::function<void(Core::RawCanMessage&)>& rawHandler,
+                              const std::function<void(Core::DbcCanMessage&)>& dbcHandler);
+
    private:
     /**
      * @brief Creates a unique key for a signal (messageId:signalName).
@@ -180,6 +191,9 @@ class SendingModel final : public QAbstractItemModel
 
     // Navigation & Mode
     Mode m_currentMode = Mode::Raw;
+
+    /** @brief Pre-built messages reused each cycle */
+    std::vector<Core::DbcCanMessage> m_messageCache;
 
     // Cyclic Transmission State
     struct CyclicState {

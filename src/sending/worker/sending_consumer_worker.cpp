@@ -104,6 +104,7 @@ void SendingConsumerWorker::run()
 
             while (Clock::now() < item.scheduledAt && !m_shouldStop.load())
             {
+                std::this_thread::yield();
             }
         }
 

@@ -99,7 +99,7 @@ auto MathInputModel::makeVariableToken(const std::string& symbolStr) -> std::uni
     {
         if (binding.symbol == sym && binding.variable)
         {
-            return std::make_unique<VariableToken>(symbolStr, binding.variable->sharedPtr());
+            return std::make_unique<VariableToken>(symbolStr, binding.variable->ptr());
         }
     }
     return nullptr;

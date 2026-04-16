@@ -21,152 +21,157 @@
 #include <atomic>
 
 #include "sending/constants.hpp"
-#include "sending/worker/repeated_sending_worker.hpp"
+#include "sending/worker/repeated_producer_worker.hpp"
 
 using namespace Sending;
 
 /**
- * @brief Unit tests for RepeatedSendingWorker.
+ * @brief Unit tests for RepeatedProducerWorker.
  */
-class RepeatedSendingWorkerTest : public ::testing::Test
+class RepeatedProducerWorkerTest : public ::testing::Test
 {
    protected:
     void SetUp() override
     {
-        worker = std::make_unique<RepeatedSendingWorker>();
+        queue = {};
+        worker = std::make_unique<RepeatedProducerWorker>(*queue);
     }
 
     void TearDown() override
     {
-        if (worker && worker->isSending())
+        if (worker && worker->isRunning())
         {
-            worker->stopSending();
+            worker->stopCreating();
         }
         worker.reset();
     }
 
-    std::unique_ptr<RepeatedSendingWorker> worker;
+    std::unique_ptr<RepeatedProducerWorker> worker;
+    std::unique_ptr<ScheduledItemQueue> queue;
 };
 
-TEST_F(RepeatedSendingWorkerTest, ConstructsSuccessfully)
+TEST_F(RepeatedProducerWorkerTest, ConstructsSuccessfully)
 {
     EXPECT_NE(worker, nullptr);
 }
 
-TEST_F(RepeatedSendingWorkerTest, InitiallyNotSending)
+TEST_F(RepeatedProducerWorkerTest, InitiallyNotSending)
 {
-    EXPECT_FALSE(worker->isSending());
+    EXPECT_FALSE(worker->isRunning());
 }
 
-TEST_F(RepeatedSendingWorkerTest, IsSendingReturnsFalseInitially)
+TEST_F(RepeatedProducerWorkerTest, isRunningReturnsFalseInitially)
 {
-    EXPECT_FALSE(worker->isSending());
+    EXPECT_FALSE(worker->isRunning());
 }
 
-TEST_F(RepeatedSendingWorkerTest, RejectsNullCallback)
+TEST_F(RepeatedProducerWorkerTest, RejectsNullCallback)
 {
-    QSignalSpy errorSpy(worker.get(), &RepeatedSendingWorker::errorOccurred);
+    QSignalSpy errorSpy(worker.get(), &RepeatedProducerWorker::errorOccurred);
 
-    worker->startSending(nullptr, 100);
+    worker->startCreating(nullptr, 100);
 
     ASSERT_EQ(errorSpy.count(), 1);
     const auto args = errorSpy.takeFirst();
     EXPECT_EQ(args.at(0).toString(), Constants::ERR_INVALID_CALLBACK);
-    EXPECT_FALSE(worker->isSending());
+    EXPECT_FALSE(worker->isRunning());
 }
 
-TEST_F(RepeatedSendingWorkerTest, RejectsZeroInterval)
+TEST_F(RepeatedProducerWorkerTest, RejectsZeroInterval)
 {
-    QSignalSpy errorSpy(worker.get(), &RepeatedSendingWorker::errorOccurred);
+    QSignalSpy errorSpy(worker.get(), &RepeatedProducerWorker::errorOccurred);
 
-    auto callback = []() {};
-    worker->startSending(callback, 0);
+    auto callback = [](Clock::time_point) -> std::vector<ScheduledItem> { return {}; };
+    worker->startCreating(callback, 0);
 
     ASSERT_EQ(errorSpy.count(), 1);
     EXPECT_EQ(errorSpy.takeFirst().at(0).toString(), Constants::ERR_INVALID_INTERVAL);
-    EXPECT_FALSE(worker->isSending());
+    EXPECT_FALSE(worker->isRunning());
 }
 
-TEST_F(RepeatedSendingWorkerTest, RejectsNegativeInterval)
+TEST_F(RepeatedProducerWorkerTest, RejectsNegativeInterval)
 {
-    QSignalSpy errorSpy(worker.get(), &RepeatedSendingWorker::errorOccurred);
+    QSignalSpy errorSpy(worker.get(), &RepeatedProducerWorker::errorOccurred);
 
-    auto callback = []() {};
-    worker->startSending(callback, -100);
+    auto callback = [](Clock::time_point) -> std::vector<ScheduledItem> { return {}; };
+    worker->startCreating(callback, -100);
 
     ASSERT_EQ(errorSpy.count(), 1);
     EXPECT_EQ(errorSpy.takeFirst().at(0).toString(), Constants::ERR_INVALID_INTERVAL);
-    EXPECT_FALSE(worker->isSending());
+    EXPECT_FALSE(worker->isRunning());
 }
 
-TEST_F(RepeatedSendingWorkerTest, StopWhenNotRunningIsNoOp)
+TEST_F(RepeatedProducerWorkerTest, StopWhenNotRunningIsNoOp)
 {
-    EXPECT_FALSE(worker->isSending());
-    EXPECT_NO_THROW(worker->stopSending());
-    EXPECT_FALSE(worker->isSending());
+    EXPECT_FALSE(worker->isRunning());
+    EXPECT_NO_THROW(worker->stopCreating());
+    EXPECT_FALSE(worker->isRunning());
 }
 
-TEST_F(RepeatedSendingWorkerTest, UpdateIntervalIgnoresZero)
+TEST_F(RepeatedProducerWorkerTest, UpdateIntervalIgnoresZero)
 {
     EXPECT_NO_THROW(worker->updateInterval(0));
 }
 
-TEST_F(RepeatedSendingWorkerTest, UpdateIntervalIgnoresNegative)
+TEST_F(RepeatedProducerWorkerTest, UpdateIntervalIgnoresNegative)
 {
     EXPECT_NO_THROW(worker->updateInterval(-50));
 }
 
-TEST_F(RepeatedSendingWorkerTest, UpdateIntervalAcceptsPositive)
+TEST_F(RepeatedProducerWorkerTest, UpdateIntervalAcceptsPositive)
 {
     EXPECT_NO_THROW(worker->updateInterval(100));
     EXPECT_NO_THROW(worker->updateInterval(500));
 }
 
-TEST_F(RepeatedSendingWorkerTest, DestructorWhenNotStartedIsSafe)
+TEST_F(RepeatedProducerWorkerTest, DestructorWhenNotStartedIsSafe)
 {
     EXPECT_NO_THROW(worker.reset());
 }
 
-TEST_F(RepeatedSendingWorkerTest, DestructorIsSafe)
+TEST_F(RepeatedProducerWorkerTest, DestructorIsSafe)
 {
     EXPECT_NO_THROW(worker.reset());
 }
 
-TEST_F(RepeatedSendingWorkerTest, ConstructsWithParent)
+TEST_F(RepeatedProducerWorkerTest, ConstructsWithParent)
 {
     QObject parent;
-    const auto workerWithParent = std::make_unique<RepeatedSendingWorker>(&parent);
+    const auto workerWithParent = std::make_unique<RepeatedProducerWorker>(*queue, &parent);
 
     EXPECT_NE(workerWithParent, nullptr);
     EXPECT_EQ(workerWithParent->parent(), &parent);
 
-    if (workerWithParent->isSending())
+    if (workerWithParent->isRunning())
     {
-        workerWithParent->stopSending();
+        workerWithParent->stopCreating();
     }
 }
 
-TEST_F(RepeatedSendingWorkerTest, AcceptsLambdaCallback)
+TEST_F(RepeatedProducerWorkerTest, AcceptsLambdaCallback)
 {
-    const QSignalSpy errorSpy(worker.get(), &RepeatedSendingWorker::errorOccurred);
+    const QSignalSpy errorSpy(worker.get(), &RepeatedProducerWorker::errorOccurred);
 
     int value = 0;
-    auto callback = [&value]() { value++; };
-    worker->startSending(callback, 100);
+    auto callback = [&value](Clock::time_point) -> std::vector<ScheduledItem> {
+        value++;
+        return {};
+    };
+    worker->startCreating(callback, 100);
 
     EXPECT_EQ(errorSpy.count(), 0);
 }
 
-TEST_F(RepeatedSendingWorkerTest, ApiCallsDoNotCrash)
+TEST_F(RepeatedProducerWorkerTest, ApiCallsDoNotCrash)
 {
-    auto callback = []() {};
+    auto callback = [](Clock::time_point) -> std::vector<ScheduledItem> { return {}; };
 
-    EXPECT_NO_THROW(worker->startSending(callback, 100));
+    EXPECT_NO_THROW(worker->startCreating(callback, 100));
     EXPECT_NO_THROW(worker->updateInterval(200));
-    EXPECT_NO_THROW(worker->stopSending());
+    EXPECT_NO_THROW(worker->stopCreating());
 
     bool sending = false;
-    EXPECT_NO_THROW(sending = worker->isSending());
+    EXPECT_NO_THROW(sending = worker->isRunning());
     (void)sending;
 }
 
@@ -177,7 +182,7 @@ struct InvalidIntervalScenario {
     int interval;
 };
 
-class InvalidIntervalTest : public RepeatedSendingWorkerTest,
+class InvalidIntervalTest : public RepeatedProducerWorkerTest,
                             public ::testing::WithParamInterface<InvalidIntervalScenario>
 {
 };
@@ -186,14 +191,14 @@ TEST_P(InvalidIntervalTest, RejectsInvalidInterval)
 {
     const auto& [name, interval] = GetParam();
 
-    QSignalSpy errorSpy(worker.get(), &RepeatedSendingWorker::errorOccurred);
+    QSignalSpy errorSpy(worker.get(), &RepeatedProducerWorker::errorOccurred);
 
-    auto callback = []() {};
-    worker->startSending(callback, interval);
+    auto callback = [](Clock::time_point) -> std::vector<ScheduledItem> { return {}; };
+    worker->startCreating(callback, interval);
 
     ASSERT_EQ(errorSpy.count(), 1);
     EXPECT_EQ(errorSpy.takeFirst().at(0).toString(), Constants::ERR_INVALID_INTERVAL);
-    EXPECT_FALSE(worker->isSending());
+    EXPECT_FALSE(worker->isRunning());
 }
 
 INSTANTIATE_TEST_SUITE_P(InvalidIntervalScenarios, InvalidIntervalTest,
@@ -212,7 +217,7 @@ struct ValidIntervalScenario {
     int interval;
 };
 
-class ValidIntervalTest : public RepeatedSendingWorkerTest,
+class ValidIntervalTest : public RepeatedProducerWorkerTest,
                           public ::testing::WithParamInterface<ValidIntervalScenario>
 {
 };
@@ -221,10 +226,10 @@ TEST_P(ValidIntervalTest, AcceptsValidInterval)
 {
     const auto& [name, interval] = GetParam();
 
-    const QSignalSpy errorSpy(worker.get(), &RepeatedSendingWorker::errorOccurred);
+    const QSignalSpy errorSpy(worker.get(), &RepeatedProducerWorker::errorOccurred);
 
-    auto callback = []() {};
-    worker->startSending(callback, interval);
+    auto callback = [](Clock::time_point) -> std::vector<ScheduledItem> { return {}; };
+    worker->startCreating(callback, interval);
 
     EXPECT_EQ(errorSpy.count(), 0);
 }
@@ -242,48 +247,54 @@ INSTANTIATE_TEST_SUITE_P(ValidIntervalScenarios, ValidIntervalTest,
 
 // ─── Threading / timing tests ────────────────────────────────────────────────
 
-TEST_F(RepeatedSendingWorkerTest, ExecutesCallback)
+TEST_F(RepeatedProducerWorkerTest, ExecutesCallback)
 {
     std::atomic<int> callCount{0};
-    auto callback = [&callCount]() { ++callCount; };
+    auto callback = [&callCount](Clock::time_point) -> std::vector<ScheduledItem> {
+        ++callCount;
+        return {};
+    };
 
-    worker->startSending(callback, 50);
+    worker->startCreating(callback, 50);
     QTest::qWait(200);
-    worker->stopSending();
+    worker->stopCreating();
 
     // 200ms / 50ms interval → at least 3 executions
     EXPECT_GE(callCount.load(), 3);
 }
 
-TEST_F(RepeatedSendingWorkerTest, StartsAndStopsSuccessfully)
+TEST_F(RepeatedProducerWorkerTest, StartsAndStopsSuccessfully)
 {
     std::atomic<int> callCount{0};
-    auto callback = [&callCount]() { ++callCount; };
+    auto callback = [&callCount](Clock::time_point) -> std::vector<ScheduledItem> {
+        ++callCount;
+        return {};
+    };
+    EXPECT_FALSE(worker->isRunning());
 
-    EXPECT_FALSE(worker->isSending());
-
-    worker->startSending(callback, 50);
+    worker->startCreating(callback, 50);
     QTest::qWait(100);
     EXPECT_GT(callCount.load(), 0);
 
-    worker->stopSending();
-    EXPECT_FALSE(worker->isSending());
+    worker->stopCreating();
+    EXPECT_FALSE(worker->isRunning());
 }
 
-TEST_F(RepeatedSendingWorkerTest, HandlesExceptionInCallback)
+TEST_F(RepeatedProducerWorkerTest, HandlesExceptionInCallback)
 {
     std::atomic<int> callCount{0};
-    auto callback = [&callCount]() {
+    auto callback = [&callCount](Clock::time_point) -> std::vector<ScheduledItem> {
         ++callCount;
         if (callCount == 2)
         {
             throw std::runtime_error("Test exception");
         }
+        return {};
     };
 
-    QSignalSpy errorSpy(worker.get(), &RepeatedSendingWorker::errorOccurred);
+    QSignalSpy errorSpy(worker.get(), &RepeatedProducerWorker::errorOccurred);
 
-    worker->startSending(callback, 30);
+    worker->startCreating(callback, 30);
     ASSERT_TRUE(errorSpy.wait(500));
 
     EXPECT_TRUE(errorSpy.takeFirst().at(0).toString().contains("Test exception"));
@@ -291,12 +302,14 @@ TEST_F(RepeatedSendingWorkerTest, HandlesExceptionInCallback)
     EXPECT_GT(callCount.load(), 2);
 }
 
-TEST_F(RepeatedSendingWorkerTest, UpdatesIntervalWhileRunning)
+TEST_F(RepeatedProducerWorkerTest, UpdatesIntervalWhileRunning)
 {
     std::atomic<int> callCount{0};
-    auto callback = [&callCount]() { ++callCount; };
-
-    worker->startSending(callback, 100);
+    auto callback = [&callCount](Clock::time_point) -> std::vector<ScheduledItem> {
+        ++callCount;
+        return {};
+    };
+    worker->startCreating(callback, 100);
     QTest::qWait(300);
 
     const int countSlow = callCount.load();
@@ -311,14 +324,14 @@ TEST_F(RepeatedSendingWorkerTest, UpdatesIntervalWhileRunning)
     EXPECT_GE(callCount.load(), 4);
 }
 
-TEST_F(RepeatedSendingWorkerTest, ErrorOnAlreadyRunning)
+TEST_F(RepeatedProducerWorkerTest, ErrorOnAlreadyRunning)
 {
-    auto callback = []() {};
-    const QSignalSpy errorSpy(worker.get(), &RepeatedSendingWorker::errorOccurred);
+    auto callback = [](Clock::time_point) -> std::vector<ScheduledItem> { return {}; };
+    const QSignalSpy errorSpy(worker.get(), &RepeatedProducerWorker::errorOccurred);
 
-    worker->startSending(callback, 100);
+    worker->startCreating(callback, 100);
     QTest::qWait(50);
-    worker->startSending(callback, 200);
+    worker->startCreating(callback, 200);
 
     EXPECT_GE(errorSpy.count(), 1);
 
@@ -334,19 +347,21 @@ TEST_F(RepeatedSendingWorkerTest, ErrorOnAlreadyRunning)
     EXPECT_TRUE(foundError);
 }
 
-TEST_F(RepeatedSendingWorkerTest, SafeCallbackStateChanges)
+TEST_F(RepeatedProducerWorkerTest, SafeCallbackStateChanges)
 {
     std::atomic<bool> shouldExecute{true};
     std::atomic<int> executionCount{0};
 
-    auto callback = [&shouldExecute, &executionCount]() {
+    auto callback = [&shouldExecute,
+                     &executionCount](Clock::time_point) -> std::vector<ScheduledItem> {
         if (shouldExecute.load())
         {
             ++executionCount;
         }
+        return {};
     };
 
-    worker->startSending(callback, 30);
+    worker->startCreating(callback, 30);
 
     QTest::qWait(100);
     EXPECT_GT(executionCount.load(), 0);
@@ -361,20 +376,21 @@ TEST_F(RepeatedSendingWorkerTest, SafeCallbackStateChanges)
     EXPECT_GT(executionCount.load(), 0);
 }
 
-TEST_F(RepeatedSendingWorkerTest, HandlesUnknownException)
+TEST_F(RepeatedProducerWorkerTest, HandlesUnknownException)
 {
     std::atomic<int> callCount{0};
-    auto callback = [&callCount]() {
+    auto callback = [&callCount](Clock::time_point) -> std::vector<ScheduledItem> {
         ++callCount;
         if (callCount == 2)
         {
             throw 42;
         }
+        return {};
     };
 
-    QSignalSpy errorSpy(worker.get(), &RepeatedSendingWorker::errorOccurred);
+    QSignalSpy errorSpy(worker.get(), &RepeatedProducerWorker::errorOccurred);
 
-    worker->startSending(callback, 30);
+    worker->startCreating(callback, 30);
     ASSERT_TRUE(errorSpy.wait(500));
 
     bool foundUnknownError = false;

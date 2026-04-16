@@ -112,16 +112,15 @@ void SendingComponent::publishRawMessageAsync(const Core::RawCanMessage& message
     {
         m_activeFaultHandler->inject(mutableMsg.messageId, mutableMsg.dlc, mutableMsg.data);
     }
-    const auto result = m_activeFaultHandler
-                            ? m_activeFaultHandler->evaluate()
-                            : Core::IFaultHandler::FrameResult{.drop = false, .delayOffset = {}};
-    if (result.drop) return;
+    const auto [drop, delayOffset] =
+        m_activeFaultHandler ? m_activeFaultHandler->evaluate()
+                             : Core::IFaultHandler::FrameResult{.drop = false, .delayOffset = {}};
+    if (drop) return;
     auto context = std::make_shared<RawSendContext>(
         RawSendContext{.broker = &m_eventBroker, .message = mutableMsg});
-    m_queue->push(ScheduledItem{.scheduledAt = Clock::now() + result.delayOffset,
+    m_queue->push(ScheduledItem{.scheduledAt = Clock::now() + delayOffset,
                                 .onSend = &rawSendImpl,
-                                .context = std::move(context),
-                                .priority = Constants::CYCLIC_SEND_PRIORITY});
+                                .context = std::move(context)});
 }
 
 void SendingComponent::publishDbcMessageAsync(const Core::DbcCanMessage& message) const
@@ -152,8 +151,7 @@ void SendingComponent::publishDbcMessageAsync(const Core::DbcCanMessage& message
         RawSendContext{.broker = &m_eventBroker, .message = encoded});
     m_queue->push(ScheduledItem{.scheduledAt = Clock::now() + delayOffset,
                                 .onSend = &rawSendImpl,
-                                .context = std::move(context),
-                                .priority = Constants::CYCLIC_SEND_PRIORITY});
+                                .context = std::move(context)});
 }
 
 void SendingComponent::setupConnections()
@@ -212,9 +210,11 @@ void SendingComponent::startRepeatedSending(const int intervalUs) const
 
     LOG_INF(Constants::MODULE_IDENTIFIER, "Starting repeated sending, interval={}µs", intervalUs);
 
+    m_model->buildSendCache();
+
     auto callback = [this](const Clock::time_point deadline) -> std::vector<ScheduledItem> {
         std::vector<ScheduledItem> items;
-        m_model->forEachPendingMessage(
+        m_model->forEachCachedMessage(
             [&](Core::RawCanMessage& msg) {
                 if (m_activeFaultHandler)
                 {
@@ -225,16 +225,14 @@ void SendingComponent::startRepeatedSending(const int intervalUs) const
                         RawSendContext{.broker = &m_eventBroker, .message = msg});
                     items.push_back(ScheduledItem{.scheduledAt = deadline + delayOffset,
                                                   .onSend = &rawSendImpl,
-                                                  .context = std::move(context),
-                                                  .priority = Constants::CYCLIC_SEND_PRIORITY});
+                                                  .context = std::move(context)});
                 } else
                 {
                     auto context = std::make_shared<RawSendContext>(
                         RawSendContext{.broker = &m_eventBroker, .message = msg});
                     items.push_back(ScheduledItem{.scheduledAt = deadline,
                                                   .onSend = &rawSendImpl,
-                                                  .context = std::move(context),
-                                                  .priority = Constants::CYCLIC_SEND_PRIORITY});
+                                                  .context = std::move(context)});
                 }
             },
             [&](Core::DbcCanMessage& msg) {
@@ -250,16 +248,14 @@ void SendingComponent::startRepeatedSending(const int intervalUs) const
                         RawSendContext{.broker = &m_eventBroker, .message = encoded});
                     items.push_back(ScheduledItem{.scheduledAt = deadline + delayOffset,
                                                   .onSend = &rawSendImpl,
-                                                  .context = std::move(context),
-                                                  .priority = Constants::CYCLIC_SEND_PRIORITY});
+                                                  .context = std::move(context)});
                 } else
                 {
                     auto context = std::make_shared<RawSendContext>(
                         RawSendContext{.broker = &m_eventBroker, .message = encoded});
                     items.push_back(ScheduledItem{.scheduledAt = deadline,
                                                   .onSend = &rawSendImpl,
-                                                  .context = std::move(context),
-                                                  .priority = Constants::CYCLIC_SEND_PRIORITY});
+                                                  .context = std::move(context)});
                 }
             });
         return items;
