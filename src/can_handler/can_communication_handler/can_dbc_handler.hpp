@@ -14,6 +14,8 @@
  */
 
 #pragma once
+#include <shared_mutex>
+
 #include "core/event/can_event.hpp"
 #include "core/event/dbc_event.hpp"
 #include "i_can_parser.hpp"
@@ -102,6 +104,6 @@ class CanDbcHandler final : public ICanParser
     /**
      * @brief Mutex guarding the dbc configuration
      */
-    std::mutex dbcMutex;
+    std::shared_mutex dbcMutex;
 };
 }  // namespace CanHandler

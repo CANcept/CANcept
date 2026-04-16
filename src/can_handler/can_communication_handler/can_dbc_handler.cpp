@@ -21,7 +21,7 @@ namespace CanHandler {
 void CanDbcHandler::parseReceivedMessage(const sockcanpp::CanMessage* canMessage)
 {
     // Lock the mutex for data safety
-    std::scoped_lock guard(dbcMutex);
+    std::shared_lock guard(dbcMutex);
     // Get the right message description
     if (canMessage->getRawFrame().can_id >= dbcMessages.size())
     {
@@ -123,31 +123,23 @@ void CanDbcHandler::handleEncodeMessage(const Core::EncodeCanMessageDbcEvent& ev
     LOG_INF("CanDbcHandler", "handleSendMessage called for message ID 0x{:X}",
             event.canMessage.messageId);
 
-    // Copy message description to minimize lock time
-    Core::DbcMessageDescription messageDescCopy;
+    std::shared_lock lock(dbcMutex);
+
+    // Get right message description
+    if (event.canMessage.messageId >= dbcMessages.size())
     {
-        // Lock the mutex for data safety
-        std::scoped_lock guard(dbcMutex);
-
-        // Get right message description
-        if (event.canMessage.messageId >= dbcMessages.size())
-        {
-            LOG_ERR("CanDbcHandler", "Message ID 0x{:X} >= array size {}",
-                    event.canMessage.messageId, dbcMessages.size());
-            return;
-        }
-        const Core::DbcMessageDescription* currentMessageDescription =
-            dbcMessages[event.canMessage.messageId];
-        if (currentMessageDescription == nullptr)
-        {
-            LOG_ERR("CanDbcHandler", "No message description found for ID 0x{:X}",
-                    event.canMessage.messageId);
-            return;
-        }
-
-        // Make a copy to work with outside the lock
-        messageDescCopy = *currentMessageDescription;
-    }  // Lock release
+        LOG_ERR("CanDbcHandler", "Message ID 0x{:X} >= array size {}", event.canMessage.messageId,
+                dbcMessages.size());
+        return;
+    }
+    const Core::DbcMessageDescription* currentMessageDescription =
+        dbcMessages[event.canMessage.messageId];
+    if (currentMessageDescription == nullptr)
+    {
+        LOG_ERR("CanDbcHandler", "No message description found for ID 0x{:X}",
+                event.canMessage.messageId);
+        return;
+    }
 
     Core::DbcCanMessage messageToEncode = event.canMessage;
 
@@ -159,7 +151,7 @@ void CanDbcHandler::handleEncodeMessage(const Core::EncodeCanMessageDbcEvent& ev
     for (const auto& [name, value] : messageToEncode.signalValues)
     {
         for (const Core::DbcSignalDescription& signalDescription :
-             messageDescCopy.signalDescriptions)
+             currentMessageDescription->signalDescriptions)
         {
             if (signalDescription.signalName == name)
             {
@@ -233,7 +225,7 @@ void CanDbcHandler::handleNewDbc(const Core::DBCParsedEvent& event)
     LOG_INF("CanDbcHandler", "Received new DBC config with {} messages",
             event.config.messageDefinitions.size());
 
-    std::scoped_lock guard(dbcMutex);
+    std::unique_lock guard(dbcMutex);
 
     // Clear array and free memory
     for (auto& dbcMessage : dbcMessages)

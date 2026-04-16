@@ -93,6 +93,7 @@ void SendingComponent::onDbcConfigReceived(const Core::DbcConfig& config)
     {
         m_view->dbcSubView()->populateFromModel(m_model.get(), *m_variableRegistry);
     }
+    m_model->buildSendCache();
 
     LOG_INF(Constants::MODULE_IDENTIFIER, "Created {} message cards",
             config.messageDefinitions.size());

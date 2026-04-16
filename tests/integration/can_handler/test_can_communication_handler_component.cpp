@@ -155,7 +155,9 @@ TEST_F(CanCommunicationHandlerIntegrationTest, SendDbcAndReceiveMessages)
                                               .build())
                                  .build(),
                              ""));
-    eventBroker->publish(Core::SendCanMessageDbcEvent(message));
+    Core::RawCanMessage encoded;
+    eventBroker->publish(Core::EncodeCanMessageDbcEvent(message, encoded));
+    eventBroker->publish(Core::SendCanMessageRawEvent(encoded));
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     ASSERT_EQ(receiveMessageCounterRaw, 1);
     ASSERT_EQ(receiveMessageCounterDbc, 1);

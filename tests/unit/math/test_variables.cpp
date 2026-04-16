@@ -33,7 +33,7 @@ TEST(CanSignalVariableTest, SharedPtrKeepsValueAlive)
     const auto shared = [&] {
         Math::CanSignalVariable var(0x100, "RPM", "Motor");
         var.setValue(42.0);
-        return var.sharedPtr();
+        return var.ptr();
     }();
     EXPECT_DOUBLE_EQ(*shared, 42.0);
 }

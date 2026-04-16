@@ -204,8 +204,8 @@ TEST_F(SendingSystemTest, FillDbcForm_ClickSend_ReceivedDbcEventHasCorrectMessag
     loadDbc(TestHelpers::makeTempDbcFile());
 
     bool dbcSent = false;
-    auto sentConn = broker->subscribe<Core::SendCanMessageDbcEvent>(
-        [&](const Core::SendCanMessageDbcEvent&) { dbcSent = true; });
+    auto sentConn = broker->subscribe<Core::EncodeCanMessageDbcEvent>(
+        [&](const Core::EncodeCanMessageDbcEvent&) { dbcSent = true; });
 
     Core::DbcCanMessage receivedMsg{};
     auto dbcConn = broker->subscribe<Core::ReceivedCanDbcEvent>(

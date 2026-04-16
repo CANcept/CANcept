@@ -63,6 +63,7 @@ void SendingConsumerWorker::stopConsuming()
     }
 
     m_isActive.store(false);
+    emit consumingStopped();
 }
 
 void SendingConsumerWorker::run()
@@ -129,8 +130,6 @@ void SendingConsumerWorker::run()
             emit errorOccurred(Constants::ERR_UNKNOWN_CALLBACK_ERROR);
         }
     }
-
-    emit consumingStopped();
 }
 
 }  // namespace Sending
