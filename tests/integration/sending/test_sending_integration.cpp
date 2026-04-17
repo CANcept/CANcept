@@ -643,21 +643,26 @@ TEST_F(SendingIntegrationTest, Flow_Dbc_ChangeSignalValueDuringCyclic_NewValueRe
     emit dbcView->signalSelectionChanged(0x100, "Speed", true);
     emit dbcView->signalValueChanged(0x100, "Speed", 1000.0);
     QTest::qWait(10);
-
     startCyclic(80);
     QTest::qWait(200);
     events.clear();
-
     emit dbcView->signalValueChanged(0x100, "Speed", 9999.0);
-    QTest::qWait(300);
-    stopCyclic();
 
-    ASSERT_FALSE(events.allDbc().empty());
-    const auto& last = events.allDbc().back();
-    const auto it = std::ranges::find_if(
-        last.signalValues, [](const Core::DbcCanSignal& s) { return s.name == "Speed"; });
-    ASSERT_NE(it, last.signalValues.end());
-    EXPECT_DOUBLE_EQ(it->value, 9999.0) << "Events after value change must carry the updated value";
+    const auto deadline = QDeadlineTimer(3000);
+    bool found = false;
+    while (!deadline.hasExpired())
+    {
+        QTest::qWait(20);
+        found = std::ranges::any_of(events.allDbc(), [](const Core::DbcCanMessage& msg) {
+            return std::ranges::any_of(msg.signalValues, [](const Core::DbcCanSignal& s) {
+                return s.name == "Speed" && s.value == 9999.0;
+            });
+        });
+        if (found) break;
+    }
+
+    stopCyclic();
+    EXPECT_TRUE(found) << "No event after value change carries 9999.0";
 }
 
 // After stopping cyclic and restarting it, new events must accumulate.

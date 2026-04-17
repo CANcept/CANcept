@@ -85,7 +85,9 @@ class DbcHandlerTest : public ::testing::Test
     void waitForEvent()
     {
         std::unique_lock<std::mutex> lock(eventMutex);
-        eventCV.wait_until(lock, std::chrono::steady_clock::now() + std::chrono::seconds(10));
+        eventCV.wait_until(
+            lock, std::chrono::steady_clock::now() + std::chrono::seconds(10),
+            [this]() -> bool { return validDbcCounter > 0 || invalidDbcCounter > 0; });
     }
 
     std::unique_ptr<TestHelpers::MockEventBroker> eventBroker;
