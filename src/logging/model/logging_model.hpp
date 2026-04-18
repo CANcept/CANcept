@@ -88,6 +88,14 @@ class LoggingModel final : public QAbstractTableModel
     const LogSession* getSession(const QString& sessionId) const;
 
     /**
+     * @brief Returns a const reference to the list of all sessions.
+     */
+    const std::vector<LogSession>& getAllSessions() const
+    {
+        return m_sessions;
+    }
+
+    /**
      * @brief Helper to get the session ID from a View index.
      */
     QString sessionIdAt(const QModelIndex& index) const;

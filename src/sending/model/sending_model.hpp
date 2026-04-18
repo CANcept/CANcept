@@ -16,6 +16,8 @@
 #pragma once
 
 #include <QAbstractItemModel>
+#include <QList>
+#include <QString>
 #include <functional>
 #include <mutex>
 #include <optional>
@@ -25,6 +27,7 @@
 
 #include "core/dto/can_dto.hpp"
 #include "core/dto/dbc_dto.hpp"
+#include "core/dto/replay_dto.hpp"
 
 namespace Sending {
 
@@ -147,6 +150,36 @@ class SendingModel final : public QAbstractItemModel
      */
     void setRawData(const std::vector<uint8_t>& data);
 
+    /**
+     * @brief Replaces the cached replay session list.
+     */
+    void setReplaySessions(const QList<Core::ReplaySessionInfo>& sessions);
+
+    /**
+     * @brief Replaces cached replay frames and marks the loaded session id.
+     */
+    void setReplayFrames(const QString& sessionId, const QList<Core::ReplayFrame>& frames);
+
+    /**
+     * @brief Clears cached replay frame data.
+     */
+    void clearReplayFrames();
+
+    [[nodiscard]] auto replaySessions() const -> const QList<Core::ReplaySessionInfo>&
+    {
+        return m_replaySessions;
+    }
+
+    [[nodiscard]] auto replayFrames() const -> const QList<Core::ReplayFrame>&
+    {
+        return m_replayFrames;
+    }
+
+    [[nodiscard]] auto loadedReplaySessionId() const -> const QString&
+    {
+        return m_loadedReplaySessionId;
+    }
+
    signals:
     /** * @brief Emitted when the Model determines a Raw message should be sent.
      * Triggered by manual user action or the internal cyclic timer.
@@ -226,6 +259,15 @@ class SendingModel final : public QAbstractItemModel
 
     /** @brief Current DBC config (owned by this model) */
     std::optional<Core::DbcConfig> m_currentDbc;
+
+    /** @brief Cached replay sessions (provided by Logging). */
+    QList<Core::ReplaySessionInfo> m_replaySessions;
+
+    /** @brief Cached replay frames for the currently loaded session. */
+    QList<Core::ReplayFrame> m_replayFrames;
+
+    /** @brief ID of currently loaded replay session. */
+    QString m_loadedReplaySessionId;
 };
 
 }  // namespace Sending

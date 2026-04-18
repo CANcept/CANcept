@@ -21,6 +21,7 @@
 #include "core/macro/console_logging.hpp"
 #include "math/service/variable_registry.hpp"
 #include "sending_functions.hpp"
+#include "view/replay_sending_subview.hpp"
 
 namespace Sending {
 
@@ -33,6 +34,7 @@ SendingComponent::SendingComponent(Core::IEventBroker& broker, Math::VariableReg
       m_delegate(new SendingDelegate(this)),
       m_queue(std::make_unique<ScheduledItemQueue>()),
       m_repeatedWorker(std::make_unique<RepeatedProducerWorker>(*m_queue, this)),
+      m_replayWorker(std::make_unique<ReplayProducerWorker>(*m_queue, m_eventBroker, this)),
       m_consumerWorker(std::make_unique<SendingConsumerWorker>(*m_queue, this))
 {
     m_view->setModel(m_model.get());
@@ -42,6 +44,7 @@ SendingComponent::SendingComponent(Core::IEventBroker& broker, Math::VariableReg
 
 SendingComponent::~SendingComponent()
 {
+    stopReplay();
     stopRepeatedSending();
     m_parseErrorConn.release();
     m_parseSuccessConn.release();
@@ -74,7 +77,14 @@ void SendingComponent::onStop()
 {
     LOG_INF(Constants::MODULE_IDENTIFIER, "Stopping Sending Component...");
 
+    stopReplay();
     stopRepeatedSending();
+
+    m_parseErrorConn.release();
+    m_parseSuccessConn.release();
+    m_canDriverChangeConn.release();
+    m_sendLogSessionsConn.release();
+    m_sendLogSessionsFramesConn.release();
 
     LOG_INF(Constants::MODULE_IDENTIFIER, "Sending Component stopped");
 }
@@ -104,6 +114,78 @@ void SendingComponent::onDbcParseError() const
 {
     m_model->clearEvaluators();
     m_view->dbcSubView()->clearMessages();
+}
+
+void SendingComponent::onLogSessionsReceived(const Core::SendLogSessions& event)
+{
+    if (!event.errorMessage.isEmpty())
+    {
+        LOG_ERR(Constants::MODULE_IDENTIFIER, "Replay sessions request failed: {}",
+                event.errorMessage.toStdString());
+        m_model->setReplaySessions({});
+        m_view->setLogSessions(m_model->replaySessions());
+        m_view->setReplayLoadState(ReplaySendingSubView::LoadState::Error);
+        m_view->setReplayLoadWarningText(event.errorMessage);
+        m_view->setReplayPlaybackState(ReplaySendingSubView::PlaybackState::Disabled);
+        m_view->setReplayProgress(0, 0);
+        return;
+    }
+
+    m_model->setReplaySessions(event.sessions);
+    m_view->setLogSessions(m_model->replaySessions());
+    m_view->clearReplayLoadWarningText();
+
+    if (m_model->replaySessions().isEmpty())
+    {
+        m_view->setReplayLoadState(ReplaySendingSubView::LoadState::NoSessions);
+    }
+    else
+    {
+        m_view->setReplayLoadState(ReplaySendingSubView::LoadState::SessionReady);
+    }
+
+    m_view->setReplayPlaybackState(ReplaySendingSubView::PlaybackState::Disabled);
+    m_view->setReplayProgress(0, 0);
+
+    LOG_INF(Constants::MODULE_IDENTIFIER, "Received {} replay session entries",
+            m_model->replaySessions().size());
+}
+
+void SendingComponent::onLogSessionFramesReceived(
+    const Core::SendLogSessionFrames& event)
+{
+    if (!event.errorMessage.isEmpty())
+    {
+        LOG_ERR(Constants::MODULE_IDENTIFIER, "Replay frames request failed for '{}': {}",
+                event.sessionId.toStdString(), event.errorMessage.toStdString());
+        m_model->clearReplayFrames();
+        m_view->setReplayLoadState(ReplaySendingSubView::LoadState::Error);
+        m_view->setReplayLoadWarningText(event.errorMessage);
+        m_view->setReplayPlaybackState(ReplaySendingSubView::PlaybackState::Disabled);
+        m_view->setReplayProgress(0, 0);
+        return;
+    }
+
+    m_model->setReplayFrames(event.sessionId, event.frames);
+    m_view->setReplayLoadState(ReplaySendingSubView::LoadState::Loaded);
+    m_view->setReplayPlaybackState(ReplaySendingSubView::PlaybackState::Ready);
+    m_view->setReplayProgress(0, m_model->replayFrames().size());
+
+    if (event.skippedFrameCount > 0)
+    {
+        LOG_WRN(Constants::MODULE_IDENTIFIER,
+                "Replay frames parsed with {} skipped lines for session '{}'",
+                event.skippedFrameCount, event.sessionId.toStdString());
+        m_view->setReplayLoadWarningText(
+            Constants::REPLAY_WARNING_SKIPPED_LINES_TEMPLATE.arg(event.skippedFrameCount));
+    }
+    else
+    {
+        m_view->clearReplayLoadWarningText();
+    }
+
+    LOG_INF(Constants::MODULE_IDENTIFIER, "Loaded {} replay frames for session '{}'",
+            m_model->replayFrames().size(), event.sessionId.toStdString());
 }
 
 void SendingComponent::publishRawMessageAsync(const Core::RawCanMessage& message) const
@@ -194,6 +276,49 @@ void SendingComponent::setupConnections()
                     .runtime = runtime, .wasError = true, .errorMessage = error.toStdString()}));
         },
         Qt::QueuedConnection);
+
+    connect(m_view->replaySubView(), &ReplaySendingSubView::loadFramesRequested, this,
+            [this](const QString& sessionId) {
+                stopReplay();
+                m_view->setReplayLoadState(ReplaySendingSubView::LoadState::Loading);
+                m_view->setReplayPlaybackState(ReplaySendingSubView::PlaybackState::Disabled);
+                m_view->setReplayProgress(0, 0);
+                m_view->clearReplayLoadWarningText();
+
+                m_eventBroker.publish(Core::LogSessionFramesRequest(sessionId));
+            });
+
+    connect(m_view->replaySubView(), &ReplaySendingSubView::startReplayRequested, this,
+            [this](const double speedFactor) { startReplay(speedFactor); });
+
+    connect(m_view->replaySubView(), &ReplaySendingSubView::pauseReplayRequested, this,
+            [this]() { pauseReplay(); });
+
+    connect(m_view->replaySubView(), &ReplaySendingSubView::resumeReplayRequested, this,
+            [this]() { resumeReplay(); });
+
+    connect(m_view->replaySubView(), &ReplaySendingSubView::stopReplayRequested, this,
+            [this]() { stopReplay(); });
+
+    connect(m_replayWorker.get(), &ReplayProducerWorker::progressUpdated, this,
+            [this](const int currentFrame, const int totalFrames) {
+                m_view->setReplayProgress(currentFrame, totalFrames);
+            },
+            Qt::QueuedConnection);
+
+    connect(m_replayWorker.get(), &ReplayProducerWorker::replayFinished, this,
+            [this]() {
+                m_view->setReplayPlaybackState(ReplaySendingSubView::PlaybackState::Ready);
+            },
+            Qt::QueuedConnection);
+
+    connect(m_replayWorker.get(), &ReplayProducerWorker::errorOccurred, this,
+            [this](const QString& error) {
+                m_view->setReplayLoadState(ReplaySendingSubView::LoadState::Error);
+                m_view->setReplayLoadWarningText(error);
+                m_view->setReplayPlaybackState(ReplaySendingSubView::PlaybackState::Ready);
+            },
+            Qt::QueuedConnection);
 }
 
 void SendingComponent::startRepeatedSending(const int intervalUs) const
@@ -289,6 +414,59 @@ void SendingComponent::sendOnce() const
     m_model->transmitCurrent();
 }
 
+void SendingComponent::startReplay(const double speedFactor)
+{
+    if (!m_replayWorker || m_model->replayFrames().isEmpty())
+    {
+        m_view->setReplayLoadWarningText(Constants::REPLAY_WARNING_NO_FRAMES_LOADED);
+        return;
+    }
+
+    stopRepeatedSending();
+
+    m_view->clearReplayLoadWarningText();
+    m_view->setReplayPlaybackState(ReplaySendingSubView::PlaybackState::Running);
+
+    m_replayWorker->startReplay(m_model->replayFrames(), speedFactor);
+
+    LOG_INF(Constants::MODULE_IDENTIFIER, "Replay started at speed factor {}", speedFactor);
+}
+
+void SendingComponent::pauseReplay()
+{
+    if (!m_replayWorker || !m_replayWorker->isRunningReplay())
+    {
+        return;
+    }
+
+    m_replayWorker->pauseReplay();
+    m_view->setReplayPlaybackState(ReplaySendingSubView::PlaybackState::Paused);
+}
+
+void SendingComponent::resumeReplay()
+{
+    if (!m_replayWorker || !m_replayWorker->isPausedReplay())
+    {
+        return;
+    }
+
+    m_replayWorker->resumeReplay();
+    m_view->setReplayPlaybackState(ReplaySendingSubView::PlaybackState::Running);
+}
+
+void SendingComponent::stopReplay()
+{
+    if (m_replayWorker)
+    {
+        m_replayWorker->stopReplay();
+    }
+
+    const bool hasFrames = !m_model->replayFrames().isEmpty();
+    m_view->setReplayPlaybackState(hasFrames ? ReplaySendingSubView::PlaybackState::Ready
+                                             : ReplaySendingSubView::PlaybackState::Disabled);
+    m_view->setReplayProgress(0, static_cast<int>(m_model->replayFrames().size()));
+}
+
 void SendingComponent::setupBrokerSubscriptions()
 {
     m_parseSuccessConn =
@@ -313,6 +491,25 @@ void SendingComponent::setupBrokerSubscriptions()
             QMetaObject::invokeMethod(
                 this, [this]() -> void { checkDeviceReadiness(); }, Qt::QueuedConnection);
         });
+
+    m_sendLogSessionsConn =
+        m_eventBroker.subscribe<Core::SendLogSessions>(
+            [this](const Core::SendLogSessions& event) -> void {
+                const Core::SendLogSessions eventCopy = event;
+                QMetaObject::invokeMethod(
+                    this, [this, eventCopy]() -> void { onLogSessionsReceived(eventCopy); },
+                    Qt::QueuedConnection);
+            });
+
+    m_sendLogSessionsFramesConn =
+        m_eventBroker.subscribe<Core::SendLogSessionFrames>(
+            [this](const Core::SendLogSessionFrames& event) -> void {
+                const Core::SendLogSessionFrames eventCopy = event;
+                QMetaObject::invokeMethod(
+                    this,
+                    [this, eventCopy]() -> void { onLogSessionFramesReceived(eventCopy); },
+                    Qt::QueuedConnection);
+            });
 }
 
 void SendingComponent::checkDeviceReadiness() const

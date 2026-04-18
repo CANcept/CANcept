@@ -17,17 +17,21 @@
 
 #include <QPointer>
 #include <QWidget>
+#include <QList>
+#include <QString>
 #include <chrono>
 #include <memory>
 #include <mutex>
 
 #include "core/dto/can_dto.hpp"
 #include "core/dto/dbc_dto.hpp"
+#include "core/event/replay_event.hpp"
 #include "core/interface/i_event_broker.hpp"
 #include "core/interface/i_tab_component.hpp"
 #include "delegate/sending_delegate.hpp"
 #include "model/sending_model.hpp"
 #include "view/sending_view.hpp"
+#include "worker/replay_producer_worker.hpp"
 #include "worker/repeated_producer_worker.hpp"
 #include "worker/scheduled_item_queue.hpp"
 #include "worker/sending_consumer_worker.hpp"
@@ -100,6 +104,16 @@ class SendingComponent final : public Core::ITabComponent
      */
     void onDbcParseError() const;
 
+    /**
+     * @brief Handles replay session list response from Logging module.
+     */
+    void onLogSessionsReceived(const Core::SendLogSessions& event);
+
+    /**
+     * @brief Handles replay frame list response from Logging module.
+     */
+    void onLogSessionFramesReceived(const Core::SendLogSessionFrames& event);
+
    private:
     /**
      * @brief Initializes all signal/slot connections between components.
@@ -143,6 +157,18 @@ class SendingComponent final : public Core::ITabComponent
      */
     void sendOnce() const;
 
+    /** @brief Starts replay using loaded frames and selected speed factor. */
+    void startReplay(double speedFactor);
+
+    /** @brief Pauses an active replay run. */
+    void pauseReplay();
+
+    /** @brief Resumes a paused replay run. */
+    void resumeReplay();
+
+    /** @brief Stops replay and resets replay controls to ready/disabled. */
+    void stopReplay();
+
     /** @brief Global variable registry for expression variables. */
     Math::VariableRegistry* m_variableRegistry = nullptr;
 
@@ -166,6 +192,12 @@ class SendingComponent final : public Core::ITabComponent
     /** @brief RAII Handle for CAN driver change event subscription. */
     Core::Connection m_canDriverChangeConn;
 
+    /** @brief RAII Handle for subscription to send log sessions. */
+    Core::Connection m_sendLogSessionsConn;
+
+    /** @brief RAII Handle for subscription to send log session frames. */
+    Core::Connection m_sendLogSessionsFramesConn;
+
     /** @brief Mutex protecting event broker access from multiple threads. */
     mutable std::mutex m_brokerMutex;
 
@@ -176,6 +208,9 @@ class SendingComponent final : public Core::ITabComponent
 
     /** @brief Producer thread for repeated sending. */
     std::unique_ptr<RepeatedProducerWorker> m_repeatedWorker;
+
+    /** @brief Producer thread for one-shot replay scheduling. */
+    std::unique_ptr<ReplayProducerWorker> m_replayWorker;
 
     /** @brief Consumer thread for actual sending. */
     std::unique_ptr<SendingConsumerWorker> m_consumerWorker;
@@ -193,3 +228,4 @@ class SendingComponent final : public Core::ITabComponent
 };
 
 }  // namespace Sending
+
