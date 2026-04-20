@@ -18,8 +18,9 @@
 #include <QFile>
 #include <QTextStream>
 #include <QTime>
-
 #include <limits>
+
+#include "logging/constants.hpp"
 
 namespace Logging {
 
@@ -74,7 +75,7 @@ auto ReplayLogParser::parseRawReplayFrames(const QString& logFilePath,
     QFile file(logFilePath);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
     {
-        errorMessage = "Failed to open log file";
+        errorMessage = Constants::FILE_OPEN_ERROR_MESSAGE;
         return false;
     }
 

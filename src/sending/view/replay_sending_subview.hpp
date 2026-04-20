@@ -29,76 +29,145 @@ class ReplayProgressBar;
 
 /**
  * @class ReplaySendingSubView
- * @brief Skeleton view for replay workflow in the Sending tab.
+ * @brief Replay-specific subview for the Sending tab.
  *
- * This first version intentionally implements only section 1 (session selection + metadata).
+ * The widget is responsible for selecting completed log sessions from the
+ * Logging module, loading their frames, and controlling replay playback.
+ * It also shows loading state messages, warnings, and replay progress.
  */
 class ReplaySendingSubView final : public QWidget
 {
     Q_OBJECT
 
    public:
+    /**
+     * @enum LoadState
+     * @brief Describes the current frame-loading state of the replay workflow.
+     */
     enum class LoadState {
+        /** A session is selected and frames can be loaded. */
         SessionReady,
+        /** A frame load request is currently in progress. */
         Loading,
+        /** Frames have been loaded successfully. */
         Loaded,
+        /** No completed log sessions are available. */
         NoSessions,
+        /** Loading failed and an error message should be displayed. */
         Error
     };
 
+    /**
+     * @enum PlaybackState
+     * @brief Describes the current playback state of the replay controls.
+     */
     enum class PlaybackState {
+        /** Replay controls are inactive because no frames are loaded. */
         Disabled,
+        /** Frames are loaded and replay can be started. */
         Ready,
+        /** Replay is currently running. */
         Running,
+        /** Replay is currently paused. */
         Paused
     };
 
+    /**
+     * @brief Creates the replay subview.
+     * @param parent Optional parent widget.
+     */
     explicit ReplaySendingSubView(QWidget* parent = nullptr);
     ~ReplaySendingSubView() override = default;
 
     /**
-     * @brief Replaces available replay sessions and updates the first-section UI.
+     * @brief Replaces the available replay sessions shown in the combo box.
+     * @param sessions Completed sessions received from the Logging module.
      */
     void setSessions(const QList<Core::ReplaySessionInfo>& sessions);
 
-    /** @brief Applies a predefined load-state text for section 2. */
+    /**
+     * @brief Updates the loading state label in the replay status card.
+     * @param state New loading state to display.
+     */
     void setLoadState(LoadState state);
 
-    /** @brief Updates warning/error text in section 2. */
+    /**
+     * @brief Sets or shows a warning message in the loading status card.
+     * @param text Warning text to display. An empty string hides the warning label.
+     */
     void setWarningText(const QString& text);
 
-    /** @brief Clears warning/error text in section 2. */
+    /**
+     * @brief Clears the warning text in the loading status card.
+     */
     void clearWarningText();
 
-    /** @brief Applies enabled/disabled logic for replay controls. */
+    /**
+     * @brief Updates the enabled state and visibility of the replay controls.
+     * @param state Current playback state.
+     */
     void setPlaybackState(PlaybackState state);
 
-    /** @brief Updates replay progress bar and footer text. */
+    /**
+     * @brief Updates the progress bar and textual frame counter.
+     * @param currentFrame Number of frames that have already been processed.
+     * @param totalFrames Total number of frames in the loaded replay session.
+     */
     void setProgress(int currentFrame, int totalFrames);
 
    signals:
-    /** @brief Emitted when user requests loading frames for the selected session. */
+    /**
+     * @brief Emitted when the user requests to load the selected session frames.
+     * @param sessionId Identifier of the selected replay session.
+     */
     void loadFramesRequested(const QString& sessionId);
 
-    /** @brief Emitted when user requests replay start with selected speed factor. */
+    /**
+     * @brief Emitted when the user requests replay playback.
+     * @param speed Selected replay speed factor.
+     */
     void startReplayRequested(double speed);
 
-    /** @brief Emitted when user requests replay pause. */
+    /**
+     * @brief Emitted when the user requests to pause replay.
+     */
     void pauseReplayRequested();
 
-    /** @brief Emitted when user requests replay resume. */
+    /**
+     * @brief Emitted when the user requests to resume replay.
+     */
     void resumeReplayRequested();
 
-    /** @brief Emitted when user requests replay stop. */
+    /**
+     * @brief Emitted when the user requests to stop replay.
+     */
     void stopReplayRequested();
 
    protected:
+    /**
+     * @brief Handles style refresh events.
+     * @param event Incoming Qt event.
+     * @return True if the event was handled, otherwise false.
+     */
     auto event(QEvent* event) -> bool override;
 
    private:
+    /**
+     * @brief Builds the subview layout and wires up local UI connections.
+     */
     void setupUi();
+    /**
+     * @brief Applies the current theme to the subview widgets.
+     */
     void applyStyle() const;
+    /**
+     * @brief Updates the session details label based on the current combo selection.
+     */
     void updateSessionDetailsLabel();
+    /**
+     * @brief Returns the currently selected replay speed factor.
+     * @return Selected speed factor as a multiplier.
+     */
     [[nodiscard]] auto selectedSpeedFactor() const -> double;
 
     QScrollArea* m_scrollArea;
