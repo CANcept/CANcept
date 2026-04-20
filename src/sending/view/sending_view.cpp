@@ -52,7 +52,8 @@ void SendingView::setupUi()
     m_sidebar = new Core::Sidebar(this);
     m_sidebar->addTab(QIcon(Constants::RAW_SENDING_ICON_PATH), Constants::RAW_MODE_BUTTON_TEXT);
     m_sidebar->addTab(QIcon(Constants::DBC_SENDING_ICON_PATH), Constants::DBC_MODE_BUTTON_TEXT);
-    m_sidebar->addTab(QIcon(Constants::REPLAY_SENDING_ICON_PATH), Constants::REPLAY_MODE_BUTTON_TEXT);
+    m_sidebar->addTab(QIcon(Constants::REPLAY_SENDING_ICON_PATH),
+                      Constants::REPLAY_MODE_BUTTON_TEXT);
     mainLayout->addWidget(m_sidebar);
 
     m_contentStack = new QStackedWidget(this);
@@ -62,8 +63,8 @@ void SendingView::setupUi()
     m_dbcView = new DbcSendingSubView(m_contentStack);
     m_replayView = new ReplaySendingSubView(m_contentStack);
 
-    m_contentStack->addWidget(m_rawView);  // Index 0
-    m_contentStack->addWidget(m_dbcView);  // Index 1
+    m_contentStack->addWidget(m_rawView);     // Index 0
+    m_contentStack->addWidget(m_dbcView);     // Index 1
     m_contentStack->addWidget(m_replayView);  // Index 2
 
     mainLayout->addWidget(m_contentStack, 1);

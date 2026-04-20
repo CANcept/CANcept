@@ -140,4 +140,3 @@ class ReplayProducerWorker final : public QThread
 };
 
 }  // namespace Sending
-

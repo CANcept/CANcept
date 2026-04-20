@@ -295,14 +295,16 @@ inline const QString REPLAY_SESSIONS_SUBTITLE =
 /** @brief Placeholder text for the sessions combo box when no sessions are available */
 inline const QString SESSIONS_COMBO_PLACEHOLDER_EMPTY = "No log sessions available";
 
-/** @brief Placeholder text for the sessions combo box when sessions are available but none is selected */
+/** @brief Placeholder text for the sessions combo box when sessions are available but none is
+ * selected */
 inline const QString SESSIONS_COMBO_PLACEHOLDER = "Select a log session...";
 
 /** @brief Text displayed in the session details label when no session is selected */
 inline const QString NO_SESSION_DETAILS_TEXT = "No session selected.";
 
 /** @brief Replay loading-state text: session selected and ready to load. */
-inline const QString REPLAY_STATUS_SESSION_READY = "Status: Session selected. Load frames to continue.";
+inline const QString REPLAY_STATUS_SESSION_READY =
+    "Status: Session selected. Load frames to continue.";
 
 /** @brief Replay loading-state text: frame loading is in progress. */
 inline const QString REPLAY_STATUS_LOADING = "Status: Loading frames...";
@@ -317,7 +319,8 @@ inline const QString REPLAY_STATUS_NO_SESSIONS = "Status: No replay session avai
 inline const QString REPLAY_STATUS_ERROR = "Status: Frame loading failed.";
 
 /** @brief Warning shown when replay start is requested without loaded frames. */
-inline const QString REPLAY_WARNING_NO_FRAMES_LOADED = "Warning: No loaded frames available for replay.";
+inline const QString REPLAY_WARNING_NO_FRAMES_LOADED =
+    "Warning: No loaded frames available for replay.";
 
 /** @brief Warning template for parser-skipped replay log lines. */
 inline const QString REPLAY_WARNING_SKIPPED_LINES_TEMPLATE =
@@ -327,9 +330,9 @@ inline const QString REPLAY_WARNING_SKIPPED_LINES_TEMPLATE =
 inline const QString REPLAY_PROGRESS_TEXT_TEMPLATE = "Frame: %1 / %2";
 
 inline const QString REPLAY_LOADING_TITLE = "Frame Loading Status";
-inline const QString REPLAY_LOADING_SUBTITLE ="";
+inline const QString REPLAY_LOADING_SUBTITLE = "";
 inline const QString REPLAY_PLAYBACK_TITLE = "Playback Controls";
-inline const QString REPLAY_PLAYBACK_SUBTITLE ="";
+inline const QString REPLAY_PLAYBACK_SUBTITLE = "";
 inline const QString REPLAY_PROGRESS_TITLE = "Replay Progress";
 inline const QString REPLAY_PROGRESS_SUBTITLE = "";
 inline const QString LOAD_FRAMES_BUTTON_TEXT = "Load Logged Frames";
@@ -344,7 +347,6 @@ inline const QString REPLAY_SPEED_OPTION_025X = "0.25x";
 inline const QString REPLAY_SPEED_OPTION_05X = "0.5x";
 inline const QString REPLAY_SPEED_OPTION_1X = "1x";
 inline const QString REPLAY_SPEED_OPTION_2X = "2x";
-
 
 }  // namespace Constants
 

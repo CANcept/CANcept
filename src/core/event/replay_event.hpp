@@ -15,8 +15,8 @@
 
 #pragma once
 
-#include <QString>
 #include <QList>
+#include <QString>
 
 #include "core/dto/replay_dto.hpp"
 #include "event.hpp"
@@ -53,8 +53,7 @@ struct SendLogSessions final : public Event {
     QList<ReplaySessionInfo> sessions;
     QString errorMessage;  // Empty if success, text if failed
 
-    explicit SendLogSessions(
-        const QList<ReplaySessionInfo>& s = QList<ReplaySessionInfo>())
+    explicit SendLogSessions(const QList<ReplaySessionInfo>& s = QList<ReplaySessionInfo>())
         : sessions(s)
     {
     }
@@ -68,13 +67,10 @@ struct SendLogSessions final : public Event {
 struct SendLogSessionFrames final : public Event {
     QString sessionId;
     QList<ReplayFrame> frames;
-    QString errorMessage;  // Empty if success, text if failed
+    QString errorMessage;          // Empty if success, text if failed
     size_t skippedFrameCount = 0;  // Number of invalid frames skipped during parsing
 
-    explicit SendLogSessionFrames(const QString& id = QString())
-        : sessionId(id)
-    {
-    }
+    explicit SendLogSessionFrames(const QString& id = QString()) : sessionId(id) {}
 };
 
 }  // namespace Core

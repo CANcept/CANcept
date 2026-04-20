@@ -75,4 +75,3 @@ auto ReplayProgressBar::event(QEvent* event) -> bool
 }
 
 }  // namespace Sending
-

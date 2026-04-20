@@ -15,12 +15,11 @@
 
 #pragma once
 
-#include <cstdint>
-#include <map>
-
 #include <QString>
 #include <QStringList>
 #include <chrono>
+#include <cstdint>
+#include <map>
 
 #include "core/dto/can_dto.hpp"
 #include "core/dto/replay_dto.hpp"
@@ -78,10 +77,8 @@ class ReplayLogParser final
         const QString& logFilePath,
         const std::map<uint32_t, QStringList>& selectedSignalsPerMessage,
         const std::map<uint16_t, std::pair<int, int>>& signalsBeforeAfterMessage,
-        QList<Core::DbcCanMessage>& messages,
-        size_t& skippedFrameCount,
+        QList<Core::DbcCanMessage>& messages, size_t& skippedFrameCount,
         QString& errorMessage) -> bool;
 };
 
 }  // namespace Logging
-

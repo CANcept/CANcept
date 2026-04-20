@@ -39,4 +39,3 @@ class ReplayProgressBar final : public QProgressBar
 };
 
 }  // namespace Sending
-

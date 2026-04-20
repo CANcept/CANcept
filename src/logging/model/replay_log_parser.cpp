@@ -69,8 +69,7 @@ auto ReplayLogParser::countLogEntries(const QString& logFilePath) -> size_t
 
 auto ReplayLogParser::parseRawReplayFrames(const QString& logFilePath,
                                            QList<Core::ReplayFrame>& frames,
-                                           size_t& skippedFrameCount,
-                                           QString& errorMessage) -> bool
+                                           size_t& skippedFrameCount, QString& errorMessage) -> bool
 {
     QFile file(logFilePath);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
@@ -164,12 +163,9 @@ auto ReplayLogParser::parseRawReplayFrames(const QString& logFilePath,
 }
 
 auto ReplayLogParser::parseDbcReplayMessages(
-    const QString& logFilePath,
-    const std::map<uint32_t, QStringList>& selectedSignalsPerMessage,
+    const QString& logFilePath, const std::map<uint32_t, QStringList>& selectedSignalsPerMessage,
     const std::map<uint16_t, std::pair<int, int>>& signalsBeforeAfterMessage,
-    QList<Core::DbcCanMessage>& messages,
-    size_t& skippedFrameCount,
-    QString& errorMessage) -> bool
+    QList<Core::DbcCanMessage>& messages, size_t& skippedFrameCount, QString& errorMessage) -> bool
 {
     QFile file(logFilePath);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
@@ -295,4 +291,3 @@ auto ReplayLogParser::parseDbcReplayMessages(
 }
 
 }  // namespace Logging
-

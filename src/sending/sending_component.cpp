@@ -138,8 +138,7 @@ void SendingComponent::onLogSessionsReceived(const Core::SendLogSessions& event)
     if (m_model->replaySessions().isEmpty())
     {
         m_view->setReplayLoadState(ReplaySendingSubView::LoadState::NoSessions);
-    }
-    else
+    } else
     {
         m_view->setReplayLoadState(ReplaySendingSubView::LoadState::SessionReady);
     }
@@ -151,8 +150,7 @@ void SendingComponent::onLogSessionsReceived(const Core::SendLogSessions& event)
             m_model->replaySessions().size());
 }
 
-void SendingComponent::onLogSessionFramesReceived(
-    const Core::SendLogSessionFrames& event)
+void SendingComponent::onLogSessionFramesReceived(const Core::SendLogSessionFrames& event)
 {
     if (!event.errorMessage.isEmpty())
     {
@@ -178,8 +176,7 @@ void SendingComponent::onLogSessionFramesReceived(
                 event.skippedFrameCount, event.sessionId.toStdString());
         m_view->setReplayLoadWarningText(
             Constants::REPLAY_WARNING_SKIPPED_LINES_TEMPLATE.arg(event.skippedFrameCount));
-    }
-    else
+    } else
     {
         m_view->clearReplayLoadWarningText();
     }
@@ -300,25 +297,26 @@ void SendingComponent::setupConnections()
     connect(m_view->replaySubView(), &ReplaySendingSubView::stopReplayRequested, this,
             [this]() { stopReplay(); });
 
-    connect(m_replayWorker.get(), &ReplayProducerWorker::progressUpdated, this,
-            [this](const int currentFrame, const int totalFrames) {
-                m_view->setReplayProgress(currentFrame, totalFrames);
-            },
-            Qt::QueuedConnection);
+    connect(
+        m_replayWorker.get(), &ReplayProducerWorker::progressUpdated, this,
+        [this](const int currentFrame, const int totalFrames) {
+            m_view->setReplayProgress(currentFrame, totalFrames);
+        },
+        Qt::QueuedConnection);
 
-    connect(m_replayWorker.get(), &ReplayProducerWorker::replayFinished, this,
-            [this]() {
-                m_view->setReplayPlaybackState(ReplaySendingSubView::PlaybackState::Ready);
-            },
-            Qt::QueuedConnection);
+    connect(
+        m_replayWorker.get(), &ReplayProducerWorker::replayFinished, this,
+        [this]() { m_view->setReplayPlaybackState(ReplaySendingSubView::PlaybackState::Ready); },
+        Qt::QueuedConnection);
 
-    connect(m_replayWorker.get(), &ReplayProducerWorker::errorOccurred, this,
-            [this](const QString& error) {
-                m_view->setReplayLoadState(ReplaySendingSubView::LoadState::Error);
-                m_view->setReplayLoadWarningText(error);
-                m_view->setReplayPlaybackState(ReplaySendingSubView::PlaybackState::Ready);
-            },
-            Qt::QueuedConnection);
+    connect(
+        m_replayWorker.get(), &ReplayProducerWorker::errorOccurred, this,
+        [this](const QString& error) {
+            m_view->setReplayLoadState(ReplaySendingSubView::LoadState::Error);
+            m_view->setReplayLoadWarningText(error);
+            m_view->setReplayPlaybackState(ReplaySendingSubView::PlaybackState::Ready);
+        },
+        Qt::QueuedConnection);
 }
 
 void SendingComponent::startRepeatedSending(const int intervalUs) const
@@ -492,24 +490,21 @@ void SendingComponent::setupBrokerSubscriptions()
                 this, [this]() -> void { checkDeviceReadiness(); }, Qt::QueuedConnection);
         });
 
-    m_sendLogSessionsConn =
-        m_eventBroker.subscribe<Core::SendLogSessions>(
-            [this](const Core::SendLogSessions& event) -> void {
-                const Core::SendLogSessions eventCopy = event;
-                QMetaObject::invokeMethod(
-                    this, [this, eventCopy]() -> void { onLogSessionsReceived(eventCopy); },
-                    Qt::QueuedConnection);
-            });
+    m_sendLogSessionsConn = m_eventBroker.subscribe<Core::SendLogSessions>(
+        [this](const Core::SendLogSessions& event) -> void {
+            const Core::SendLogSessions eventCopy = event;
+            QMetaObject::invokeMethod(
+                this, [this, eventCopy]() -> void { onLogSessionsReceived(eventCopy); },
+                Qt::QueuedConnection);
+        });
 
-    m_sendLogSessionsFramesConn =
-        m_eventBroker.subscribe<Core::SendLogSessionFrames>(
-            [this](const Core::SendLogSessionFrames& event) -> void {
-                const Core::SendLogSessionFrames eventCopy = event;
-                QMetaObject::invokeMethod(
-                    this,
-                    [this, eventCopy]() -> void { onLogSessionFramesReceived(eventCopy); },
-                    Qt::QueuedConnection);
-            });
+    m_sendLogSessionsFramesConn = m_eventBroker.subscribe<Core::SendLogSessionFrames>(
+        [this](const Core::SendLogSessionFrames& event) -> void {
+            const Core::SendLogSessionFrames eventCopy = event;
+            QMetaObject::invokeMethod(
+                this, [this, eventCopy]() -> void { onLogSessionFramesReceived(eventCopy); },
+                Qt::QueuedConnection);
+        });
 }
 
 void SendingComponent::checkDeviceReadiness() const

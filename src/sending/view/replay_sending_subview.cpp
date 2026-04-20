@@ -15,9 +15,9 @@
 
 #include "replay_sending_subview.hpp"
 
-#include <algorithm>
 #include <QHBoxLayout>
 #include <QVBoxLayout>
+#include <algorithm>
 
 #include "core/macro/theme.hpp"
 #include "core/theme/style_event.hpp"
@@ -99,8 +99,7 @@ void ReplaySendingSubView::setupUi()
 
     // Section 1: Replay session selection card
     m_sessionCard = new Core::CardWidget(Constants::REPLAY_SESSIONS_TITLE,
-                                         Constants::REPLAY_SESSIONS_SUBTITLE,
-                                         QString(), this);
+                                         Constants::REPLAY_SESSIONS_SUBTITLE, QString(), this);
 
     auto* sessionCardLayout = m_sessionCard->contentLayout();
 
@@ -121,13 +120,11 @@ void ReplaySendingSubView::setupUi()
     contentLayout->addWidget(m_sessionCard);
 
     // Section 2: Frame loading state
-    m_loadStateCard = new Core::CardWidget(Constants::REPLAY_LOADING_TITLE, Constants::REPLAY_LOADING_SUBTITLE
-                                           ,
-                                           QString(), this);
+    m_loadStateCard = new Core::CardWidget(Constants::REPLAY_LOADING_TITLE,
+                                           Constants::REPLAY_LOADING_SUBTITLE, QString(), this);
     auto* loadStateLayout = m_loadStateCard->contentLayout();
 
-    m_loadStatusLabel =
-        new QLabel(stateToText(LoadState::NoSessions), m_loadStateCard);
+    m_loadStatusLabel = new QLabel(stateToText(LoadState::NoSessions), m_loadStateCard);
     m_loadStatusLabel->setWordWrap(true);
 
     m_warningLabel = new QLabel(QString(), m_loadStateCard);
@@ -188,8 +185,7 @@ void ReplaySendingSubView::setupUi()
 
     // Section 4: Progress & status
     m_progressCard = new Core::CardWidget(Constants::REPLAY_PROGRESS_TITLE,
-                                          Constants::REPLAY_PROGRESS_SUBTITLE, QString(),
-                                          this);
+                                          Constants::REPLAY_PROGRESS_SUBTITLE, QString(), this);
     auto* progressLayout = m_progressCard->contentLayout();
 
     m_progressBar = new ReplayProgressBar(m_progressCard);
@@ -208,16 +204,15 @@ void ReplaySendingSubView::setupUi()
 
     contentLayout->addStretch();
 
-    connect(m_sessionCombo, &QComboBox::currentIndexChanged, this,
-            [this](int /*index*/) {
-                const int current = m_sessionCombo->currentIndex();
-                const bool hasSelection = current >= 0 && current < m_sessions.size();
-                if (m_loadFramesButton)
-                {
-                    m_loadFramesButton->setEnabled(hasSelection);
-                }
-                updateSessionDetailsLabel();
-            });
+    connect(m_sessionCombo, &QComboBox::currentIndexChanged, this, [this](int /*index*/) {
+        const int current = m_sessionCombo->currentIndex();
+        const bool hasSelection = current >= 0 && current < m_sessions.size();
+        if (m_loadFramesButton)
+        {
+            m_loadFramesButton->setEnabled(hasSelection);
+        }
+        updateSessionDetailsLabel();
+    });
 
     connect(m_loadFramesButton, &QPushButton::clicked, this, [this]() {
         const int index = m_sessionCombo->currentIndex();
@@ -268,8 +263,7 @@ void ReplaySendingSubView::setSessions(const QList<Core::ReplaySessionInfo>& ses
         m_sessionCombo->setPlaceholderText(Constants::SESSIONS_COMBO_PLACEHOLDER);
         setLoadState(LoadState::SessionReady);
         m_sessionDetailsLabel->setText(Constants::NO_SESSION_DETAILS_TEXT);
-    }
-    else
+    } else
     {
         m_sessionCombo->setPlaceholderText(Constants::SESSIONS_COMBO_PLACEHOLDER_EMPTY);
         setLoadState(LoadState::NoSessions);
@@ -325,11 +319,10 @@ void ReplaySendingSubView::updateSessionDetailsLabel()
     }
 
     const auto& session = m_sessions.at(index);
-    m_sessionDetailsLabel->setText(
-        QString("Type: %1 | Duration: %2 ms | Frames: %3")
-            .arg(sessionTypeToText(session.type))
-            .arg(session.duration.count())
-            .arg(session.frameCount));
+    m_sessionDetailsLabel->setText(QString("Type: %1 | Duration: %2 ms | Frames: %3")
+                                       .arg(sessionTypeToText(session.type))
+                                       .arg(session.duration.count())
+                                       .arg(session.frameCount));
 }
 
 void ReplaySendingSubView::applyStyle() const
@@ -378,19 +371,14 @@ void ReplaySendingSubView::setPlaybackState(const PlaybackState state)
     const bool resumeEnabled = (state == PlaybackState::Paused);
     const bool stopEnabled = (state == PlaybackState::Running || state == PlaybackState::Paused);
 
-    if (m_startButton)
-        m_startButton->setEnabled(startEnabled);
-    if (m_pauseButton)
-        m_pauseButton->setEnabled(pauseEnabled);
-    if (m_resumeButton)
-        m_resumeButton->setEnabled(resumeEnabled);
-    if (m_stopButton)
-        m_stopButton->setEnabled(stopEnabled);
+    if (m_startButton) m_startButton->setEnabled(startEnabled);
+    if (m_pauseButton) m_pauseButton->setEnabled(pauseEnabled);
+    if (m_resumeButton) m_resumeButton->setEnabled(resumeEnabled);
+    if (m_stopButton) m_stopButton->setEnabled(stopEnabled);
 
     // Disable speed combo while replay is running
     const bool isRunning = (state == PlaybackState::Running || state == PlaybackState::Paused);
-    if (m_speedCombo)
-        m_speedCombo->setEnabled(!isRunning);
+    if (m_speedCombo) m_speedCombo->setEnabled(!isRunning);
 }
 
 void ReplaySendingSubView::setProgress(const int currentFrame, const int totalFrames)

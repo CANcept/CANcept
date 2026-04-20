@@ -122,7 +122,7 @@ void ReplayProducerWorker::run()
         const uint64_t runToken = m_replayRunToken.load();
         const int totalFrames = localFrames.size();
         const auto sentCounter = std::make_shared<std::atomic<int>>(0);
-        constexpr auto LOOKAHEAD_MS = std::chrono::milliseconds(200mges);
+        constexpr auto LOOKAHEAD_MS = std::chrono::milliseconds(200);
 
         emit replayStarted();
 
@@ -146,7 +146,8 @@ void ReplayProducerWorker::run()
             if (m_isPaused.load())
             {
                 std::unique_lock lock(m_stateMutex);
-                m_stateCv.wait(lock, [this]() { return m_shouldStop.load() || !m_isPaused.load(); });
+                m_stateCv.wait(lock,
+                               [this]() { return m_shouldStop.load() || !m_isPaused.load(); });
                 if (m_shouldStop.load())
                 {
                     break;
@@ -172,12 +173,12 @@ void ReplayProducerWorker::run()
                 }
 
                 std::unique_lock lock(m_stateMutex);
-                const auto waitTime = std::min(
-                    std::chrono::duration_cast<std::chrono::milliseconds>(
-                        timeUntilScheduled - LOOKAHEAD_MS),
-                    std::chrono::milliseconds(100));
+                const auto waitTime =
+                    std::min(std::chrono::duration_cast<std::chrono::milliseconds>(
+                                 timeUntilScheduled - LOOKAHEAD_MS),
+                             std::chrono::milliseconds(100));
                 m_stateCv.wait_for(lock, waitTime,
-                                  [this]() { return m_shouldStop.load() || m_isPaused.load(); });
+                                   [this]() { return m_shouldStop.load() || m_isPaused.load(); });
                 if (m_shouldStop.load())
                 {
                     break;
@@ -185,7 +186,8 @@ void ReplayProducerWorker::run()
 
                 if (m_isPaused.load())
                 {
-                    m_stateCv.wait(lock, [this]() { return m_shouldStop.load() || !m_isPaused.load(); });
+                    m_stateCv.wait(lock,
+                                   [this]() { return m_shouldStop.load() || !m_isPaused.load(); });
                     if (m_shouldStop.load())
                     {
                         break;
@@ -211,26 +213,25 @@ void ReplayProducerWorker::run()
                 msg.data[b] = static_cast<char>(frame.data[b]);
             }
 
-            auto context = std::make_shared<RawSendContext>(RawSendContext{
-                .broker = &m_broker,
-                .message = msg,
-                .replayToken = runToken,
-                .activeReplayToken = &m_replayRunToken,
-                .onSent = [this, sentCounter, totalFrames, runToken]() {
-                    if (runToken != m_replayRunToken.load())
-                    {
-                        return;
-                    }
-                    const int sent = sentCounter->fetch_add(1) + 1;
-                    emit progressUpdated(sent, totalFrames);
-                    if (sent == totalFrames && !m_shouldStop.load())
-                    {
-                        emit replayFinished();
-                    }
-                }});
-            m_queue.push(ScheduledItem{.scheduledAt = scheduledAt,
-                                       .onSend = &rawSendImpl,
-                                       .context = std::move(context)});
+            auto context = std::make_shared<RawSendContext>(
+                RawSendContext{.broker = &m_broker,
+                               .message = msg,
+                               .replayToken = runToken,
+                               .activeReplayToken = &m_replayRunToken,
+                               .onSent = [this, sentCounter, totalFrames, runToken]() {
+                                   if (runToken != m_replayRunToken.load())
+                                   {
+                                       return;
+                                   }
+                                   const int sent = sentCounter->fetch_add(1) + 1;
+                                   emit progressUpdated(sent, totalFrames);
+                                   if (sent == totalFrames && !m_shouldStop.load())
+                                   {
+                                       emit replayFinished();
+                                   }
+                               }});
+            m_queue.push(ScheduledItem{
+                .scheduledAt = scheduledAt, .onSend = &rawSendImpl, .context = std::move(context)});
         }
 
         m_isActive.store(false);
@@ -249,4 +250,3 @@ void ReplayProducerWorker::run()
 }
 
 }  // namespace Sending
-

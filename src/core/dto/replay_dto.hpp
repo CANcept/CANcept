@@ -32,7 +32,6 @@ namespace Core {
  */
 enum class ReplaySessionType { RAW, DBC_BASED };
 
-
 // ============================================================================
 // DATA TRANSFER OBJECTS
 // ============================================================================
@@ -44,9 +43,9 @@ enum class ReplaySessionType { RAW, DBC_BASED };
  * Used for Logging module to advertise available sessions to Sending module.
  */
 struct ReplaySessionInfo {
-    QString sessionId;  // Unique session identifier (typically timestamp-based)
-    QString displayName;  // Human-readable name (e.g., formatted datetime)
-    size_t frameCount = 0;  // Total number of frames in session
+    QString sessionId;                      // Unique session identifier (typically timestamp-based)
+    QString displayName;                    // Human-readable name (e.g., formatted datetime)
+    size_t frameCount = 0;                  // Total number of frames in session
     std::chrono::milliseconds duration{0};  // Total session duration
     ReplaySessionType type = ReplaySessionType::RAW;  // RAW or DBC_BASED
 };
@@ -60,9 +59,9 @@ struct ReplaySessionInfo {
  */
 struct ReplayFrame {
     std::chrono::milliseconds receiveTime{0};  // Relative time from session start
-    uint16_t messageId = 0;  // CAN message ID (11-bit)
-    uint8_t dlc = 8;  // Data Length Code (0-8 bytes)
-    std::array<uint8_t, 8> data = {};  // Message payload
+    uint16_t messageId = 0;                    // CAN message ID (11-bit)
+    uint8_t dlc = 8;                           // Data Length Code (0-8 bytes)
+    std::array<uint8_t, 8> data = {};          // Message payload
 };
 
 }  // namespace Core

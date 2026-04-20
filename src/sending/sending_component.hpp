@@ -15,10 +15,10 @@
 
 #pragma once
 
-#include <QPointer>
-#include <QWidget>
 #include <QList>
+#include <QPointer>
 #include <QString>
+#include <QWidget>
 #include <chrono>
 #include <memory>
 #include <mutex>
@@ -31,8 +31,8 @@
 #include "delegate/sending_delegate.hpp"
 #include "model/sending_model.hpp"
 #include "view/sending_view.hpp"
-#include "worker/replay_producer_worker.hpp"
 #include "worker/repeated_producer_worker.hpp"
+#include "worker/replay_producer_worker.hpp"
 #include "worker/scheduled_item_queue.hpp"
 #include "worker/sending_consumer_worker.hpp"
 
@@ -228,4 +228,3 @@ class SendingComponent final : public Core::ITabComponent
 };
 
 }  // namespace Sending
-

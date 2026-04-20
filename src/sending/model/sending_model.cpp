@@ -624,7 +624,8 @@ void SendingModel::setRawCanId(const uint16_t canId)
 
 void SendingModel::setRawData(const std::vector<uint8_t>& data)
 {
-    m_rawState.dlc = static_cast<uint8_t>(std::min(data.size(), static_cast<size_t>(Constants::MAX_CAN_DLC)));
+    m_rawState.dlc =
+        static_cast<uint8_t>(std::min(data.size(), static_cast<size_t>(Constants::MAX_CAN_DLC)));
     m_rawState.data.assign(Constants::MAX_CAN_DLC, 0);
     for (size_t i = 0; i < m_rawState.dlc; ++i)
     {
@@ -637,8 +638,7 @@ void SendingModel::setReplaySessions(const QList<Core::ReplaySessionInfo>& sessi
     m_replaySessions = sessions;
 }
 
-void SendingModel::setReplayFrames(const QString& sessionId,
-                                   const QList<Core::ReplayFrame>& frames)
+void SendingModel::setReplayFrames(const QString& sessionId, const QList<Core::ReplayFrame>& frames)
 {
     m_loadedReplaySessionId = sessionId;
     m_replayFrames = frames;

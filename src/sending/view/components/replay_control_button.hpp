@@ -28,14 +28,9 @@ class ReplayControlButton final : public QPushButton
     Q_OBJECT
 
    public:
-    enum class Variant {
-        Primary,
-        Secondary,
-        Danger
-    };
+    enum class Variant { Primary, Secondary, Danger };
 
-    explicit ReplayControlButton(const QString& text, Variant variant,
-                                 QWidget* parent = nullptr);
+    explicit ReplayControlButton(const QString& text, Variant variant, QWidget* parent = nullptr);
     ~ReplayControlButton() override = default;
 
     void setVariant(Variant variant);
@@ -54,4 +49,3 @@ class ReplayControlButton final : public QPushButton
 };
 
 }  // namespace Sending
-

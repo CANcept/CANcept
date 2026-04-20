@@ -99,4 +99,3 @@ auto ReplayControlButton::event(QEvent* event) -> bool
 }
 
 }  // namespace Sending
-
