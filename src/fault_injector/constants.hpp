@@ -100,4 +100,10 @@ inline const QString PARAM_AMPLITUDE_INPUT = "amplitudeInput";
 /** @brief Object name for the delay spin box in DelayedStrategyProvider. */
 inline const QString PARAM_DELAY_INPUT = "delayInput";
 
+/** @brief Object name for the threshold spin box in SignalThresholdTriggerProvider. */
+inline const QString PARAM_THRESHOLD_INPUT = "thresholdInput";
+
+/** @brief Object name for the comparison combo box in SignalThresholdTriggerProvider. */
+inline const QString PARAM_IS_GREATER_INPUT = "isGreaterInput";
+
 }  // namespace FaultInjector::Constants

@@ -31,13 +31,14 @@
 #include "trigger/id_trigger.hpp"
 #include "trigger/random_trigger.hpp"
 #include "trigger/signal_name_trigger.hpp"
+#include "trigger/signal_threshold_trigger.hpp"
 
 namespace FaultInjector {
 
 /**
  * To avoid vtable lookup and dislocated locality because of polymorphism, variants are used.
  */
-using DbcTrigger = std::variant<SignalNameTrigger, RandomTrigger>;
+using DbcTrigger = std::variant<SignalNameTrigger, SignalThresholdTrigger, RandomTrigger>;
 using RawTrigger = std::variant<IDTrigger, DLCTrigger, RandomTrigger>;
 
 using DbcEffect = std::variant<ValueSetEffect, ClampEffect, NoiseEffect>;

@@ -70,7 +70,20 @@ inline auto buildDbcTrigger(const SectionEntry& entry) -> std::optional<DbcTrigg
             }
             return SignalNameTrigger(name.toStdString());
         }
-        case 1:
+        case 1: {
+            const QString name =
+                entry.params.value(Constants::PARAM_SIGNAL_NAME_INPUT).toString().trimmed();
+            if (name.isEmpty())
+            {
+                return std::nullopt;
+            }
+            const bool isGreater =
+                entry.params.value(Constants::PARAM_IS_GREATER_INPUT, 0).toInt() == 0;
+            const double threshold =
+                entry.params.value(Constants::PARAM_THRESHOLD_INPUT, 0.0).toDouble();
+            return SignalThresholdTrigger(name.toStdString(), threshold, isGreater);
+        }
+        case 2:
             return RandomTrigger(static_cast<float>(
                 entry.params.value(Constants::PARAM_PROB_INPUT, 0.5).toDouble()));
         default:

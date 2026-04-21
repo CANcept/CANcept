@@ -29,6 +29,7 @@
 #include "trigger/id_trigger_provider.hpp"
 #include "trigger/random_trigger_provider.hpp"
 #include "trigger/signal_name_trigger_provider.hpp"
+#include "trigger/signal_threshold_trigger_provider.hpp"
 
 namespace FaultInjector {
 
@@ -45,6 +46,7 @@ auto getDbcTriggerProviders() -> std::vector<std::unique_ptr<IFaultRowTypeProvid
 {
     std::vector<std::unique_ptr<IFaultRowTypeProvider>> vector;
     vector.push_back(std::make_unique<SignalNameTriggerProvider>());
+    vector.push_back(std::make_unique<SignalThresholdTriggerProvider>());
     vector.push_back(std::make_unique<RandomTriggerProvider>());
     return vector;
 }

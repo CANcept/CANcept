@@ -68,8 +68,17 @@ inline auto firesDbcTrigger(const DbcTrigger& trigger,
 {
     return std::visit(
         entt::overloaded{
-            [&](const SignalNameTrigger& t) { return signalMap.contains(t.signal_name); },
-            [&](const RandomTrigger& t) {
+            [&](const SignalNameTrigger& t) -> bool { return signalMap.contains(t.signal_name); },
+            [&](const SignalThresholdTrigger& t) -> bool {
+                const auto it = signalMap.find(t.signal_name);
+                if (it == signalMap.end())
+                {
+                    return false;
+                }
+                return t.isGreater ? it->second->value >= t.threshold
+                                   : it->second->value <= t.threshold;
+            },
+            [&](const RandomTrigger& t) -> bool {
                 return std::generate_canonical<float, 10>(random) <= t.probability;
             }},
         trigger);

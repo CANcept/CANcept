@@ -49,10 +49,16 @@ inline QString triggerLabel(const RawTrigger& trigger)
 inline QString triggerLabel(const DbcTrigger& trigger)
 {
     return std::visit(entt::overloaded{
-                          [](const SignalNameTrigger& t) {
+                          [](const SignalNameTrigger& t) -> QString {
                               return QStringLiteral("Signal: %1").arg(t.signal_name.data());
                           },
-                          [](const RandomTrigger& t) {
+                          [](const SignalThresholdTrigger& t) -> QString {
+                              return QStringLiteral("Signal %1 %2 %3")
+                                  .arg(t.signal_name.data())
+                                  .arg(t.isGreater ? ">" : "<")
+                                  .arg(t.threshold);
+                          },
+                          [](const RandomTrigger& t) -> QString {
                               return QStringLiteral("Random (%1%)").arg(t.probability * 100);
                           },
                       },
