@@ -20,10 +20,14 @@
 #include <QPushButton>
 #include <QScrollArea>
 #include <QWidget>
+#include <memory>
 
 #include "components/repeated_sending_card.hpp"
 #include "components/send_message_button.hpp"
+#include "core/interface/i_fault_handler.hpp"
 #include "core/widgets/dbc_message_card.hpp"
+#include "fault_injector/service/fault_handler.hpp"
+#include "fault_injector/ui/view/fault_injector_view.hpp"
 
 namespace Math {
 class VariableRegistry;
@@ -68,6 +72,19 @@ class DbcSendingSubView final : public QWidget
         return m_repeatedSendingCard;
     }
 
+    /**
+     * @brief Returns a fault handler snapshot if injection is enabled, nullptr otherwise.
+     */
+    [[nodiscard]] auto getFaultHandler() const -> std::shared_ptr<Core::IFaultHandler>
+    {
+        if (m_faultInjector && m_faultInjector->isFaultInjection())
+        {
+            return std::make_shared<FaultInjector::FaultHandler>(
+                m_faultInjector->getFaultHandler());
+        }
+        return nullptr;
+    }
+
    signals:
     /**
      * @brief Emitted when user toggles message selection checkbox.
@@ -105,6 +122,7 @@ class DbcSendingSubView final : public QWidget
     QLabel* m_noDbcLabel;
 
     RepeatedSendingCard* m_repeatedSendingCard;
+    FaultInjector::FaultInjectorView* m_faultInjector;
     QPushButton* m_sendButton;
 };
 

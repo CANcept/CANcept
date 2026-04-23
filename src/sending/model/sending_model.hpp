@@ -45,7 +45,7 @@ class SendingModel final : public QAbstractItemModel
         Role_SignalValue,
         Role_ActiveMode,
         Role_IsCyclicEnabled,
-        Role_CycleIntervalMs,
+        Role_CycleIntervalUs,
         Role_IsCurrentlySending
     };
 
@@ -74,7 +74,7 @@ class SendingModel final : public QAbstractItemModel
     }
     [[nodiscard]] auto cycleInterval() const -> int
     {
-        return m_cyclicState.intervalMs;
+        return m_cyclicState.intervalUs;
     }
     [[nodiscard]] auto isCurrentlySending() const -> bool
     {
@@ -168,9 +168,19 @@ class SendingModel final : public QAbstractItemModel
     /**
      * @brief Builds pending messages and passes them to the provided handlers.
      */
-    void forEachPendingMessage(
-        const std::function<void(const Core::RawCanMessage&)>& rawHandler,
-        const std::function<void(const Core::DbcCanMessage&)>& dbcHandler) const;
+    void forEachPendingMessage(const std::function<void(Core::RawCanMessage&)>& rawHandler,
+                               const std::function<void(Core::DbcCanMessage&)>& dbcHandler) const;
+
+    /**
+     * @brief Builds the send cache for the current selection.
+     */
+    void buildSendCache();
+
+    /**
+     * @brief Iterates the pre-built message cache, updating signal values and invoking handlers.
+     */
+    void forEachCachedMessage(const std::function<void(Core::RawCanMessage&)>& rawHandler,
+                              const std::function<void(Core::DbcCanMessage&)>& dbcHandler);
 
    private:
     /**
@@ -182,10 +192,13 @@ class SendingModel final : public QAbstractItemModel
     // Navigation & Mode
     Mode m_currentMode = Mode::Raw;
 
+    /** @brief Pre-built messages reused each cycle */
+    std::vector<Core::DbcCanMessage> m_messageCache;
+
     // Cyclic Transmission State
     struct CyclicState {
         bool isEnabled = false;  // The user "intent" to send cyclically
-        int intervalMs = 100;    // Default interval
+        int intervalUs = 1000;   // Default interval
         bool isSending = false;  // Whether the component is actively sending
     } m_cyclicState;
 

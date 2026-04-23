@@ -60,7 +60,7 @@ class SendingView final : public QWidget
     void modeChanged(bool isDbcMode);
 
     /** @brief Emitted when user requests to start repeated sending */
-    void startRepeatedSendingRequested(int intervalMs);
+    void startRepeatedSendingRequested(int intervalUs);
 
     /** @brief Emitted when user requests to stop repeated sending */
     void stopRepeatedSendingRequested();

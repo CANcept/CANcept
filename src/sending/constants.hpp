@@ -138,14 +138,14 @@ inline constexpr int MAX_CAN_ID_HEX_LENGTH = 3;
 
 // NETWORK CONFIGURATION
 
-/** @brief Default cyclic transmission interval in milliseconds */
-inline constexpr int DEFAULT_CYCLE_INTERVAL_MS = 100;
+/** @brief Default cyclic transmission interval in microseconds */
+inline constexpr int DEFAULT_CYCLE_INTERVAL_US = 1000;
 
-/** @brief Minimum allowed cyclic interval to prevent system overload */
-inline constexpr int MIN_CYCLE_INTERVAL_MS = 1;
+/** @brief Minimum allowed cyclic interval */
+inline constexpr int MIN_CYCLE_INTERVAL_US = 1;
 
 /** @brief Maximum allowed cyclic interval */
-inline constexpr int MAX_CYCLE_INTERVAL_MS = 10000;
+inline constexpr int MAX_CYCLE_INTERVAL_US = 100000;
 
 // HEX INPUT & VALIDATION
 
@@ -220,7 +220,9 @@ inline constexpr int REPEATED_SENDING_MAX_FREQUENCY = 10000;
 
 /** @brief Template for the repeated sending input title */
 inline const QString REPEATED_SENDING_TRANSMISSION_INPUT_TITLE =
-    QString("Transmission Interval (1 - %1 ms)").arg(MAX_CYCLE_INTERVAL_MS);
+    QString("Transmission Interval (%1 - %2 µs)")
+        .arg(MIN_CYCLE_INTERVAL_US)
+        .arg(MAX_CYCLE_INTERVAL_US);
 
 /** @brief Time to wait (in ms) for the thread to stop gracefully before forcing termination. */
 inline constexpr int THREAD_TERMINATION_WAIT_MS = 5000;
@@ -243,8 +245,17 @@ inline const QString ERR_CALLBACK_EXCEPTION_TEMPLATE = "Send callback error: %1"
 /** @brief Generic error message for unknown/unhandled exceptions in the worker loop. */
 inline const QString ERR_UNKNOWN_CALLBACK_ERROR = "Unknown error in send callback";
 
-/** @brief Name for the repeated sending worker thread. */
-inline const QString REPEATED_SENDING_THREAD_NAME = "RepeatedSendingWorker";
+/** @brief Template string for exceptions caught during item creation. */
+inline const QString ERR_CREATE_EXCEPTION_TEMPLATE = "Item creation error: %1";
+
+/** @brief Generic error message for unknown exceptions during item creation. */
+inline const QString ERR_UNKNOWN_CREATE_ERROR = "Unknown error in item creation";
+
+/** @brief Name for the sending consumer worker thread. */
+inline const QString SENDING_CONSUMER_WORKER_THREAD_NAME = "SendingConsumerWorker";
+
+/** @brief Name for the repeated producer worker thread. */
+inline const QString REPEATED_PRODUCER_WORKER_THREAD_NAME = "RepeatedProducerWorker";
 
 /** @brief Initial sleep guard duration in nanoseconds. */
 inline constexpr long long INITIAL_SLEEP_GUARD_NS = 20'000'000LL;  // 20ms
@@ -254,6 +265,17 @@ inline constexpr long long MIN_SLEEP_GUARD_NS = 500'000LL;  // 0.5ms
 
 /** @brief EMA weight for sleep overshoot adaptation (higher = adapts faster). */
 inline constexpr double SLEEP_GUARD_ALPHA = 0.25;
+
+// SCHEDULED ITEM QUEUE
+
+/** @brief Maximum number of items the scheduled item queue must be able to hold. */
+inline constexpr int QUEUE_MAX_CAPACITY = 32;
+
+/** @brief Priority increase per millisecond an item waits in the queue (aging). */
+inline constexpr int QUEUE_AGING_FACTOR_PER_MS = 1;
+
+/** @brief Hard cap on the priority boost an item can accumulate through aging. */
+inline constexpr int QUEUE_MAX_AGING_BOOST = 1000;
 
 }  // namespace Constants
 

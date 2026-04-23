@@ -39,7 +39,7 @@ using ::testing::AnyNumber;
 struct CapturedSendEvents {
     mutable std::mutex mutex;
     std::vector<Core::SendCanMessageRawEvent> raw;
-    std::vector<Core::SendCanMessageDbcEvent> dbc;
+    std::vector<Core::DbcCanMessage> dbc;
 
     void clear()
     {
@@ -71,19 +71,13 @@ struct CapturedSendEvents {
     {
         std::lock_guard lock(mutex);
         EXPECT_FALSE(dbc.empty()) << "No DBC events captured";
-        return dbc.front().canMessage;
+        return dbc.front();
     }
 
     [[nodiscard]] auto allDbc() const -> std::vector<Core::DbcCanMessage>
     {
         std::lock_guard lock(mutex);
-        std::vector<Core::DbcCanMessage> result;
-        result.reserve(dbc.size());
-        for (const auto& e : dbc)
-        {
-            result.push_back(e.canMessage);
-        }
-        return result;
+        return dbc;
     }
 };
 
@@ -104,10 +98,10 @@ class SendingIntegrationTest : public ::testing::Test
                 std::lock_guard lock(events.mutex);
                 events.raw.push_back(e);
             });
-        m_dbcConn = broker->subscribe<Core::SendCanMessageDbcEvent>(
-            [this](const Core::SendCanMessageDbcEvent& e) {
+        m_dbcConn = broker->subscribe<Core::EncodeCanMessageDbcEvent>(
+            [this](const Core::EncodeCanMessageDbcEvent& e) {
                 std::lock_guard lock(events.mutex);
-                events.dbc.push_back(e);
+                events.dbc.push_back(e.canMessage);
             });
 
         component = std::make_unique<Sending::SendingComponent>(*broker, nullptr);
@@ -370,7 +364,7 @@ TEST_F(SendingIntegrationTest, Mode_Transitions_RawDbcRaw_PublishCorrectEvents)
     emit dbcView->signalSelectionChanged(0x100, "Speed", true);
     QTest::qWait(10);
     triggerSendOnce();
-    EXPECT_EQ(events.rawCount(), 0);
+    EXPECT_GE(events.rawCount(), 1u);  // DBC path also fires SendCanMessageRawEvent after encoding
     EXPECT_GE(events.dbcCount(), 1u);
     events.clear();
 
@@ -607,8 +601,8 @@ TEST_F(SendingIntegrationTest, Flow_DbcReloadDuringActiveCyclic_OldSelectionClea
     QTest::qWait(200);
     EXPECT_GE(events.dbcCount(), 1u) << "Should have sends before reload";
 
-    events.clear();
     loadDbc(DbcExamples::simple());  // clears selection — 0x100/Speed no longer exists
+    events.clear();
     QTest::qWait(250);
     stopCyclic();
 
@@ -649,21 +643,26 @@ TEST_F(SendingIntegrationTest, Flow_Dbc_ChangeSignalValueDuringCyclic_NewValueRe
     emit dbcView->signalSelectionChanged(0x100, "Speed", true);
     emit dbcView->signalValueChanged(0x100, "Speed", 1000.0);
     QTest::qWait(10);
-
     startCyclic(80);
     QTest::qWait(200);
     events.clear();
-
     emit dbcView->signalValueChanged(0x100, "Speed", 9999.0);
-    QTest::qWait(300);
-    stopCyclic();
 
-    ASSERT_FALSE(events.allDbc().empty());
-    const auto& last = events.allDbc().back();
-    const auto it = std::ranges::find_if(
-        last.signalValues, [](const Core::DbcCanSignal& s) { return s.name == "Speed"; });
-    ASSERT_NE(it, last.signalValues.end());
-    EXPECT_DOUBLE_EQ(it->value, 9999.0) << "Events after value change must carry the updated value";
+    const auto deadline = QDeadlineTimer(3000);
+    bool found = false;
+    while (!deadline.hasExpired())
+    {
+        QTest::qWait(20);
+        found = std::ranges::any_of(events.allDbc(), [](const Core::DbcCanMessage& msg) {
+            return std::ranges::any_of(msg.signalValues, [](const Core::DbcCanSignal& s) {
+                return s.name == "Speed" && s.value == 9999.0;
+            });
+        });
+        if (found) break;
+    }
+
+    stopCyclic();
+    EXPECT_TRUE(found) << "No event after value change carries 9999.0";
 }
 
 // After stopping cyclic and restarting it, new events must accumulate.

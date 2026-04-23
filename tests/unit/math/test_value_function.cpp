@@ -94,8 +94,8 @@ TEST(ValueFunctionTest, ParseAbsFunction)
 // Parse & Evaluate — with variables
 TEST(ValueFunctionTest, ParseWithVariable)
 {
-    const auto val = std::make_shared<double>(7.0);
-    const VariableToken root("x", val);
+    double val = 7.0;
+    const VariableToken root("x", &val);
     ValueFunction valueFunction(&root);
     EXPECT_TRUE(valueFunction.parse().success);
     EXPECT_DOUBLE_EQ(valueFunction.evaluate(), 7.0);
@@ -103,22 +103,22 @@ TEST(ValueFunctionTest, ParseWithVariable)
 
 TEST(ValueFunctionTest, VariableUpdateReflectedInEvaluation)
 {
-    auto val = std::make_shared<double>(1.0);
-    const auto root = TestHelpers::makeAdd(std::make_unique<VariableToken>("x", val),
+    double val = 1.0;
+    const auto root = TestHelpers::makeAdd(std::make_unique<VariableToken>("x", &val),
                                            std::make_unique<ValueToken>(10.0));
     ValueFunction valueFunction(root.get());
     EXPECT_TRUE(valueFunction.parse().success);
     EXPECT_DOUBLE_EQ(valueFunction.evaluate(), 11.0);
-    *val = 5.0;
+    val = 5.0;
     EXPECT_DOUBLE_EQ(valueFunction.evaluate(), 15.0);
 }
 
 TEST(ValueFunctionTest, MultipleVariables)
 {
-    auto x = std::make_shared<double>(3.0);
-    auto y = std::make_shared<double>(4.0);
-    const auto root = TestHelpers::makeAdd(std::make_unique<VariableToken>("x", x),
-                                           std::make_unique<VariableToken>("y", y));
+    double x = 3.0;
+    double y = 4.0;
+    const auto root = TestHelpers::makeAdd(std::make_unique<VariableToken>("x", &x),
+                                           std::make_unique<VariableToken>("y", &y));
     ValueFunction vf(root.get());
     EXPECT_TRUE(vf.parse().success);
     EXPECT_DOUBLE_EQ(vf.evaluate(), 7.0);

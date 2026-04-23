@@ -52,7 +52,7 @@ inline const QString ARROW_DOWN_BUTTON_ICON_PATH = ":/assets/icon/monitoring/arr
 inline const QString SETTINGS_ICON_PATH = ":/assets/icon/settings.svg";
 
 /** @brief Identifier used by the module to communicate with the system */
-inline const QString MODULE_IDENTIFIER = "MonitoringComponent";
+inline const std::string MODULE_IDENTIFIER = "MonitoringComponent";
 
 /** @brief Title shown in the tab bar */
 inline const QString TAB_TITLE = "Monitoring";

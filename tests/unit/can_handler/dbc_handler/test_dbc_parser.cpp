@@ -169,6 +169,8 @@ TEST(DbcParserTest, ParsesMultipleSignalsInMessage)
 
 TEST(DbcParserTest, ParsesSignedSignalCorrectly)
 {
+    std::setlocale(LC_NUMERIC, "C");
+
     DbcParser parser;
     parser.provideNewFile(
         "VERSION \"1.0\" "

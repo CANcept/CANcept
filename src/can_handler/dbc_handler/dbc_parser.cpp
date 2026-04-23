@@ -799,16 +799,19 @@ void DbcParser::calculatePhysicalRange(Core::DbcSignalDescription& signal)
 {
     if (signal.minimum == 0.0 && signal.maximum == 0.0)
     {
-        unsigned long long rawMax;
-        long long rawMin;
+        uint64_t rawMax;
+        int64_t rawMin;
         if (signal.valueType)
         {
-            rawMax = (1ULL << (signal.signalSize - 1)) - 1;
-            rawMin = -(1LL << (signal.signalSize - 1));
+            rawMax = (signal.signalSize >= 64) ? std::numeric_limits<int64_t>::max()
+                                               : (INT64_C(1) << (signal.signalSize - 1)) - 1;
+            rawMin = (signal.signalSize >= 64) ? std::numeric_limits<int64_t>::min()
+                                               : -(INT64_C(1) << (signal.signalSize - 1));
         } else
         {
             rawMin = 0;
-            rawMax = (1ULL << signal.signalSize) - 1;
+            rawMax = (signal.signalSize >= 64) ? std::numeric_limits<uint64_t>::max()
+                                               : (UINT64_C(1) << signal.signalSize) - 1;
         }
         signal.minimum = static_cast<double>(rawMin) * signal.factor + signal.offset;
         signal.maximum = static_cast<double>(rawMax) * signal.factor + signal.offset;

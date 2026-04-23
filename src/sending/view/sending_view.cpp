@@ -228,7 +228,7 @@ void SendingView::setModel(SendingModel* model)
                 bool ok = false;
                 if (const int interval = text.toInt(&ok); ok && interval > 0)
                 {
-                    model->setData(QModelIndex(), interval, SendingModel::Role_CycleIntervalMs);
+                    model->setData(QModelIndex(), interval, SendingModel::Role_CycleIntervalUs);
                 }
             });
 
@@ -247,7 +247,7 @@ void SendingView::setModel(SendingModel* model)
                 const int interval =
                     m_rawView->repeatedSendingCard()->frequencyEditor()->text().toInt(&ok);
                 const int safeInterval =
-                    ok && interval > 0 ? interval : Constants::DEFAULT_CYCLE_INTERVAL_MS;
+                    ok && interval > 0 ? interval : Constants::DEFAULT_CYCLE_INTERVAL_US;
                 emit startRepeatedSendingRequested(safeInterval);
             }
         } else
@@ -268,7 +268,7 @@ void SendingView::setModel(SendingModel* model)
                 bool ok = false;
                 if (const int interval = text.toInt(&ok); ok && interval > 0)
                 {
-                    model->setData(QModelIndex(), interval, SendingModel::Role_CycleIntervalMs);
+                    model->setData(QModelIndex(), interval, SendingModel::Role_CycleIntervalUs);
                 }
             });
 
@@ -287,7 +287,7 @@ void SendingView::setModel(SendingModel* model)
                 const int interval =
                     m_dbcView->repeatedSendingCard()->frequencyEditor()->text().toInt(&ok);
                 const int safeInterval =
-                    ok && interval > 0 ? interval : Constants::DEFAULT_CYCLE_INTERVAL_MS;
+                    ok && interval > 0 ? interval : Constants::DEFAULT_CYCLE_INTERVAL_US;
                 emit startRepeatedSendingRequested(safeInterval);
             }
         } else

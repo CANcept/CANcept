@@ -32,7 +32,7 @@ class VariableToken final : public Token<TokenKind::Leaf>
     /**
      * @brief Constructs a variable token with shared ownership of the underlying value.
      */
-    VariableToken(std::string name, std::shared_ptr<double> value)
+    VariableToken(std::string name, double* value)
         : m_name(std::move(name)), m_value(std::move(value))
     {
     }
@@ -52,7 +52,7 @@ class VariableToken final : public Token<TokenKind::Leaf>
      */
     void collectVariables(std::vector<std::pair<std::string, double*>>& out) const override
     {
-        out.emplace_back(m_name, m_value.get());
+        out.emplace_back(m_name, m_value);
     }
 
     /**
@@ -60,12 +60,12 @@ class VariableToken final : public Token<TokenKind::Leaf>
      */
     [[nodiscard]] auto get() const -> double*
     {
-        return m_value.get();
+        return m_value;
     }
 
    private:
     std::string m_name;
-    std::shared_ptr<double> m_value;
+    double* m_value;
 };
 
 }  // namespace Math

@@ -29,8 +29,8 @@
 namespace Monitoring {
 
 MonitoringComponent::MonitoringComponent(Core::IEventBroker& broker)
-    : Core::ITabComponent(broker, Constants::MODULE_IDENTIFIER, Constants::TAB_TITLE,
-                          QIcon(Constants::TAB_ICON_PATH)),
+    : Core::ITabComponent(broker, QString::fromStdString(Constants::MODULE_IDENTIFIER),
+                          Constants::TAB_TITLE, QIcon(Constants::TAB_ICON_PATH)),
       m_model(std::make_unique<MonitoringModel>()),
       m_delegate(std::make_unique<MonitoringDelegate>(m_model.get())),
       m_view(std::make_unique<MonitoringView>(m_model.get(), m_delegate.get())),

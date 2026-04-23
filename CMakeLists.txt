@@ -20,6 +20,7 @@ option(ENABLE_CLANG_TIDY "Enable static analysis with Clang-Tidy" OFF)
 option(ENABLE_DOCS "Enable the documentation target" ON)
 option(ENABLE_COVERAGE "Enable code coverage reporting" OFF)
 option(DISABLE_TEST_LOGGING "Disable console logging during tests" ON)
+option(FORCE_LOGGING_OFF "Force logging level to 0 regardless of other settings" OFF)
 
 # Compiler Flags
 if(ENABLE_COVERAGE)
@@ -83,7 +84,7 @@ target_link_libraries(${PROJECT_NAME}Lib PUBLIC
 
 target_compile_definitions(${PROJECT_NAME}Lib
         PUBLIC
-        LOGGING_LEVEL=$<IF:$<BOOL:${ENABLE_TESTS}>,$<IF:$<BOOL:${DISABLE_TEST_LOGGING}>,0,$<IF:$<CONFIG:Debug>,2,1>>,$<IF:$<CONFIG:Debug>,2,1>>
+        LOGGING_LEVEL=$<IF:$<BOOL:${FORCE_LOGGING_OFF}>,0,$<IF:$<BOOL:${ENABLE_TESTS}>,$<IF:$<BOOL:${DISABLE_TEST_LOGGING}>,0,$<IF:$<CONFIG:Debug>,2,1>>,$<IF:$<CONFIG:Debug>,2,1>>>
 )
 
 target_compile_options(${PROJECT_NAME}Lib PRIVATE

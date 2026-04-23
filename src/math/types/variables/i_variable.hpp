@@ -57,11 +57,6 @@ class IVariable
     virtual auto ptr() -> double* = 0;
 
     /**
-     * @brief Returns a shared pointer to the value, keeping it alive across registry changes.
-     */
-    virtual auto sharedPtr() -> std::shared_ptr<double> = 0;
-
-    /**
      * @brief Refreshes the variable's value for the current evaluation cycle.
      */
     virtual void update() = 0;

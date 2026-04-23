@@ -360,7 +360,7 @@ INSTANTIATE_TEST_SUITE_P(
         ModelDataRoleScenario{"RoleActiveMode", Sending::SendingModel::Role_ActiveMode, false},
         ModelDataRoleScenario{"RoleIsCyclicEnabled", Sending::SendingModel::Role_IsCyclicEnabled,
                               false},
-        ModelDataRoleScenario{"RoleCycleIntervalMs", Sending::SendingModel::Role_CycleIntervalMs,
+        ModelDataRoleScenario{"RoleCycleIntervalMs", Sending::SendingModel::Role_CycleIntervalUs,
                               false},
         ModelDataRoleScenario{"RoleIsCurrentlySending",
                               Sending::SendingModel::Role_IsCurrentlySending, false}),
@@ -419,8 +419,8 @@ TEST_P(CyclicStateTest, ReturnsCyclicState)
 }
 
 INSTANTIATE_TEST_SUITE_P(CyclicStateScenarios, CyclicStateTest,
-                         ::testing::Values(CyclicStateScenario{"NotSending", false, 100},
-                                           CyclicStateScenario{"Sending", true, 100}),
+                         ::testing::Values(CyclicStateScenario{"NotSending", false, 1000},
+                                           CyclicStateScenario{"Sending", true, 1000}),
                          [](const ::testing::TestParamInfo<CyclicStateScenario>& info) {
                              return info.param.name;
                          });
@@ -583,10 +583,10 @@ TEST_F(SendingModelTestBase, DataMethodReturnsCyclicState)
     }
 
     // Test cycle interval
-    if (const QVariant interval = model->data(idx, Sending::SendingModel::Role_CycleIntervalMs);
+    if (const QVariant interval = model->data(idx, Sending::SendingModel::Role_CycleIntervalUs);
         interval.isValid())
     {
-        EXPECT_EQ(interval.toInt(), 100);
+        EXPECT_EQ(interval.toInt(), Sending::Constants::DEFAULT_CYCLE_INTERVAL_US);
     }
 
     // Test currently sending
@@ -689,7 +689,7 @@ TEST_F(SendingModelTestBase, SetDataModifiesCyclicEnabled)
 }
 
 /**
- * @brief Test setData() with Role_CycleIntervalMs - value within valid range.
+ * @brief Test setData() with Role_CycleIntervalUs - value within valid range.
  */
 TEST_F(SendingModelTestBase, SetDataModifiesCycleIntervalWithinRange)
 {
@@ -698,15 +698,15 @@ TEST_F(SendingModelTestBase, SetDataModifiesCycleIntervalWithinRange)
     const QModelIndex idx = model->index(0, 0);
     ASSERT_TRUE(idx.isValid());
 
-    const bool result = model->setData(idx, 500, Sending::SendingModel::Role_CycleIntervalMs);
+    const bool result = model->setData(idx, 500, Sending::SendingModel::Role_CycleIntervalUs);
     EXPECT_TRUE(result);
 
-    const QVariant interval = model->data(idx, Sending::SendingModel::Role_CycleIntervalMs);
+    const QVariant interval = model->data(idx, Sending::SendingModel::Role_CycleIntervalUs);
     EXPECT_EQ(interval.toInt(), 500);
 }
 
 /**
- * @brief Test setData() with Role_CycleIntervalMs - clamping to minimum.
+ * @brief Test setData() with Role_CycleIntervalUs - clamping to minimum.
  */
 TEST_F(SendingModelTestBase, SetDataClampsCycleIntervalToMinimum)
 {
@@ -715,15 +715,15 @@ TEST_F(SendingModelTestBase, SetDataClampsCycleIntervalToMinimum)
     const QModelIndex idx = model->index(0, 0);
     ASSERT_TRUE(idx.isValid());
 
-    const bool result = model->setData(idx, 0, Sending::SendingModel::Role_CycleIntervalMs);
+    const bool result = model->setData(idx, 0, Sending::SendingModel::Role_CycleIntervalUs);
     EXPECT_TRUE(result);
 
-    const QVariant interval = model->data(idx, Sending::SendingModel::Role_CycleIntervalMs);
-    EXPECT_EQ(interval.toInt(), Sending::Constants::MIN_CYCLE_INTERVAL_MS);
+    const QVariant interval = model->data(idx, Sending::SendingModel::Role_CycleIntervalUs);
+    EXPECT_EQ(interval.toInt(), Sending::Constants::MIN_CYCLE_INTERVAL_US);
 }
 
 /**
- * @brief Test setData() with Role_CycleIntervalMs - clamping to maximum.
+ * @brief Test setData() with Role_CycleIntervalUs - clamping to maximum.
  */
 TEST_F(SendingModelTestBase, SetDataClampsCycleIntervalToMaximum)
 {
@@ -732,11 +732,11 @@ TEST_F(SendingModelTestBase, SetDataClampsCycleIntervalToMaximum)
     const QModelIndex idx = model->index(0, 0);
     ASSERT_TRUE(idx.isValid());
 
-    const bool result = model->setData(idx, 15000, Sending::SendingModel::Role_CycleIntervalMs);
+    const bool result = model->setData(idx, 200000, Sending::SendingModel::Role_CycleIntervalUs);
     EXPECT_TRUE(result);
 
-    const QVariant interval = model->data(idx, Sending::SendingModel::Role_CycleIntervalMs);
-    EXPECT_EQ(interval.toInt(), Sending::Constants::MAX_CYCLE_INTERVAL_MS);
+    const QVariant interval = model->data(idx, Sending::SendingModel::Role_CycleIntervalUs);
+    EXPECT_EQ(interval.toInt(), Sending::Constants::MAX_CYCLE_INTERVAL_US);
 }
 
 /**

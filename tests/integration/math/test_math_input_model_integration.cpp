@@ -15,6 +15,7 @@
 
 #include <gtest/gtest.h>
 
+#include <clocale>
 #include <cmath>
 #include <memory>
 #include <vector>
@@ -39,6 +40,8 @@ class MathEvalIntegration : public ::testing::Test
    protected:
     void SetUp() override
     {
+        std::setlocale(LC_NUMERIC, "C");
+
         broker = std::make_unique<TestHelpers::MockEventBroker>();
         registry = std::make_unique<VariableRegistry>(*broker);
         model = std::make_unique<MathInputModel>(*registry);
@@ -196,7 +199,8 @@ TEST_F(MathEvalIntegration, InteractiveTreeBuildingWithCommitTypeBuffer)
     sigRpm->setValue(25.0);
 
     ValueFunction vf(model->root());
-    ASSERT_TRUE(vf.parse().success);
+    std::cout << "Expression: " << vf.expression() << std::endl;
+    ASSERT_TRUE(vf.parse().success) << "Parse error: " << vf.lastResult().error;
     EXPECT_DOUBLE_EQ(vf.evaluate(), 2500.0);  // 25 * 100
 
     // Mutate RPM and re-evaluate
@@ -365,15 +369,15 @@ TEST_F(MathEvalIntegration, InteractiveNestedFunctionBuild)
     // Tree: add(sin(a), 3.14)
     ASSERT_TRUE(model->isComplete());
 
-    sigA->setValue(0.0);
+    *sigA->ptr() = 0.0;
     ValueFunction vf(model->root());
     ASSERT_TRUE(vf.parse().success);
     EXPECT_NEAR(vf.evaluate(), 3.14, 1e-10);  // sin(0) + 3.14
 
-    sigA->setValue(M_PI / 2.0);
-    EXPECT_NEAR(vf.evaluate(), 1.0 + 3.14, 1e-10);  // sin(pi/2) + 3.14
+    *sigA->ptr() = M_PI / 2.0;
+    EXPECT_NEAR(vf.evaluate(), 1.0 + 3.14, 1e-10);  // sin(pi/2) + 3
 
-    sigA->setValue(M_PI);
+    *sigA->ptr() = M_PI;
     EXPECT_NEAR(vf.evaluate(), std::sin(M_PI) + 3.14, 1e-10);
 }
 

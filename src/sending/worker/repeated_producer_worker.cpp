@@ -13,9 +13,8 @@
  * limitations under the License.
  */
 
-#include "repeated_sending_worker.hpp"
+#include "repeated_producer_worker.hpp"
 
-#include <QThread>
 #include <chrono>
 #include <thread>
 
@@ -23,33 +22,31 @@
 
 namespace Sending {
 
-RepeatedSendingWorker::RepeatedSendingWorker(QObject* parent) : QThread(parent)
+RepeatedProducerWorker::RepeatedProducerWorker(ScheduledItemQueue& queue, QObject* parent)
+    : QThread(parent), m_queue(queue)
 {
-    setObjectName(Constants::REPEATED_SENDING_THREAD_NAME);
+    setObjectName(Constants::REPEATED_PRODUCER_WORKER_THREAD_NAME);
 }
 
-RepeatedSendingWorker::~RepeatedSendingWorker()
+RepeatedProducerWorker::~RepeatedProducerWorker()
 {
-    stopSending();
+    stopCreating();
 }
 
-void RepeatedSendingWorker::startSending(SendCallback callback, const int intervalMs)
+void RepeatedProducerWorker::startCreating(CreateCallback callback, const int intervalUs)
 {
     if (m_isActive.load())
     {
-        emit errorOccurred(Constants::ERR_WORKER_ALREADY_RUNNING);
         return;
     }
 
     if (!callback)
     {
-        emit errorOccurred(Constants::ERR_INVALID_CALLBACK);
         return;
     }
 
-    if (intervalMs <= 0)
+    if (intervalUs <= 0)
     {
-        emit errorOccurred(Constants::ERR_INVALID_INTERVAL);
         return;
     }
 
@@ -58,27 +55,24 @@ void RepeatedSendingWorker::startSending(SendCallback callback, const int interv
         m_callback = std::move(callback);
     }
 
-    m_intervalMs.store(intervalMs);
+    m_intervalUs.store(intervalUs);
     m_shouldStop.store(false);
     m_isActive.store(true);
 
-    start(QThread::TimeCriticalPriority);
+    start(QThread::HighPriority);
 }
 
-void RepeatedSendingWorker::stopSending()
+void RepeatedProducerWorker::stopCreating()
 {
     if (!m_isActive.load())
     {
         return;
     }
 
-    // Signal the worker to stop
     m_shouldStop.store(true);
 
-    // Wait for the thread to finish
     if (!wait(Constants::THREAD_TERMINATION_WAIT_MS))
     {
-        // If it doesn't Force termination
         terminate();
         wait();
     }
@@ -91,74 +85,84 @@ void RepeatedSendingWorker::stopSending()
     }
 }
 
-void RepeatedSendingWorker::updateInterval(const int intervalMs)
+void RepeatedProducerWorker::updateInterval(const int intervalUs)
 {
-    if (intervalMs > 0)
+    if (intervalUs > 0)
     {
-        m_intervalMs.store(intervalMs);
+        m_intervalUs.store(intervalUs);
         m_resetGuard.store(true);
     }
 }
 
-void RepeatedSendingWorker::run()
+bool RepeatedProducerWorker::isRunning() const
 {
-    using Clock = std::chrono::high_resolution_clock;
+    return m_isActive.load();
+}
+
+void RepeatedProducerWorker::run()
+{
     using Ns = std::chrono::nanoseconds;
     auto guardNs = static_cast<double>(Constants::INITIAL_SLEEP_GUARD_NS);
 
-    emit sendingStarted();
+    CreateCallback localCallback;
+    {
+        std::lock_guard lock(m_callbackMutex);
+        localCallback = m_callback;
+    }
+
+    auto nextDeadline = Clock::now();
 
     while (!m_shouldStop.load())
     {
-        const auto deadline =
-            Clock::now() + Ns(static_cast<long long>(m_intervalMs.load()) * 1'000'000LL);
+        const long long intervalNs = static_cast<long long>(m_intervalUs.load()) * 1'000LL;
+        nextDeadline += Ns(intervalNs);
 
+        try
         {
-            std::lock_guard lock(m_callbackMutex);
-            if (m_callback)
+            for (auto items = localCallback(nextDeadline); auto& item : items)
             {
-                try
-                {
-                    m_callback();
-                } catch (const std::exception& e)
-                {
-                    emit errorOccurred(
-                        QString(Constants::ERR_CALLBACK_EXCEPTION_TEMPLATE).arg(e.what()));
-                } catch (...)
-                {
-                    emit errorOccurred(Constants::ERR_UNKNOWN_CALLBACK_ERROR);
-                }
+                m_queue.push(std::move(item));
             }
+        } catch (const std::exception& e)
+        {
+            emit errorOccurred(QString(Constants::ERR_CREATE_EXCEPTION_TEMPLATE).arg(e.what()));
+        } catch (...)
+        {
+            emit errorOccurred(Constants::ERR_UNKNOWN_CREATE_ERROR);
         }
 
         if (m_resetGuard.exchange(false))
         {
+            nextDeadline = Clock::now() + Ns(intervalNs);
             guardNs = static_cast<double>(Constants::INITIAL_SLEEP_GUARD_NS);
         }
 
+        if (Clock::now() >= nextDeadline)
+        {
+            continue;
+        }
+
         const long long remainingNs =
-            std::chrono::duration_cast<Ns>(deadline - Clock::now()).count();
+            std::chrono::duration_cast<Ns>(nextDeadline - Clock::now()).count();
 
         if (remainingNs > static_cast<long long>(guardNs))
         {
-            const auto sleepTarget = deadline - Ns(static_cast<long long>(guardNs));
+            const auto sleepTarget = nextDeadline - Ns(static_cast<long long>(guardNs));
             std::this_thread::sleep_until(sleepTarget);
+
             const long long overshootNs =
                 std::chrono::duration_cast<Ns>(Clock::now() - sleepTarget).count();
-
             const double newEstimate =
                 Constants::SLEEP_GUARD_ALPHA * static_cast<double>(overshootNs) +
                 (1.0 - Constants::SLEEP_GUARD_ALPHA) * guardNs;
-            guardNs = std::max(static_cast<double>(Constants::MIN_SLEEP_GUARD_NS),
-                               std::max(guardNs * 0.99, newEstimate));
+            guardNs = std::max(
+                {static_cast<double>(Constants::MIN_SLEEP_GUARD_NS), guardNs * 0.99, newEstimate});
         }
 
-        while (Clock::now() < deadline && !m_shouldStop.load())
+        while (Clock::now() < nextDeadline && !m_shouldStop.load())
         {
         }
     }
-
-    emit sendingStopped();
 }
 
 }  // namespace Sending

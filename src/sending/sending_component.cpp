@@ -15,27 +15,25 @@
 
 #include "sending_component.hpp"
 
-#include <QPointer>
-#include <QtConcurrent/QtConcurrentRun>
-
 #include "constants.hpp"
 #include "core/event/can_driver_event.hpp"
-#include "core/event/can_event.hpp"
-#include "core/event/dbc_event.hpp"
 #include "core/event/lifecycle_event.hpp"
 #include "core/macro/console_logging.hpp"
 #include "math/service/variable_registry.hpp"
+#include "sending_functions.hpp"
 
 namespace Sending {
 
 SendingComponent::SendingComponent(Core::IEventBroker& broker, Math::VariableRegistry* registry)
     : ITabComponent(broker, QString::fromStdString(Constants::MODULE_IDENTIFIER),
                     Constants::TAB_TITLE, QIcon(Constants::SENDING_ICON_PATH)),
+      m_variableRegistry(registry),
       m_model(std::make_unique<SendingModel>()),
       m_view(std::make_unique<SendingView>()),
       m_delegate(new SendingDelegate(this)),
-      m_sendingWorker(std::make_unique<RepeatedSendingWorker>()),
-      m_variableRegistry(registry)
+      m_queue(std::make_unique<ScheduledItemQueue>()),
+      m_repeatedWorker(std::make_unique<RepeatedProducerWorker>(*m_queue, this)),
+      m_consumerWorker(std::make_unique<SendingConsumerWorker>(*m_queue, this))
 {
     m_view->setModel(m_model.get());
 
@@ -63,6 +61,8 @@ void SendingComponent::onStart()
     setupConnections();
     setupBrokerSubscriptions();
 
+    m_consumerWorker->startConsuming();
+
     checkDeviceReadiness();
 
     m_eventBroker.publish<Core::ModuleStartedEvent>(
@@ -74,7 +74,6 @@ void SendingComponent::onStop()
 {
     LOG_INF(Constants::MODULE_IDENTIFIER, "Stopping Sending Component...");
 
-    // Stop any active cyclic transmissions
     stopRepeatedSending();
 
     LOG_INF(Constants::MODULE_IDENTIFIER, "Sending Component stopped");
@@ -94,6 +93,7 @@ void SendingComponent::onDbcConfigReceived(const Core::DbcConfig& config)
     {
         m_view->dbcSubView()->populateFromModel(m_model.get(), *m_variableRegistry);
     }
+    m_model->buildSendCache();
 
     LOG_INF(Constants::MODULE_IDENTIFIER, "Created {} message cards",
             config.messageDefinitions.size());
@@ -106,38 +106,57 @@ void SendingComponent::onDbcParseError() const
     m_view->dbcSubView()->clearMessages();
 }
 
-void SendingComponent::publishRawMessageAsync(const Core::RawCanMessage& message)
+void SendingComponent::publishRawMessageAsync(const Core::RawCanMessage& message) const
 {
-    QPointer<SendingComponent> self = this;
-    (void)QtConcurrent::run([self, message]() {
-        if (!self)
-        {
-            return;
-        }
-        // Subscribers must ensure thread-safety and proper thread affinity.
-        std::scoped_lock lock(self->m_brokerMutex);
-        self->m_eventBroker.publish(Core::SendCanMessageRawEvent(message));
-    });
+    Core::RawCanMessage mutableMsg = message;
+    if (m_activeFaultHandler)
+    {
+        m_activeFaultHandler->inject(mutableMsg.messageId, mutableMsg.dlc, mutableMsg.data);
+    }
+    const auto [drop, delayOffset] =
+        m_activeFaultHandler ? m_activeFaultHandler->evaluate()
+                             : Core::IFaultHandler::FrameResult{.drop = false, .delayOffset = {}};
+    if (drop) return;
+    auto context = std::make_shared<RawSendContext>(
+        RawSendContext{.broker = &m_eventBroker, .message = mutableMsg});
+    m_queue->push(ScheduledItem{.scheduledAt = Clock::now() + delayOffset,
+                                .onSend = &rawSendImpl,
+                                .context = std::move(context)});
 }
 
-void SendingComponent::publishDbcMessageAsync(const Core::DbcCanMessage& message)
+void SendingComponent::publishDbcMessageAsync(const Core::DbcCanMessage& message) const
 {
-    QPointer<SendingComponent> self = this;
-    (void)QtConcurrent::run([self, message]() -> void {
-        if (!self)
-        {
-            return;  // Component was destroyed
-        }
+    // encoding
+    Core::DbcCanMessage mutableMsg = message;
+    if (m_activeFaultHandler)
+    {
+        m_activeFaultHandler->inject(mutableMsg);
+    }
+    Core::RawCanMessage encoded;
+    m_eventBroker.publish(Core::EncodeCanMessageDbcEvent(mutableMsg, encoded));
+    if (m_activeFaultHandler)
+    {
+        m_activeFaultHandler->inject(encoded.messageId, encoded.dlc, encoded.data);
+    }
 
-        // Subscribers must ensure thread-safety and proper thread affinity.
-        std::scoped_lock lock(self->m_brokerMutex);
-        self->m_eventBroker.publish(Core::SendCanMessageDbcEvent(message));
-    });
+    // frame temporal transformation
+    const auto [drop, delayOffset] =
+        m_activeFaultHandler ? m_activeFaultHandler->evaluate()
+                             : Core::IFaultHandler::FrameResult{.drop = false, .delayOffset = {}};
+
+    if (drop)
+    {
+        return;
+    }
+    auto context = std::make_shared<RawSendContext>(
+        RawSendContext{.broker = &m_eventBroker, .message = encoded});
+    m_queue->push(ScheduledItem{.scheduledAt = Clock::now() + delayOffset,
+                                .onSend = &rawSendImpl,
+                                .context = std::move(context)});
 }
 
 void SendingComponent::setupConnections()
 {
-    // Model requests to send raw messages - single path from Model to event broker
     connect(m_model.get(), &SendingModel::requestSendRaw, this,
             [this](const std::string&, const Core::RawCanMessage& message) {
                 LOG_INF(Constants::MODULE_IDENTIFIER, "Raw send requested: ID=0x{:03X}, DLC={}",
@@ -145,7 +164,6 @@ void SendingComponent::setupConnections()
                 publishRawMessageAsync(message);
             });
 
-    // Model requests to send DBC messages - single path from Model to event broker
     connect(m_model.get(), &SendingModel::requestSendDbc, this,
             [this](const std::string&, const Core::DbcCanMessage& message) {
                 LOG_INF(Constants::MODULE_IDENTIFIER, "DBC send requested: ID=0x{:03X}",
@@ -153,7 +171,6 @@ void SendingComponent::setupConnections()
                 publishDbcMessageAsync(message);
             });
 
-    // View requests: single send
     connect(m_view.get(), &SendingView::sendOnceRequested, this, &SendingComponent::sendOnce);
 
     connect(m_view.get(), &SendingView::startRepeatedSendingRequested, this,
@@ -161,9 +178,8 @@ void SendingComponent::setupConnections()
     connect(m_view.get(), &SendingView::stopRepeatedSendingRequested, this,
             &SendingComponent::stopRepeatedSending);
 
-    // Worker error handling
     connect(
-        m_sendingWorker.get(), &RepeatedSendingWorker::errorOccurred, this,
+        m_consumerWorker.get(), &SendingConsumerWorker::errorOccurred, this,
         [this](const QString& error) {
             LOG_ERR(Constants::MODULE_IDENTIFIER, "Repeated sending error: {}",
                     error.toStdString());
@@ -180,9 +196,9 @@ void SendingComponent::setupConnections()
         Qt::QueuedConnection);
 }
 
-void SendingComponent::startRepeatedSending(const int intervalMs) const
+void SendingComponent::startRepeatedSending(const int intervalUs) const
 {
-    if (m_sendingWorker->isSending())
+    if (m_repeatedWorker->isRunning())
     {
         return;
     }
@@ -191,36 +207,75 @@ void SendingComponent::startRepeatedSending(const int intervalMs) const
     {
         m_variableRegistry->reset();
     }
+    m_activeFaultHandler = m_view->dbcSubView()->getFaultHandler();
 
-    LOG_INF(Constants::MODULE_IDENTIFIER, "Starting repeated sending, interval={}ms", intervalMs);
+    LOG_INF(Constants::MODULE_IDENTIFIER, "Starting repeated sending, interval={}µs", intervalUs);
 
-    auto callback = [this]() {
-        // Called from worker thread - build messages and publish directly to broker
-        m_model->forEachPendingMessage(
-            [this](const Core::RawCanMessage& message) {
-                std::scoped_lock lock(m_brokerMutex);
-                m_eventBroker.publish(Core::SendCanMessageRawEvent(message));
+    m_model->buildSendCache();
+
+    auto callback = [this](const Clock::time_point deadline) -> std::vector<ScheduledItem> {
+        std::vector<ScheduledItem> items;
+        m_model->forEachCachedMessage(
+            [&](Core::RawCanMessage& msg) {
+                if (m_activeFaultHandler)
+                {
+                    m_activeFaultHandler->inject(msg.messageId, msg.dlc, msg.data);
+                    const auto [drop, delayOffset] = m_activeFaultHandler->evaluate();
+                    if (drop) return;
+                    auto context = std::make_shared<RawSendContext>(
+                        RawSendContext{.broker = &m_eventBroker, .message = msg});
+                    items.push_back(ScheduledItem{.scheduledAt = deadline + delayOffset,
+                                                  .onSend = &rawSendImpl,
+                                                  .context = std::move(context)});
+                } else
+                {
+                    auto context = std::make_shared<RawSendContext>(
+                        RawSendContext{.broker = &m_eventBroker, .message = msg});
+                    items.push_back(ScheduledItem{.scheduledAt = deadline,
+                                                  .onSend = &rawSendImpl,
+                                                  .context = std::move(context)});
+                }
             },
-            [this](const Core::DbcCanMessage& message) {
-                std::scoped_lock lock(m_brokerMutex);
-                m_eventBroker.publish(Core::SendCanMessageDbcEvent(message));
+            [&](Core::DbcCanMessage& msg) {
+                if (m_activeFaultHandler) m_activeFaultHandler->inject(msg);
+                Core::RawCanMessage encoded;
+                m_eventBroker.publish(Core::EncodeCanMessageDbcEvent(msg, encoded));
+                if (m_activeFaultHandler)
+                {
+                    m_activeFaultHandler->inject(encoded.messageId, encoded.dlc, encoded.data);
+                    const auto [drop, delayOffset] = m_activeFaultHandler->evaluate();
+                    if (drop) return;
+                    auto context = std::make_shared<RawSendContext>(
+                        RawSendContext{.broker = &m_eventBroker, .message = encoded});
+                    items.push_back(ScheduledItem{.scheduledAt = deadline + delayOffset,
+                                                  .onSend = &rawSendImpl,
+                                                  .context = std::move(context)});
+                } else
+                {
+                    auto context = std::make_shared<RawSendContext>(
+                        RawSendContext{.broker = &m_eventBroker, .message = encoded});
+                    items.push_back(ScheduledItem{.scheduledAt = deadline,
+                                                  .onSend = &rawSendImpl,
+                                                  .context = std::move(context)});
+                }
             });
+        return items;
     };
 
-    m_sendingWorker->startSending(callback, intervalMs);
+    m_repeatedWorker->startCreating(std::move(callback), intervalUs);
     m_model->setTransmissionStatus(true);
 }
 
 void SendingComponent::stopRepeatedSending() const
 {
-    if (!m_sendingWorker->isSending())
+    if (!m_repeatedWorker->isRunning())
     {
         m_model->setTransmissionStatus(false);
         return;
     }
 
     LOG_INF(Constants::MODULE_IDENTIFIER, "Stopping repeated sending");
-    m_sendingWorker->stopSending();
+    m_repeatedWorker->stopCreating();
     m_model->setTransmissionStatus(false);
 }
 
@@ -230,6 +285,7 @@ void SendingComponent::sendOnce() const
     {
         m_variableRegistry->reset();
     }
+    m_activeFaultHandler = m_view->dbcSubView()->getFaultHandler();
     m_model->transmitCurrent();
 }
 
@@ -240,12 +296,12 @@ void SendingComponent::setupBrokerSubscriptions()
             LOG_INF(Constants::MODULE_IDENTIFIER, "DBC parse succeeded, queuing to UI thread");
             Core::DbcConfig configCopy = event.config;
             QMetaObject::invokeMethod(
-                this, [this, configCopy]() { onDbcConfigReceived(configCopy); },
+                this, [this, configCopy]() -> void { onDbcConfigReceived(configCopy); },
                 Qt::QueuedConnection);
         });
 
     m_parseErrorConn = m_eventBroker.subscribe<Core::DBCParseErrorEvent>(
-        [this](const Core::DBCParseErrorEvent& event) {
+        [this](const Core::DBCParseErrorEvent& event) -> void {
             LOG_ERR(Constants::MODULE_IDENTIFIER, "DBC parse failed: {}", event.errorMessage);
 
             QMetaObject::invokeMethod(this, &SendingComponent::onDbcParseError,
@@ -253,9 +309,9 @@ void SendingComponent::setupBrokerSubscriptions()
         });
 
     m_canDriverChangeConn = m_eventBroker.subscribe<Core::CanDriverChangeEvent>(
-        [this](const Core::CanDriverChangeEvent&) {
+        [this](const Core::CanDriverChangeEvent&) -> void {
             QMetaObject::invokeMethod(
-                this, [this]() { checkDeviceReadiness(); }, Qt::QueuedConnection);
+                this, [this]() -> void { checkDeviceReadiness(); }, Qt::QueuedConnection);
         });
 }
 

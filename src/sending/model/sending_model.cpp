@@ -132,8 +132,8 @@ auto SendingModel::data(const QModelIndex& index, int role) const -> QVariant
             return static_cast<int>(m_currentMode);
         case Role_IsCyclicEnabled:
             return m_cyclicState.isEnabled;
-        case Role_CycleIntervalMs:
-            return m_cyclicState.intervalMs;
+        case Role_CycleIntervalUs:
+            return m_cyclicState.intervalUs;
         case Role_IsCurrentlySending:
             return m_cyclicState.isSending;
         default:
@@ -217,17 +217,17 @@ auto SendingModel::setData(const QModelIndex& index, const QVariant& value, int 
             emit dataChanged(index, index, {role});
             return true;
 
-        case Role_CycleIntervalMs: {
+        case Role_CycleIntervalUs: {
             int interval = value.toInt();
-            if (interval < Constants::MIN_CYCLE_INTERVAL_MS)
+            if (interval < Constants::MIN_CYCLE_INTERVAL_US)
             {
-                interval = Constants::MIN_CYCLE_INTERVAL_MS;
+                interval = Constants::MIN_CYCLE_INTERVAL_US;
             }
-            if (interval > Constants::MAX_CYCLE_INTERVAL_MS)
+            if (interval > Constants::MAX_CYCLE_INTERVAL_US)
             {
-                interval = Constants::MAX_CYCLE_INTERVAL_MS;
+                interval = Constants::MAX_CYCLE_INTERVAL_US;
             }
-            m_cyclicState.intervalMs = interval;
+            m_cyclicState.intervalUs = interval;
             emit dataChanged(index, index, {role});
             return true;
         }
@@ -309,13 +309,13 @@ void SendingModel::setTransmissionStatus(const bool isActive)
 
 void SendingModel::transmitCurrent()
 {
-    forEachPendingMessage([this](const Core::RawCanMessage& msg) { emit requestSendRaw("", msg); },
-                          [this](const Core::DbcCanMessage& msg) { emit requestSendDbc("", msg); });
+    forEachPendingMessage([this](Core::RawCanMessage& msg) { emit requestSendRaw("", msg); },
+                          [this](Core::DbcCanMessage& msg) { emit requestSendDbc("", msg); });
 }
 
 void SendingModel::forEachPendingMessage(
-    const std::function<void(const Core::RawCanMessage&)>& rawHandler,
-    const std::function<void(const Core::DbcCanMessage&)>& dbcHandler) const
+    const std::function<void(Core::RawCanMessage&)>& rawHandler,
+    const std::function<void(Core::DbcCanMessage&)>& dbcHandler) const
 {
     if (m_currentMode == Mode::Raw)
     {
@@ -387,6 +387,99 @@ void SendingModel::forEachPendingMessage(
             {
                 dbcHandler(message);
             }
+        }
+    }
+}
+
+void SendingModel::buildSendCache()
+{
+    m_messageCache.clear();
+
+    if (m_currentMode != Mode::Dbc || !m_currentDbc.has_value())
+    {
+        return;
+    }
+
+    std::lock_guard lock(m_evalMutex);
+
+    for (const auto& msgDef : m_currentDbc->messageDefinitions)
+    {
+        Core::DbcCanMessage msg{};
+        msg.messageId = static_cast<uint16_t>(msgDef.messageId & Constants::MAX_CAN_ID);
+
+        for (const auto& sigDef : msgDef.signalDescriptions)
+        {
+            if (!isSignalSelected(msgDef.messageId, sigDef.signalName))
+            {
+                continue;
+            }
+
+            Core::DbcCanSignal sig;
+            sig.name = sigDef.signalName;
+
+            // Seed value: evaluator takes priority, then dynamic map, then minimum
+            const std::string key = makeSignalKey(msgDef.messageId, sigDef.signalName);
+            if (auto it = m_signalEvaluators.find(key); it != m_signalEvaluators.end())
+            {
+                sig.value = std::clamp(it->second(), sigDef.minimum, sigDef.maximum);
+            } else if (auto valIt = m_dynamicSignalValues.find(key);
+                       valIt != m_dynamicSignalValues.end())
+            {
+                sig.value = valIt->second;
+            } else
+            {
+                sig.value = sigDef.minimum;
+            }
+
+            msg.signalValues.push_back(std::move(sig));
+        }
+
+        if (!msg.signalValues.empty())
+        {
+            m_messageCache.push_back(std::move(msg));
+        }
+    }
+}
+
+void SendingModel::forEachCachedMessage(const std::function<void(Core::RawCanMessage&)>& rawHandler,
+                                        const std::function<void(Core::DbcCanMessage&)>& dbcHandler)
+{
+    if (m_currentMode == Mode::Raw)
+    {
+        Core::RawCanMessage message{};
+        message.messageId = static_cast<uint16_t>(m_rawState.id & Constants::MAX_CAN_ID);
+        message.dlc = m_rawState.dlc;
+        for (size_t i = 0; i < Constants::MAX_CAN_DLC && i < m_rawState.data.size(); ++i)
+        {
+            message.data[i] = static_cast<char>(m_rawState.data[i]);
+        }
+        if (rawHandler)
+        {
+            rawHandler(message);
+        }
+        return;
+    }
+
+    for (const auto& cachedMsg : m_messageCache)
+    {
+        Core::DbcCanMessage msg = cachedMsg;
+
+        if (!m_signalEvaluators.empty())
+        {
+            std::lock_guard lock(m_evalMutex);
+            for (auto& sig : msg.signalValues)
+            {
+                const std::string key = makeSignalKey(msg.messageId, sig.name);
+                if (auto it = m_signalEvaluators.find(key); it != m_signalEvaluators.end())
+                {
+                    sig.value = it->second();
+                }
+            }
+        }
+
+        if (dbcHandler)
+        {
+            dbcHandler(msg);
         }
     }
 }
@@ -488,6 +581,23 @@ void SendingModel::setSignalValue(const uint16_t messageId, const std::string& s
 
     const std::string key = makeSignalKey(messageId, signalName);
     m_dynamicSignalValues[key] = clamped;
+
+    // Keep cache current so forEachCachedMessage never needs to look up static values
+    for (auto& cachedMsg : m_messageCache)
+    {
+        if (cachedMsg.messageId != messageId)
+        {
+            continue;
+        }
+        for (auto& sig : cachedMsg.signalValues)
+        {
+            if (sig.name == signalName)
+            {
+                sig.value = clamped;
+            }
+        }
+        break;
+    }
 }
 
 void SendingModel::setSignalEvaluator(const uint16_t messageId, const std::string& signalName,

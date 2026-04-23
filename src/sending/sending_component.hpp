@@ -28,7 +28,9 @@
 #include "delegate/sending_delegate.hpp"
 #include "model/sending_model.hpp"
 #include "view/sending_view.hpp"
-#include "worker/repeated_sending_worker.hpp"
+#include "worker/repeated_producer_worker.hpp"
+#include "worker/scheduled_item_queue.hpp"
+#include "worker/sending_consumer_worker.hpp"
 
 namespace Sending {
 /**
@@ -50,7 +52,7 @@ class SendingComponent final : public Core::ITabComponent
     /**
      * @brief Constructs the SendingComponent.
      *
-     * Initializes the model, view, and delegate and wires them together.
+     * Initializes the model, view, delegate, and worker pipeline and wires them together.
      *
      * @param broker Event broker used for inter-component communication.
      */
@@ -118,21 +120,21 @@ class SendingComponent final : public Core::ITabComponent
      * @brief Publishes a raw CAN message in a worker thread.
      * Thread-safe: copies message before spawning thread.
      */
-    void publishRawMessageAsync(const Core::RawCanMessage& message);
+    void publishRawMessageAsync(const Core::RawCanMessage& message) const;
 
     /**
      * @brief Publishes a DBC CAN message in a worker thread.
      * Thread-safe: copies message before spawning thread.
      */
-    void publishDbcMessageAsync(const Core::DbcCanMessage& message);
+    void publishDbcMessageAsync(const Core::DbcCanMessage& message) const;
 
     /**
-     * @brief Starts repeated sending at the given interval using the worker thread.
+     * @brief Starts the producer/consumer pipeline at the given interval.
      */
-    void startRepeatedSending(int intervalMs) const;
+    void startRepeatedSending(int intervalUs) const;
 
     /**
-     * @brief Stops the repeated sending worker.
+     * @brief Stops the producer/consumer pipeline.
      */
     void stopRepeatedSending() const;
 
@@ -167,14 +169,27 @@ class SendingComponent final : public Core::ITabComponent
     /** @brief Mutex protecting event broker access from multiple threads. */
     mutable std::mutex m_brokerMutex;
 
-    /** @brief Worker thread for repeated (cyclic) CAN message transmission. */
-    std::unique_ptr<RepeatedSendingWorker> m_sendingWorker;
+    /**
+     * @brief Shared channel between producer and consumer.
+     */
+    std::unique_ptr<ScheduledItemQueue> m_queue;
+
+    /** @brief Producer thread for repeated sending. */
+    std::unique_ptr<RepeatedProducerWorker> m_repeatedWorker;
+
+    /** @brief Consumer thread for actual sending. */
+    std::unique_ptr<SendingConsumerWorker> m_consumerWorker;
 
     /** @brief Timestamp when the component started, used for diagnostics. */
     std::chrono::steady_clock::time_point m_startTime;
 
     /** @brief Cached state of device readiness to avoid redundant overlay updates. */
     mutable bool m_lastDeviceReadyState = true;
+
+    /**
+     * @brief Fault handler built once per send session (single send or repeated send start).
+     */
+    mutable std::shared_ptr<Core::IFaultHandler> m_activeFaultHandler;
 };
 
 }  // namespace Sending

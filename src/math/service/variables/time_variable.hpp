@@ -35,11 +35,9 @@ class TimeVariable final : public IVariable
 {
    public:
     explicit TimeVariable(const TimeUnit unit)
-        : m_unit(unit),
-          m_factor(factorFor(unit)),
-          m_value(std::make_shared<double>(0.0)),
-          m_start(std::chrono::steady_clock::now())
+        : m_unit(unit), m_factor(factorFor(unit)), m_start(std::chrono::steady_clock::now())
     {
+        m_value.store(0.0, std::memory_order_relaxed);
     }
 
     [[nodiscard]] auto configKey() const -> std::string override
@@ -64,22 +62,19 @@ class TimeVariable final : public IVariable
     void reset()
     {
         m_start = std::chrono::steady_clock::now();
+        m_value.store(0.0, std::memory_order_relaxed);
     }
 
     auto ptr() -> double* override
     {
-        return m_value.get();
-    }
-
-    auto sharedPtr() -> std::shared_ptr<double> override
-    {
-        return m_value;
+        return reinterpret_cast<double*>(&m_value);
     }
 
     void update() override
     {
         const auto elapsed = std::chrono::steady_clock::now() - m_start;
-        *m_value = std::chrono::duration<double, std::nano>(elapsed).count() * m_factor;
+        m_value.store(std::chrono::duration<double, std::nano>(elapsed).count() * m_factor,
+                      std::memory_order_relaxed);
     }
 
     static auto unitSuffix(const TimeUnit unit) -> std::string
@@ -129,7 +124,7 @@ class TimeVariable final : public IVariable
 
     TimeUnit m_unit;
     double m_factor;
-    std::shared_ptr<double> m_value;
+    alignas(64) std::atomic<double> m_value;
     std::chrono::steady_clock::time_point m_start;
 };
 
