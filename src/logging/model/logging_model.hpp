@@ -19,12 +19,14 @@
 #include <QDateTime>
 #include <QString>
 #include <map>
+#include <memory>
+#include <mutex>
 #include <optional>
 #include <vector>
 
+#include "can_stream/writer/mdf4_writer.hpp"
 #include "core/dto/can_dto.hpp"
 #include "core/dto/dbc_dto.hpp"
-#include "spdlog/spdlog.h"
 
 namespace Logging {
 
@@ -36,16 +38,14 @@ enum LogSessionType { RAW, DBC_BASED };
  * They are read from the log file (logs/session_{id}_CanLogging.log) when needed.
  */
 struct LogSession {
-    QString id;                // Session ID (timestamp) - used to locate log file
-    QDateTime startDateTime;   // When session started
-    QString duration;          // Session duration (HH:MM:SS)
-    bool isRecording = false;  // Whether session is currently active
-    LogSessionType type;       // Type of the Session
-    std::map<uint32_t, QStringList> selectedSignals;  // Map of message ID to selected signal names
-                                                      // (for filtering during logging)
-    std::map<uint16_t, std::pair<int, int>> signalsBeforeAfterMessage;
+    QString id;
+    QDateTime startDateTime;
+    QString duration;
+    bool isRecording = false;
+    LogSessionType type;
+    std::map<uint32_t, QStringList> selectedSignals;
 
-    std::shared_ptr<spdlog::logger> logger;
+    std::unique_ptr<CanStream::Mdf4Writer> writer;
 };
 
 /**
@@ -128,13 +128,10 @@ class LoggingModel final : public QAbstractTableModel
     void updateDbcConfig(const Core::DbcConfig& config);
 
     /**
-     * @brief Creates a new session and sets it as the active target for data.
+     * @brief Creates a new DBC session and opens the MDF4 writer.
      * @param selectedSignals Map of message IDs to selected signal names for logging.
-     * @param signalsBeforeAfterMessage
      */
-    void startNewDbcLogSession(
-        const std::map<uint32_t, QStringList>& selectedSignals = {},
-        const std::map<uint16_t, std::pair<int, int>>& signalsBeforeAfterMessage = {});
+    void startNewDbcLogSession(const std::map<uint32_t, QStringList>& selectedSignals = {});
 
     void startNewRawLogsSession();
     /**
@@ -144,6 +141,12 @@ class LoggingModel final : public QAbstractTableModel
 
     /** @brief Updates the duration string of the active session based on current time. */
     void updateActiveDuration();
+
+    /** @brief Flushes the active session writer to disk. Call periodically (e.g. from UI timer). */
+    void flushActiveWriter();
+
+    /** @brief Returns the .mf4 file path for a given session ID. */
+    static QString sessionFilePath(const QString& sessionId);
 
     /**
      * @brief Handler for incoming DBC-decoded CAN messages. Adds the message to the active session

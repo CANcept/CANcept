@@ -82,8 +82,8 @@ class MonitoringModel final : public QAbstractItemModel
     /**
      * @brief Returns the model index for the given row and column.
      */
-    [[nodiscard]] auto index(int row, int column,
-                             const QModelIndex& parent) const -> QModelIndex override;
+    [[nodiscard]] auto index(int row, int column, const QModelIndex& parent) const
+        -> QModelIndex override;
 
     /**
      * @brief Returns the parent index of a given model index.

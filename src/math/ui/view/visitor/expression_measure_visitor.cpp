@@ -143,8 +143,8 @@ void ExpressionMeasureVisitor::visit(const FunctionToken& token)
     }
 }
 
-auto ExpressionMeasureVisitor::childSize(const Token<TokenKind::Internal>& parent,
-                                         const int index) -> QSizeF
+auto ExpressionMeasureVisitor::childSize(const Token<TokenKind::Internal>& parent, const int index)
+    -> QSizeF
 {
     if (const auto& children = parent.children();
         static_cast<int>(children.size()) > index && children[index])

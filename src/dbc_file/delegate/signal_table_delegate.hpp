@@ -70,8 +70,8 @@ class SignalTableDelegate : public QStyledItemDelegate
      *
      * Height is fixed using the application's theme spacing (HeightSm).
      */
-    [[nodiscard]] auto sizeHint(const QStyleOptionViewItem& option,
-                                const QModelIndex& index) const -> QSize override;
+    [[nodiscard]] auto sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const
+        -> QSize override;
 };
 
 }  // namespace DbcFile

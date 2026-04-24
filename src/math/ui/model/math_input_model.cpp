@@ -251,8 +251,8 @@ auto MathInputModel::isComplete() const -> bool
     return m_root && !findNextEmptySlot(m_root.get());
 }
 
-auto MathInputModel::findParent(const TokenBase* target,
-                                Token<TokenKind::Internal>* node) -> Token<TokenKind::Internal>*
+auto MathInputModel::findParent(const TokenBase* target, Token<TokenKind::Internal>* node)
+    -> Token<TokenKind::Internal>*
 {
     if (!node) return nullptr;
 

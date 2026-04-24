@@ -15,25 +15,21 @@
 
 #pragma once
 
+#include <cstdint>
 #include <string>
-#include <utility>
+#include <vector>
 
-#include "event.hpp"
-#include "settings_event.hpp"
+namespace CanStream {
 
-namespace Core {
-
-/** @brief Event to get available theme options from providers. */
-struct GetAvailableThemesEvent final : public SelectProviderOptionEvent {
-    explicit GetAvailableThemesEvent(std::list<SelectOption>* options)
-        : SelectProviderOptionEvent(options) {};
+struct SignalInfo {
+    std::string name;
+    std::string unit;
 };
 
-/** @brief Published when the user selects a different theme. */
-struct ThemeChangeEvent final : public Event {
-    std::string themeName;
-
-    explicit ThemeChangeEvent(std::string themeName) : themeName(std::move(themeName)) {};
+struct MessageInfo {
+    uint16_t msgId;
+    std::string name;
+    std::vector<SignalInfo> signalList;
 };
 
-}  // namespace Core
+}  // namespace CanStream

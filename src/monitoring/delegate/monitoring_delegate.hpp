@@ -55,8 +55,8 @@ class MonitoringDelegate : public QStyledItemDelegate
      * @param locale The locale used for formatting.
      * @return Localized, formatted display string.
      */
-    [[nodiscard]] auto displayText(const QVariant& value,
-                                   const QLocale& locale) const -> QString override;
+    [[nodiscard]] auto displayText(const QVariant& value, const QLocale& locale) const
+        -> QString override;
     /**
      * @brief Paints a rounded card with an icon and a count badge.
      *
@@ -80,8 +80,8 @@ class MonitoringDelegate : public QStyledItemDelegate
      * @caller Qt View layout system.
      * @return A fixed size (e.g., 200x50px) to ensure proper grid alignment.
      */
-    [[nodiscard]] auto sizeHint(const QStyleOptionViewItem& option,
-                                const QModelIndex& index) const -> QSize override;
+    [[nodiscard]] auto sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const
+        -> QSize override;
 
    private:
     void drawMessageNode(QPainter* painter, const QRect& rect, const QModelIndex& index) const;

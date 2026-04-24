@@ -71,8 +71,8 @@ void SidebarDelegate::initStyleOption(QStyleOptionViewItem* option, const QModel
     option->icon = QIcon(pixmap);
 }
 
-auto SidebarDelegate::sizeHint(const QStyleOptionViewItem& option,
-                               const QModelIndex& index) const -> QSize
+auto SidebarDelegate::sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const
+    -> QSize
 {
     // Enforce a minimum row height to ensure consistent spacing
     // and sufficient click target size in the sidebar.
@@ -81,8 +81,8 @@ auto SidebarDelegate::sizeHint(const QStyleOptionViewItem& option,
     return size;
 }
 auto SidebarDelegate::helpEvent(QHelpEvent* event, QAbstractItemView* view,
-                                const QStyleOptionViewItem& option,
-                                const QModelIndex& index) -> bool
+                                const QStyleOptionViewItem& option, const QModelIndex& index)
+    -> bool
 {
     // Only show a tooltip for disabled items.
     // Enabled items are expected to be self-explanatory or interactive.

@@ -65,8 +65,8 @@ class MessagesDetailDelegate final : public QStyledItemDelegate
      * @param index Model index (unused for sizing).
      * @return Size hint with a fixed height and view-defined width.
      */
-    [[nodiscard]] auto sizeHint(const QStyleOptionViewItem& option,
-                                const QModelIndex& index) const -> QSize override;
+    [[nodiscard]] auto sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const
+        -> QSize override;
 
     /**
      * @brief Paints the card layout for the given model index.

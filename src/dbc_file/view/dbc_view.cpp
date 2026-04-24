@@ -25,8 +25,8 @@ namespace DbcFile {
 namespace {
 
 // Creates, configures and rebuilds a flat proxy for a given item type.
-auto makeFlatProxy(Core::DbcItemType type, QObject* parent,
-                   QAbstractItemModel* source) -> std::unique_ptr<FlatListProxy>
+auto makeFlatProxy(Core::DbcItemType type, QObject* parent, QAbstractItemModel* source)
+    -> std::unique_ptr<FlatListProxy>
 {
     auto proxy = std::make_unique<FlatListProxy>(type, parent);
     proxy->setSourceModel(source);

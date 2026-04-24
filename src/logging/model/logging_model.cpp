@@ -15,7 +15,7 @@
 
 #include "logging_model.hpp"
 
-#include "core/util/log_service.hpp"
+#include <filesystem>
 
 namespace Logging {
 // Initialize base class and members
@@ -257,10 +257,8 @@ void LoggingModel::updateDbcConfig(const Core::DbcConfig& config)
     m_currentDbc = config;
 }
 
-// Creates and starts a new logging session with selected signals
-void LoggingModel::startNewDbcLogSession(
-    const std::map<uint32_t, QStringList>& selectedSignals,
-    const std::map<uint16_t, std::pair<int, int>>& signalsBeforeAfterMessage)
+// Creates and starts a new DBC logging session, opening the MDF4 writer
+void LoggingModel::startNewDbcLogSession(const std::map<uint32_t, QStringList>& selectedSignals)
 {
     if (isRecording())
     {
@@ -276,12 +274,29 @@ void LoggingModel::startNewDbcLogSession(
     newSession.duration = "00:00:00";
     newSession.isRecording = true;
     newSession.selectedSignals = selectedSignals;
-    newSession.signalsBeforeAfterMessage = signalsBeforeAfterMessage;
     newSession.type = DBC_BASED;
-    newSession.logger = Core::LogService::getInstance().getLogger(Core::LogContext::CanLogging,
-                                                                  newSession.id.toStdString());
 
-    m_sessions.push_back(newSession);
+    std::vector<CanStream::MessageInfo> schema;
+    for (const auto& [msgId, sigNames] : selectedSignals)
+    {
+        CanStream::MessageInfo msgInfo;
+        msgInfo.msgId = static_cast<uint16_t>(msgId);
+        msgInfo.name = getMessageName(static_cast<uint16_t>(msgId)).toStdString();
+        for (const auto& sig : sigNames)
+        {
+            CanStream::SignalInfo sigInfo;
+            sigInfo.name = sig.toStdString();
+            sigInfo.unit = getSignalUnit(static_cast<uint16_t>(msgId), sig).toStdString();
+            msgInfo.signalList.push_back(std::move(sigInfo));
+        }
+        schema.push_back(std::move(msgInfo));
+    }
+
+    std::filesystem::create_directories("logs");
+    newSession.writer = std::make_unique<CanStream::Mdf4Writer>(
+        sessionFilePath(newSession.id).toStdString(), newSession.id.toULongLong(), schema);
+
+    m_sessions.push_back(std::move(newSession));
     m_activeSessionIndex = static_cast<int>(m_sessions.size()) - 1;
     endInsertRows();
 }
@@ -294,16 +309,19 @@ void LoggingModel::startNewRawLogsSession()
     }
     std::scoped_lock<std::mutex> lock(m_messageReceiveMutex);
     beginInsertRows(QModelIndex(), rowCount(), rowCount());
+
     LogSession newSession;
     newSession.id = QString::number(QDateTime::currentMSecsSinceEpoch());
     newSession.startDateTime = QDateTime::currentDateTime();
     newSession.duration = "00:00:00";
     newSession.isRecording = true;
     newSession.type = RAW;
-    newSession.logger = Core::LogService::getInstance().getLogger(Core::LogContext::CanLogging,
-                                                                  newSession.id.toStdString());
 
-    m_sessions.push_back(newSession);
+    std::filesystem::create_directories("logs");
+    newSession.writer = std::make_unique<CanStream::Mdf4Writer>(
+        sessionFilePath(newSession.id).toStdString(), newSession.id.toULongLong());
+
+    m_sessions.push_back(std::move(newSession));
     m_activeSessionIndex = static_cast<int>(m_sessions.size()) - 1;
     endInsertRows();
 }
@@ -317,6 +335,11 @@ void LoggingModel::stopActiveSession()
         if (!isRecording())
         {
             return;
+        }
+
+        if (m_sessions[m_activeSessionIndex].writer)
+        {
+            m_sessions[m_activeSessionIndex].writer->close();
         }
 
         m_sessions[m_activeSessionIndex].isRecording = false;
@@ -360,42 +383,14 @@ void LoggingModel::onDbcMessageReceived(const Core::DbcCanMessage& message)
     {
         return;
     }
+
     LogSession& activeSession = m_sessions[m_activeSessionIndex];
-    auto* logSession = getSession(activeSession.id);
-    if (!logSession) [[unlikely]]
-    {
-        return;
-    }
-    if (!logSession->selectedSignals.contains(message.messageId))
+    if (!activeSession.selectedSignals.contains(message.messageId) || !activeSession.writer)
     {
         return;
     }
 
-    std::string messageLine = "";
-    messageLine += fmt::format("{},", message.receiveTime.count());
-    messageLine.append(logSession->signalsBeforeAfterMessage.at(message.messageId).first, ',');
-    for (const auto& signal : logSession->selectedSignals.at(message.messageId))
-    {
-        bool containsValue = false;
-        for (const auto& [name, value] : message.signalValues)
-        {
-            if (signal.toStdString() == name)
-            {
-                messageLine += fmt::format("{:.3f},", value);
-                containsValue = true;
-                break;
-            }
-        }
-        if (!containsValue)
-        {
-            messageLine += ",";
-        }
-    }
-
-    messageLine.append(logSession->signalsBeforeAfterMessage.at(message.messageId).second, ',');
-    messageLine.pop_back();
-
-    activeSession.logger->info(messageLine.c_str());
+    activeSession.writer->write(message);
 }
 
 void LoggingModel::onRawMessageReceived(const Core::RawCanMessage& message)
@@ -408,22 +403,28 @@ void LoggingModel::onRawMessageReceived(const Core::RawCanMessage& message)
     {
         return;
     }
+
     LogSession& activeSession = m_sessions[m_activeSessionIndex];
-    auto* logSession = getSession(activeSession.id);
-    if (!logSession) [[unlikely]]
+    if (!activeSession.writer)
     {
         return;
     }
 
-    std::string messageLine = "";
-    messageLine += fmt::format("{},", message.receiveTime.count());
-    messageLine += fmt::format("{:x},", message.messageId);
-    for (uint8_t data : message.data)
-    {
-        messageLine += fmt::format("{:x} ", data);
-    }
-    messageLine.pop_back();
-
-    activeSession.logger->info(messageLine.c_str());
+    activeSession.writer->write(message);
 }
+void LoggingModel::flushActiveWriter()
+{
+    std::scoped_lock<std::mutex> lock(m_messageReceiveMutex);
+    if (m_activeSessionIndex >= 0 && m_sessions[m_activeSessionIndex].writer)
+    {
+        m_sessions[m_activeSessionIndex].writer->flush();
+    }
+}
+
+// static
+QString LoggingModel::sessionFilePath(const QString& sessionId)
+{
+    return QString("logs/session_%1.mf4").arg(sessionId);
+}
+
 }  // namespace Logging

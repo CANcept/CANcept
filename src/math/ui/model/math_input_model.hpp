@@ -93,8 +93,8 @@ class MathInputModel final : public QObject
     void editorStateChanged();
 
    private:
-    [[nodiscard]] auto findParent(const TokenBase* target,
-                                  Token<TokenKind::Internal>* node) -> Token<TokenKind::Internal>*;
+    [[nodiscard]] auto findParent(const TokenBase* target, Token<TokenKind::Internal>* node)
+        -> Token<TokenKind::Internal>*;
     [[nodiscard]] auto findNextEmptySlot(TokenBase* node) const -> std::optional<SlotAddress>;
 
     VariableRegistry& m_registry;

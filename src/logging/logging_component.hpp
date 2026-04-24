@@ -15,8 +15,6 @@
 
 #pragma once
 
-#include <spdlog/spdlog.h>
-
 #include <QElapsedTimer>
 #include <QTimer>
 #include <QWidget>
@@ -83,10 +81,6 @@ class LoggingComponent final : public Core::ITabComponent
 
     QTimer* m_timer;
     QElapsedTimer m_elapsedTimer;
-
-    /** @brief Session-specific logger for CAN data */
-    std::shared_ptr<spdlog::logger> m_sessionLogger;
-    std::string m_currentSessionId;
 
     /** @brief Thread-safe caches for event handlers (accessed from CAN thread) */
     std::atomic<bool> m_isRecording{false};

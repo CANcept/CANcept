@@ -29,14 +29,14 @@ struct CanDriverChangeEvent final : public Event {
      */
     std::string driverName;
 
-    explicit CanDriverChangeEvent(std::string driverName) : driverName(std::move(driverName)){};
+    explicit CanDriverChangeEvent(std::string driverName) : driverName(std::move(driverName)) {};
 };
 /**
  * @brief Event, that gets called to get all currently available can drivers
  */
 struct GetAvailableCanDriversEvent final : public SelectProviderOptionEvent {
     explicit GetAvailableCanDriversEvent(std::list<SelectOption>* options)
-        : SelectProviderOptionEvent(options){};
+        : SelectProviderOptionEvent(options) {};
 };
 /**
  * @brief Event to check if the CAN device is ready for sending messages.

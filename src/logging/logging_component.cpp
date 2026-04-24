@@ -15,17 +15,12 @@
 
 #include "logging_component.hpp"
 
-#include <QFile>
 #include <QFileDialog>
 #include <QMessageBox>
-#include <QProgressDialog>
-#include <QTextStream>
 #include <core/event/can_driver_event.hpp>
 #include <core/event/dbc_event.hpp>
 #include <core/macro/console_logging.hpp>
 #include <core/macro/theme.hpp>
-#include <ranges>
-#include <set>
 
 #include "constants.hpp"
 
@@ -46,8 +41,8 @@ LoggingComponent::LoggingComponent(Core::IEventBroker& broker)
     connect(m_timer, &QTimer::timeout, this, [this]() {
         qint64 elapsedMs = m_elapsedTimer.elapsed();
         m_view->updateTimer(elapsedMs);
+        m_model->flushActiveWriter();
 
-        // Update model duration only every second to avoid excessive repaints
         if (elapsedMs % 1000 < 100)
         {
             m_model->updateActiveDuration();
@@ -155,43 +150,8 @@ void LoggingComponent::startLogging(LogSessionType logSessionType,
     switch (logSessionType)
     {
         case DBC_BASED: {
-            // DBC based logging
+            m_model->startNewDbcLogSession(selectedSignals);
 
-            int selectedSignalsCount = 0;
-            std::map<uint16_t, std::pair<int, int>> signalsBeforeAfterMessage = {};
-            for (const auto& signalList : selectedSignals | std::views::values)
-            {
-                selectedSignalsCount += signalList.size();
-            }
-            int currentSignalCount = 0;
-            for (const auto& [msgId, signalList] : selectedSignals)
-            {
-                signalsBeforeAfterMessage[msgId] = {
-                    currentSignalCount,
-                    selectedSignalsCount - currentSignalCount - signalList.size()};
-                currentSignalCount += signalList.size();
-            }
-
-            m_model->startNewDbcLogSession(selectedSignals, signalsBeforeAfterMessage);
-            m_currentSessionId = m_model->getCurrentSessionId().toStdString();
-            m_sessionLogger = Core::LogService::getInstance().getLogger(
-                Core::LogContext::CanLogging, m_currentSessionId);
-            std::string headerLine;
-            headerLine += "Timestamp,";
-            for (const auto& [msgId, signalList] : selectedSignals)
-            {
-                std::string msgName = m_model->getMessageName(msgId).toStdString();
-                for (const QString& sig : signalList)
-                {
-                    headerLine += fmt::format("{}_{}_{}", msgName, sig.toStdString(),
-                                              m_model->getSignalUnit(msgId, sig).toStdString());
-                    headerLine += ",";
-                }
-            }
-            headerLine.pop_back();
-            m_sessionLogger->info(headerLine.c_str());
-
-            // Set recording flag (thread-safe atomic)
             m_isRecording.store(true, std::memory_order_release);
 
             // Start timer and elapsed time tracking
@@ -208,16 +168,7 @@ void LoggingComponent::startLogging(LogSessionType logSessionType,
         }
         case RAW: {
             m_model->startNewRawLogsSession();
-            m_currentSessionId = m_model->getCurrentSessionId().toStdString();
-            m_sessionLogger = Core::LogService::getInstance().getLogger(
-                Core::LogContext::CanLogging, m_currentSessionId);
-            std::string headerLine;
-            headerLine += "Timestamp,";
-            headerLine += "MessageId,";
-            headerLine += "Data";
-            m_sessionLogger->info(headerLine.c_str());
 
-            // Set recording flag (thread-safe atomic)
             m_isRecording.store(true, std::memory_order_release);
 
             // Start timer and elapsed time tracking
@@ -255,17 +206,6 @@ void LoggingComponent::stopLogging()
     m_rawMsgConn.release();
     m_dbcMsgConn.release();
 
-    // Log session end marker
-    if (m_sessionLogger)
-    {
-        m_sessionLogger->flush();
-
-        // Close session logger
-        Core::LogService::getInstance().closeLogger(Core::LogContext::CanLogging,
-                                                    m_currentSessionId);
-        m_sessionLogger = nullptr;
-    }
-
     m_model->stopActiveSession();
     m_view->setRecordingState(false);
 }
@@ -276,9 +216,9 @@ void LoggingComponent::exportLogSession(const QString& sessionId, const QString&
     stopLogging();
     try
     {
-        std::filesystem::copy_file(
-            Core::LogService::getLogFilePath(Core::LogContext::CanLogging, sessionId.toStdString()),
-            filePath.toStdString());
+        std::filesystem::copy_file(LoggingModel::sessionFilePath(sessionId).toStdString(),
+                                   filePath.toStdString(),
+                                   std::filesystem::copy_options::overwrite_existing);
     } catch (const std::exception& e)
     {
         QMessageBox::critical(m_view.get(), "Error",

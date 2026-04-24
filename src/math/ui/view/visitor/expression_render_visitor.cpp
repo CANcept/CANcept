@@ -289,8 +289,8 @@ void ExpressionRenderVisitor::renderAbsBars(const FunctionToken& token)
                        QPointF(x + barW / 2.0, origin.y() + rowH));
 }
 
-auto ExpressionRenderVisitor::childSize(const Token<TokenKind::Internal>& parent,
-                                        const int index) -> QSizeF
+auto ExpressionRenderVisitor::childSize(const Token<TokenKind::Internal>& parent, const int index)
+    -> QSizeF
 {
     if (const auto& children = parent.children();
         static_cast<int>(children.size()) > index && children[index])

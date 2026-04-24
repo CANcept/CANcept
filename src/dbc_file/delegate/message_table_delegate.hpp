@@ -69,8 +69,8 @@ class MessageTableDelegate final : public QStyledItemDelegate
      * @param index Model index (unused for sizing).
      * @return Size hint with themed row height.
      */
-    [[nodiscard]] auto sizeHint(const QStyleOptionViewItem& option,
-                                const QModelIndex& index) const -> QSize override;
+    [[nodiscard]] auto sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const
+        -> QSize override;
 };
 
 }  // namespace DbcFile
