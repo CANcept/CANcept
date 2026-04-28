@@ -16,13 +16,13 @@
 #pragma once
 
 #include <fstream>
-#include <ios>
 #include <string>
 #include <unordered_map>
 #include <vector>
 
 #include "can_stream/can_stream_schema.hpp"
 #include "core/dto/can_dto.hpp"
+#include "core/interface/i_can_writer.hpp"
 
 namespace CanStream {
 
@@ -33,12 +33,8 @@ namespace CanStream {
  * The file header and channel schema are written on construction.
  * Data records are buffered and flushed to disk periodically via flush()
  * or automatically when the internal buffer reaches capacity.
- * close() must be called (or the destructor will call it) to finalize
- * the file — it patches cycle counts and the data block length.
- *
- * Thread safety: write() and flush() must be called from the same thread.
  */
-class Mdf4Writer
+class Mdf4Writer final : public Core::ICanWriter
 {
    public:
     /** @brief Opens a DBC-decoded session file. Schema must be non-empty. */
@@ -47,65 +43,58 @@ class Mdf4Writer
     /** @brief Opens a RAW frame session file. */
     Mdf4Writer(const std::string& path, uint64_t sessionId);
 
-    ~Mdf4Writer();
+    ~Mdf4Writer() override;
 
     Mdf4Writer(const Mdf4Writer&) = delete;
     Mdf4Writer& operator=(const Mdf4Writer&) = delete;
 
-    void write(const Core::DbcCanMessage& msg);
-    void write(const Core::RawCanMessage& msg);
-
-    /** @brief Flushes the write buffer to disk. Call periodically (e.g. every 100 ms). */
-    void flush();
-
-    /** @brief Finalizes the file. Safe to call multiple times. */
-    void close();
-
-    [[nodiscard]] bool isOpen() const noexcept;
+    void write(const Core::DbcCanMessage& msg) override;
+    void write(const Core::RawCanMessage& msg) override;
+    void flush() override;
+    void close() override;
+    [[nodiscard]] bool isOpen() const noexcept override;
 
    private:
     struct MsgMeta {
-        uint8_t recordId;                   // cg_record_id for this channel group
-        uint8_t sigCount;                   // number of signal channels
-        uint32_t recBytes;                  // cg_data_bytes (record size excluding rec_id prefix)
-        std::vector<std::string> sigOrder;  // signal names in schema order for value lookup
+        uint8_t recordId;
+        uint8_t sigCount;
+        uint32_t recBytes;
+        std::vector<std::string> sigOrder;
     };
 
-    // --- MDF4 block writers (return the file offset of the written block) ---
+    // MDF4 block writers (return the file offset of the written block)
     void writeIdBlock();
     uint64_t writeHdBlock(uint64_t dgOffset, uint64_t fhOffset, uint64_t startNs);
     uint64_t writeFhBlock(uint64_t startNs);
     uint64_t writeDgBlock(uint64_t firstCgOffset, uint64_t dtOffset, uint8_t recIdSize);
-    uint64_t writeCgBlock(uint64_t nextCgOffset, uint64_t firstCnOffset, uint64_t recordId,
-                          uint32_t dataBytes);
+    uint64_t writeCgBlock(uint64_t nextCgOffset, uint64_t firstCnOffset, uint64_t txAcqName,
+                          uint64_t recordId, uint32_t dataBytes, uint16_t cgFlags = 0,
+                          uint64_t siOffset = 0, uint16_t pathSeparator = 0);
+    uint64_t writeSiBlock(uint8_t busType);
     uint64_t writeCnBlock(uint64_t nextCnOffset, uint64_t txNameOffset, uint64_t txUnitOffset,
                           uint8_t channelType, uint8_t syncType, uint8_t dataType,
-                          uint32_t byteOffset, uint32_t bitCount);
+                          uint32_t byteOffset, uint32_t bitCount, uint64_t compositionOffset = 0);
     uint64_t writeTxBlock(const std::string& text);
     uint64_t writeDtBlockHeader();
 
-    // --- Helpers ---
     void writeDbcHeader(const std::vector<MessageInfo>& schema, uint64_t startNs);
     void writeRawHeader(uint64_t startNs);
-    void appendRecord(const void* data, size_t size);
 
-    /** @brief Seeks back to pos and writes a uint64 without disturbing the write position. */
+    /** @brief Seeks back to pos and overwrites a uint64 without disturbing the write position. */
     void patchU64(std::streampos pos, uint64_t value);
 
     [[nodiscard]] uint64_t currentOffset();
 
     std::ofstream m_file;
 
-    // Write buffer — flushed when full or via flush()
-    static constexpr size_t k_bufferCapacity = 4 * 1024 * 1024;
     std::vector<uint8_t> m_buffer;
 
     // Positions to patch on close()
-    std::streampos m_dtLenPos;                 // DTBLOCK.block_len
-    std::vector<std::streampos> m_cgCyclePos;  // one per channel group
+    std::streampos m_dtLenPos;
+    std::vector<std::streampos> m_cgCyclePos;
 
     std::unordered_map<uint16_t, MsgMeta> m_msgMeta;
-    std::vector<uint64_t> m_recordCounts;  // indexed by recordId
+    std::vector<uint64_t> m_recordCounts;
 
     uint64_t m_startNs{0};
     uint64_t m_dtBytesWritten{0};

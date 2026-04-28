@@ -18,15 +18,15 @@
 #include <QAbstractTableModel>
 #include <QDateTime>
 #include <QString>
+#include <atomic>
 #include <map>
 #include <memory>
-#include <mutex>
 #include <optional>
 #include <vector>
 
-#include "can_stream/writer/mdf4_writer.hpp"
 #include "core/dto/can_dto.hpp"
 #include "core/dto/dbc_dto.hpp"
+#include "logging/worker/logging_worker.hpp"
 
 namespace Logging {
 
@@ -45,7 +45,7 @@ struct LogSession {
     LogSessionType type;
     std::map<uint32_t, QStringList> selectedSignals;
 
-    std::unique_ptr<CanStream::Mdf4Writer> writer;
+    std::unique_ptr<LoggingWorker> worker;
 };
 
 /**
@@ -142,9 +142,6 @@ class LoggingModel final : public QAbstractTableModel
     /** @brief Updates the duration string of the active session based on current time. */
     void updateActiveDuration();
 
-    /** @brief Flushes the active session writer to disk. Call periodically (e.g. from UI timer). */
-    void flushActiveWriter();
-
     /** @brief Returns the .mf4 file path for a given session ID. */
     static QString sessionFilePath(const QString& sessionId);
 
@@ -162,16 +159,19 @@ class LoggingModel final : public QAbstractTableModel
      */
     void onRawMessageReceived(const Core::RawCanMessage& message);
 
-   private:
-    /** @brief Updates duration without acquiring the mutex. Caller must hold m_messageReceiveMutex.
-     */
-    void updateActiveDurationLocked();
+   public slots:
+    void onExportRequested(const QModelIndex& index) const;
 
+   private:
     std::optional<Core::DbcConfig> m_currentDbc;
 
     std::vector<LogSession> m_sessions;
     int m_activeSessionIndex = -1;
-    std::mutex m_messageReceiveMutex;
+
+    // Hot-path worker pointers — loaded on every incoming message without a lock.
+    // Written only on start/stop (UI thread), read from the event broker thread.
+    std::atomic<LoggingWorker*> m_rawWorker{nullptr};
+    std::atomic<LoggingWorker*> m_dbcWorker{nullptr};
 };
 
 }  // namespace Logging

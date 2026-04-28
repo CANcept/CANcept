@@ -26,6 +26,8 @@
         <file>assets/icon/logging/logging_detail_view.svg</file>
         <file>assets/icon/logging/start_icon.svg</file>
         <file>assets/icon/logging/stop_icon.svg</file>
+        <file>assets/icon/logging/info.svg</file>
+        <file>assets/icon/logging/database.svg</file>
         <file>assets/icon/monitoring/monitoring_tab.svg</file>
         <file>assets/icon/monitoring/signal_graph.svg</file>
         <file>assets/icon/monitoring/bus_config.svg</file>

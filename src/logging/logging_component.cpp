@@ -21,6 +21,7 @@
 #include <core/event/dbc_event.hpp>
 #include <core/macro/console_logging.hpp>
 #include <core/macro/theme.hpp>
+#include <unordered_set>
 
 #include "constants.hpp"
 
@@ -41,7 +42,6 @@ LoggingComponent::LoggingComponent(Core::IEventBroker& broker)
     connect(m_timer, &QTimer::timeout, this, [this]() {
         qint64 elapsedMs = m_elapsedTimer.elapsed();
         m_view->updateTimer(elapsedMs);
-        m_model->flushActiveWriter();
 
         if (elapsedMs % 1000 < 100)
         {
@@ -54,17 +54,8 @@ LoggingComponent::LoggingComponent(Core::IEventBroker& broker)
     m_view->getHistoryTable()->setItemDelegate(m_delegate.get());
 
     // Connect delegate signals
-    connect(
-        m_delegate.get(), &LoggingDelegate::exportClicked, this, [this](const QModelIndex& index) {
-            const QString sessionId = m_model->sessionIdAt(index);
-            const QString filePath =
-                QFileDialog::getSaveFileName(m_view.get(), "Export Log", {}, "CSV Files (*.csv)");
-
-            if (!filePath.isEmpty())
-            {
-                exportLogSession(sessionId, filePath);
-            }
-        });
+    connect(m_delegate.get(), &LoggingDelegate::exportClicked, m_model.get(),
+            &LoggingModel::onExportRequested);
 
     connect(m_delegate.get(), &LoggingDelegate::detailClicked, m_view.get(),
             &LoggingView::onDetailRequested);
@@ -72,17 +63,6 @@ LoggingComponent::LoggingComponent(Core::IEventBroker& broker)
     // View -> Component
     connect(m_view.get(), &LoggingView::startRequested, this, &LoggingComponent::startLogging);
     connect(m_view.get(), &LoggingView::stopRequested, this, &LoggingComponent::stopLogging);
-
-    connect(m_view.get(), &LoggingView::exportRequested, this, [this](const QModelIndex& index) {
-        const QString sessionId = m_model->sessionIdAt(index);
-        const QString filePath =
-            QFileDialog::getSaveFileName(m_view.get(), "Export Log", {}, "CSV Files (*.csv)");
-
-        if (!filePath.isEmpty())
-        {
-            exportLogSession(sessionId, filePath);
-        }
-    });
 
     // Component -> Model bridge (DBC config updates only)
     connect(this, &LoggingComponent::dbcConfigurationChanged, m_model.get(),
@@ -99,17 +79,14 @@ LoggingComponent::~LoggingComponent()
     }
 }
 
-// Returns the main logging view widget
 auto LoggingComponent::getView() -> LoggingView*
 {
-    // return logging_view
     return m_view.get();
 }
 
 // Called when tab becomes active - subscribes to DBC events
 void LoggingComponent::onStart()
 {
-    // Listen for successful DBC parsing
     m_parseSuccessConn =
         m_eventBroker.subscribe<Core::DBCParsedEvent>([this](const Core::DBCParsedEvent& event) {
             LOG_INF(Constants::MODULE_IDENTIFIER, "DBC parse succeeded, queuing to UI thread");
@@ -159,9 +136,14 @@ void LoggingComponent::startLogging(LogSessionType logSessionType,
             m_view->updateTimer(0);
             m_timer->start();
 
+            std::unordered_set<uint32_t> selectedIds;
+            for (const auto& id : selectedSignals | std::views::keys) selectedIds.insert(id);
+
             m_dbcMsgConn = m_eventBroker.subscribe<Core::ReceivedCanDbcEvent>(
-                [this](const Core::ReceivedCanDbcEvent& event) {
-                    m_model->onDbcMessageReceived(event.canMessage);
+                [this,
+                 selectedIds = std::move(selectedIds)](const Core::ReceivedCanDbcEvent& event) {
+                    if (selectedIds.contains(event.canMessage.messageId))
+                        m_model->onDbcMessageReceived(event.canMessage);
                 });
 
             break;
@@ -208,22 +190,6 @@ void LoggingComponent::stopLogging()
 
     m_model->stopActiveSession();
     m_view->setRecordingState(false);
-}
-
-// Exports a logging session to CSV file
-void LoggingComponent::exportLogSession(const QString& sessionId, const QString& filePath)
-{
-    stopLogging();
-    try
-    {
-        std::filesystem::copy_file(LoggingModel::sessionFilePath(sessionId).toStdString(),
-                                   filePath.toStdString(),
-                                   std::filesystem::copy_options::overwrite_existing);
-    } catch (const std::exception& e)
-    {
-        QMessageBox::critical(m_view.get(), "Error",
-                              QString("Failed to export log session: %1").arg(e.what()));
-    }
 }
 
 void LoggingComponent::checkDeviceReadiness() const

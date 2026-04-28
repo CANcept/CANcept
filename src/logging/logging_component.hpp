@@ -68,7 +68,6 @@ class LoggingComponent final : public Core::ITabComponent
     void startLogging(LogSessionType logSessionType,
                       const std::map<uint32_t, QStringList>& selectedSignals);
     void stopLogging();
-    void exportLogSession(const QString& sessionId, const QString& filePath);
 
    private:
     /** @brief Checks if CAN device is ready and updates overlay accordingly */

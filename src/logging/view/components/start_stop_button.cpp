@@ -55,6 +55,9 @@ void StartStopButton::applyStyle()
                                     "QPushButton[recording=\"false\"]:pressed {"
                                     "   background-color: %5;"
                                     "}"
+                                    "QPushButton[recording=\"false\"]:disabled {"
+                                    "   color: %12;"
+                                    "}"
                                     "QPushButton[recording=\"true\"] {"
                                     "   background-color: %6;"
                                     "   color: %7;"
@@ -66,7 +69,7 @@ void StartStopButton::applyStyle()
                                     "   background-color: %8;"
                                     "}")
                                     .arg(spacing.fontWeightMedium)
-                                    .arg(spacing.spacingLg)
+                                    .arg(spacing.spacingMd)
                                     .arg(colors.surfacePrimary.name())
                                     .arg(colors.textPrimary.name())
                                     .arg(colors.colorPrimaryHover.name())
@@ -75,7 +78,8 @@ void StartStopButton::applyStyle()
                                     .arg(colors.statusErrorHover.name())
                                     .arg(spacing.radiusMd)
                                     .arg(spacing.fontSizeMd)
-                                    .arg(spacing.spacingXl * 2);
+                                    .arg(spacing.spacingXl)
+                                    .arg(colors.textDisabled.name());
     setStyleSheet(buttonStyle);
 }
 

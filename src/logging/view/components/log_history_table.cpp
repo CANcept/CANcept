@@ -52,16 +52,16 @@ void LogHistoryTable::applyStyle()
     const QString tableStyle = QString(
                                    "QTreeView {"
                                    "   border: none;"
-                                   "   background-color: %1;"
-                                   "   font-size: %11px;"
-                                   "   font-weight: %2;"
-                                   "   padding: %10px;"
+                                   "   background-color: transparent;"
+                                   "   font-size: %9px;"
+                                   "   font-weight: %1;"
+                                   "   padding: %8px;"
                                    "   outline: none;"
                                    "}"
                                    "QTreeView::item {"
                                    "   border: none;"
-                                   "   padding: %3px;"
-                                   "   margin-bottom: %4px;"
+                                   "   padding: %2px;"
+                                   "   margin-bottom: %3px;"
                                    "   background-color: transparent;"
                                    "}"
                                    "QTreeView::item:hover {"
@@ -76,29 +76,28 @@ void LogHistoryTable::applyStyle()
                                    "   border: none;"
                                    "}"
                                    "QHeaderView {"
-                                   "   background-color: %1;"
+                                   "   background: transparent;"
                                    "   border: none;"
                                    "}"
                                    "QHeaderView::section {"
-                                   "   background-color: %1;"
+                                   "   background: transparent;"
                                    "   border: none;"
-                                   "   border-bottom: %5px solid %6;"
-                                   "   padding: %4px %7px;"
-                                   "   font-size: %11px;"
-                                   "   font-weight: %8;"
-                                   "   color: %9;"
+                                   "   border-bottom: %4px solid %5;"
+                                   "   padding: %3px %6px;"
+                                   "   font-size: %9px;"
+                                   "   font-weight: %7;"
+                                   "   color: %10;"
                                    "}")
-                                   .arg(colors.surfaceMain.name())
                                    .arg(spacing.fontWeightNormal)
                                    .arg(spacing.spacingXs + 1)
                                    .arg(spacing.spacingMd)
-                                   .arg(spacing.borderThin)
-                                   .arg(colors.borderSubtle.name())
+                                   .arg(spacing.borderThick)
+                                   .arg(colors.borderSubtle.name(QColor::HexArgb))
                                    .arg(spacing.spacingMd - 2)
                                    .arg(spacing.fontWeightMedium)
-                                   .arg(colors.textPrimary.name())
                                    .arg(spacing.spacingXl)
-                                   .arg(spacing.fontSizeMd);
+                                   .arg(spacing.fontSizeMd)
+                                   .arg(colors.textPrimary.name());
     setStyleSheet(tableStyle);
 }
 

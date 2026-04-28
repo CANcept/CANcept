@@ -15,37 +15,30 @@
 
 #pragma once
 
-#include <QLabel>
-#include <cstdint>
+#include <string>
 
-namespace Logging {
+#include "can_stream/export_type.hpp"
+
+namespace CanStream {
 
 /**
- * @class TimerLabel
- * @brief Styled label displaying elapsed time in HH:MM:SS:CS format.
+ * @brief Converts a CAN log file from MDF4 to a requested output format.
  *
- * This component provides a consistent styled label for displaying
- * the elapsed time during recording sessions.
+ * Internally opens an Mdf4Reader on the source file and constructs the
+ * corresponding writer.
  */
-class TimerLabel final : public QLabel
+class CanConverter
 {
-    Q_OBJECT
-
    public:
-    explicit TimerLabel(QWidget* parent = nullptr);
-    ~TimerLabel() override = default;
+    CanConverter(std::string sourcePath, std::string targetPath, ExportType format);
 
-    /**
-     * @brief Updates the timer display with elapsed time.
-     * @param elapsedMs The number of milliseconds elapsed since logging started
-     */
-    void updateTimer(qint64 elapsedMs);
-
-   protected:
-    auto event(QEvent* event) -> bool override;
+    /** @brief Runs the conversion. Returns the output path on success, empty on failure. */
+    [[nodiscard]] auto convert() -> std::string;
 
    private:
-    void applyStyle();
+    std::string m_source;
+    std::string m_target;
+    ExportType m_format;
 };
 
-}  // namespace Logging
+}  // namespace CanStream
