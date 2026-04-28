@@ -50,8 +50,8 @@ class EcuTreeDelegate : public QStyledItemDelegate
      * @param index The model index of the item.
      * @return The preferred QSize for the item.
      */
-    [[nodiscard]] auto sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const
-        -> QSize override;
+    [[nodiscard]] auto sizeHint(const QStyleOptionViewItem& option,
+                                const QModelIndex& index) const -> QSize override;
 
     /**
      * @brief Paints a given item.
@@ -69,8 +69,8 @@ class EcuTreeDelegate : public QStyledItemDelegate
      * @param indentLevel Level of indentation in the tree.
      * @return QRect adjusted for tree indentation and spacing.
      */
-    [[nodiscard]] auto getCardRect(const QStyleOptionViewItem& option, int indentLevel) const
-        -> QRect;
+    [[nodiscard]] auto getCardRect(const QStyleOptionViewItem& option,
+                                   int indentLevel) const -> QRect;
 
     // --- Layout Helper Struct ---
     struct MessageLayout {
@@ -89,8 +89,8 @@ class EcuTreeDelegate : public QStyledItemDelegate
      * @param signalCount Number of signals to layout inside the message card.
      * @return A MessageLayout struct containing positions and sizes of elements.
      */
-    [[nodiscard]] static auto calculateLayout(const QRect& fullRect, int signalCount)
-        -> MessageLayout;
+    [[nodiscard]] static auto calculateLayout(const QRect& fullRect,
+                                              int signalCount) -> MessageLayout;
 
     /**
      * @brief Returns the row rectangle corresponding to the viewport width.

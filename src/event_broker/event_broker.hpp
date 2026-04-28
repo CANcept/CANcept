@@ -41,8 +41,8 @@ class EventBroker final : public Core::IEventBroker
      * @return A connection, that is responsible for keeping the subscription alive. If destroyed
      * the subscription ends
      */
-    auto _subscribe(std::type_index type, std::function<void(const void*)> callback)
-        -> Core::Connection override;
+    auto _subscribe(std::type_index type,
+                    std::function<void(const void*)> callback) -> Core::Connection override;
 
    private:
     /**

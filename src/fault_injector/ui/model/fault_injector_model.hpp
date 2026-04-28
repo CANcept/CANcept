@@ -60,8 +60,8 @@ class FaultInjectorModel final : public QAbstractTableModel
      */
     [[nodiscard]] auto get() -> FaultHandler;
 
-    [[nodiscard]] auto headerData(int section, Qt::Orientation orientation, int role) const
-        -> QVariant override;
+    [[nodiscard]] auto headerData(int section, Qt::Orientation orientation,
+                                  int role) const -> QVariant override;
     [[nodiscard]] auto rowCount(const QModelIndex& parent) const -> int override;
     [[nodiscard]] auto columnCount(const QModelIndex& parent) const -> int override;
     [[nodiscard]] auto data(const QModelIndex& index, int role) const -> QVariant override;

@@ -171,8 +171,8 @@ class MockEventBroker final : public Core::IEventBroker
     /**
      * @brief Implementation of IEventBroker::_subscribe.
      */
-    auto _subscribe(std::type_index type, std::function<void(const void*)> callback)
-        -> Core::Connection override
+    auto _subscribe(std::type_index type,
+                    std::function<void(const void*)> callback) -> Core::Connection override
     {
         _subscribeEvent(type);
         std::lock_guard lock(m_mutex);

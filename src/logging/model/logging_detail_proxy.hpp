@@ -54,13 +54,13 @@ class LoggingDetailProxy final : public QAbstractProxyModel
     // QAbstractProxyModel overrides
     [[nodiscard]] auto mapToSource(const QModelIndex& proxyIndex) const -> QModelIndex override;
     [[nodiscard]] auto mapFromSource(const QModelIndex& sourceIndex) const -> QModelIndex override;
-    [[nodiscard]] auto index(int row, int column, const QModelIndex& parent) const
-        -> QModelIndex override;
+    [[nodiscard]] auto index(int row, int column,
+                             const QModelIndex& parent) const -> QModelIndex override;
     [[nodiscard]] auto parent(const QModelIndex& child) const -> QModelIndex override;
     [[nodiscard]] auto rowCount(const QModelIndex& parent) const -> int override;
     [[nodiscard]] auto columnCount(const QModelIndex& parent) const -> int override;
-    [[nodiscard]] auto data(const QModelIndex& index, int role = Qt::DisplayRole) const
-        -> QVariant override;
+    [[nodiscard]] auto data(const QModelIndex& index,
+                            int role = Qt::DisplayRole) const -> QVariant override;
     [[nodiscard]] auto headerData(int section, Qt::Orientation orientation,
                                   int role = Qt::DisplayRole) const -> QVariant override;
 

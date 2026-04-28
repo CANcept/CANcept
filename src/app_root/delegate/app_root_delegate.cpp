@@ -109,8 +109,8 @@ void AppRootDelegate::paint(QPainter* painter, const QStyleOptionViewItem& optio
     painter->restore();
 }
 
-auto AppRootDelegate::sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const
-    -> QSize
+auto AppRootDelegate::sizeHint(const QStyleOptionViewItem& option,
+                               const QModelIndex& index) const -> QSize
 {
     const int baseHeight = THEME.spacing().fontSizeMd + (THEME.spacing().spacingLg * 2);
 

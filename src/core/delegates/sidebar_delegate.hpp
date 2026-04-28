@@ -71,8 +71,8 @@ class SidebarDelegate : public QStyledItemDelegate
      * @param index Model index of the item.
      * @return Recommended item size.
      */
-    [[nodiscard]] auto sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const
-        -> QSize override;
+    [[nodiscard]] auto sizeHint(const QStyleOptionViewItem& option,
+                                const QModelIndex& index) const -> QSize override;
 
     /**
      * @brief Handles help events such as tooltips.

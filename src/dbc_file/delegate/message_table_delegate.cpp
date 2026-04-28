@@ -109,8 +109,8 @@ void MessageTableDelegate::paint(QPainter* painter, const QStyleOptionViewItem& 
     }
 }
 
-auto MessageTableDelegate::sizeHint(const QStyleOptionViewItem& option, const QModelIndex&) const
-    -> QSize
+auto MessageTableDelegate::sizeHint(const QStyleOptionViewItem& option,
+                                    const QModelIndex&) const -> QSize
 {
     return {option.rect.width(), THEME.spacing().HeightSm};
 }

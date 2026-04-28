@@ -81,8 +81,8 @@ class DbcModel : public QAbstractItemModel
      * @param parent Parent model index.
      * @return A valid QModelIndex if the child exists; otherwise an invalid index.
      */
-    [[nodiscard]] auto index(int row, int column, const QModelIndex& parent) const
-        -> QModelIndex override;
+    [[nodiscard]] auto index(int row, int column,
+                             const QModelIndex& parent) const -> QModelIndex override;
 
     /**
      * @brief Returns the parent index for a given child index.
@@ -232,8 +232,8 @@ class DbcModel : public QAbstractItemModel
      * new `Signal` items to the `messageItem`.
      */
     static auto createSignalItems(const std::list<Core::DbcSignalDescription>& signalDescriptions,
-                                  DbcItem* messageItem, const Core::DbcMessageDescription& msgDesc)
-        -> void;
+                                  DbcItem* messageItem,
+                                  const Core::DbcMessageDescription& msgDesc) -> void;
 
     /**
      * @brief Populates the model from a DBC configuration.

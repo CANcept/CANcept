@@ -112,8 +112,8 @@ auto LoggingDetailProxy::mapFromSource(const QModelIndex& sourceIndex) const -> 
     return {};
 }
 
-auto LoggingDetailProxy::index(const int row, const int column, const QModelIndex& parent) const
-    -> QModelIndex
+auto LoggingDetailProxy::index(const int row, const int column,
+                               const QModelIndex& parent) const -> QModelIndex
 {
     if (parent.isValid()) return {};
     return createIndex(row, column);

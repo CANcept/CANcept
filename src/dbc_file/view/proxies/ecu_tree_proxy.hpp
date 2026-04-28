@@ -82,8 +82,8 @@ class EcuTreeProxy : public QSortFilterProxyModel
      * @param sourceParent Parent index in the source model
      * @return true if row matches current filter
      */
-    [[nodiscard]] auto filterAcceptsRow(int sourceRow, const QModelIndex& sourceParent) const
-        -> bool override;
+    [[nodiscard]] auto filterAcceptsRow(int sourceRow,
+                                        const QModelIndex& sourceParent) const -> bool override;
 
    private:
     QString m_filterText;    ///< Current search text

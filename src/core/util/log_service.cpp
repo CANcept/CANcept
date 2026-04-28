@@ -167,8 +167,8 @@ auto LogService::createRegistryKey(LogContext context, const std::string& sessio
     return contextStr + "_" + sessionId;
 }
 
-auto LogService::getLogFilePath(const LogContext context, const std::string& sessionId)
-    -> std::string
+auto LogService::getLogFilePath(const LogContext context,
+                                const std::string& sessionId) -> std::string
 {
     switch (context)
     {

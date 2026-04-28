@@ -38,8 +38,8 @@ EcuTreeDelegate::EcuTreeDelegate(QTreeView* view, QObject* parent)
 // 1. LAYOUT LOGIK
 // =============================================================================
 
-auto EcuTreeDelegate::getCardRect(const QStyleOptionViewItem& option, int indentLevel) const
-    -> QRect
+auto EcuTreeDelegate::getCardRect(const QStyleOptionViewItem& option,
+                                  int indentLevel) const -> QRect
 {
     const auto& spacing = THEME.spacing();
 
@@ -105,8 +105,8 @@ auto EcuTreeDelegate::calculateLayout(const QRect& fullRect, int signalCount) ->
 // 2. STANDARD OVERRIDES
 // =============================================================================
 
-auto EcuTreeDelegate::sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const
-    -> QSize
+auto EcuTreeDelegate::sizeHint(const QStyleOptionViewItem& option,
+                               const QModelIndex& index) const -> QSize
 {
     const auto& spacing = THEME.spacing();
     if (index.column() > 0) return {0, 0};

@@ -82,8 +82,8 @@ inline auto totalHeightPx() -> int
 
 MessagesDetailDelegate::MessagesDetailDelegate(QObject* parent) : QStyledItemDelegate(parent) {}
 
-auto MessagesDetailDelegate::sizeHint(const QStyleOptionViewItem& option, const QModelIndex&) const
-    -> QSize
+auto MessagesDetailDelegate::sizeHint(const QStyleOptionViewItem& option,
+                                      const QModelIndex&) const -> QSize
 {
     return {option.rect.width(), Layout::totalHeightPx()};
 }

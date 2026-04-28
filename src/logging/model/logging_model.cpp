@@ -310,8 +310,8 @@ void LoggingModel::onExportRequested(const QModelIndex& index) const
     if (filePath.isEmpty()) return;
 
     const CanStream::ExportType type = filePath.endsWith(".csv", Qt::CaseInsensitive)
-                      ? CanStream::ExportType::Csv
-                      : CanStream::ExportType::Mdf4;
+                                           ? CanStream::ExportType::Csv
+                                           : CanStream::ExportType::Mdf4;
 
     CanStream::CanConverter converter(sessionFilePath(m_sessions[index.row()].id).toStdString(),
                                       filePath.toStdString(), type);

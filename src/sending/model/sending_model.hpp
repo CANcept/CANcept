@@ -65,8 +65,8 @@ class SendingModel final : public QAbstractItemModel
     /**
      * @brief Updates internal state (e.g., user changes the interval or toggles cyclic).
      */
-    auto setData(const QModelIndex& index, const QVariant& value, int role = Qt::EditRole)
-        -> bool override;
+    auto setData(const QModelIndex& index, const QVariant& value,
+                 int role = Qt::EditRole) -> bool override;
 
     [[nodiscard]] auto isCyclicEnabled() const -> bool
     {
@@ -107,8 +107,8 @@ class SendingModel final : public QAbstractItemModel
      * @param messageId The message ID that contains the signal
      * @param signalName The signal name (unique within the message)
      */
-    [[nodiscard]] auto isSignalSelected(uint16_t messageId, const std::string& signalName) const
-        -> bool;
+    [[nodiscard]] auto isSignalSelected(uint16_t messageId,
+                                        const std::string& signalName) const -> bool;
 
     /**
      * @brief Sets a signal's value.
@@ -186,8 +186,8 @@ class SendingModel final : public QAbstractItemModel
     /**
      * @brief Creates a unique key for a signal (messageId:signalName).
      */
-    [[nodiscard]] static auto makeSignalKey(uint16_t messageId, const std::string& signalName)
-        -> std::string;
+    [[nodiscard]] static auto makeSignalKey(uint16_t messageId,
+                                            const std::string& signalName) -> std::string;
 
     // Navigation & Mode
     Mode m_currentMode = Mode::Raw;

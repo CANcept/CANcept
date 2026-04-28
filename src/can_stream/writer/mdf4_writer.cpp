@@ -74,8 +74,8 @@ auto Mdf4Writer::writeFhBlock(uint64_t startNs) -> uint64_t
     return currentOffset() - 56;
 }
 
-auto Mdf4Writer::writeDgBlock(uint64_t firstCgOffset, uint64_t dtOffset, uint8_t recIdSize)
-    -> uint64_t
+auto Mdf4Writer::writeDgBlock(uint64_t firstCgOffset, uint64_t dtOffset,
+                              uint8_t recIdSize) -> uint64_t
 {
     // 24 (header) + 4×8 (links) + 8 (data) = 64 bytes
     wBlockHdr(m_file, "##DG", 64, 4);
@@ -129,8 +129,8 @@ auto Mdf4Writer::writeSiBlock(const uint8_t busType) -> uint64_t
 
 auto Mdf4Writer::writeCnBlock(uint64_t nextCnOffset, uint64_t txNameOffset, uint64_t txUnitOffset,
                               uint8_t channelType, uint8_t syncType, uint8_t dataType,
-                              uint32_t byteOffset, uint32_t bitCount, uint64_t compositionOffset)
-    -> uint64_t
+                              uint32_t byteOffset, uint32_t bitCount,
+                              uint64_t compositionOffset) -> uint64_t
 {
     // 24 (header) + 8×8 (links) + 72 (data) = 160 bytes
     wBlockHdr(m_file, "##CN", 160, 8);

@@ -29,8 +29,8 @@
 namespace AppRoot {
 
 auto SettingRenderer<Core::SettingType::Select>::create(const Core::ISetting* setting,
-                                                        SettingsModel* model, QWidget* parent)
-    -> QWidget*
+                                                        SettingsModel* model,
+                                                        QWidget* parent) -> QWidget*
 {
     const auto& spacing = THEME.spacing();
     const auto& colors = THEME.colors();

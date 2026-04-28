@@ -26,14 +26,14 @@ SendingModel::SendingModel(QObject* parent) : QAbstractItemModel(parent), m_curr
 {
 }
 
-auto SendingModel::makeSignalKey(const uint16_t messageId, const std::string& signalName)
-    -> std::string
+auto SendingModel::makeSignalKey(const uint16_t messageId,
+                                 const std::string& signalName) -> std::string
 {
     return std::to_string(messageId) + ':' + signalName;
 }
 
-auto SendingModel::index(const int row, const int column, const QModelIndex& parent) const
-    -> QModelIndex
+auto SendingModel::index(const int row, const int column,
+                         const QModelIndex& parent) const -> QModelIndex
 {
     if (!hasIndex(row, column, parent))
     {
@@ -547,8 +547,8 @@ void SendingModel::setSignalSelected(const uint16_t messageId, const std::string
     }
 }
 
-auto SendingModel::isSignalSelected(const uint16_t messageId, const std::string& signalName) const
-    -> bool
+auto SendingModel::isSignalSelected(const uint16_t messageId,
+                                    const std::string& signalName) const -> bool
 {
     const std::string key = makeSignalKey(messageId, signalName);
     return m_selectedSignalNames.contains(key);
