@@ -21,6 +21,7 @@
 #include <core/event/dbc_event.hpp>
 #include <core/macro/console_logging.hpp>
 #include <core/macro/theme.hpp>
+#include <ranges>
 #include <unordered_set>
 
 #include "constants.hpp"

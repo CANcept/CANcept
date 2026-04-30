@@ -17,6 +17,7 @@
 
 #include <QCheckBox>
 #include <QScrollBar>
+#include <ranges>
 
 #include "core/macro/theme.hpp"
 #include "core/theme/style_event.hpp"
