@@ -52,7 +52,8 @@ class CanDbcHandler final : public ICanParser
      * the event broker
      * @param canMessage The message to be parsed
      */
-    void parseReceivedMessage(const sockcanpp::CanMessage* canMessage) override;
+    void parseReceivedMessage(const sockcanpp::CanMessage* canMessage,
+                              std::chrono::nanoseconds timestamp) override;
 
    private:
     /**

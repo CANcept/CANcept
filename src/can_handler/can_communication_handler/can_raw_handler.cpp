@@ -17,12 +17,12 @@
 
 #include "core/macro/console_logging.hpp"
 namespace CanHandler {
-void CanRawHandler::parseReceivedMessage(const sockcanpp::CanMessage* canMessage)
+void CanRawHandler::parseReceivedMessage(const sockcanpp::CanMessage* canMessage,
+                                         std::chrono::nanoseconds timestamp)
 {
-    // Get message data
     Core::RawCanMessage message;
     message.messageId = static_cast<uint16_t>(canMessage->getRawFrame().can_id);
-    message.receiveTime = canMessage->getTimestampOffset();
+    message.receiveTime = timestamp;
     message.dlc = static_cast<uint8_t>(canMessage->getFrameData().size());
 
     message.data.fill(0);

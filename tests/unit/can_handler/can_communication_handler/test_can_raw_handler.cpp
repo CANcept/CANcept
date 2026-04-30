@@ -67,35 +67,35 @@ TEST_F(CanRawHandlerTest, SubscribedToOneEvent)
 TEST_F(CanRawHandlerTest, ParsesReceivedMessageSuccessfuly)
 {
     const CanMessage canMessage{1, {'0', '0', '0', '0', '0', '0', '0', '0'}};
-    canRawHandler->parseReceivedMessage(&canMessage);
+    canRawHandler->parseReceivedMessage(&canMessage, std::chrono::nanoseconds(0));
     EXPECT_NE(lastReceivedMessage.get(), nullptr);
 }
 
 TEST_F(CanRawHandlerTest, ParsesReceivedMessageCorrectly)
 {
     const CanMessage canMessage{
-        1, {'1', '2', '3', '4', '5', '6', '7', '8'}, static_cast<std::chrono::milliseconds>(1000)};
-    canRawHandler->parseReceivedMessage(&canMessage);
+        1, {'1', '2', '3', '4', '5', '6', '7', '8'}, static_cast<std::chrono::milliseconds>(0)};
+    canRawHandler->parseReceivedMessage(&canMessage, std::chrono::nanoseconds(1000));
     EXPECT_NE(lastReceivedMessage.get(), nullptr);
     for (int i = 0; i < 8; ++i)
     {
         EXPECT_EQ(lastReceivedMessage->data.at(i), canMessage.getRawFrame().data[i]);
     }
     EXPECT_EQ(lastReceivedMessage->messageId, 1);
-    EXPECT_EQ(lastReceivedMessage->receiveTime, static_cast<std::chrono::milliseconds>(1000));
+    EXPECT_EQ(lastReceivedMessage->receiveTime, static_cast<std::chrono::nanoseconds>(1000));
 }
 
 TEST_F(CanRawHandlerTest, ReceivedMessageCountCorrect)
 {
     const CanMessage canMessage{1, {'0', '0', '0', '0', '0', '0', '0', '0'}};
-    canRawHandler->parseReceivedMessage(&canMessage);
+    canRawHandler->parseReceivedMessage(&canMessage, std::chrono::nanoseconds(0));
     EXPECT_EQ(receiveMessageCounter, 1);
 }
 
 TEST_F(CanRawHandlerTest, ParsesReceivedShorterFrames)
 {
     const CanMessage canMessage{1, {'0', '0', '0', '0', '0', '0'}};
-    canRawHandler->parseReceivedMessage(&canMessage);
+    canRawHandler->parseReceivedMessage(&canMessage, std::chrono::nanoseconds(0));
     EXPECT_NE(lastReceivedMessage, nullptr);
 }
 
@@ -104,7 +104,7 @@ TEST_F(CanRawHandlerTest, ParseMultipleReceivedFrames)
     const CanMessage canMessage{1, {'0', '0', '0', '0', '0', '0'}};
     for (int i = 0; i < 10; i++)
     {
-        canRawHandler->parseReceivedMessage(&canMessage);
+        canRawHandler->parseReceivedMessage(&canMessage, std::chrono::nanoseconds(0));
     }
     EXPECT_EQ(receiveMessageCounter, 10);
 }

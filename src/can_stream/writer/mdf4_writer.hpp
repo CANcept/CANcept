@@ -69,8 +69,9 @@ class Mdf4Writer final : public Core::ICanWriter
     uint64_t writeDgBlock(uint64_t firstCgOffset, uint64_t dtOffset, uint8_t recIdSize);
     uint64_t writeCgBlock(uint64_t nextCgOffset, uint64_t firstCnOffset, uint64_t txAcqName,
                           uint64_t recordId, uint32_t dataBytes, uint16_t cgFlags = 0,
-                          uint64_t siOffset = 0, uint16_t pathSeparator = 0);
+                          uint64_t siOffset = 0, uint16_t pathSeparator = 0, uint64_t mdOffset = 0);
     uint64_t writeSiBlock(uint8_t busType);
+    uint64_t writeMdBlock(const std::string& xml);
     uint64_t writeCnBlock(uint64_t nextCnOffset, uint64_t txNameOffset, uint64_t txUnitOffset,
                           uint8_t channelType, uint8_t syncType, uint8_t dataType,
                           uint32_t byteOffset, uint32_t bitCount, uint64_t compositionOffset = 0);

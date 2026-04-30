@@ -102,6 +102,13 @@ static uint64_t txBlockSize(const std::string& text)
     return 24 + padded;
 }
 
+static std::string mdBlockXml(uint16_t msgId)
+{
+    char hex[8];
+    std::snprintf(hex, sizeof(hex), "%X", msgId);
+    return std::string("<CANmessage><id>0x") + hex + "</id></CANmessage>";
+}
+
 struct ChanLayout {
     uint64_t txName;
     uint64_t txUnit;  // 0 = no unit block
@@ -110,6 +117,7 @@ struct ChanLayout {
 
 struct MsgLayout {
     uint64_t txName;
+    uint64_t mdBlock{0};               // MDBLOCK for CAN message ID metadata (DBC sessions)
     uint64_t siBlock{0};               // 0 = no SI block (DBC sessions)
     std::vector<ChanLayout> channels;  // [0] = master time, [1..] = signals
     uint64_t cgBlock;
@@ -135,6 +143,8 @@ static FileLayout computeDbcLayout(const std::vector<MessageInfo>& schema)
         MsgLayout ml;
         ml.txName = pos;
         pos += txBlockSize(msg.name);
+        ml.mdBlock = pos;
+        pos += txBlockSize(mdBlockXml(msg.msgId));
 
         // Master time channel: TX("t") + TX("s" unit) + CNBLOCK
         ChanLayout master;

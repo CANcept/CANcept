@@ -18,7 +18,8 @@
 #include "core/macro/console_logging.hpp"
 
 namespace CanHandler {
-void CanDbcHandler::parseReceivedMessage(const sockcanpp::CanMessage* canMessage)
+void CanDbcHandler::parseReceivedMessage(const sockcanpp::CanMessage* canMessage,
+                                         std::chrono::nanoseconds timestamp)
 {
     // Lock the mutex for data safety
     std::shared_lock guard(dbcMutex);
@@ -50,7 +51,7 @@ void CanDbcHandler::parseReceivedMessage(const sockcanpp::CanMessage* canMessage
 
     // Parsed can message initialization
     Core::DbcCanMessage receivedMessage{
-        .receiveTime = canMessage->getTimestampOffset(),
+        .receiveTime = timestamp,
         .messageId = static_cast<uint16_t>(canMessage->getRawFrame().can_id)};
 
     // Parse signals

@@ -152,10 +152,11 @@ auto LoggingDetailProxy::data(const QModelIndex& index, const int role) const ->
         const auto& [receiveTime, data, messageId, dlc] = buf[row];
 
         // Column order mirrors the CN chain in the file
+        const int64_t t0 = buf.empty() ? 0 : buf[0].receiveTime.count();
         switch (col)
         {
             case 0:
-                return QString::number(static_cast<double>(receiveTime.count()) / 1000.0, 'f', 3);
+                return QString::number(static_cast<double>(receiveTime.count() - t0) / 1e9, 'f', 3);
             case 1:
                 return QStringLiteral("1");
             case 2:

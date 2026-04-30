@@ -90,7 +90,8 @@ auto Mdf4Writer::writeDgBlock(uint64_t firstCgOffset, uint64_t dtOffset,
 
 auto Mdf4Writer::writeCgBlock(uint64_t nextCgOffset, uint64_t firstCnOffset, uint64_t txAcqName,
                               uint64_t recordId, uint32_t dataBytes, uint16_t cgFlags,
-                              uint64_t siOffset, uint16_t pathSeparator) -> uint64_t
+                              uint64_t siOffset, uint16_t pathSeparator,
+                              uint64_t mdOffset) -> uint64_t
 {
     // 24 (header) + 6×8 (links) + 32 (data) = 104 bytes
     wBlockHdr(m_file, "##CG", 104, 6);
@@ -99,7 +100,7 @@ auto Mdf4Writer::writeCgBlock(uint64_t nextCgOffset, uint64_t firstCnOffset, uin
     wU64(m_file, txAcqName);      // cg_tx_acqname
     wU64(m_file, siOffset);       // cg_si_acqsource
     wU64(m_file, 0);              // cg_sr_first
-    wU64(m_file, 0);              // cg_md_comment
+    wU64(m_file, mdOffset);       // cg_md_comment
     wU64(m_file, recordId);       // cg_record_id
     // cg_cycle_count — patched on close()
     m_cgCyclePos.push_back(static_cast<std::streampos>(currentOffset()));
@@ -170,6 +171,14 @@ auto Mdf4Writer::writeTxBlock(const std::string& text) -> uint64_t
     return offset;
 }
 
+auto Mdf4Writer::writeMdBlock(const std::string& xml) -> uint64_t
+{
+    const uint64_t offset = currentOffset();
+    wBlockHdr(m_file, "##MD", txBlockSize(xml), 0);
+    wTextPadded(m_file, xml);
+    return offset;
+}
+
 auto Mdf4Writer::writeDtBlockHeader() -> uint64_t
 {
     const uint64_t offset = currentOffset();
@@ -197,6 +206,7 @@ void Mdf4Writer::writeDbcHeader(const std::vector<MessageInfo>& schema, const ui
         const uint64_t nextCg = (mi + 1 < layout.msgs.size()) ? layout.msgs[mi + 1].cgBlock : 0;
 
         writeTxBlock(name);  // acquisition name referenced by cg_tx_acqname
+        writeMdBlock(mdBlockXml(msgId));
 
         // TX + CN blocks written forward
         const size_t numChannels = ml.channels.size();
@@ -227,7 +237,7 @@ void Mdf4Writer::writeDbcHeader(const std::vector<MessageInfo>& schema, const ui
         // cg_data_bytes: 8 (timestamp) + N × 8 (signals)
         const uint32_t dataBytes = static_cast<uint32_t>(8 + signalList.size() * 8);
         writeCgBlock(nextCg, ml.channels.front().cnBlock, ml.txName, static_cast<uint64_t>(mi),
-                     dataBytes);
+                     dataBytes, 0, 0, 0, ml.mdBlock);
 
         m_recordCounts.push_back(0);
 
@@ -345,7 +355,7 @@ void Mdf4Writer::write(const Core::DbcCanMessage& msg)
 
     *p++ = meta.recordId;
 
-    const double relTimeSec = static_cast<double>(nowNs() - m_startNs) / 1e9;
+    const double relTimeSec = static_cast<double>(msg.receiveTime.count() - m_startNs) / 1e9;
     std::memcpy(p, &relTimeSec, 8);
     p += 8;
 
@@ -382,7 +392,7 @@ void Mdf4Writer::write(const Core::RawCanMessage& msg)
     m_buffer.resize(prevSize + recSize, 0);
     uint8_t* p = m_buffer.data() + prevSize;
 
-    const double relTimeSec = static_cast<double>(nowNs() - m_startNs) / 1e9;
+    const double relTimeSec = static_cast<double>(msg.receiveTime.count() - m_startNs) / 1e9;
     std::memcpy(p, &relTimeSec, 8);
     p += 8;
 

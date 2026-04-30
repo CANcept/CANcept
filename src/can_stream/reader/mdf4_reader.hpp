@@ -81,6 +81,7 @@ class Mdf4Reader final : public Core::ICanReader
     bool m_open{false};
 
     uint64_t m_dtDataStart{0};
+    uint64_t m_startNs{0};
 
     std::vector<std::string> m_columnHeaders;
 

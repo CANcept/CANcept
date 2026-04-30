@@ -47,6 +47,7 @@ void Mdf4Reader::close()
     m_cursor = 0;
     m_recordCount = 0;
     m_dtDataStart = 0;
+    m_startNs = 0;
     m_dbcGroups.clear();
     m_dbcOffsets.clear();
     m_dbcGroupIdx.clear();
@@ -99,7 +100,7 @@ auto Mdf4Reader::read(Core::RawCanMessage& out) -> bool
     uint32_t id;
     std::memcpy(&id, buf.data() + 9, 4);
 
-    out.receiveTime = std::chrono::milliseconds(static_cast<int64_t>(relTimeSec * 1000.0));
+    out.receiveTime = std::chrono::nanoseconds(m_startNs + static_cast<uint64_t>(relTimeSec * 1e9));
     out.messageId = static_cast<uint16_t>(id & 0x7FFu);
     out.dlc = buf[14];
     std::memcpy(out.data.data(), buf.data() + 16, 8);
@@ -122,7 +123,7 @@ auto Mdf4Reader::read(Core::DbcCanMessage& out) -> bool
     double relTimeSec;
     std::memcpy(&relTimeSec, buf.data(), 8);
 
-    out.receiveTime = std::chrono::milliseconds(static_cast<int64_t>(relTimeSec * 1000.0));
+    out.receiveTime = std::chrono::nanoseconds(m_startNs + static_cast<uint64_t>(relTimeSec * 1e9));
     out.messageId = group.msgId;
     out.signalValues.clear();
     out.signalValues.reserve(group.signalNames.size());
@@ -153,6 +154,9 @@ auto Mdf4Reader::parseHeader() -> bool
     // HDBLOCK sits at offset 64; hd_dg_first is its first link at HDBLOCK+24
     uint64_t dgOffset;
     if (!readU64At(64 + 24, dgOffset)) return false;
+
+    // hd_start_time_ns is at HDBLOCK+24+48 (after header + 6 links)
+    if (!readU64At(64 + 24 + 48, m_startNs)) return false;
 
     // DGBLOCK: dg_cg_first (+32), dg_dt_first (+40), dg_rec_id_size (+56)
     uint64_t cgFirst, dtFirst;
@@ -222,9 +226,24 @@ auto Mdf4Reader::parseDbcGroups(uint64_t firstCg) -> bool
         DbcGroup group;
         group.recordId = static_cast<uint8_t>(recordId);
         group.payloadBytes = dataBytes;
-        group.msgId = static_cast<uint16_t>(recordId);
 
-        // Walk CN chain; collect signal names and build column headers (dedup across groups)
+        uint64_t mdOffset;
+        if (readU64At(cgOffset + 64, mdOffset) && mdOffset != 0)
+        {
+            const std::string xml = readTxText(mdOffset);
+            const auto start = xml.find("<id>0x");
+            const auto end = xml.find("</id>");
+            if (start != std::string::npos && end != std::string::npos)
+                group.msgId = static_cast<uint16_t>(
+                    std::stoul(xml.substr(start + 6, end - start - 6), nullptr, 16));
+            else
+                group.msgId = static_cast<uint16_t>(recordId);
+        } else
+        {
+            group.msgId = static_cast<uint16_t>(recordId);
+        }
+
+        // Walk CN chain - collect signal names and build column headers (dedup across groups)
         uint64_t cnOffset = cnFirst;
         while (cnOffset != 0)
         {

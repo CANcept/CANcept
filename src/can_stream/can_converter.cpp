@@ -20,6 +20,7 @@
 
 #include "can_stream/reader/mdf4_reader.hpp"
 #include "can_stream/writer/csv_writer.hpp"
+#include "core/macro/console_logging.hpp"
 
 namespace CanStream {
 
@@ -54,6 +55,7 @@ auto CanConverter::convert() -> std::string
         std::error_code ec;
         std::filesystem::copy_file(m_source, m_target,
                                    std::filesystem::copy_options::overwrite_existing, ec);
+        if (ec) LOG_ERR("CanConverter", "Failed to copy file: {}", ec.message());
         return ec ? std::string{} : m_target;
     }
 

@@ -101,7 +101,7 @@ static void BM_CanDbcHandler_Receive_ParseMessage_ShortDbc(benchmark::State& sta
     const CanMessage message{0x100, {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0}};
     for (auto _ : state)
     {
-        benchmarkObject.canDbcHandler->parseReceivedMessage(&message);
+        benchmarkObject.canDbcHandler->parseReceivedMessage(&message, std::chrono::nanoseconds(0));
     }
 }
 BENCHMARK(BM_CanDbcHandler_Receive_ParseMessage_ShortDbc);
@@ -114,7 +114,7 @@ static void BM_CanDbcHandler_Receive_ParseMessage_LongDbc(benchmark::State& stat
     const CanMessage message{100, {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0}};
     for (auto _ : state)
     {
-        benchmarkObject.canDbcHandler->parseReceivedMessage(&message);
+        benchmarkObject.canDbcHandler->parseReceivedMessage(&message, std::chrono::nanoseconds(0));
     }
 }
 BENCHMARK(BM_CanDbcHandler_Receive_ParseMessage_LongDbc);
@@ -127,7 +127,7 @@ static void BM_CanDbcHandler_Receive_ParseMessage_ManySignalsDbc(benchmark::Stat
     const CanMessage message{0x100, {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0}};
     for (auto _ : state)
     {
-        benchmarkObject.canDbcHandler->parseReceivedMessage(&message);
+        benchmarkObject.canDbcHandler->parseReceivedMessage(&message, std::chrono::nanoseconds(0));
     }
 }
 BENCHMARK(BM_CanDbcHandler_Receive_ParseMessage_ManySignalsDbc);
