@@ -35,8 +35,7 @@ void CanDbcHandler::parseReceivedMessage(const sockcanpp::CanMessage* canMessage
         return;
     }
 
-    // Check if message length = 8
-    if (canMessage->getRawFrame().len != 8) return;
+    if (canMessage->getRawFrame().len < currentMessageDescription->messageSize) return;
 
     // Read raw data frames in little and big endian order
     u_int64_t dataLittleEndian = 0, dataBigEndian = 0;

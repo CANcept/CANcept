@@ -39,7 +39,7 @@ CsvWriter::CsvWriter(const std::string_view path, const Core::CanFileType fileTy
 void CsvWriter::write(const Core::RawCanMessage& msg)
 {
     if (!m_open) return;
-    m_file << std::fixed << std::setprecision(3)
+    m_file << std::fixed << std::setprecision(9)
            << static_cast<double>(msg.receiveTime.count()) / 1e9;
     m_file << ",1";
     m_file << ",0x" << std::uppercase << std::hex << std::setw(3) << std::setfill('0')
@@ -52,7 +52,7 @@ void CsvWriter::write(const Core::RawCanMessage& msg)
     {
         if (i > 0) m_file << ' ';
         m_file << std::uppercase << std::hex << std::setw(2) << std::setfill('0')
-               << static_cast<int>(msg.data[i]);
+               << static_cast<int>(static_cast<unsigned char>(msg.data[i]));
     }
     m_file << '\n';
 }
@@ -60,7 +60,7 @@ void CsvWriter::write(const Core::RawCanMessage& msg)
 void CsvWriter::write(const Core::DbcCanMessage& msg)
 {
     if (!m_open) return;
-    m_file << std::fixed << std::setprecision(3)
+    m_file << std::fixed << std::setprecision(9)
            << static_cast<double>(msg.receiveTime.count()) / 1e9;
 
     for (size_t i = 1; i < m_headers.size(); ++i)

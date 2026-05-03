@@ -49,6 +49,8 @@ auto CanDeviceHandler::checkForCanMessage() const
 
         canMessages.emplace_back(std::move(msg), timestamp);
     }
+
+    canMessages.sort([](const auto& a, const auto& b) { return a.second < b.second; });
     return canMessages;
 }
 auto CanDeviceHandler::sendCanMessage(const CanMessage& canMessage) const -> bool
