@@ -111,10 +111,10 @@ TEST_F(DbcHandlerTest, HandlesValidDbc)
     EXPECT_EQ(lastDbc->messageDefinitions.front().messageId, 100);
 }
 
-TEST_F(DbcHandlerTest, HandlesInvalidFile)
+TEST_F(DbcHandlerTest, HandlesInvalidDbc)
 {
-    EXPECT_NO_THROW(
-        eventBroker->publish(Core::ParseDBCRequestEvent("definitely_not_a_real_file_123.dbc")));
+    const auto filePath = createTempFile(kInvalidDbc);
+    EXPECT_NO_THROW(eventBroker->publish(Core::ParseDBCRequestEvent(filePath)));
     waitForEvent();
     EXPECT_EQ(validDbcCounter, 0);
     EXPECT_EQ(invalidDbcCounter, 1);
