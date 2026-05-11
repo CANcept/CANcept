@@ -33,11 +33,6 @@ namespace Sending {
 /**
  * @class ReplayProducerWorker
  * @brief Streams CAN frames from any ICanReader source and schedules them with recorded timing.
- *
- * The caller provides a ReaderFactory that constructs and opens the concrete reader
- * (e.g. Mdf4Reader, CsvReader). The worker calls the factory inside run() on its own thread,
- * reads frames sequentially, and pushes ScheduledItems into the shared queue with the same
- * adaptive sleep guard used by RepeatedProducerWorker.
  */
 class ReplayProducerWorker final : public QThread
 {
@@ -46,9 +41,6 @@ class ReplayProducerWorker final : public QThread
    public:
     /**
      * @brief Factory callable that constructs and opens a reader.
-     *
-     * Must return a non-null, already-opened ICanReader on success, or nullptr on failure.
-     * Called on the worker thread inside run().
      */
     using ReaderFactory = std::function<std::unique_ptr<Core::ICanReader>()>;
 

@@ -133,7 +133,6 @@ void ReplayProducerWorker::run()
         using Ns = std::chrono::nanoseconds;
         constexpr auto LOOKAHEAD = std::chrono::microseconds(Constants::REPLAY_LOOKAHEAD_US);
 
-        // Adaptive sleep guard — same mechanics as RepeatedProducerWorker.
         auto guardNs = static_cast<double>(Constants::INITIAL_SLEEP_GUARD_NS);
 
         auto reader = localFactory();
@@ -154,7 +153,6 @@ void ReplayProducerWorker::run()
             return;
         }
 
-        // Unified read: converts DBC frames to raw on-the-fly via the encode event.
         const bool isDbc = (reader->fileType() == Core::CanFileType::Dbc);
         auto readNext = [&](Core::RawCanMessage& out) -> bool {
             if (!isDbc)
@@ -173,7 +171,6 @@ void ReplayProducerWorker::run()
             return true;
         };
 
-        // Read the first frame to establish the base timestamp.
         Core::RawCanMessage firstMsg{};
         if (!readNext(firstMsg))
         {
@@ -188,13 +185,10 @@ void ReplayProducerWorker::run()
         auto scheduleAndPush = [&](const Core::RawCanMessage& msg) -> void {
             const auto relativeNs = msg.receiveTime - firstTimestamp;
 
-            // Wait until within LOOKAHEAD of the frame's absolute scheduled time.
             while (!m_shouldStop.load())
             {
                 if (m_isPaused.load())
                 {
-                    // Shift replayStart forward by the pause duration so inter-frame
-                    // timing is preserved when we resume.
                     const auto pauseBegin = Clock::now();
                     {
                         std::unique_lock lock(m_stateMutex);
@@ -219,8 +213,7 @@ void ReplayProducerWorker::run()
 
                 if (leftNs > static_cast<long long>(guardNs))
                 {
-                    // Sleep most of the remaining wait; cap at 50 ms for pause/stop
-                    // responsiveness. The adaptive guard absorbs OS scheduler overshoot.
+                    // Sleep most of the remaining wait and cap at 50 ms for pause/stop
                     const auto sleepUntil =
                         std::min(windowOpen - Ns(static_cast<long long>(guardNs)),
                                  now + std::chrono::milliseconds(50));
@@ -241,12 +234,10 @@ void ReplayProducerWorker::run()
                 return;
             }
 
-            // Recompute final scheduledAt — replayStart may have shifted during a pause.
             const auto scaledNs =
                 static_cast<long long>(static_cast<double>(relativeNs.count()) / localSpeed);
             const auto scheduledAt = replayStart + Ns(std::max<long long>(0LL, scaledNs));
 
-            // Busy-wait the last guard window.
             while (Clock::now() < scheduledAt - LOOKAHEAD && !m_shouldStop.load())
             {
             }
@@ -256,7 +247,6 @@ void ReplayProducerWorker::run()
                 return;
             }
 
-            // Apply fault injection: mutate the frame and honour drop/delay decisions.
             Core::RawCanMessage mutMsg = msg;
             auto finalScheduledAt = scheduledAt;
             if (localFaultHandler)

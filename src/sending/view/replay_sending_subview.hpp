@@ -32,11 +32,11 @@ namespace Sending {
 
 /**
  * @struct ReplayEntry
- * @brief A replayable MF4 session discovered from disk, local to the Sending module.
+ * @brief A replayable session discovered from disk, local to the Sending module.
  */
 struct ReplayEntry {
-    QString displayName;  // Human-readable label shown in the combo box
-    QString filePath;     // Path to the .mf4 file
+    QString displayName;
+    QString filePath;
     uint64_t frameCount = 0;
     Core::CanFileType fileType = Core::CanFileType::Raw;
 };

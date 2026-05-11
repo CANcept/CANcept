@@ -285,9 +285,7 @@ inline constexpr int QUEUE_MAX_AGING_BOOST = 1000;
 
 // REPLAY PRODUCER
 
-/** @brief Lookahead window for the replay producer in microseconds.
- *  At 1 frame / 3 µs with QUEUE_MAX_CAPACITY=32: max safe value ≈ 96 µs.
- *  Using 80 µs leaves ~5 slots of headroom before eviction kicks in. */
+/** @brief Lookahead window for the replay producer in microseconds. */
 inline constexpr int REPLAY_LOOKAHEAD_US = 80;
 
 /** @brief Name for the replay producer worker thread. */
