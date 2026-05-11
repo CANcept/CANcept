@@ -23,6 +23,22 @@ namespace FaultInjector {
 
 FaultInjectorModel::FaultInjectorModel(QObject* parent) : QAbstractTableModel(parent) {}
 
+void FaultInjectorModel::setMode(const Mode mode)
+{
+    if (m_mode == mode)
+    {
+        return;
+    }
+    m_mode = mode;
+
+    if (mode == Mode::Raw)
+    {
+        beginResetModel();
+        std::erase_if(m_faults, [](const Fault& f) { return std::holds_alternative<DbcFault>(f); });
+        endResetModel();
+    }
+}
+
 void FaultInjectorModel::addFault(const Fault& fault)
 {
     const int row = static_cast<int>(m_faults.size());

@@ -19,7 +19,6 @@
 #include <QStackedWidget>
 #include <QWidget>
 
-#include "core/dto/replay_dto.hpp"
 #include "core/widgets/sidebar.hpp"
 #include "core/widgets/tinted_icon_label.hpp"
 #include "dbc_based_sending_subview.hpp"
@@ -59,22 +58,13 @@ class SendingView final : public QWidget
     /**
      * @brief Updates the log session list shown in the replay subview.
      */
-    void setLogSessions(const QList<Core::ReplaySessionInfo>& sessions);
-
-    /** @brief Applies a predefined replay load-state in replay subview section 2. */
-    void setReplayLoadState(ReplaySendingSubView::LoadState state);
+    void setLogSessions(const QList<ReplayEntry>& entries);
 
     /** @brief Applies replay control-state for start/pause/resume/stop buttons. */
     void setReplayPlaybackState(ReplaySendingSubView::PlaybackState state);
 
     /** @brief Updates replay progress footer and progress bar. */
     void setReplayProgress(int currentFrame, int totalFrames);
-
-    /** @brief Updates warning/error text in replay subview section 2. */
-    void setReplayLoadWarningText(const QString& text);
-
-    /** @brief Clears warning/error text in replay subview section 2. */
-    void clearReplayLoadWarningText();
 
     /**
      * @brief Binds the View to the Model.

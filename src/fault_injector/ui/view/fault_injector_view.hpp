@@ -40,11 +40,20 @@ class FaultInjectorView final : public QWidget
      * @return true if the toggle is checked, false otherwise.
      */
     [[nodiscard]] auto isFaultInjection() const -> bool;
+
     /**
      * @brief Returns the fault handler.
      * @return the current fault handler.
      */
     [[nodiscard]] auto getFaultHandler() const -> FaultHandler;
+
+    /**
+     * @brief Switches between Raw and Dbc mode.
+     *
+     * In Raw mode the DBC button is hidden and any existing DbcFaults are removed.
+     * In Dbc mode both add-buttons are available.
+     */
+    void setMode(FaultInjectorModel::Mode mode);
 
    protected:
     auto event(QEvent* event) -> bool override;

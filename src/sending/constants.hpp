@@ -283,6 +283,16 @@ inline constexpr int QUEUE_AGING_FACTOR_PER_MS = 1;
 /** @brief Hard cap on the priority boost an item can accumulate through aging. */
 inline constexpr int QUEUE_MAX_AGING_BOOST = 1000;
 
+// REPLAY PRODUCER
+
+/** @brief Lookahead window for the replay producer in microseconds.
+ *  At 1 frame / 3 µs with QUEUE_MAX_CAPACITY=32: max safe value ≈ 96 µs.
+ *  Using 80 µs leaves ~5 slots of headroom before eviction kicks in. */
+inline constexpr int REPLAY_LOOKAHEAD_US = 80;
+
+/** @brief Name for the replay producer worker thread. */
+inline const QString REPLAY_PRODUCER_WORKER_THREAD_NAME = "ReplayProducerWorker";
+
 // Replay Logs
 
 /** @brief Title for the replay sessions card */
@@ -302,26 +312,6 @@ inline const QString SESSIONS_COMBO_PLACEHOLDER = "Select a log session...";
 /** @brief Text displayed in the session details label when no session is selected */
 inline const QString NO_SESSION_DETAILS_TEXT = "No session selected.";
 
-/** @brief Replay loading-state text: session selected and ready to load. */
-inline const QString REPLAY_STATUS_SESSION_READY =
-    "Status: Session selected. Load frames to continue.";
-
-/** @brief Replay loading-state text: frame loading is in progress. */
-inline const QString REPLAY_STATUS_LOADING = "Status: Loading frames...";
-
-/** @brief Replay loading-state text: frames were loaded successfully. */
-inline const QString REPLAY_STATUS_LOADED = "Status: Frames loaded.";
-
-/** @brief Replay loading-state text: no replay sessions available. */
-inline const QString REPLAY_STATUS_NO_SESSIONS = "Status: No replay session available.";
-
-/** @brief Replay loading-state text: loading failed. */
-inline const QString REPLAY_STATUS_ERROR = "Status: Frame loading failed.";
-
-/** @brief Warning shown when replay start is requested without loaded frames. */
-inline const QString REPLAY_WARNING_NO_FRAMES_LOADED =
-    "Warning: No loaded frames available for replay.";
-
 /** @brief Warning template for parser-skipped replay log lines. */
 inline const QString REPLAY_WARNING_SKIPPED_LINES_TEMPLATE =
     "Warning: %1 log lines were skipped while parsing.";
@@ -329,13 +319,12 @@ inline const QString REPLAY_WARNING_SKIPPED_LINES_TEMPLATE =
 /** @brief Progress footer template (frame-based). */
 inline const QString REPLAY_PROGRESS_TEXT_TEMPLATE = "Frame: %1 / %2";
 
-inline const QString REPLAY_LOADING_TITLE = "Frame Loading Status";
-inline const QString REPLAY_LOADING_SUBTITLE = "";
 inline const QString REPLAY_PLAYBACK_TITLE = "Playback Controls";
 inline const QString REPLAY_PLAYBACK_SUBTITLE = "";
 inline const QString REPLAY_PROGRESS_TITLE = "Replay Progress";
 inline const QString REPLAY_PROGRESS_SUBTITLE = "";
 inline const QString LOAD_FRAMES_BUTTON_TEXT = "Load Logged Frames";
+inline const QString BROWSE_FILE_BUTTON_TEXT = "Browse File...";
 inline const QString REPLAY_START_BUTTON_TEXT = "Start Replay";
 inline const QString REPLAY_PAUSE_BUTTON_TEXT = "Pause Replay";
 inline const QString REPLAY_RESUME_BUTTON_TEXT = "Resume Replay";

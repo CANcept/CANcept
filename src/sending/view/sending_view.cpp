@@ -101,19 +101,11 @@ void SendingView::setupUi()
     applyStyle();
 }
 
-void SendingView::setLogSessions(const QList<Core::ReplaySessionInfo>& sessions)
+void SendingView::setLogSessions(const QList<ReplayEntry>& entries)
 {
     if (m_replayView)
     {
-        m_replayView->setSessions(sessions);
-    }
-}
-
-void SendingView::setReplayLoadState(const ReplaySendingSubView::LoadState state)
-{
-    if (m_replayView)
-    {
-        m_replayView->setLoadState(state);
+        m_replayView->setSessions(entries);
     }
 }
 
@@ -130,22 +122,6 @@ void SendingView::setReplayProgress(const int currentFrame, const int totalFrame
     if (m_replayView)
     {
         m_replayView->setProgress(currentFrame, totalFrames);
-    }
-}
-
-void SendingView::setReplayLoadWarningText(const QString& text)
-{
-    if (m_replayView)
-    {
-        m_replayView->setWarningText(text);
-    }
-}
-
-void SendingView::clearReplayLoadWarningText()
-{
-    if (m_replayView)
-    {
-        m_replayView->clearWarningText();
     }
 }
 

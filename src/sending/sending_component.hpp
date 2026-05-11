@@ -18,6 +18,7 @@
 #include <QList>
 #include <QPointer>
 #include <QString>
+#include <QTimer>
 #include <QWidget>
 #include <chrono>
 #include <memory>
@@ -25,7 +26,6 @@
 
 #include "core/dto/can_dto.hpp"
 #include "core/dto/dbc_dto.hpp"
-#include "core/event/replay_event.hpp"
 #include "core/interface/i_event_broker.hpp"
 #include "core/interface/i_tab_component.hpp"
 #include "delegate/sending_delegate.hpp"
@@ -104,16 +104,6 @@ class SendingComponent final : public Core::ITabComponent
      */
     void onDbcParseError() const;
 
-    /**
-     * @brief Handles replay session list response from Logging module.
-     */
-    void onLogSessionsReceived(const Core::SendLogSessions& event);
-
-    /**
-     * @brief Handles replay frame list response from Logging module.
-     */
-    void onLogSessionFramesReceived(const Core::SendLogSessionFrames& event);
-
    private:
     /**
      * @brief Initializes all signal/slot connections between components.
@@ -157,8 +147,14 @@ class SendingComponent final : public Core::ITabComponent
      */
     void sendOnce() const;
 
-    /** @brief Starts replay using loaded frames and selected speed factor. */
-    void startReplay(double speedFactor);
+    /** @brief Scans logs/ for .mf4 files and updates the session list in the view. */
+    void scanReplaySessions();
+
+    /** @brief Validates an externally chosen file and appends it to the session list. */
+    void addExternalFile(const QString& filePath);
+
+    /** @brief Starts streaming replay from m_replaySessions[index] at the given speed. */
+    void startReplay(int index, double speedFactor);
 
     /** @brief Pauses an active replay run. */
     void pauseReplay();
@@ -171,6 +167,9 @@ class SendingComponent final : public Core::ITabComponent
 
     /** @brief Global variable registry for expression variables. */
     Math::VariableRegistry* m_variableRegistry = nullptr;
+
+    /** @brief Discovered and user-added replay sessions. */
+    QList<ReplayEntry> m_replaySessions;
 
     /** @brief Model holding CAN sending configuration and data */
     std::unique_ptr<SendingModel> m_model;
@@ -192,12 +191,6 @@ class SendingComponent final : public Core::ITabComponent
     /** @brief RAII Handle for CAN driver change event subscription. */
     Core::Connection m_canDriverChangeConn;
 
-    /** @brief RAII Handle for subscription to send log sessions. */
-    Core::Connection m_sendLogSessionsConn;
-
-    /** @brief RAII Handle for subscription to send log session frames. */
-    Core::Connection m_sendLogSessionsFramesConn;
-
     /** @brief Mutex protecting event broker access from multiple threads. */
     mutable std::mutex m_brokerMutex;
 
@@ -214,6 +207,12 @@ class SendingComponent final : public Core::ITabComponent
 
     /** @brief Consumer thread for actual sending. */
     std::unique_ptr<SendingConsumerWorker> m_consumerWorker;
+
+    /** @brief Polls replay progress at ~10 Hz without emitting per-frame signals. */
+    QTimer* m_replayProgressTimer = nullptr;
+
+    /** @brief Total frame count of the active replay run, cached for the timer slot. */
+    int m_replayTotalFrames = 0;
 
     /** @brief Timestamp when the component started, used for diagnostics. */
     std::chrono::steady_clock::time_point m_startTime;

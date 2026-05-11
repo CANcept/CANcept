@@ -57,7 +57,7 @@ void ReplayProgressBar::applyStyle()
                               .arg(colors.surfaceSecondary.name())
                               .arg(radius)
                               .arg(barHeight)
-                              .arg(colors.colorPrimary.name())
+                              .arg(colors.statusSuccess.name())
                               .arg(spacing.fontWeightNormal);
 
     setStyleSheet(style);

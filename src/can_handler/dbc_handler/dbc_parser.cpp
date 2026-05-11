@@ -405,7 +405,7 @@ auto DbcParser::parseSignal() -> Core::DbcSignalDescription
                                                  .multiplexedBy = multiplexerSwitchValue,
                                                  .startBit = startBit,
                                                  .signalSize = signalSize,
-                                                 .byteOrder = (byteOrderInt == 1),
+                                                 .byteOrder = (byteOrderInt == 0),
                                                  .valueType = valueType,
                                                  .factor = factor,
                                                  .offset = offset,

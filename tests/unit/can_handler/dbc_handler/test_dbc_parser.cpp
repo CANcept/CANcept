@@ -68,7 +68,7 @@ TEST(DbcParserTest, ParseMinimalValidDbcSuccessfully)
     EXPECT_EQ(signal.signalName, "TestSignal");
     EXPECT_EQ(signal.startBit, 0U);
     EXPECT_EQ(signal.signalSize, 8U);
-    EXPECT_TRUE(signal.byteOrder);
+    EXPECT_FALSE(signal.byteOrder);
     EXPECT_FALSE(signal.valueType);
 }
 
@@ -204,7 +204,7 @@ TEST(DbcParserTest, ParsesBigEndianSignal)
 
     ASSERT_NE(config, nullptr);
     const auto& signal = config->messageDefinitions.front().signalDescriptions.front();
-    EXPECT_FALSE(signal.byteOrder);  // 0 = little endian, 1 = big endian
+    EXPECT_TRUE(signal.byteOrder);  // DBC @0 = big endian → byteOrder = true
 }
 
 TEST(DbcParserTest, ParsesMultiplexorSignal)

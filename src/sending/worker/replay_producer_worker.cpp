@@ -16,9 +16,10 @@
 #include "replay_producer_worker.hpp"
 
 #include <algorithm>
-#include <cmath>
 #include <exception>
+#include <thread>
 
+#include "core/event/can_event.hpp"
 #include "sending/constants.hpp"
 #include "sending/sending_functions.hpp"
 
@@ -28,7 +29,7 @@ ReplayProducerWorker::ReplayProducerWorker(ScheduledItemQueue& queue, Core::IEve
                                            QObject* parent)
     : QThread(parent), m_queue(queue), m_broker(broker)
 {
-    setObjectName("ReplayProducerWorker");
+    setObjectName(Constants::REPLAY_PRODUCER_WORKER_THREAD_NAME);
 }
 
 ReplayProducerWorker::~ReplayProducerWorker()
@@ -36,26 +37,30 @@ ReplayProducerWorker::~ReplayProducerWorker()
     stopReplay();
 }
 
-void ReplayProducerWorker::startReplay(const QList<Core::ReplayFrame>& frames,
-                                       const double speedFactor)
+void ReplayProducerWorker::startReplay(ReaderFactory factory, const uint64_t frameCount,
+                                       const double speedFactor,
+                                       std::shared_ptr<Core::IFaultHandler> faultHandler)
 {
     if (m_isActive.load())
     {
         stopReplay();
     }
 
-    if (frames.isEmpty())
+    if (!factory || frameCount == 0)
     {
         return;
     }
 
     {
         std::lock_guard lock(m_stateMutex);
-        m_frames = frames;
+        m_factory = std::move(factory);
+        m_totalFrames = frameCount;
         m_speedFactor = std::clamp(speedFactor, 0.1, 8.0);
+        m_faultHandler = std::move(faultHandler);
     }
 
     m_replayRunToken.fetch_add(1);
+    m_scheduledCount.store(0);
     m_shouldStop.store(false);
     m_isPaused.store(false);
     m_isActive.store(true);
@@ -111,130 +116,193 @@ void ReplayProducerWorker::run()
 {
     try
     {
-        QList<Core::ReplayFrame> localFrames;
-        double localSpeed = 1.0;
+        ReaderFactory localFactory;
+        uint64_t localTotal;
+        double localSpeed;
+        std::shared_ptr<Core::IFaultHandler> localFaultHandler;
         {
             std::lock_guard lock(m_stateMutex);
-            localFrames = m_frames;
+            localFactory = m_factory;
+            localTotal = m_totalFrames;
             localSpeed = m_speedFactor;
+            localFaultHandler = m_faultHandler;
         }
 
         const uint64_t runToken = m_replayRunToken.load();
-        const int totalFrames = localFrames.size();
-        const auto sentCounter = std::make_shared<std::atomic<int>>(0);
-        constexpr auto LOOKAHEAD_MS = std::chrono::milliseconds(200);
+
+        using Ns = std::chrono::nanoseconds;
+        constexpr auto LOOKAHEAD = std::chrono::microseconds(Constants::REPLAY_LOOKAHEAD_US);
+
+        // Adaptive sleep guard — same mechanics as RepeatedProducerWorker.
+        auto guardNs = static_cast<double>(Constants::INITIAL_SLEEP_GUARD_NS);
+
+        auto reader = localFactory();
+        if (!reader)
+        {
+            m_isActive.store(false);
+            emit errorOccurred("Replay: failed to open reader");
+            emit replayStopped();
+            return;
+        }
 
         emit replayStarted();
 
-        if (totalFrames == 0)
+        if (reader->eof())
         {
             m_isActive.store(false);
             emit replayStopped();
             return;
         }
 
-        const auto replayStartNow = Clock::now();
-        const auto firstTimestamp = localFrames.first().receiveTime;
+        // Unified read: converts DBC frames to raw on-the-fly via the encode event.
+        const bool isDbc = (reader->fileType() == Core::CanFileType::Dbc);
+        auto readNext = [&](Core::RawCanMessage& out) -> bool {
+            if (!isDbc)
+            {
+                return reader->read(out);
+            }
+            Core::DbcCanMessage dbcMsg;
+            if (!reader->read(dbcMsg)) return false;
+            if (localFaultHandler)
+            {
+                localFaultHandler->inject(dbcMsg);
+            }
+            out = {};
+            out.receiveTime = dbcMsg.receiveTime;
+            m_broker.publish(Core::EncodeCanMessageDbcEvent(dbcMsg, out));
+            return true;
+        };
 
-        for (int i = 0; i < totalFrames; ++i)
+        // Read the first frame to establish the base timestamp.
+        Core::RawCanMessage firstMsg{};
+        if (!readNext(firstMsg))
         {
-            if (m_shouldStop.load())
+            m_isActive.store(false);
+            emit replayStopped();
+            return;
+        }
+
+        const auto firstTimestamp = firstMsg.receiveTime;
+        auto replayStart = Clock::now();
+
+        auto scheduleAndPush = [&](const Core::RawCanMessage& msg) -> void {
+            const auto relativeNs = msg.receiveTime - firstTimestamp;
+
+            // Wait until within LOOKAHEAD of the frame's absolute scheduled time.
+            while (!m_shouldStop.load())
             {
-                break;
-            }
-
-            if (m_isPaused.load())
-            {
-                std::unique_lock lock(m_stateMutex);
-                m_stateCv.wait(lock,
-                               [this]() { return m_shouldStop.load() || !m_isPaused.load(); });
-                if (m_shouldStop.load())
-                {
-                    break;
-                }
-            }
-
-            const auto relativeFromStart = std::max<std::chrono::milliseconds>(
-                std::chrono::milliseconds(0), localFrames.at(i).receiveTime - firstTimestamp);
-
-            const auto scaledMs = static_cast<long long>(
-                std::llround(static_cast<double>(relativeFromStart.count()) / localSpeed));
-            const auto scheduledAt =
-                replayStartNow + std::chrono::milliseconds(std::max<long long>(0, scaledMs));
-
-            // Wait until frame is within lookahead window
-            auto now = Clock::now();
-            auto timeUntilScheduled = scheduledAt - now;
-            while (timeUntilScheduled > LOOKAHEAD_MS)
-            {
-                if (m_shouldStop.load())
-                {
-                    break;
-                }
-
-                std::unique_lock lock(m_stateMutex);
-                const auto waitTime =
-                    std::min(std::chrono::duration_cast<std::chrono::milliseconds>(
-                                 timeUntilScheduled - LOOKAHEAD_MS),
-                             std::chrono::milliseconds(100));
-                m_stateCv.wait_for(lock, waitTime,
-                                   [this]() { return m_shouldStop.load() || m_isPaused.load(); });
-                if (m_shouldStop.load())
-                {
-                    break;
-                }
-
                 if (m_isPaused.load())
                 {
-                    m_stateCv.wait(lock,
-                                   [this]() { return m_shouldStop.load() || !m_isPaused.load(); });
-                    if (m_shouldStop.load())
+                    // Shift replayStart forward by the pause duration so inter-frame
+                    // timing is preserved when we resume.
+                    const auto pauseBegin = Clock::now();
                     {
-                        break;
+                        std::unique_lock lock(m_stateMutex);
+                        m_stateCv.wait(
+                            lock, [this] { return m_shouldStop.load() || !m_isPaused.load(); });
                     }
+                    replayStart += Clock::now() - pauseBegin;
+                    continue;
                 }
 
-                now = Clock::now();
-                timeUntilScheduled = scheduledAt - now;
+                const auto scaledNs =
+                    static_cast<long long>(static_cast<double>(relativeNs.count()) / localSpeed);
+                const auto scheduledAt = replayStart + Ns(std::max<long long>(0LL, scaledNs));
+                const auto windowOpen = scheduledAt - LOOKAHEAD;
+                const auto now = Clock::now();
+                const long long leftNs = std::chrono::duration_cast<Ns>(windowOpen - now).count();
+
+                if (leftNs <= 0)
+                {
+                    break;
+                }
+
+                if (leftNs > static_cast<long long>(guardNs))
+                {
+                    // Sleep most of the remaining wait; cap at 50 ms for pause/stop
+                    // responsiveness. The adaptive guard absorbs OS scheduler overshoot.
+                    const auto sleepUntil =
+                        std::min(windowOpen - Ns(static_cast<long long>(guardNs)),
+                                 now + std::chrono::milliseconds(50));
+                    std::this_thread::sleep_until(sleepUntil);
+
+                    const long long overshootNs =
+                        std::chrono::duration_cast<Ns>(Clock::now() - sleepUntil).count();
+                    const double newEst =
+                        Constants::SLEEP_GUARD_ALPHA * static_cast<double>(overshootNs) +
+                        (1.0 - Constants::SLEEP_GUARD_ALPHA) * guardNs;
+                    guardNs = std::max({static_cast<double>(Constants::MIN_SLEEP_GUARD_NS),
+                                        guardNs * 0.99, newEst});
+                }
             }
 
             if (m_shouldStop.load())
             {
-                break;
+                return;
             }
 
-            const auto& frame = localFrames.at(i);
-            Core::RawCanMessage msg{};
-            msg.messageId = frame.messageId;
-            msg.dlc = frame.dlc;
+            // Recompute final scheduledAt — replayStart may have shifted during a pause.
+            const auto scaledNs =
+                static_cast<long long>(static_cast<double>(relativeNs.count()) / localSpeed);
+            const auto scheduledAt = replayStart + Ns(std::max<long long>(0LL, scaledNs));
 
-            for (size_t b = 0; b < frame.data.size(); ++b)
+            // Busy-wait the last guard window.
+            while (Clock::now() < scheduledAt - LOOKAHEAD && !m_shouldStop.load())
             {
-                msg.data[b] = static_cast<char>(frame.data[b]);
+            }
+
+            if (m_shouldStop.load())
+            {
+                return;
+            }
+
+            // Apply fault injection: mutate the frame and honour drop/delay decisions.
+            Core::RawCanMessage mutMsg = msg;
+            auto finalScheduledAt = scheduledAt;
+            if (localFaultHandler)
+            {
+                localFaultHandler->inject(mutMsg.messageId, mutMsg.dlc, mutMsg.data);
+                const auto [drop, delay] = localFaultHandler->evaluate();
+                if (drop)
+                {
+                    return;
+                }
+                if (delay.count() > 0)
+                {
+                    finalScheduledAt += delay;
+                }
             }
 
             auto context = std::make_shared<RawSendContext>(
                 RawSendContext{.broker = &m_broker,
-                               .message = msg,
+                               .message = mutMsg,
                                .replayToken = runToken,
-                               .activeReplayToken = &m_replayRunToken,
-                               .onSent = [this, sentCounter, totalFrames, runToken]() {
-                                   if (runToken != m_replayRunToken.load())
-                                   {
-                                       return;
-                                   }
-                                   const int sent = sentCounter->fetch_add(1) + 1;
-                                   emit progressUpdated(sent, totalFrames);
-                                   if (sent == totalFrames && !m_shouldStop.load())
-                                   {
-                                       emit replayFinished();
-                                   }
-                               }});
-            m_queue.push(ScheduledItem{
-                .scheduledAt = scheduledAt, .onSend = &rawSendImpl, .context = std::move(context)});
+                               .activeReplayToken = &m_replayRunToken});
+
+            m_queue.push(ScheduledItem{.scheduledAt = finalScheduledAt,
+                                       .onSend = &rawSendImpl,
+                                       .context = std::move(context)});
+        };
+
+        scheduleAndPush(firstMsg);
+        m_scheduledCount.fetch_add(1, std::memory_order_relaxed);
+
+        while (!reader->eof() && !m_shouldStop.load())
+        {
+            Core::RawCanMessage msg{};
+            if (!readNext(msg))
+            {
+                break;
+            }
+            scheduleAndPush(msg);
+            m_scheduledCount.fetch_add(1, std::memory_order_relaxed);
         }
 
         m_isActive.store(false);
+        if (!m_shouldStop.load())
+        {
+            emit replayFinished();
+        }
         emit replayStopped();
     } catch (const std::exception& ex)
     {
@@ -244,7 +312,7 @@ void ReplayProducerWorker::run()
     } catch (...)
     {
         m_isActive.store(false);
-        emit errorOccurred("Replay worker unknown error");
+        emit errorOccurred("Replay worker: unknown error");
         emit replayStopped();
     }
 }

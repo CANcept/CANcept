@@ -19,20 +19,25 @@
 #include <atomic>
 #include <condition_variable>
 #include <cstdint>
+#include <functional>
+#include <memory>
 #include <mutex>
 
-#include "core/dto/replay_dto.hpp"
+#include "core/interface/i_can_reader.hpp"
 #include "core/interface/i_event_broker.hpp"
+#include "core/interface/i_fault_handler.hpp"
 #include "sending/worker/scheduled_item_queue.hpp"
 
 namespace Sending {
 
 /**
  * @class ReplayProducerWorker
- * @brief Produces replay frames with recorded timing and speed scaling.
+ * @brief Streams CAN frames from any ICanReader source and schedules them with recorded timing.
  *
- * The worker waits according to relative log timestamps (normalized to the
- * first frame), then enqueues ScheduledItems into the shared queue.
+ * The caller provides a ReaderFactory that constructs and opens the concrete reader
+ * (e.g. Mdf4Reader, CsvReader). The worker calls the factory inside run() on its own thread,
+ * reads frames sequentially, and pushes ScheduledItems into the shared queue with the same
+ * adaptive sleep guard used by RepeatedProducerWorker.
  */
 class ReplayProducerWorker final : public QThread
 {
@@ -40,8 +45,16 @@ class ReplayProducerWorker final : public QThread
 
    public:
     /**
+     * @brief Factory callable that constructs and opens a reader.
+     *
+     * Must return a non-null, already-opened ICanReader on success, or nullptr on failure.
+     * Called on the worker thread inside run().
+     */
+    using ReaderFactory = std::function<std::unique_ptr<Core::ICanReader>()>;
+
+    /**
      * @brief Creates the replay producer worker.
-     * @param queue Shared scheduled-item queue consumed by the sending consumer worker.
+     * @param queue Shared scheduled-item queue consumed by SendingConsumerWorker.
      * @param broker Event broker used to publish encoded RAW CAN frames.
      * @param parent Optional QObject parent.
      */
@@ -52,13 +65,12 @@ class ReplayProducerWorker final : public QThread
     /**
      * @brief Starts a new replay run.
      *
-     * Stores the frame snapshot and speed factor, resets replay control flags,
-     * bumps the replay token, and starts the worker thread.
-     *
-     * @param frames Replay frames to schedule.
-     * @param speedFactor Playback speed multiplier (clamped internally).
+     * @param factory   Factory that opens the appropriate ICanReader on the worker thread.
+     * @param frameCount Total record count used for progress reporting.
+     * @param speedFactor Playback speed multiplier (clamped to [0.1, 8.0]).
      */
-    void startReplay(const QList<Core::ReplayFrame>& frames, double speedFactor);
+    void startReplay(ReaderFactory factory, uint64_t frameCount, double speedFactor,
+                     std::shared_ptr<Core::IFaultHandler> faultHandler = nullptr);
 
     /** @brief Requests replay pause. Already queued items may still be pending. */
     void pauseReplay();
@@ -66,19 +78,25 @@ class ReplayProducerWorker final : public QThread
     /** @brief Resumes a previously paused replay run. */
     void resumeReplay();
 
-    /** @brief Stops replay production and invalidates stale queued replay items via token bump. */
+    /** @brief Stops replay production and invalidates stale queued items via token bump. */
     void stopReplay();
 
-    /** @brief Indicates whether the replay worker currently has an active run. */
+    /** @brief Returns true while a replay run is active. */
     [[nodiscard]] auto isRunningReplay() const -> bool
     {
         return m_isActive.load();
     }
 
-    /** @brief Indicates whether the current replay run is paused. */
+    /** @brief Returns true while the current replay run is paused. */
     [[nodiscard]] auto isPausedReplay() const -> bool
     {
         return m_isPaused.load();
+    }
+
+    /** @brief Number of frames scheduled so far; safe to read from any thread. */
+    [[nodiscard]] auto scheduledFrameCount() const -> int
+    {
+        return m_scheduledCount.load(std::memory_order_relaxed);
     }
 
    signals:
@@ -94,15 +112,8 @@ class ReplayProducerWorker final : public QThread
     /** @brief Emitted when the replay thread leaves its run loop (normal stop or error). */
     void replayStopped();
 
-    /** @brief Emitted after the last frame of the active replay run was sent. */
+    /** @brief Emitted after the last frame of the active run was scheduled. */
     void replayFinished();
-
-    /**
-     * @brief Emitted with replay progress based on actually sent frames.
-     * @param currentFrame Number of frames sent so far.
-     * @param totalFrames Total number of frames in the run.
-     */
-    void progressUpdated(int currentFrame, int totalFrames);
 
     /**
      * @brief Emitted when replay processing fails.
@@ -111,32 +122,29 @@ class ReplayProducerWorker final : public QThread
     void errorOccurred(const QString& error);
 
    protected:
-    /** @brief Replay worker main loop. Schedules frames and pushes items to the queue. */
     void run() override;
 
    private:
-    /** Shared queue between replay producer and sending consumer. */
     ScheduledItemQueue& m_queue;
-    /** Event broker used for publishing send events from queued callbacks. */
     Core::IEventBroker& m_broker;
 
-    /** Mutex/condition pair for pausing/resuming and state synchronization. */
     mutable std::mutex m_stateMutex;
     std::condition_variable m_stateCv;
 
-    /** Snapshot of frames and speed used by the active run. */
-    QList<Core::ReplayFrame> m_frames;
+    ReaderFactory m_factory;
+    uint64_t m_totalFrames = 0;
     double m_speedFactor = 1.0;
+    std::shared_ptr<Core::IFaultHandler> m_faultHandler;
 
-    /** Replay control flags shared across UI-thread calls and worker thread. */
     std::atomic<bool> m_isActive{false};
     std::atomic<bool> m_shouldStop{false};
     std::atomic<bool> m_isPaused{false};
 
-    /**
-     * @brief Monotonic run token used to invalidate stale queued replay items after stop/restart.
-     */
+    /** @brief Monotonic token to invalidate stale queued items after stop/restart. */
     std::atomic<uint64_t> m_replayRunToken{0};
+
+    /** @brief Frames scheduled so far in the current run; polled by the UI timer. */
+    std::atomic<int> m_scheduledCount{0};
 };
 
 }  // namespace Sending

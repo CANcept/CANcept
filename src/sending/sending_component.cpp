@@ -15,6 +15,11 @@
 
 #include "sending_component.hpp"
 
+#include <QDateTime>
+#include <QDir>
+#include <QFileInfo>
+
+#include "can_stream/reader/mdf4_reader.hpp"
 #include "constants.hpp"
 #include "core/event/can_driver_event.hpp"
 #include "core/event/lifecycle_event.hpp"
@@ -67,6 +72,7 @@ void SendingComponent::onStart()
     m_consumerWorker->startConsuming();
 
     checkDeviceReadiness();
+    scanReplaySessions();
 
     m_eventBroker.publish<Core::ModuleStartedEvent>(
         Core::ModuleStartedEvent(std::type_index(typeid(*this))));
@@ -83,8 +89,6 @@ void SendingComponent::onStop()
     m_parseErrorConn.release();
     m_parseSuccessConn.release();
     m_canDriverChangeConn.release();
-    m_sendLogSessionsConn.release();
-    m_sendLogSessionsFramesConn.release();
 
     LOG_INF(Constants::MODULE_IDENTIFIER, "Sending Component stopped");
 }
@@ -116,73 +120,79 @@ void SendingComponent::onDbcParseError() const
     m_view->dbcSubView()->clearMessages();
 }
 
-void SendingComponent::onLogSessionsReceived(const Core::SendLogSessions& event)
+void SendingComponent::scanReplaySessions()
 {
-    if (!event.errorMessage.isEmpty())
+    QDir logsDir("logs");
+    const QStringList mf4Files =
+        logsDir.entryList({"session_*.mf4"}, QDir::Files, QDir::Name | QDir::Reversed);
+
+    QList<ReplayEntry> entries;
+    for (const QString& fileName : mf4Files)
     {
-        LOG_ERR(Constants::MODULE_IDENTIFIER, "Replay sessions request failed: {}",
-                event.errorMessage.toStdString());
-        m_model->setReplaySessions({});
-        m_view->setLogSessions(m_model->replaySessions());
-        m_view->setReplayLoadState(ReplaySendingSubView::LoadState::Error);
-        m_view->setReplayLoadWarningText(event.errorMessage);
-        m_view->setReplayPlaybackState(ReplaySendingSubView::PlaybackState::Disabled);
-        m_view->setReplayProgress(0, 0);
-        return;
+        const QString filePath = logsDir.filePath(fileName);
+
+        CanStream::Mdf4Reader reader;
+        if (!reader.open(filePath.toStdString()))
+        {
+            continue;
+        }
+
+        const uint64_t frameCount = reader.recordCount();
+        const Core::CanFileType fileType = reader.fileType();
+        reader.close();
+
+        // Extract epoch-ms from "session_{epochMs}.mf4"
+        const QString stem = QFileInfo(fileName).completeBaseName();  // "session_{epochMs}"
+        const QString epochStr = stem.mid(QString("session_").length());
+        bool ok = false;
+        const qint64 epochMs = epochStr.toLongLong(&ok);
+        const QString displayName =
+            ok ? QDateTime::fromMSecsSinceEpoch(epochMs).toString("yyyy-MM-dd HH:mm:ss") : stem;
+
+        entries.append(ReplayEntry{.displayName = displayName,
+                                   .filePath = filePath,
+                                   .frameCount = frameCount,
+                                   .fileType = fileType});
     }
 
-    m_model->setReplaySessions(event.sessions);
-    m_view->setLogSessions(m_model->replaySessions());
-    m_view->clearReplayLoadWarningText();
-
-    if (m_model->replaySessions().isEmpty())
-    {
-        m_view->setReplayLoadState(ReplaySendingSubView::LoadState::NoSessions);
-    } else
-    {
-        m_view->setReplayLoadState(ReplaySendingSubView::LoadState::SessionReady);
-    }
-
-    m_view->setReplayPlaybackState(ReplaySendingSubView::PlaybackState::Disabled);
-    m_view->setReplayProgress(0, 0);
-
-    LOG_INF(Constants::MODULE_IDENTIFIER, "Received {} replay session entries",
-            m_model->replaySessions().size());
+    m_replaySessions = entries;
+    m_view->setLogSessions(m_replaySessions);
+    LOG_INF(Constants::MODULE_IDENTIFIER, "Found {} replay sessions", m_replaySessions.size());
 }
 
-void SendingComponent::onLogSessionFramesReceived(const Core::SendLogSessionFrames& event)
+void SendingComponent::addExternalFile(const QString& filePath)
 {
-    if (!event.errorMessage.isEmpty())
+    CanStream::Mdf4Reader reader;
+    if (!reader.open(filePath.toStdString()))
     {
-        LOG_ERR(Constants::MODULE_IDENTIFIER, "Replay frames request failed for '{}': {}",
-                event.sessionId.toStdString(), event.errorMessage.toStdString());
-        m_model->clearReplayFrames();
-        m_view->setReplayLoadState(ReplaySendingSubView::LoadState::Error);
-        m_view->setReplayLoadWarningText(event.errorMessage);
-        m_view->setReplayPlaybackState(ReplaySendingSubView::PlaybackState::Disabled);
-        m_view->setReplayProgress(0, 0);
+        LOG_WRN(Constants::MODULE_IDENTIFIER, "Could not open external replay file: {}",
+                filePath.toStdString());
         return;
     }
 
-    m_model->setReplayFrames(event.sessionId, event.frames);
-    m_view->setReplayLoadState(ReplaySendingSubView::LoadState::Loaded);
-    m_view->setReplayPlaybackState(ReplaySendingSubView::PlaybackState::Ready);
-    m_view->setReplayProgress(0, m_model->replayFrames().size());
+    const uint64_t frameCount = reader.recordCount();
+    const Core::CanFileType fileType = reader.fileType();
+    reader.close();
 
-    if (event.skippedFrameCount > 0)
+    const QString displayName = QFileInfo(filePath).fileName();
+
+    // Avoid duplicates by file path
+    for (const auto& existing : m_replaySessions)
     {
-        LOG_WRN(Constants::MODULE_IDENTIFIER,
-                "Replay frames parsed with {} skipped lines for session '{}'",
-                event.skippedFrameCount, event.sessionId.toStdString());
-        m_view->setReplayLoadWarningText(
-            Constants::REPLAY_WARNING_SKIPPED_LINES_TEMPLATE.arg(event.skippedFrameCount));
-    } else
-    {
-        m_view->clearReplayLoadWarningText();
+        if (existing.filePath == filePath)
+        {
+            return;
+        }
     }
 
-    LOG_INF(Constants::MODULE_IDENTIFIER, "Loaded {} replay frames for session '{}'",
-            m_model->replayFrames().size(), event.sessionId.toStdString());
+    m_replaySessions.append(ReplayEntry{.displayName = displayName,
+                                        .filePath = filePath,
+                                        .frameCount = frameCount,
+                                        .fileType = fileType});
+
+    m_view->setLogSessions(m_replaySessions);
+    LOG_INF(Constants::MODULE_IDENTIFIER, "Added external replay file: {} ({} frames)",
+            filePath.toStdString(), frameCount);
 }
 
 void SendingComponent::publishRawMessageAsync(const Core::RawCanMessage& message) const
@@ -205,7 +215,6 @@ void SendingComponent::publishRawMessageAsync(const Core::RawCanMessage& message
 
 void SendingComponent::publishDbcMessageAsync(const Core::DbcCanMessage& message) const
 {
-    // encoding
     Core::DbcCanMessage mutableMsg = message;
     if (m_activeFaultHandler)
     {
@@ -218,7 +227,6 @@ void SendingComponent::publishDbcMessageAsync(const Core::DbcCanMessage& message
         m_activeFaultHandler->inject(encoded.messageId, encoded.dlc, encoded.data);
     }
 
-    // frame temporal transformation
     const auto [drop, delayOffset] =
         m_activeFaultHandler ? m_activeFaultHandler->evaluate()
                              : Core::IFaultHandler::FrameResult{.drop = false, .delayOffset = {}};
@@ -274,19 +282,11 @@ void SendingComponent::setupConnections()
         },
         Qt::QueuedConnection);
 
-    connect(m_view->replaySubView(), &ReplaySendingSubView::loadFramesRequested, this,
-            [this](const QString& sessionId) {
-                stopReplay();
-                m_view->setReplayLoadState(ReplaySendingSubView::LoadState::Loading);
-                m_view->setReplayPlaybackState(ReplaySendingSubView::PlaybackState::Disabled);
-                m_view->setReplayProgress(0, 0);
-                m_view->clearReplayLoadWarningText();
-
-                m_eventBroker.publish(Core::LogSessionFramesRequest(sessionId));
-            });
+    connect(m_view->replaySubView(), &ReplaySendingSubView::externalFileSelected, this,
+            [this](const QString& filePath) { addExternalFile(filePath); });
 
     connect(m_view->replaySubView(), &ReplaySendingSubView::startReplayRequested, this,
-            [this](const double speedFactor) { startReplay(speedFactor); });
+            [this](const int index, const double speedFactor) { startReplay(index, speedFactor); });
 
     connect(m_view->replaySubView(), &ReplaySendingSubView::pauseReplayRequested, this,
             [this]() { pauseReplay(); });
@@ -297,12 +297,11 @@ void SendingComponent::setupConnections()
     connect(m_view->replaySubView(), &ReplaySendingSubView::stopReplayRequested, this,
             [this]() { stopReplay(); });
 
-    connect(
-        m_replayWorker.get(), &ReplayProducerWorker::progressUpdated, this,
-        [this](const int currentFrame, const int totalFrames) {
-            m_view->setReplayProgress(currentFrame, totalFrames);
-        },
-        Qt::QueuedConnection);
+    m_replayProgressTimer = new QTimer(this);
+    m_replayProgressTimer->setInterval(100);
+    connect(m_replayProgressTimer, &QTimer::timeout, this, [this]() {
+        m_view->setReplayProgress(m_replayWorker->scheduledFrameCount(), m_replayTotalFrames);
+    });
 
     connect(
         m_replayWorker.get(), &ReplayProducerWorker::replayFinished, this,
@@ -310,10 +309,24 @@ void SendingComponent::setupConnections()
         Qt::QueuedConnection);
 
     connect(
+        m_replayWorker.get(), &ReplayProducerWorker::replayStopped, this,
+        [this]() {
+            m_replayProgressTimer->stop();
+            if (m_replayWorker->isRunningReplay())
+            {
+                return;
+            }
+            m_view->setReplayProgress(m_replayWorker->scheduledFrameCount(), m_replayTotalFrames);
+            m_view->setReplayPlaybackState(m_replaySessions.isEmpty()
+                                               ? ReplaySendingSubView::PlaybackState::Disabled
+                                               : ReplaySendingSubView::PlaybackState::Ready);
+        },
+        Qt::QueuedConnection);
+
+    connect(
         m_replayWorker.get(), &ReplayProducerWorker::errorOccurred, this,
         [this](const QString& error) {
-            m_view->setReplayLoadState(ReplaySendingSubView::LoadState::Error);
-            m_view->setReplayLoadWarningText(error);
+            LOG_ERR(Constants::MODULE_IDENTIFIER, "Replay error: {}", error.toStdString());
             m_view->setReplayPlaybackState(ReplaySendingSubView::PlaybackState::Ready);
         },
         Qt::QueuedConnection);
@@ -412,22 +425,40 @@ void SendingComponent::sendOnce() const
     m_model->transmitCurrent();
 }
 
-void SendingComponent::startReplay(const double speedFactor)
+void SendingComponent::startReplay(const int index, const double speedFactor)
 {
-    if (!m_replayWorker || m_model->replayFrames().isEmpty())
+    if (index < 0 || index >= m_replaySessions.size())
     {
-        m_view->setReplayLoadWarningText(Constants::REPLAY_WARNING_NO_FRAMES_LOADED);
         return;
     }
 
     stopRepeatedSending();
 
-    m_view->clearReplayLoadWarningText();
+    const ReplayEntry entry = m_replaySessions.at(index);
+
+    ReplayProducerWorker::ReaderFactory factory =
+        [path = entry.filePath.toStdString()]() -> std::unique_ptr<Core::ICanReader> {
+        auto reader = std::make_unique<CanStream::Mdf4Reader>();
+        if (!reader->open(path))
+        {
+            return nullptr;
+        }
+        return reader;
+    };
+
+    auto faultHandler = m_view->replaySubView()->getFaultHandler();
+
+    m_replayTotalFrames = static_cast<int>(entry.frameCount);
+
     m_view->setReplayPlaybackState(ReplaySendingSubView::PlaybackState::Running);
+    m_view->setReplayProgress(0, m_replayTotalFrames);
 
-    m_replayWorker->startReplay(m_model->replayFrames(), speedFactor);
+    m_replayWorker->startReplay(std::move(factory), entry.frameCount, speedFactor,
+                                std::move(faultHandler));
+    m_replayProgressTimer->start();
 
-    LOG_INF(Constants::MODULE_IDENTIFIER, "Replay started at speed factor {}", speedFactor);
+    LOG_INF(Constants::MODULE_IDENTIFIER, "Replay started: '{}' at {}x speed",
+            entry.filePath.toStdString(), speedFactor);
 }
 
 void SendingComponent::pauseReplay()
@@ -454,15 +485,20 @@ void SendingComponent::resumeReplay()
 
 void SendingComponent::stopReplay()
 {
+    if (m_replayProgressTimer)
+    {
+        m_replayProgressTimer->stop();
+    }
+
     if (m_replayWorker)
     {
         m_replayWorker->stopReplay();
     }
 
-    const bool hasFrames = !m_model->replayFrames().isEmpty();
-    m_view->setReplayPlaybackState(hasFrames ? ReplaySendingSubView::PlaybackState::Ready
-                                             : ReplaySendingSubView::PlaybackState::Disabled);
-    m_view->setReplayProgress(0, static_cast<int>(m_model->replayFrames().size()));
+    m_view->setReplayPlaybackState(m_replaySessions.isEmpty()
+                                       ? ReplaySendingSubView::PlaybackState::Disabled
+                                       : ReplaySendingSubView::PlaybackState::Ready);
+    m_view->setReplayProgress(0, 0);
 }
 
 void SendingComponent::setupBrokerSubscriptions()
@@ -488,22 +524,6 @@ void SendingComponent::setupBrokerSubscriptions()
         [this](const Core::CanDriverChangeEvent&) -> void {
             QMetaObject::invokeMethod(
                 this, [this]() -> void { checkDeviceReadiness(); }, Qt::QueuedConnection);
-        });
-
-    m_sendLogSessionsConn = m_eventBroker.subscribe<Core::SendLogSessions>(
-        [this](const Core::SendLogSessions& event) -> void {
-            const Core::SendLogSessions eventCopy = event;
-            QMetaObject::invokeMethod(
-                this, [this, eventCopy]() -> void { onLogSessionsReceived(eventCopy); },
-                Qt::QueuedConnection);
-        });
-
-    m_sendLogSessionsFramesConn = m_eventBroker.subscribe<Core::SendLogSessionFrames>(
-        [this](const Core::SendLogSessionFrames& event) -> void {
-            const Core::SendLogSessionFrames eventCopy = event;
-            QMetaObject::invokeMethod(
-                this, [this, eventCopy]() -> void { onLogSessionFramesReceived(eventCopy); },
-                Qt::QueuedConnection);
         });
 }
 

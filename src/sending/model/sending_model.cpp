@@ -633,21 +633,4 @@ void SendingModel::setRawData(const std::vector<uint8_t>& data)
     }
 }
 
-void SendingModel::setReplaySessions(const QList<Core::ReplaySessionInfo>& sessions)
-{
-    m_replaySessions = sessions;
-}
-
-void SendingModel::setReplayFrames(const QString& sessionId, const QList<Core::ReplayFrame>& frames)
-{
-    m_loadedReplaySessionId = sessionId;
-    m_replayFrames = frames;
-}
-
-void SendingModel::clearReplayFrames()
-{
-    m_loadedReplaySessionId.clear();
-    m_replayFrames.clear();
-}
-
 }  // namespace Sending
