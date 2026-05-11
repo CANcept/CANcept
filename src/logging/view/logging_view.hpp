@@ -87,10 +87,11 @@ class LoggingView final : public QWidget
     /** @brief Emitted to stop the active session and finalize the log. */
     void stopRequested();
 
-    /** @brief Triggered by an 'Export' button within a specific table row. */
-    void exportRequested(const QModelIndex& index);
     /** @brief Triggered by a 'Details' button within a specific table row. */
     void detailRequested(const QModelIndex& index);
+
+    /** @brief Forwarded from the component when a new DBC config is available. */
+    void dbcConfigChanged(const Core::DbcConfig& config);
 
    public:
     /** @brief Shows the device not configured overlay. */
@@ -99,7 +100,6 @@ class LoggingView final : public QWidget
     void hideDeviceNotConfiguredOverlay() const;
 
    public slots:
-    void dbcConfigChanged(const Core::DbcConfig& config);
     void onDetailRequested(const QModelIndex& index);
 
    protected:
@@ -110,18 +110,16 @@ class LoggingView final : public QWidget
     /** @brief Initializes the persistent header and the swappable content frame. */
     void setupUi();
     void applyStyle();
-    /** @brief Builds a detail widget for a specific session */
-    auto createDetailWidget(const LogSession* session) -> QWidget*;
 
     QWidget* m_headerBox;
-    TimerLabel* m_timerLabel;     /**< Displays elapsed time during recording. */
-    StartStopButton* m_btnAction; /**< The Start/Stop toggle button. */
+    TimerLabel* m_timerLabel;
+    StartStopButton* m_btnAction;
 
-    NoLogsLabel* m_emptyLabel; /**< Empty state placeholder when no sessions exist. */
+    NoLogsLabel* m_emptyLabel;
     bool m_isRecording{false};
 
-    QFrame* m_mainFrame;            /**< The bordered container for consistent UI. */
-    QStackedWidget* m_contentStack; /**< Handles swapping between Table and Details. */
+    QFrame* m_mainFrame;
+    QStackedWidget* m_contentStack;
 
     QWidget* m_historyPage;
     LogHistoryTable* m_historyTable;

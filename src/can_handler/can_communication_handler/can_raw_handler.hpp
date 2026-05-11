@@ -45,7 +45,8 @@ class CanRawHandler final : public ICanParser
      * @brief Publishes the received CAN message in its raw form to the event handler.
      * @param canMessage The received CAN message
      */
-    void parseReceivedMessage(const sockcanpp::CanMessage* canMessage) override;
+    void parseReceivedMessage(const sockcanpp::CanMessage* canMessage,
+                              std::chrono::nanoseconds timestamp) override;
     /**
      * @brief Handles @code SendRawCanMessageEvent by sending the encoded CAN message to the CAN
      * device via the CanCommunicationHandler

@@ -16,16 +16,19 @@
 #include "can_device_handler.hpp"
 
 #include <linux/if_arp.h>
+#include <linux/sockios.h>
 #include <sys/ioctl.h>
+#include <time.h>
 #include <unistd.h>
 
 #include "can_handler/constants.hpp"
 #include "core/macro/console_logging.hpp"
 
 namespace CanHandler {
-auto CanDeviceHandler::checkForCanMessage() const -> std::list<CanMessage>
+auto CanDeviceHandler::checkForCanMessage() const
+    -> std::list<std::pair<CanMessage, std::chrono::nanoseconds>>
 {
-    std::list<CanMessage> canMessages;
+    std::list<std::pair<CanMessage, std::chrono::nanoseconds>> canMessages;
     while (true)
     {
         if (canDriver.get() == nullptr)
@@ -36,9 +39,18 @@ auto CanDeviceHandler::checkForCanMessage() const -> std::list<CanMessage>
         {
             break;
         }
-        CanMessage readMessage = canDriver->readMessage();
-        canMessages.push_back(readMessage);
+
+        CanMessage msg = canDriver->readMessage();
+
+        timespec ts{};
+        std::chrono::nanoseconds timestamp{0};
+        if (ioctl(canDriver->getSocketFd(), SIOCGSTAMPNS, &ts) == 0)
+            timestamp = std::chrono::nanoseconds(ts.tv_sec * 1'000'000'000LL + ts.tv_nsec);
+
+        canMessages.emplace_back(std::move(msg), timestamp);
     }
+
+    canMessages.sort([](const auto& a, const auto& b) { return a.second < b.second; });
     return canMessages;
 }
 auto CanDeviceHandler::sendCanMessage(const CanMessage& canMessage) const -> bool

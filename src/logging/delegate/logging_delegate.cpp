@@ -15,14 +15,9 @@
 
 #include "logging_delegate.hpp"
 
-#include <QApplication>
 #include <QIcon>
 #include <QMouseEvent>
-#include <QPaintDevice>
 #include <QPainter>
-#include <QPainterPath>
-#include <QStyle>
-#include <iostream>
 
 #include "core/macro/theme.hpp"
 #include "core/painters/item_painter.hpp"
@@ -40,43 +35,6 @@ void LoggingDelegate::paint(QPainter* painter, const QStyleOptionViewItem& optio
     if (!painter->isActive()) return;
     painter->save();
     painter->setRenderHint(QPainter::Antialiasing);
-
-    // Draw row border only for the first column to avoid overlapping borders
-    if (index.column() == 0)
-    {
-        // Calculate the full row rect by getting the parent view
-        QAbstractItemView* view =
-            qobject_cast<QAbstractItemView*>(const_cast<QWidget*>(option.widget));
-
-        if (view)
-        {
-            QRect rowRect = option.rect;
-            rowRect.setLeft(view->visualRect(index.model()->index(index.row(), 0)).left());
-            rowRect.setRight(view->visualRect(index.model()->index(
-                                                  index.row(), index.model()->columnCount() - 1))
-                                 .right());
-
-            // Draw rounded border around entire row
-            QPainterPath borderPath;
-            borderPath.addRoundedRect(rowRect.adjusted(1, 1, -1, -1), 10, 10);
-            painter->setPen(QPen(QColor(0, 0, 0, 26), 1));  // rgba(0, 0, 0, 0.1)
-            painter->setBrush(Qt::NoBrush);
-            painter->drawPath(borderPath);
-
-            // Draw hover/selection background with rounded corners
-            if (option.state & QStyle::State_Selected)
-            {
-                QPainterPath bgPath;
-                bgPath.addRoundedRect(rowRect.adjusted(1, 1, -1, -1), 10, 10);
-                painter->fillPath(bgPath, QColor(0, 0, 0, 8));  // rgba(0, 0, 0, 0.03)
-            } else if (option.state & QStyle::State_MouseOver)
-            {
-                QPainterPath bgPath;
-                bgPath.addRoundedRect(rowRect.adjusted(1, 1, -1, -1), 10, 10);
-                painter->fillPath(bgPath, QColor(0, 0, 0, 5));  // rgba(0, 0, 0, 0.02)
-            }
-        }
-    }
 
     // Handle different columns
     if (index.column() == LoggingModel::Col_Signals)
@@ -116,32 +74,18 @@ void LoggingDelegate::paint(QPainter* painter, const QStyleOptionViewItem& optio
         int x = option.rect.left() + 5;
         int y = option.rect.top() + option.rect.height() / 2;
 
-        // Export icon
-        QPixmap exportPixmap(":/assets/icon/logging/logging_export.svg");
-        exportPixmap =
-            exportPixmap.scaled(QSize(spacing.IconSm, spacing.IconSm), Qt::KeepAspectRatio);
-        QPainter pixmapPainter(&exportPixmap);
-        pixmapPainter.setCompositionMode(QPainter::CompositionMode_SourceIn);
-        pixmapPainter.fillRect(exportPixmap.rect(), colors.surfaceForeground);
-        pixmapPainter.end();
+        const auto paintIcon = [&](const QString& path, int drawX) {
+            QPixmap px = QIcon(path).pixmap(spacing.IconSm, spacing.IconSm);
+            QPainter px_painter(&px);
+            px_painter.setCompositionMode(QPainter::CompositionMode_SourceIn);
+            px_painter.fillRect(px.rect(), colors.surfaceForeground);
+            px_painter.end();
+            painter->drawPixmap(QRect(drawX, y - px.height() / 2, px.width(), px.height()), px);
+        };
 
-        painter->drawPixmap(
-            QRect(x, y - exportPixmap.height() / 2, exportPixmap.width(), exportPixmap.height()),
-            exportPixmap);
+        paintIcon(":/assets/icon/logging/logging_export.svg", x);
         x += spacing.IconSm + spacing.spacingMd;
-
-        // Detail view icon
-        QPixmap detailPixmap(":/assets/icon/logging/logging_detail_view.svg");
-        detailPixmap =
-            detailPixmap.scaled(QSize(spacing.IconSm, spacing.IconSm), Qt::KeepAspectRatio);
-        QPainter detailPainter(&detailPixmap);
-        detailPainter.setCompositionMode(QPainter::CompositionMode_SourceIn);
-        detailPainter.fillRect(detailPixmap.rect(), colors.surfaceForeground);
-        detailPainter.end();
-
-        painter->drawPixmap(
-            QRect(x, y - detailPixmap.height() / 2, detailPixmap.width(), detailPixmap.height()),
-            detailPixmap);
+        paintIcon(":/assets/icon/logging/logging_detail_view.svg", x);
     } else
     {
         // Default rendering for other columns (Timestamp, Duration)
@@ -169,7 +113,8 @@ bool LoggingDelegate::editorEvent(QEvent* event, QAbstractItemModel* model,
         int x = option.rect.left() + 5;
 
         // Export button area
-        QRect exportRect(x, option.rect.top() + option.rect.height() / 2 - THEME.spacing().IconSm,
+        QRect exportRect(x,
+                         option.rect.top() + option.rect.height() / 2 - THEME.spacing().IconSm / 2,
                          THEME.spacing().IconSm, THEME.spacing().IconSm);
         if (exportRect.contains(mouseEvent->pos()))
         {
@@ -181,7 +126,7 @@ bool LoggingDelegate::editorEvent(QEvent* event, QAbstractItemModel* model,
         x += THEME.spacing().IconSm + THEME.spacing().spacingMd;
 
         // Detail/View button area
-        QRect viewRect(x, option.rect.top() + option.rect.height() / 2 - THEME.spacing().IconSm,
+        QRect viewRect(x, option.rect.top() + option.rect.height() / 2 - THEME.spacing().IconSm / 2,
                        THEME.spacing().IconSm, THEME.spacing().IconSm);
         if (viewRect.contains(mouseEvent->pos()))
         {

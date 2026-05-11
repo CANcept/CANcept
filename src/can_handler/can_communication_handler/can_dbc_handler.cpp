@@ -18,7 +18,8 @@
 #include "core/macro/console_logging.hpp"
 
 namespace CanHandler {
-void CanDbcHandler::parseReceivedMessage(const sockcanpp::CanMessage* canMessage)
+void CanDbcHandler::parseReceivedMessage(const sockcanpp::CanMessage* canMessage,
+                                         std::chrono::nanoseconds timestamp)
 {
     // Lock the mutex for data safety
     std::shared_lock guard(dbcMutex);
@@ -34,8 +35,7 @@ void CanDbcHandler::parseReceivedMessage(const sockcanpp::CanMessage* canMessage
         return;
     }
 
-    // Check if message length = 8
-    if (canMessage->getRawFrame().len != 8) return;
+    if (canMessage->getRawFrame().len < currentMessageDescription->messageSize) return;
 
     // Read raw data frames in little and big endian order
     u_int64_t dataLittleEndian = 0, dataBigEndian = 0;
@@ -50,7 +50,7 @@ void CanDbcHandler::parseReceivedMessage(const sockcanpp::CanMessage* canMessage
 
     // Parsed can message initialization
     Core::DbcCanMessage receivedMessage{
-        .receiveTime = canMessage->getTimestampOffset(),
+        .receiveTime = timestamp,
         .messageId = static_cast<uint16_t>(canMessage->getRawFrame().can_id)};
 
     // Parse signals

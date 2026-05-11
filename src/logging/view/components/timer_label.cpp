@@ -18,6 +18,7 @@
 #include <QString>
 
 #include "core/macro/theme.hpp"
+#include "core/theme/style_event.hpp"
 
 namespace Logging {
 
@@ -42,6 +43,16 @@ void TimerLabel::applyStyle()
                                    .arg(colors.textPrimary.name())
                                    .arg(spacing.fontSizeMd);
     setStyleSheet(labelStyle);
+}
+
+auto TimerLabel::event(QEvent* event) -> bool
+{
+    if (event->type() == Core::StyleEvent::EventType)
+    {
+        applyStyle();
+        return true;
+    }
+    return QLabel::event(event);
 }
 
 void TimerLabel::updateTimer(qint64 elapsedMs)

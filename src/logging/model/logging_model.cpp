@@ -15,122 +15,95 @@
 
 #include "logging_model.hpp"
 
-#include "core/util/log_service.hpp"
+#include <QFileDialog>
+#include <filesystem>
+
+#include "can_stream/can_converter.hpp"
+#include "can_stream/writer/mdf4_writer.hpp"
 
 namespace Logging {
-// Initialize base class and members
-// Constructs the logging data model
+
 LoggingModel::LoggingModel(QObject* parent) : QAbstractTableModel(parent), m_activeSessionIndex(-1)
 {
 }
 
-// Returns the number of logging sessions (rows)
 int LoggingModel::rowCount(const QModelIndex& parent) const
 {
-    if (parent.isValid())
-    {
-        return 0;
-    }
+    if (parent.isValid()) return 0;
     return static_cast<int>(m_sessions.size());
 }
 
-// Returns the number of columns in the table
 int LoggingModel::columnCount(const QModelIndex& parent) const
 {
-    if (parent.isValid())
-    {
-        return 0;
-    }
+    if (parent.isValid()) return 0;
     return Col_MAX;
 }
 
-// Returns data for a specific cell (timestamp, duration, etc.)
 QVariant LoggingModel::data(const QModelIndex& index, int role) const
 {
-    if (!index.isValid() || index.row() >= static_cast<int>(m_sessions.size()))
-    {
-        return QVariant();
-    }
+    if (!index.isValid() || index.row() >= static_cast<int>(m_sessions.size())) return QVariant();
+
     const LogSession& session = m_sessions[index.row()];
 
-    // Handle display and custom roles
     switch (role)
     {
         case Qt::DisplayRole: {
             switch (index.column())
             {
                 case Col_Timestamp:
-                    return session.startDateTime.toString(
-                        "HH:mm:ss");  // Show start time in 24h format (fixed)
+                    return session.startDateTime.toString("HH:mm:ss");
                 case Col_Duration:
                     return session.duration;
                 case Col_Signals: {
                     switch (session.type)
                     {
                         case DBC_BASED: {
-                            QStringList signalsList;
-                            for (auto it = session.selectedSignals.begin();
-                                 it != session.selectedSignals.end(); ++it)
-                            {
-                                signalsList.push_back(QString("0x") +
-                                                      QString::number(it->first, 16));
-                            }
-                            return signalsList;
+                            QStringList list;
+                            for (const auto& [id, _] : session.selectedSignals)
+                                list.push_back(QString("0x") + QString::number(id, 16));
+                            return list;
                         }
-                        case RAW: {
+                        case RAW:
                             return QStringList{QString("Raw")};
-                        }
                         default:
                             return QVariant();
                     }
                 }
                 case Col_Actions:
-                    return QVariant();  // Actions will be painted by delegate
+                    return QVariant();
                 default:
                     return QVariant();
             }
         }
-        case SessionIdRole: {
+        case SessionIdRole:
             return session.id;
-        }
-        case IsActiveRole: {
+        case IsActiveRole:
             return session.isRecording;
-        }
-        case EntryCountRole: {
+        case EntryCountRole:
             return static_cast<qulonglong>(0);
-        }
         case SignalsListRole: {
             switch (session.type)
             {
                 case DBC_BASED: {
-                    QStringList signalsList;
-                    for (auto it = session.selectedSignals.begin();
-                         it != session.selectedSignals.end(); ++it)
-                    {
-                        signalsList.push_back(QString("0x") + QString::number(it->first, 16));
-                    }
-                    return signalsList;
+                    QStringList list;
+                    for (const auto& [id, _] : session.selectedSignals)
+                        list.push_back(QString("0x") + QString::number(id, 16));
+                    return list;
                 }
-                case RAW: {
+                case RAW:
                     return QStringList{QString("Raw")};
-                }
                 default:
                     return QVariant();
             }
         }
-        default: {
+        default:
             return QVariant();
-        }
     }
 }
 
-// Returns column header labels
 QVariant LoggingModel::headerData(int section, Qt::Orientation orientation, int role) const
 {
-    if (role != Qt::DisplayRole || orientation != Qt::Horizontal)
-    {
-        return QVariant();
-    }
+    if (role != Qt::DisplayRole || orientation != Qt::Horizontal) return QVariant();
 
     switch (section)
     {
@@ -145,129 +118,77 @@ QVariant LoggingModel::headerData(int section, Qt::Orientation orientation, int 
         default:
             return QVariant();
     }
-    return QVariant();
 }
 
-// Retrieves a session by its unique ID
 const LogSession* LoggingModel::getSession(const QString& sessionId) const
 {
     for (const auto& session : m_sessions)
-    {
-        if (session.id == sessionId)
-        {
-            return &session;
-        }
-    }
+        if (session.id == sessionId) return &session;
     return nullptr;
 }
 
-// Returns the session ID for a given table row index
 QString LoggingModel::sessionIdAt(const QModelIndex& index) const
 {
-    if (!index.isValid() || index.row() >= static_cast<int>(m_sessions.size()))
-    {
-        return QString();
-    }
+    if (!index.isValid() || index.row() >= static_cast<int>(m_sessions.size())) return QString();
     return m_sessions[index.row()].id;
 }
 
-// Returns true if a logging session is currently active
 [[nodiscard]] bool LoggingModel::isRecording() const
 {
     return m_activeSessionIndex != -1;
 }
 
-// Returns the session ID of the currently active session
 QString LoggingModel::getCurrentSessionId() const
 {
     if (m_activeSessionIndex >= 0 && m_activeSessionIndex < static_cast<int>(m_sessions.size()))
-    {
         return m_sessions[m_activeSessionIndex].id;
-    }
     return QString();
 }
 
-// Looks up message name from DBC config
 QString LoggingModel::getMessageName(uint16_t messageId) const
 {
     if (!m_currentDbc.has_value())
-    {
         return QString("0x%1").arg(QString::number(messageId, 16).toUpper(), 3, QChar('0'));
-    }
 
     for (const auto& msgDef : m_currentDbc->messageDefinitions)
-    {
-        if (msgDef.messageId == messageId)
-        {
-            return QString::fromStdString(msgDef.messageName);
-        }
-    }
+        if (msgDef.messageId == messageId) return QString::fromStdString(msgDef.messageName);
 
     return QString("UNKNOWN_0x%1").arg(QString::number(messageId, 16).toUpper(), 3, QChar('0'));
 }
 
-// Looks up signal unit from DBC config
 QString LoggingModel::getSignalUnit(uint16_t messageId, const QString& signalName) const
 {
-    if (!m_currentDbc.has_value())
-    {
-        return QString();
-    }
+    if (!m_currentDbc.has_value()) return QString();
 
     for (const auto& msgDef : m_currentDbc->messageDefinitions)
     {
-        if (msgDef.messageId == messageId)
-        {
-            for (const auto& sigDef : msgDef.signalDescriptions)
-            {
-                if (QString::fromStdString(sigDef.signalName) == signalName)
-                {
-                    return QString::fromStdString(sigDef.unit);
-                }
-            }
-        }
+        if (msgDef.messageId != messageId) continue;
+        for (const auto& sigDef : msgDef.signalDescriptions)
+            if (QString::fromStdString(sigDef.signalName) == signalName)
+                return QString::fromStdString(sigDef.unit);
     }
-
     return QString();
 }
 
-// Gets the list of selected signals for a specific message
 QStringList LoggingModel::getSelectedSignalsForMessage(uint16_t messageId) const
 {
-    if (m_activeSessionIndex < 0)
-    {
-        return QStringList();
-    }
-
+    if (m_activeSessionIndex < 0) return QStringList();
     const auto& activeSession = m_sessions[m_activeSessionIndex];
-    auto it = activeSession.selectedSignals.find(static_cast<uint32_t>(messageId));
-
-    if (it != activeSession.selectedSignals.end())
-    {
-        return it->second;
-    }
-
+    const auto it = activeSession.selectedSignals.find(static_cast<uint32_t>(messageId));
+    if (it != activeSession.selectedSignals.end()) return it->second;
     return QStringList();
 }
 
-// Updates the stored DBC configuration reference
 void LoggingModel::updateDbcConfig(const Core::DbcConfig& config)
 {
     stopActiveSession();
     m_currentDbc = config;
 }
 
-// Creates and starts a new logging session with selected signals
-void LoggingModel::startNewDbcLogSession(
-    const std::map<uint32_t, QStringList>& selectedSignals,
-    const std::map<uint16_t, std::pair<int, int>>& signalsBeforeAfterMessage)
+void LoggingModel::startNewDbcLogSession(const std::map<uint32_t, QStringList>& selectedSignals)
 {
-    if (isRecording())
-    {
-        stopActiveSession();
-    }
+    if (isRecording()) stopActiveSession();
 
-    std::scoped_lock<std::mutex> lock(m_messageReceiveMutex);
     beginInsertRows(QModelIndex(), rowCount(), rowCount());
 
     LogSession newSession;
@@ -276,154 +197,125 @@ void LoggingModel::startNewDbcLogSession(
     newSession.duration = "00:00:00";
     newSession.isRecording = true;
     newSession.selectedSignals = selectedSignals;
-    newSession.signalsBeforeAfterMessage = signalsBeforeAfterMessage;
     newSession.type = DBC_BASED;
-    newSession.logger = Core::LogService::getInstance().getLogger(Core::LogContext::CanLogging,
-                                                                  newSession.id.toStdString());
 
-    m_sessions.push_back(newSession);
+    std::vector<CanStream::MessageInfo> schema;
+    for (const auto& [msgId, sigNames] : selectedSignals)
+    {
+        CanStream::MessageInfo msgInfo;
+        msgInfo.msgId = static_cast<uint16_t>(msgId);
+        msgInfo.name = getMessageName(static_cast<uint16_t>(msgId)).toStdString();
+        for (const auto& sig : sigNames)
+        {
+            CanStream::SignalInfo sigInfo;
+            sigInfo.name = sig.toStdString();
+            sigInfo.unit = getSignalUnit(static_cast<uint16_t>(msgId), sig).toStdString();
+            msgInfo.signalList.push_back(std::move(sigInfo));
+        }
+        schema.push_back(std::move(msgInfo));
+    }
+
+    std::filesystem::create_directories("logs");
+    auto writer = std::make_unique<CanStream::Mdf4Writer>(
+        sessionFilePath(newSession.id).toStdString(), newSession.id.toULongLong(), schema);
+    newSession.worker = std::make_unique<LoggingWorker>(std::move(writer));
+    newSession.worker->start();
+    m_dbcWorker.store(newSession.worker.get(), std::memory_order_release);
+
+    m_sessions.push_back(std::move(newSession));
     m_activeSessionIndex = static_cast<int>(m_sessions.size()) - 1;
     endInsertRows();
 }
 
 void LoggingModel::startNewRawLogsSession()
 {
-    if (isRecording())
-    {
-        stopActiveSession();
-    }
-    std::scoped_lock<std::mutex> lock(m_messageReceiveMutex);
+    if (isRecording()) stopActiveSession();
+
     beginInsertRows(QModelIndex(), rowCount(), rowCount());
+
     LogSession newSession;
     newSession.id = QString::number(QDateTime::currentMSecsSinceEpoch());
     newSession.startDateTime = QDateTime::currentDateTime();
     newSession.duration = "00:00:00";
     newSession.isRecording = true;
     newSession.type = RAW;
-    newSession.logger = Core::LogService::getInstance().getLogger(Core::LogContext::CanLogging,
-                                                                  newSession.id.toStdString());
 
-    m_sessions.push_back(newSession);
+    std::filesystem::create_directories("logs");
+    auto writer = std::make_unique<CanStream::Mdf4Writer>(
+        sessionFilePath(newSession.id).toStdString(), newSession.id.toULongLong());
+    newSession.worker = std::make_unique<LoggingWorker>(std::move(writer));
+    newSession.worker->start();
+    m_rawWorker.store(newSession.worker.get(), std::memory_order_release);
+
+    m_sessions.push_back(std::move(newSession));
     m_activeSessionIndex = static_cast<int>(m_sessions.size()) - 1;
     endInsertRows();
 }
 
-// Stops the currently active logging session
 void LoggingModel::stopActiveSession()
 {
-    {
-        std::scoped_lock<std::mutex> lock(m_messageReceiveMutex);
+    if (!isRecording()) return;
 
-        if (!isRecording())
-        {
-            return;
-        }
+    // Clear atomic pointers first so the event broker thread stops posting
+    LoggingWorker* worker = m_rawWorker.exchange(nullptr, std::memory_order_acq_rel);
+    if (!worker) worker = m_dbcWorker.exchange(nullptr, std::memory_order_acq_rel);
 
-        m_sessions[m_activeSessionIndex].isRecording = false;
-        m_activeSessionIndex = -1;
-    }
+    m_sessions[m_activeSessionIndex].isRecording = false;
+    m_activeSessionIndex = -1;
+
+    // Drain remaining messages, close the file, and join the worker thread
+    if (worker) worker->stop();
+
     updateActiveDuration();
-
     emit dataChanged(index(0, 0), index(rowCount() - 1, columnCount() - 1));
 }
 
-// Updates the elapsed duration of the active logging session
 void LoggingModel::updateActiveDuration()
 {
-    std::scoped_lock<std::mutex> lock(m_messageReceiveMutex);
+    if (!isRecording()) return;
 
-    if (!isRecording())
-    {
-        return;
-    }
     LogSession& activeSession = m_sessions[m_activeSessionIndex];
-    QDateTime now = QDateTime::currentDateTime();
-    QDateTime start = activeSession.startDateTime;
-    qint64 seconds = start.secsTo(now);
+    const qint64 seconds = activeSession.startDateTime.secsTo(QDateTime::currentDateTime());
+    activeSession.duration = QTime(0, 0).addSecs(static_cast<int>(seconds)).toString("hh:mm:ss");
 
-    QTime durationTime(0, 0);
-    durationTime = durationTime.addSecs(static_cast<int>(seconds));
-    activeSession.duration = durationTime.toString("hh:mm:ss");
-
-    // Notify views that the duration has changed (timestamp column doesn't change)
-    QModelIndex durationIndex = index(m_activeSessionIndex, Col_Duration);
+    const QModelIndex durationIndex = index(m_activeSessionIndex, Col_Duration);
     emit dataChanged(durationIndex, durationIndex);
 }
 
 void LoggingModel::onDbcMessageReceived(const Core::DbcCanMessage& message)
 {
-    std::scoped_lock<std::mutex> lock(m_messageReceiveMutex);
-
-    if (!isRecording() || m_activeSessionIndex < 0 ||
-        m_activeSessionIndex >= static_cast<int>(m_sessions.size()) ||
-        m_sessions[m_activeSessionIndex].type != DBC_BASED)
-    {
-        return;
-    }
-    LogSession& activeSession = m_sessions[m_activeSessionIndex];
-    auto* logSession = getSession(activeSession.id);
-    if (!logSession) [[unlikely]]
-    {
-        return;
-    }
-    if (!logSession->selectedSignals.contains(message.messageId))
-    {
-        return;
-    }
-
-    std::string messageLine = "";
-    messageLine += fmt::format("{},", message.receiveTime.count());
-    messageLine.append(logSession->signalsBeforeAfterMessage.at(message.messageId).first, ',');
-    for (const auto& signal : logSession->selectedSignals.at(message.messageId))
-    {
-        bool containsValue = false;
-        for (const auto& [name, value] : message.signalValues)
-        {
-            if (signal.toStdString() == name)
-            {
-                messageLine += fmt::format("{:.3f},", value);
-                containsValue = true;
-                break;
-            }
-        }
-        if (!containsValue)
-        {
-            messageLine += ",";
-        }
-    }
-
-    messageLine.append(logSession->signalsBeforeAfterMessage.at(message.messageId).second, ',');
-    messageLine.pop_back();
-
-    activeSession.logger->info(messageLine.c_str());
+    auto* w = m_dbcWorker.load(std::memory_order_acquire);
+    if (w) w->post(message);
 }
 
 void LoggingModel::onRawMessageReceived(const Core::RawCanMessage& message)
 {
-    std::scoped_lock<std::mutex> lock(m_messageReceiveMutex);
-
-    if (!isRecording() || m_activeSessionIndex < 0 ||
-        m_activeSessionIndex >= static_cast<int>(m_sessions.size()) ||
-        m_sessions[m_activeSessionIndex].type != RAW)
-    {
-        return;
-    }
-    LogSession& activeSession = m_sessions[m_activeSessionIndex];
-    auto* logSession = getSession(activeSession.id);
-    if (!logSession) [[unlikely]]
-    {
-        return;
-    }
-
-    std::string messageLine = "";
-    messageLine += fmt::format("{},", message.receiveTime.count());
-    messageLine += fmt::format("{:x},", message.messageId);
-    for (uint8_t data : message.data)
-    {
-        messageLine += fmt::format("{:x} ", data);
-    }
-    messageLine.pop_back();
-
-    activeSession.logger->info(messageLine.c_str());
+    auto* w = m_rawWorker.load(std::memory_order_acquire);
+    if (w) w->post(message);
 }
+
+// static
+QString LoggingModel::sessionFilePath(const QString& sessionId)
+{
+    return QString("logs/session_%1.mf4").arg(sessionId);
+}
+
+void LoggingModel::onExportRequested(const QModelIndex& index) const
+{
+    if (!index.isValid() || index.row() >= static_cast<int>(m_sessions.size())) return;
+
+    const QString filePath = QFileDialog::getSaveFileName(
+        nullptr, "Export Log", "log.csv", "CSV Files (*.csv);;MDF4 Files (*.mf4 *.mdf)");
+
+    if (filePath.isEmpty()) return;
+
+    const CanStream::ExportType type = filePath.endsWith(".csv", Qt::CaseInsensitive)
+                                           ? CanStream::ExportType::Csv
+                                           : CanStream::ExportType::Mdf4;
+
+    CanStream::CanConverter converter(sessionFilePath(m_sessions[index.row()].id).toStdString(),
+                                      filePath.toStdString(), type);
+    (void)converter.convert();
+}
+
 }  // namespace Logging
