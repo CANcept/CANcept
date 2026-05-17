@@ -59,7 +59,6 @@ void ReplayProducerWorker::startReplay(ReaderFactory factory, const uint64_t fra
         m_faultHandler = std::move(faultHandler);
     }
 
-    m_replayRunToken.fetch_add(1);
     m_scheduledCount.store(0);
     m_shouldStop.store(false);
     m_isPaused.store(false);
@@ -98,7 +97,6 @@ void ReplayProducerWorker::stopReplay()
         return;
     }
 
-    m_replayRunToken.fetch_add(1);
     m_shouldStop.store(true);
     m_isPaused.store(false);
     m_stateCv.notify_all();
@@ -121,21 +119,19 @@ void ReplayProducerWorker::run()
         double localSpeed;
         std::shared_ptr<Core::IFaultHandler> localFaultHandler;
         {
-            std::lock_guard lock(m_stateMutex);
+            std::scoped_lock lock(m_stateMutex);
             localFactory = m_factory;
             localTotal = m_totalFrames;
             localSpeed = m_speedFactor;
             localFaultHandler = m_faultHandler;
         }
 
-        const uint64_t runToken = m_replayRunToken.load();
-
         using Ns = std::chrono::nanoseconds;
         constexpr auto LOOKAHEAD = std::chrono::microseconds(Constants::REPLAY_LOOKAHEAD_US);
 
         auto guardNs = static_cast<double>(Constants::INITIAL_SLEEP_GUARD_NS);
 
-        auto reader = localFactory();
+        const auto reader = localFactory();
         if (!reader)
         {
             m_isActive.store(false);
@@ -184,6 +180,9 @@ void ReplayProducerWorker::run()
 
         auto scheduleAndPush = [&](const Core::RawCanMessage& msg) -> void {
             const auto relativeNs = msg.receiveTime - firstTimestamp;
+            const auto scaledNs =
+                static_cast<long long>(static_cast<double>(relativeNs.count()) / localSpeed);
+            auto scheduledAt = replayStart + Ns(std::max<long long>(0LL, scaledNs));
 
             while (!m_shouldStop.load())
             {
@@ -196,12 +195,10 @@ void ReplayProducerWorker::run()
                             lock, [this] { return m_shouldStop.load() || !m_isPaused.load(); });
                     }
                     replayStart += Clock::now() - pauseBegin;
+                    scheduledAt = replayStart + Ns(std::max<long long>(0LL, scaledNs));
                     continue;
                 }
 
-                const auto scaledNs =
-                    static_cast<long long>(static_cast<double>(relativeNs.count()) / localSpeed);
-                const auto scheduledAt = replayStart + Ns(std::max<long long>(0LL, scaledNs));
                 const auto windowOpen = scheduledAt - LOOKAHEAD;
                 const auto now = Clock::now();
                 const long long leftNs = std::chrono::duration_cast<Ns>(windowOpen - now).count();
@@ -234,19 +231,6 @@ void ReplayProducerWorker::run()
                 return;
             }
 
-            const auto scaledNs =
-                static_cast<long long>(static_cast<double>(relativeNs.count()) / localSpeed);
-            const auto scheduledAt = replayStart + Ns(std::max<long long>(0LL, scaledNs));
-
-            while (Clock::now() < scheduledAt - LOOKAHEAD && !m_shouldStop.load())
-            {
-            }
-
-            if (m_shouldStop.load())
-            {
-                return;
-            }
-
             Core::RawCanMessage mutMsg = msg;
             auto finalScheduledAt = scheduledAt;
             if (localFaultHandler)
@@ -264,14 +248,14 @@ void ReplayProducerWorker::run()
             }
 
             auto context = std::make_shared<RawSendContext>(
-                RawSendContext{.broker = &m_broker,
-                               .message = mutMsg,
-                               .replayToken = runToken,
-                               .activeReplayToken = &m_replayRunToken});
+                RawSendContext{.broker = &m_broker, .message = mutMsg});
 
-            m_queue.push(ScheduledItem{.scheduledAt = finalScheduledAt,
-                                       .onSend = &rawSendImpl,
-                                       .context = std::move(context)});
+            ScheduledItem item{.scheduledAt = finalScheduledAt,
+                               .onSend = &rawSendImpl,
+                               .context = std::move(context)};
+            while (!m_shouldStop.load() && !m_queue.tryPush(item))
+            {
+            }
         };
 
         scheduleAndPush(firstMsg);

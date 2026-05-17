@@ -28,8 +28,6 @@ namespace Sending {
 struct RawSendContext {
     Core::IEventBroker* broker;
     Core::RawCanMessage message;
-    uint64_t replayToken = 0;
-    const std::atomic<uint64_t>* activeReplayToken = nullptr;
     std::function<void()> onSent;
 };
 
@@ -37,12 +35,6 @@ struct RawSendContext {
 static void rawSendImpl(void* context)
 {
     const auto* c = static_cast<RawSendContext*>(context);
-
-    // Guard stale replay items after stop/restart before they reach the bus.
-    if (c->activeReplayToken && c->replayToken != c->activeReplayToken->load())
-    {
-        return;
-    }
 
     c->broker->publish(Core::SendCanMessageRawEvent(c->message));
     if (c->onSent)

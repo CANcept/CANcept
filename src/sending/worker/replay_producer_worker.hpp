@@ -132,9 +132,6 @@ class ReplayProducerWorker final : public QThread
     std::atomic<bool> m_shouldStop{false};
     std::atomic<bool> m_isPaused{false};
 
-    /** @brief Monotonic token to invalidate stale queued items after stop/restart. */
-    std::atomic<uint64_t> m_replayRunToken{0};
-
     /** @brief Frames scheduled so far in the current run; polled by the UI timer. */
     std::atomic<int> m_scheduledCount{0};
 };
