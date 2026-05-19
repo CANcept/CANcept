@@ -19,6 +19,7 @@
 #include <QDir>
 #include <QFileInfo>
 
+#include "can_stream/reader/csv_reader.hpp"
 #include "can_stream/reader/mdf4_reader.hpp"
 #include "constants.hpp"
 #include "core/event/can_driver_event.hpp"
@@ -123,26 +124,34 @@ void SendingComponent::onDbcParseError() const
 void SendingComponent::scanReplaySessions()
 {
     QDir logsDir("logs");
-    const QStringList mf4Files =
-        logsDir.entryList({"session_*.mf4"}, QDir::Files, QDir::Name | QDir::Reversed);
+    const QStringList files = logsDir.entryList({"session_*.mf4", "session_*.csv"}, QDir::Files,
+                                                QDir::Name | QDir::Reversed);
 
     QList<ReplayEntry> entries;
-    for (const QString& fileName : mf4Files)
+    for (const QString& fileName : files)
     {
         const QString filePath = logsDir.filePath(fileName);
+        const bool isCsv = fileName.endsWith(".csv", Qt::CaseInsensitive);
 
-        CanStream::Mdf4Reader reader;
-        if (!reader.open(filePath.toStdString()))
+        uint64_t frameCount = 0;
+        Core::CanFileType fileType = Core::CanFileType::Raw;
+
+        if (isCsv)
         {
-            continue;
+            CanStream::CsvReader reader;
+            if (!reader.open(filePath.toStdString())) continue;
+            fileType = reader.fileType();
+            frameCount = reader.recordCount();
+        } else
+        {
+            CanStream::Mdf4Reader reader;
+            if (!reader.open(filePath.toStdString())) continue;
+            frameCount = reader.recordCount();
+            fileType = reader.fileType();
         }
 
-        const uint64_t frameCount = reader.recordCount();
-        const Core::CanFileType fileType = reader.fileType();
-        reader.close();
-
-        // Extract epoch-ms from "session_{epochMs}.mf4"
-        const QString stem = QFileInfo(fileName).completeBaseName();  // "session_{epochMs}"
+        // Extract epoch-ms from "session_{epochMs}.{ext}"
+        const QString stem = QFileInfo(fileName).completeBaseName();
         const QString epochStr = stem.mid(QString("session_").length());
         bool ok = false;
         const qint64 epochMs = epochStr.toLongLong(&ok);
@@ -162,17 +171,35 @@ void SendingComponent::scanReplaySessions()
 
 void SendingComponent::addExternalFile(const QString& filePath)
 {
-    CanStream::Mdf4Reader reader;
-    if (!reader.open(filePath.toStdString()))
-    {
-        LOG_WRN(Constants::MODULE_IDENTIFIER, "Could not open external replay file: {}",
-                filePath.toStdString());
-        return;
-    }
+    const bool isCsv = filePath.endsWith(".csv", Qt::CaseInsensitive);
 
-    const uint64_t frameCount = reader.recordCount();
-    const Core::CanFileType fileType = reader.fileType();
-    reader.close();
+    uint64_t frameCount = 0;
+    Core::CanFileType fileType = Core::CanFileType::Raw;
+
+    if (isCsv)
+    {
+        CanStream::CsvReader reader;
+        if (!reader.open(filePath.toStdString()))
+        {
+            LOG_WRN(Constants::MODULE_IDENTIFIER, "Could not open external CSV replay file: {}",
+                    filePath.toStdString());
+            return;
+        }
+        fileType = reader.fileType();
+        frameCount = reader.recordCount();
+    } else
+    {
+        CanStream::Mdf4Reader reader;
+        if (!reader.open(filePath.toStdString()))
+        {
+            LOG_WRN(Constants::MODULE_IDENTIFIER, "Could not open external replay file: {}",
+                    filePath.toStdString());
+            return;
+        }
+        frameCount = reader.recordCount();
+        fileType = reader.fileType();
+        reader.close();
+    }
 
     const QString displayName = QFileInfo(filePath).fileName();
 
@@ -436,13 +463,15 @@ void SendingComponent::startReplay(const int index, const double speedFactor)
 
     const ReplayEntry entry = m_replaySessions.at(index);
 
-    ReplayProducerWorker::ReaderFactory factory =
-        [path = entry.filePath.toStdString()]() -> std::unique_ptr<Core::ICanReader> {
-        auto reader = std::make_unique<CanStream::Mdf4Reader>();
-        if (!reader->open(path))
-        {
-            return nullptr;
-        }
+    const bool isCsv = entry.filePath.endsWith(".csv", Qt::CaseInsensitive);
+    ReplayProducerWorker::ReaderFactory factory = [path = entry.filePath.toStdString(),
+                                                   isCsv]() -> std::unique_ptr<Core::ICanReader> {
+        std::unique_ptr<Core::ICanReader> reader;
+        if (isCsv)
+            reader = std::make_unique<CanStream::CsvReader>();
+        else
+            reader = std::make_unique<CanStream::Mdf4Reader>();
+        if (!reader->open(path)) return nullptr;
         return reader;
     };
 

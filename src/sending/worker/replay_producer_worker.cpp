@@ -46,7 +46,7 @@ void ReplayProducerWorker::startReplay(ReaderFactory factory, const uint64_t fra
         stopReplay();
     }
 
-    if (!factory || frameCount == 0)
+    if (!factory)
     {
         return;
     }
