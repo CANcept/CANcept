@@ -21,6 +21,7 @@
 #include <QTime>
 #include <QVariant>
 #include <atomic>
+#include <mutex>
 #include <optional>
 #include <thread>
 #include <vector>

@@ -28,6 +28,9 @@ CsvWriter::CsvWriter(const std::string_view path, const Core::CanFileType fileTy
     if (!m_file.is_open()) return;
     m_open = true;
 
+    if (m_fileType == Core::CanFileType::Dbc && !m_headers.empty())
+        m_headers.insert(m_headers.begin() + 1, "MsgID");
+
     for (size_t i = 0; i < m_headers.size(); ++i)
     {
         if (i > 0) m_file << ',';
@@ -66,6 +69,12 @@ void CsvWriter::write(const Core::DbcCanMessage& msg)
     for (size_t i = 1; i < m_headers.size(); ++i)
     {
         m_file << ',';
+        if (m_headers[i] == "MsgID")
+        {
+            m_file << "0x" << std::uppercase << std::hex << std::setw(3) << std::setfill('0')
+                   << msg.messageId << std::dec;
+            continue;
+        }
         const auto it = std::ranges::find_if(
             msg.signalValues, [&](const auto& sv) { return sv.name == m_headers[i]; });
         if (it != msg.signalValues.end())

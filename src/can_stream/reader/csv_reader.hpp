@@ -72,10 +72,11 @@ class CsvReader final : public Core::ICanReader
 
     std::vector<std::string> m_columnHeaders;
 
-    // Column indices resolved from the header row (RAW only)
+    // Column indices resolved from the header row
     int m_colId{2};
     int m_colDlc{4};
     int m_colData{6};
+    int m_colMsgId{-1};
 };
 
 }  // namespace CanStream

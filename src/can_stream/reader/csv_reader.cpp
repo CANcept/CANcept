@@ -41,6 +41,26 @@ auto parseHexId(const std::string& s) -> uint16_t
     return static_cast<uint16_t>(val & 0x7FFu);
 }
 
+auto parseTimestampNs(const std::string& s) -> std::chrono::nanoseconds
+{
+    const auto dotPos = s.find('.');
+    int64_t intPart = 0;
+    std::from_chars(s.data(), s.data() + (dotPos == std::string::npos ? s.size() : dotPos),
+                    intPart);
+    int64_t fracPart = 0;
+    if (dotPos != std::string::npos)
+    {
+        const char* fracStart = s.data() + dotPos + 1;
+        const char* fracEnd = s.data() + s.size();
+        size_t fracLen = static_cast<size_t>(fracEnd - fracStart);
+        std::from_chars(fracStart, fracEnd, fracPart);
+        // normalize to 9 digits (nanoseconds)
+        for (size_t i = fracLen; i < 9; ++i) fracPart *= 10;
+        for (size_t i = fracLen; i > 9; --i) fracPart /= 10;
+    }
+    return std::chrono::nanoseconds(intPart * 1'000'000'000LL + fracPart);
+}
+
 }  // namespace
 
 void CsvReader::advanceLookahead()
@@ -81,6 +101,9 @@ auto CsvReader::open(std::string_view path) -> bool
         } else if (h == "Data")
         {
             m_colData = static_cast<int>(i);
+        } else if (h == "MsgID")
+        {
+            m_colMsgId = static_cast<int>(i);
         }
     }
 
@@ -108,6 +131,7 @@ void CsvReader::close()
     m_eof = true;
     m_cursor = 0;
     m_recordCount = 0;
+    m_colMsgId = -1;
     m_nextLine.clear();
     m_columnHeaders.clear();
 }
@@ -168,15 +192,7 @@ auto CsvReader::read(Core::RawCanMessage& out) -> bool
 
     if (static_cast<int>(fields.size()) <= m_colData) return false;
 
-    try
-    {
-        out.receiveTime =
-            std::chrono::nanoseconds(static_cast<int64_t>(std::stod(fields[0]) * 1e9));
-    } catch (...)
-    {
-        return false;
-    }
-
+    out.receiveTime = parseTimestampNs(fields[0]);
     out.messageId = parseHexId(fields[m_colId]);
 
     out.dlc = 0;
@@ -215,20 +231,16 @@ auto CsvReader::read(Core::DbcCanMessage& out) -> bool
 
     if (fields.empty()) return false;
 
-    try
-    {
-        out.receiveTime =
-            std::chrono::nanoseconds(static_cast<int64_t>(std::stod(fields[0]) * 1e9));
-    } catch (...)
-    {
-        return false;
-    }
-
+    out.receiveTime = parseTimestampNs(fields[0]);
     out.messageId = 0;
+    if (m_colMsgId >= 0 && m_colMsgId < static_cast<int>(fields.size()))
+        out.messageId = parseHexId(fields[m_colMsgId]);
+
     out.signalValues.clear();
 
     for (size_t i = 1; i < m_columnHeaders.size() && i < fields.size(); ++i)
     {
+        if (static_cast<int>(i) == m_colMsgId) continue;
         const std::string& val = fields[i];
         if (val.empty() || val == "-") continue;
         try

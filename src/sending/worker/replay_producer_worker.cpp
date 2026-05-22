@@ -258,6 +258,7 @@ void ReplayProducerWorker::run()
             }
         };
 
+        auto prevReceiveTime = firstMsg.receiveTime;
         scheduleAndPush(firstMsg);
         m_scheduledCount.fetch_add(1, std::memory_order_relaxed);
 
@@ -268,6 +269,11 @@ void ReplayProducerWorker::run()
             {
                 break;
             }
+            if (msg.receiveTime == prevReceiveTime)
+            {
+                msg.receiveTime += std::chrono::nanoseconds(1);
+            }
+            prevReceiveTime = msg.receiveTime;
             scheduleAndPush(msg);
             m_scheduledCount.fetch_add(1, std::memory_order_relaxed);
         }
