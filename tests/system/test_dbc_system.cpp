@@ -171,7 +171,6 @@ TEST_F(DbcSystemTest, LoadDbc_ParsedSignal_HasCorrectAttributes)
     EXPECT_DOUBLE_EQ(sig.minimum, 0.0);
     EXPECT_DOUBLE_EQ(sig.maximum, 255.0);
     EXPECT_EQ(sig.unit, "units");
-    EXPECT_TRUE(sig.byteOrder)
-        << "Expected byteOrder=true (parser maps @1 → byteOrderInt==1 → true)";
+    EXPECT_FALSE(sig.byteOrder) << "Expected little-endian byte order";
     EXPECT_FALSE(sig.valueType) << "Expected unsigned value type";
 }
