@@ -60,7 +60,7 @@ TEST_F(CanCommunicationHandlerTest, SubscribesToLifecycleAndCanEvents)
     EXPECT_EQ(eventBroker->subscriptionCount<Core::AppStoppedEvent>(), 1);
 
     EXPECT_EQ(eventBroker->subscriptionCount<Core::SendCanMessageRawEvent>(), 1);
-    EXPECT_EQ(eventBroker->subscriptionCount<Core::SendCanMessageDbcEvent>(), 1);
+    EXPECT_EQ(eventBroker->subscriptionCount<Core::EncodeCanMessageDbcEvent>(), 1);
     EXPECT_EQ(eventBroker->subscriptionCount<Core::DBCParsedEvent>(), 1);
 
     EXPECT_EQ(eventBroker->subscriptionCount<Core::CanDriverChangeEvent>(), 1);

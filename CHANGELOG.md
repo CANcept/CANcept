@@ -1,6 +1,38 @@
 # Changelog
 
 All notable changes to this project will be documented in this file.
+## [1.2.0] - 2026-06-07
+
+### Added
+
+#### Fault Injection (CBS-165)
+- **Fault injection module** for deliberately manipulating CAN traffic to test system resilience.
+- Configurable triggers, including a signal threshold trigger that fires injection when a monitored signal crosses a bound.
+- Pluggable mutation, effect, and strategy types with dedicated UI providers for composing injection scenarios.
+
+#### Value-Function Sending (CBS-120)
+- **Mathematical expression input** for signal values, allowing sent values to be computed from formulas rather than static numbers.
+- Variable registry for defining and reusing named variables across expressions.
+- Live rendering of the parsed math input, with support for bracketed/nested expressions.
+
+#### Log Replay (CBS-169)
+- **Replay of recorded logs** back onto the bus, with optional fault injection applied during replay.
+- New CAN stream reader/writer layer underpinning replay and logging.
+
+### Changed
+
+#### Can Handler (CBS-167)
+- Moved DBC parsing onto a separate thread, keeping the UI responsive while large DBC files are loaded.
+- Significant performance improvements to the sending flow and overall application responsiveness.
+
+### Fixed
+
+#### Logging (CBS-170)
+- Resolved several logging issues and corrected errors that occurred during replay.
+
+#### Can Handler (CBS-167)
+- Fixed concurrency issues and potential race conditions introduced by the new parsing thread.
+
 ## [1.1.0] - 2026-03-14
 
 ### Added

@@ -14,6 +14,8 @@
  */
 
 #pragma once
+#include <shared_mutex>
+
 #include "core/event/can_event.hpp"
 #include "core/event/dbc_event.hpp"
 #include "i_can_parser.hpp"
@@ -34,9 +36,9 @@ class CanDbcHandler final : public ICanParser
                            const std::function<bool(const CanMessage&)>& sendFunction)
         : ICanParser(eventBroker, sendFunction), dbcMessages{}
     {
-        dbcSendEventConnection = eventBroker.subscribe<Core::SendCanMessageDbcEvent>(
-            [this](const Core::SendCanMessageDbcEvent& event) -> void {
-                handleSendMessage(event);
+        dbcSendEventConnection = eventBroker.subscribe<Core::EncodeCanMessageDbcEvent>(
+            [this](const Core::EncodeCanMessageDbcEvent& event) -> void {
+                handleEncodeMessage(event);
             });
         dbcConfigChangeConnection = eventBroker.subscribe<Core::DBCParsedEvent>(
             [this](const Core::DBCParsedEvent& event) -> void { handleNewDbc(event); });
@@ -50,15 +52,15 @@ class CanDbcHandler final : public ICanParser
      * the event broker
      * @param canMessage The message to be parsed
      */
-    void parseReceivedMessage(const sockcanpp::CanMessage* canMessage) override;
+    void parseReceivedMessage(const sockcanpp::CanMessage* canMessage,
+                              std::chrono::nanoseconds timestamp) override;
 
    private:
     /**
-     * @brief Encodes a dbc based decoded message into CAN form. It then publishes it to the CAN
-     * device via the CanCommunicationHandler.
-     * @param event The decoded message to be published
+     * @brief Encodes a decoded DBC message into a raw CAN frame and populates event.encodedMessage.
+     * @param event The encode request containing the decoded message and the output reference.
      */
-    void handleSendMessage(const Core::SendCanMessageDbcEvent& event);
+    void handleEncodeMessage(const Core::EncodeCanMessageDbcEvent& event);
     /**
      * @brief Updates the currently stored DBC config.
      * @param event The new DBC config
@@ -103,6 +105,6 @@ class CanDbcHandler final : public ICanParser
     /**
      * @brief Mutex guarding the dbc configuration
      */
-    std::mutex dbcMutex;
+    std::shared_mutex dbcMutex;
 };
 }  // namespace CanHandler

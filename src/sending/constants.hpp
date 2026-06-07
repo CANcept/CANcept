@@ -47,6 +47,9 @@ inline const QString RAW_SENDING_ICON_PATH = ":/assets/icon/sending/raw_based_se
 /** @brief Icon used for the DBC-based sending sub-tab */
 inline const QString DBC_SENDING_ICON_PATH = ":/assets/icon/sending/dbc_based_send_icon.svg";
 
+/** @brief Icon used for the replay logs sending sub-tab */
+inline const QString REPLAY_SENDING_ICON_PATH = ":/assets/icon/sending/replay_send_icon.svg";
+
 /** @brief Icon used for CAN frame input cards */
 inline const QString CAN_FRAME_ICON_PATH = ":/assets/icon/sending/can_frame.svg";
 
@@ -105,6 +108,9 @@ inline const QString RAW_MODE_BUTTON_TEXT = "Raw";
 /** @brief Text for DBC-based sending mode button */
 inline const QString DBC_MODE_BUTTON_TEXT = "DBC-Based";
 
+/** @brief Text for replay logs mode button */
+inline const QString REPLAY_MODE_BUTTON_TEXT = "Replay Logs";
+
 /** @brief Text displayed on the send message button */
 inline const QString SEND_BUTTON_TEXT = "Send Message";
 
@@ -138,14 +144,14 @@ inline constexpr int MAX_CAN_ID_HEX_LENGTH = 3;
 
 // NETWORK CONFIGURATION
 
-/** @brief Default cyclic transmission interval in milliseconds */
-inline constexpr int DEFAULT_CYCLE_INTERVAL_MS = 100;
+/** @brief Default cyclic transmission interval in microseconds */
+inline constexpr int DEFAULT_CYCLE_INTERVAL_US = 1000;
 
-/** @brief Minimum allowed cyclic interval to prevent system overload */
-inline constexpr int MIN_CYCLE_INTERVAL_MS = 1;
+/** @brief Minimum allowed cyclic interval */
+inline constexpr int MIN_CYCLE_INTERVAL_US = 1;
 
 /** @brief Maximum allowed cyclic interval */
-inline constexpr int MAX_CYCLE_INTERVAL_MS = 10000;
+inline constexpr int MAX_CYCLE_INTERVAL_US = 100000;
 
 // HEX INPUT & VALIDATION
 
@@ -213,14 +219,16 @@ inline constexpr double SIGNAL_VALUE_MAX = 1e9;
 inline const QString REPEATED_SENDING_TITLE = "Repeated Sending";
 
 /** @brief Subtitle for the repeated sending card */
-inline const QString REPEATED_SENDING_SUBTITLE = "Configure automatic message repitition";
+inline const QString REPEATED_SENDING_SUBTITLE = "Configure automatic message repetition";
 
 /** @brief Maximum value for Frequency edit */
 inline constexpr int REPEATED_SENDING_MAX_FREQUENCY = 10000;
 
 /** @brief Template for the repeated sending input title */
 inline const QString REPEATED_SENDING_TRANSMISSION_INPUT_TITLE =
-    QString("Transmission Interval (1 - %1 ms)").arg(MAX_CYCLE_INTERVAL_MS);
+    QString("Transmission Interval (%1 - %2 µs)")
+        .arg(MIN_CYCLE_INTERVAL_US)
+        .arg(MAX_CYCLE_INTERVAL_US);
 
 /** @brief Time to wait (in ms) for the thread to stop gracefully before forcing termination. */
 inline constexpr int THREAD_TERMINATION_WAIT_MS = 5000;
@@ -243,8 +251,17 @@ inline const QString ERR_CALLBACK_EXCEPTION_TEMPLATE = "Send callback error: %1"
 /** @brief Generic error message for unknown/unhandled exceptions in the worker loop. */
 inline const QString ERR_UNKNOWN_CALLBACK_ERROR = "Unknown error in send callback";
 
-/** @brief Name for the repeated sending worker thread. */
-inline const QString REPEATED_SENDING_THREAD_NAME = "RepeatedSendingWorker";
+/** @brief Template string for exceptions caught during item creation. */
+inline const QString ERR_CREATE_EXCEPTION_TEMPLATE = "Item creation error: %1";
+
+/** @brief Generic error message for unknown exceptions during item creation. */
+inline const QString ERR_UNKNOWN_CREATE_ERROR = "Unknown error in item creation";
+
+/** @brief Name for the sending consumer worker thread. */
+inline const QString SENDING_CONSUMER_WORKER_THREAD_NAME = "SendingConsumerWorker";
+
+/** @brief Name for the repeated producer worker thread. */
+inline const QString REPEATED_PRODUCER_WORKER_THREAD_NAME = "RepeatedProducerWorker";
 
 /** @brief Initial sleep guard duration in nanoseconds. */
 inline constexpr long long INITIAL_SLEEP_GUARD_NS = 20'000'000LL;  // 20ms
@@ -254,6 +271,69 @@ inline constexpr long long MIN_SLEEP_GUARD_NS = 500'000LL;  // 0.5ms
 
 /** @brief EMA weight for sleep overshoot adaptation (higher = adapts faster). */
 inline constexpr double SLEEP_GUARD_ALPHA = 0.25;
+
+// SCHEDULED ITEM QUEUE
+
+/** @brief Maximum number of items the scheduled item queue must be able to hold. */
+inline constexpr int QUEUE_MAX_CAPACITY = 32;
+
+/** @brief Priority increase per millisecond an item waits in the queue (aging). */
+inline constexpr int QUEUE_AGING_FACTOR_PER_MS = 1;
+
+/** @brief Hard cap on the priority boost an item can accumulate through aging. */
+inline constexpr int QUEUE_MAX_AGING_BOOST = 1000;
+
+// REPLAY PRODUCER
+
+/** @brief Lookahead window for the replay producer in microseconds. */
+inline constexpr int REPLAY_LOOKAHEAD_US = 80;
+
+/** @brief Name for the replay producer worker thread. */
+inline const QString REPLAY_PRODUCER_WORKER_THREAD_NAME = "ReplayProducerWorker";
+
+// Replay Logs
+
+/** @brief Title for the replay sessions card */
+inline const QString REPLAY_SESSIONS_TITLE = "Available Log Sessions";
+
+/** @brief Subtitle for the replay sessions card */
+inline const QString REPLAY_SESSIONS_SUBTITLE =
+    "Completed log sessions from Logging are listed here. Select a session to replay.";
+
+/** @brief Placeholder text for the sessions combo box when no sessions are available */
+inline const QString SESSIONS_COMBO_PLACEHOLDER_EMPTY = "No log sessions available";
+
+/** @brief Placeholder text for the sessions combo box when sessions are available but none is
+ * selected */
+inline const QString SESSIONS_COMBO_PLACEHOLDER = "Select a log session...";
+
+/** @brief Text displayed in the session details label when no session is selected */
+inline const QString NO_SESSION_DETAILS_TEXT = "No session selected.";
+
+/** @brief Warning template for parser-skipped replay log lines. */
+inline const QString REPLAY_WARNING_SKIPPED_LINES_TEMPLATE =
+    "Warning: %1 log lines were skipped while parsing.";
+
+/** @brief Progress footer template (frame-based). */
+inline const QString REPLAY_PROGRESS_TEXT_TEMPLATE = "Frame: %1 / %2";
+
+inline const QString REPLAY_PLAYBACK_TITLE = "Playback Controls";
+inline const QString REPLAY_PLAYBACK_SUBTITLE = "";
+inline const QString REPLAY_PROGRESS_TITLE = "Replay Progress";
+inline const QString REPLAY_PROGRESS_SUBTITLE = "";
+inline const QString LOAD_FRAMES_BUTTON_TEXT = "Load Logged Frames";
+inline const QString BROWSE_FILE_BUTTON_TEXT = "Browse File...";
+inline const QString REPLAY_START_BUTTON_TEXT = "Start Replay";
+inline const QString REPLAY_PAUSE_BUTTON_TEXT = "Pause Replay";
+inline const QString REPLAY_RESUME_BUTTON_TEXT = "Resume Replay";
+inline const QString REPLAY_STOP_BUTTON_TEXT = "Stop Replay";
+inline const QString REPLAY_SPEED_LABEL_TEXT = "Playback Speed:";
+
+/** @brief Predefined speed option labels for replay speed selector. */
+inline const QString REPLAY_SPEED_OPTION_025X = "0.25x";
+inline const QString REPLAY_SPEED_OPTION_05X = "0.5x";
+inline const QString REPLAY_SPEED_OPTION_1X = "1x";
+inline const QString REPLAY_SPEED_OPTION_2X = "2x";
 
 }  // namespace Constants
 

@@ -20,13 +20,10 @@
 namespace CanHandler {
 void CanCommunicationHandler::checkCanDeviceForMessages() const
 {
-    for (const std::list<CanMessage> messages = deviceHandler->checkForCanMessage();
-         CanMessage message : messages)
+    for (const auto& [message, timestamp] : deviceHandler->checkForCanMessage())
     {
-        for (const std::unique_ptr<ICanParser> &parser : can_handlers)
-        {
-            parser->parseReceivedMessage(&message);
-        }
+        for (const std::unique_ptr<ICanParser>& parser : can_handlers)
+            parser->parseReceivedMessage(&message, timestamp);
     }
 }
 void CanCommunicationHandler::onStart()
@@ -68,7 +65,7 @@ void CanCommunicationHandler::onStop()
     message_check_thread.join();
 }
 
-void CanCommunicationHandler::registerSettings(Core::ISettingsRegistry &registry)
+void CanCommunicationHandler::registerSettings(Core::ISettingsRegistry& registry)
 {
     deviceHandler->registerSettings(registry);
 }

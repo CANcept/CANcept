@@ -1,8 +1,8 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.23)
 
 # 1. Project Configuration
-project(CanBusManager
-        VERSION 1.0.0
+project(CANcept
+        VERSION 1.2.0
         LANGUAGES CXX
 )
 
@@ -20,6 +20,7 @@ option(ENABLE_CLANG_TIDY "Enable static analysis with Clang-Tidy" OFF)
 option(ENABLE_DOCS "Enable the documentation target" ON)
 option(ENABLE_COVERAGE "Enable code coverage reporting" OFF)
 option(DISABLE_TEST_LOGGING "Disable console logging during tests" ON)
+option(FORCE_LOGGING_OFF "Force logging level to 0 regardless of other settings" OFF)
 
 # Compiler Flags
 if(ENABLE_COVERAGE)
@@ -49,7 +50,7 @@ add_subdirectory(external/entt)
 add_subdirectory(external/libsockcanpp)
 add_subdirectory(external/qwt)
 
-set(RAPIDCSV_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external/rapidcsv/src")
+set(EXPRTK_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external/exprtk")
 
 # 5. Core Library
 set(ENTRY_POINT_FILE "${CMAKE_CURRENT_SOURCE_DIR}/src/app_root/entry_point/main.cpp")
@@ -66,7 +67,7 @@ endif()
 
 target_include_directories(${PROJECT_NAME}Lib PUBLIC
         src
-        ${RAPIDCSV_INCLUDE_DIR}
+        ${EXPRTK_INCLUDE_DIR}
 )
 
 target_link_libraries(${PROJECT_NAME}Lib PUBLIC
@@ -81,7 +82,14 @@ target_link_libraries(${PROJECT_NAME}Lib PUBLIC
 
 target_compile_definitions(${PROJECT_NAME}Lib
         PUBLIC
-        LOGGING_LEVEL=$<IF:$<BOOL:${ENABLE_TESTS}>,$<IF:$<BOOL:${DISABLE_TEST_LOGGING}>,0,$<IF:$<CONFIG:Debug>,2,1>>,$<IF:$<CONFIG:Debug>,2,1>>
+        LOGGING_LEVEL=$<IF:$<BOOL:${FORCE_LOGGING_OFF}>,0,$<IF:$<BOOL:${ENABLE_TESTS}>,$<IF:$<BOOL:${DISABLE_TEST_LOGGING}>,0,$<IF:$<CONFIG:Debug>,2,1>>,$<IF:$<CONFIG:Debug>,2,1>>>
+)
+
+target_compile_options(${PROJECT_NAME}Lib PRIVATE
+        -O3
+        -march=native
+        -ffast-math
+        -w
 )
 
 # 6. Executable
@@ -181,10 +189,10 @@ else()
 endif()
 
 include(GNUInstallDirs)
-install(TARGETS CanBusManager
+install(TARGETS CANcept
         DESTINATION ${CMAKE_INSTALL_BINDIR})
 install(FILES "assets/icon/app_root/can_bus.svg"
         DESTINATION "${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps"
-        RENAME "CanBusManager.svg")
-install(FILES "can_bus_manager.desktop"
+        RENAME "CANcept.svg")
+install(FILES "cancept.desktop"
         DESTINATION "${CMAKE_INSTALL_DATADIR}/applications")

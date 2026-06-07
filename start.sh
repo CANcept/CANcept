@@ -3,7 +3,7 @@ set -e
 
 BUILD_DIR="build"
 DOC_DIR="doc"
-PROJECT_NAME="CanBusManager"
+PROJECT_NAME="CANcept"
 CORES=$(nproc 2>/dev/null || echo 4)
 
 CLEAN_BUILD=false
@@ -13,6 +13,7 @@ ENABLE_COV=false
 BUILD_TYPE="Release"
 GENERATOR=""
 TEST_ONLY=false
+QUIET=false
 
 if grep -q Microsoft /proc/version; then
     export DISPLAY=:0
@@ -27,6 +28,7 @@ usage() {
     echo "  -doc, --docs        Enable generating documentation"
     echo "  -cov, --coverage    Enable Coverage (forces Debug mode, implies -t)"
     echo "  -to,  --test-only   Test-Only Mode: Tests + Coverage, no docs, no app launch"
+    echo "  -q,   --quiet       Quiet mode all console logging is turned off."
     echo "  -h,   --help        Show this help message"
     echo ""
     echo "Examples:"
@@ -46,6 +48,7 @@ while [[ "$#" -gt 0 ]]; do
         -doc|--docs)     GEN_DOCS=true ;;
         -cov|--coverage) ENABLE_COV=true; RUN_TESTS=true; BUILD_TYPE="Debug"; GENERATOR="-G Ninja" ;;
         -to|--test-only) TEST_ONLY=true; RUN_TESTS=true; GEN_DOCS=false; ENABLE_COV=true; BUILD_TYPE="Debug"; GENERATOR="-G Ninja" ;;
+        -q|--quiet)      QUIET=true;;
         -h|--help)       usage ;;
         *) echo "Unknown option: $1"; usage ;;
     esac
@@ -76,6 +79,7 @@ echo "--- 2. Configuring Project & Format ---"
 TEST_OPTS="-DENABLE_TESTS=$( [ "$RUN_TESTS" = true ] && echo "ON" || echo "OFF" )"
 DOC_OPTS="-DENABLE_DOCS=$( [ "$GEN_DOCS" = true ] && echo "ON" || echo "OFF" )"
 COV_OPTS="-DENABLE_COVERAGE=$( [ "$ENABLE_COV" = true ] && echo "ON" || echo "OFF" )"
+QUIET_OPTS="-DFORCE_LOGGING_OFF=$( [ "$QUIET" = true ] && echo "ON" || echo "OFF" )"
 
 cmake -S . -B $BUILD_DIR \
       $GENERATOR \
@@ -83,6 +87,7 @@ cmake -S . -B $BUILD_DIR \
       $TEST_OPTS \
       $DOC_OPTS \
       $COV_OPTS \
+      $QUIET_OPTS \
       -DCMAKE_PREFIX_PATH=/usr/lib/x86_64-linux-gnu/cmake/Qt6
 
 if command -v clang-format &> /dev/null; then
@@ -101,7 +106,7 @@ fi
 
 if [ "$RUN_TESTS" = true ]; then
     echo "--- 5. Running Tests ---"
-    (cd $BUILD_DIR && ctest --output-on-failure)
+    (cd $BUILD_DIR && QT_QPA_PLATFORM=offscreen LC_ALL=C.UTF-8 ctest --output-on-failure)
     if [ "$ENABLE_COV" = true ]; then
             echo "--- Generating Coverage Report ---"
             cmake --build $BUILD_DIR --target coverage_report

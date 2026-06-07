@@ -326,14 +326,15 @@ void MonitoringModel::onDbcChange(const Core::DbcConfig& config)
 void MonitoringModel::eraseOldData()
 {
     std::scoped_lock<std::mutex> lock(m_dataMutex);
-    const auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(
-                                  std::chrono::system_clock::now().time_since_epoch())
-                                  .count();
+    const auto nowNs = std::chrono::duration_cast<std::chrono::nanoseconds>(
+                           std::chrono::system_clock::now().time_since_epoch())
+                           .count();
     for (auto& messageValue : *messageValues)
     {
         while (!messageValue.timestamps.empty() &&
-               messageValue.timestamps.front() + Constants::HOLDING_SECONDS_IN_MODEL * 1000 <
-                   milliseconds)
+               messageValue.timestamps.front() +
+                       Constants::HOLDING_SECONDS_IN_MODEL * 1'000'000'000LL <
+                   nowNs)
         {
             for (auto& j : messageValue.signalValues)
             {

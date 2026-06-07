@@ -15,13 +15,16 @@
 
 #include "can_dbc_handler.hpp"
 
+#include <cmath>
+
 #include "core/macro/console_logging.hpp"
 
 namespace CanHandler {
-void CanDbcHandler::parseReceivedMessage(const sockcanpp::CanMessage* canMessage)
+void CanDbcHandler::parseReceivedMessage(const sockcanpp::CanMessage* canMessage,
+                                         std::chrono::nanoseconds timestamp)
 {
     // Lock the mutex for data safety
-    std::scoped_lock guard(dbcMutex);
+    std::shared_lock guard(dbcMutex);
     // Get the right message description
     if (canMessage->getRawFrame().can_id >= dbcMessages.size())
     {
@@ -34,8 +37,7 @@ void CanDbcHandler::parseReceivedMessage(const sockcanpp::CanMessage* canMessage
         return;
     }
 
-    // Check if message length = 8
-    if (canMessage->getRawFrame().len != 8) return;
+    if (canMessage->getRawFrame().len < currentMessageDescription->messageSize) return;
 
     // Read raw data frames in little and big endian order
     u_int64_t dataLittleEndian = 0, dataBigEndian = 0;
@@ -50,7 +52,7 @@ void CanDbcHandler::parseReceivedMessage(const sockcanpp::CanMessage* canMessage
 
     // Parsed can message initialization
     Core::DbcCanMessage receivedMessage{
-        .receiveTime = canMessage->getTimestampOffset(),
+        .receiveTime = timestamp,
         .messageId = static_cast<uint16_t>(canMessage->getRawFrame().can_id)};
 
     // Parse signals
@@ -104,13 +106,11 @@ auto CanDbcHandler::parseReceivedSignal(const Core::DbcSignalDescription& signal
                                                  // data ( +signal.startBit)
     } else                                       // big endian
     {
-        const char spaceInFront = signal.startBit % 8;
-        const char frontSize = 8 - spaceInFront;
-        const uint64_t frontBits = dataBigEndian << (8 * (signal.startBit / 8)) >>
-                                   (56 + spaceInFront) << (signal.signalSize - frontSize);
-        const uint64_t backBits = dataBigEndian << (8 * ((signal.startBit / 8) + 1)) >>
-                                  (64 - signal.signalSize + frontSize);
-        rawValue = frontBits | backBits;
+        // DBC bit N sits at linear position (56 - 8*(N/8) + N%8) in a MSB-first 64-bit word.
+        // Shifting by 63 - pos(startBit) aligns the signal MSB to bit 63;
+        // >> (64 - signalSize) then isolates the signal at bits [signalSize-1 : 0]
+        const uint8_t linearStart = 63 - (56 - 8 * (signal.startBit / 8) + signal.startBit % 8);
+        rawValue = static_cast<int64_t>((dataBigEndian << linearStart) >> (64 - signal.signalSize));
     }
     if (signal.valueType)  // signed
     {
@@ -120,46 +120,40 @@ auto CanDbcHandler::parseReceivedSignal(const Core::DbcSignalDescription& signal
     return rawValue * signal.factor + signal.offset;
 }
 
-void CanDbcHandler::handleSendMessage(const Core::SendCanMessageDbcEvent& event)
+void CanDbcHandler::handleEncodeMessage(const Core::EncodeCanMessageDbcEvent& event)
 {
     LOG_INF("CanDbcHandler", "handleSendMessage called for message ID 0x{:X}",
             event.canMessage.messageId);
 
-    // Copy message description to minimize lock time
-    Core::DbcMessageDescription messageDescCopy;
+    std::shared_lock lock(dbcMutex);
+
+    // Get right message description
+    if (event.canMessage.messageId >= dbcMessages.size())
     {
-        // Lock the mutex for data safety
-        std::scoped_lock guard(dbcMutex);
+        LOG_ERR("CanDbcHandler", "Message ID 0x{:X} >= array size {}", event.canMessage.messageId,
+                dbcMessages.size());
+        return;
+    }
+    const Core::DbcMessageDescription* currentMessageDescription =
+        dbcMessages[event.canMessage.messageId];
+    if (currentMessageDescription == nullptr)
+    {
+        LOG_ERR("CanDbcHandler", "No message description found for ID 0x{:X}",
+                event.canMessage.messageId);
+        return;
+    }
 
-        // Get right message description
-        if (event.canMessage.messageId >= dbcMessages.size())
-        {
-            LOG_ERR("CanDbcHandler", "Message ID 0x{:X} >= array size {}",
-                    event.canMessage.messageId, dbcMessages.size());
-            return;
-        }
-        const Core::DbcMessageDescription* currentMessageDescription =
-            dbcMessages[event.canMessage.messageId];
-        if (currentMessageDescription == nullptr)
-        {
-            LOG_ERR("CanDbcHandler", "No message description found for ID 0x{:X}",
-                    event.canMessage.messageId);
-            return;
-        }
-
-        // Make a copy to work with outside the lock
-        messageDescCopy = *currentMessageDescription;
-    }  // Lock release
+    Core::DbcCanMessage messageToEncode = event.canMessage;
 
     // Data frames for little-endian and big-endian signals
     u_int64_t dataLittleEndian = 0;
     u_int64_t dataBigEndian = 0;
 
     // Encode all signals into the appropriate data frame
-    for (const auto& [name, value] : event.canMessage.signalValues)
+    for (const auto& [name, value] : messageToEncode.signalValues)
     {
         for (const Core::DbcSignalDescription& signalDescription :
-             messageDescCopy.signalDescriptions)
+             currentMessageDescription->signalDescriptions)
         {
             if (signalDescription.signalName == name)
             {
@@ -169,45 +163,36 @@ void CanDbcHandler::handleSendMessage(const Core::SendCanMessageDbcEvent& event)
         }
     }
 
-    // Convert both representations to actual CAN frame bytes
-    std::string data;
-    data.reserve(8);
-    for (int i = 0; i < 8; i++)
-    {
-        // Extract byte i from little-endian representation
-        const uint8_t byteLittleEndian = static_cast<uint8_t>((dataLittleEndian >> (i * 8)) & 0xFF);
-        // Extract byte i from big-endian representation
-        const uint8_t byteBigEndian = static_cast<uint8_t>((dataBigEndian >> ((7 - i) * 8)) & 0xFF);
-        // Combine with OR (signals should not overlap in well-formed DBC)
-        data += static_cast<char>(byteLittleEndian | byteBigEndian);
-    }
-
     LOG_INF("CanDbcHandler", "Encoded data LE=0x{:016X} BE=0x{:016X}", dataLittleEndian,
             dataBigEndian);
 
-    // Transform to CAN message
-    const CanMessage message{static_cast<uint32_t>(event.canMessage.messageId), data};
+    // Build raw byte array from encoded signals
+    uint16_t id = messageToEncode.messageId;
+    uint8_t dlc = static_cast<uint8_t>(currentMessageDescription->messageSize);
+    std::array<char, 8> data{};
+    for (int i = 0; i < 8; i++)
+    {
+        // Extract byte i from little-endian representation
+        const auto byteLittleEndian = static_cast<uint8_t>((dataLittleEndian >> (i * 8)) & 0xFF);
+        // Extract byte i from big-endian representation
+        const auto byteBigEndian = static_cast<uint8_t>((dataBigEndian >> ((7 - i) * 8)) & 0xFF);
+        // Combine with OR (signals should not overlap in well-formed DBC)
+        data[i] = static_cast<uint8_t>(byteLittleEndian | byteBigEndian);
+    }
 
-    // Send message to CAN interface
-    sendFunction(message);
+    // Populate the output reference with the encoded raw frame
+    event.encodedMessage.messageId = id;
+    event.encodedMessage.dlc = dlc;
+    event.encodedMessage.data = data;
 }
 
 void CanDbcHandler::parseSendSignal(const Core::DbcSignalDescription& signal,
                                     u_int64_t& dataLittleEndian, u_int64_t& dataBigEndian,
                                     const double& value)
 {
-    // Clamp value to signal's physical range
-    double clampedValue = value;
-    if (clampedValue < signal.minimum)
-    {
-        clampedValue = signal.minimum;
-    } else if (clampedValue > signal.maximum)
-    {
-        clampedValue = signal.maximum;
-    }
-
     // Convert physical value to raw value
-    const int64_t rawValue = static_cast<int64_t>((clampedValue - signal.offset) / signal.factor);
+    const int64_t rawValue =
+        static_cast<int64_t>(std::round((value - signal.offset) / signal.factor));
 
     // Create mask for signal size
     const uint64_t mask = (signal.signalSize >= 64) ? ~0ULL : ((1ULL << signal.signalSize) - 1);
@@ -221,18 +206,10 @@ void CanDbcHandler::parseSendSignal(const Core::DbcSignalDescription& signal,
         dataLittleEndian |= (maskedRawValue << signal.startBit);
     } else  // Big endian (Motorola)
     {
-        char spaceInFront = signal.startBit % 8;
-        char frontBits = maskedRawValue >> (signal.signalSize - (8 - spaceInFront));
-        uint64_t backBits = (maskedRawValue << (64 - signal.signalSize + (8 - spaceInFront))) >>
-                            (64 - signal.signalSize + (8 - spaceInFront));
-        uint64_t convertedRawValue =
-            static_cast<uint64_t>(frontBits)
-                << (signal.signalSize - (8 - spaceInFront) + spaceInFront) |
-            backBits;
-        // Decode: rawValue = dataBE << (64 - startBit) >> (64 - signalSize)
-        // This extracts signal from bits [startBit - signalSize + 1, startBit]
-        // Encode (inverse): place value at those bits
-        dataBigEndian |= (convertedRawValue << (64 - signal.startBit - signal.signalSize));
+        // DBC bit N maps to linear position 56 - 8*(N/8) + N%8 in a MSB-first 64-bit word.
+        const uint8_t linearStart = 63 - (56 - 8 * (signal.startBit / 8) + signal.startBit % 8);
+        dataBigEndian |= static_cast<uint64_t>(maskedRawValue)
+                         << (64 - linearStart - signal.signalSize);
     }
 }
 
@@ -241,7 +218,7 @@ void CanDbcHandler::handleNewDbc(const Core::DBCParsedEvent& event)
     LOG_INF("CanDbcHandler", "Received new DBC config with {} messages",
             event.config.messageDefinitions.size());
 
-    std::scoped_lock guard(dbcMutex);
+    std::unique_lock guard(dbcMutex);
 
     // Clear array and free memory
     for (auto& dbcMessage : dbcMessages)

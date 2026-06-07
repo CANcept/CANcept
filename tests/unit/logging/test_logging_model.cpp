@@ -150,7 +150,7 @@ TEST_F(LoggingModelTestBase, GetCurrentSessionId)
 
     // 2. Start a new session
     // Note: If your signature requires maps, pass empty ones: {}, {}
-    model->startNewDbcLogSession({}, {});
+    model->startNewDbcLogSession({});
 
     QString currentSessionId = model->getCurrentSessionId();
     EXPECT_FALSE(currentSessionId.isEmpty());
@@ -191,7 +191,7 @@ TEST_F(LoggingModelTestBase, DataMethodRolesAndColumns)
     // Setup: Start DBC Session to check its specific data formatting
     // Renamed 'signals' to 'testSignalsMap' to avoid Qt macro conflicts
     std::map<uint32_t, QStringList> testSignalsMap = {{0x123, {"Sig1", "Sig2"}}};
-    model->startNewDbcLogSession(testSignalsMap, {});
+    model->startNewDbcLogSession(testSignalsMap);
     QModelIndex dbcRow = model->index(model->rowCount() - 1, 0);
 
     // 2. Test Qt::DisplayRole for all columns on DBC Session
@@ -284,7 +284,7 @@ TEST_F(LoggingModelTestBase, GetSelectedSignalsForMessage)
     EXPECT_TRUE(model->getSelectedSignalsForMessage(targetMsgId).isEmpty());
 
     // 2. Start session and test finding the existing signal
-    model->startNewDbcLogSession(signalsMap, {});
+    model->startNewDbcLogSession(signalsMap);
     EXPECT_EQ(model->getSelectedSignalsForMessage(targetMsgId), expectedSignals);
 
     // 3. Test asking for a message ID that wasn't selected

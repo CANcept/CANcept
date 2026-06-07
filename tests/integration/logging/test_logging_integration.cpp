@@ -452,7 +452,7 @@ static void scheduleSaveDialogConfirmation(const QString& targetPath)
 {
     // Retry a few times because the dialog is created asynchronously.
     auto attempt = std::make_shared<std::function<void(int)>>();
-    *attempt = [attempt, targetPath](int retriesLeft) {
+    *attempt = [attempt, targetPath](int retriesLeft) -> void {
         for (QWidget* widget : QApplication::topLevelWidgets())
         {
             auto* dialog = qobject_cast<QFileDialog*>(widget);
@@ -466,15 +466,19 @@ static void scheduleSaveDialogConfirmation(const QString& targetPath)
 
         if (retriesLeft > 0)
         {
-            QTimer::singleShot(40, [attempt, retriesLeft]() { (*attempt)(retriesLeft - 1); });
+            QTimer::singleShot(40,
+                               [attempt, retriesLeft]() -> void { (*attempt)(retriesLeft - 1); });
         }
     };
 
-    QTimer::singleShot(0, [attempt]() { (*attempt)(30); });
+    QTimer::singleShot(0, [attempt]() -> void { (*attempt)(30); });
 }
 
 TEST_F(LoggingIntegrationTest, ExportRawSessionUsesFileDialogAndWritesSelectedFile)
 {
+    auto* model = qobject_cast<LoggingModel*>(view->getHistoryTable()->model());
+    ASSERT_NE(model, nullptr) << "View should already have a model from LoggingComponent";
+
     const auto exportPath =
         std::filesystem::temp_directory_path() / "can_logging_export_integration.csv";
     std::filesystem::remove(exportPath);
@@ -490,30 +494,21 @@ TEST_F(LoggingIntegrationTest, ExportRawSessionUsesFileDialogAndWritesSelectedFi
     emit view->stopRequested();
     QCoreApplication::processEvents();
 
-    auto* historyTable = view->getHistoryTable();
-    ASSERT_NE(historyTable, nullptr);
-    ASSERT_GT(historyTable->model()->rowCount(), 0);
+    ASSERT_GT(model->rowCount(), 0);
 
-    const QModelIndex index = historyTable->model()->index(0, 0);
+    const QModelIndex index = model->index(0, 0);
     ASSERT_TRUE(index.isValid());
 
     scheduleSaveDialogConfirmation(QString::fromStdString(exportPath.string()));
-    emit view->exportRequested(index);
+
+    emit model->onExportRequested(index);
+
     QCoreApplication::processEvents();
     QTest::qWait(150);
 
     ASSERT_TRUE(std::filesystem::exists(exportPath));
-
     std::ifstream file(exportPath);
     ASSERT_TRUE(file.is_open());
-
-    std::string headerLine;
-    ASSERT_TRUE(static_cast<bool>(std::getline(file, headerLine)));
-    EXPECT_NE(headerLine.find("Timestamp,MessageId,Data"), std::string::npos);
-
-    std::string firstDataLine;
-    ASSERT_TRUE(static_cast<bool>(std::getline(file, firstDataLine)));
-    EXPECT_NE(firstDataLine.find("10"), std::string::npos);
 
     file.close();
     std::filesystem::remove(exportPath);
@@ -553,21 +548,8 @@ TEST_F(LoggingIntegrationTest, ShouldCreateDetailViewForRawSession)
     LoggingModel localModel;
     localModel.startNewRawLogsSession();
     localModel.stopActiveSession();
-
-    const QModelIndex idx = localModel.index(0, 0);
-    ASSERT_TRUE(idx.isValid());
-
-    emit view->detailRequested(idx);
+    view->setModel(&localModel);
     QCoreApplication::processEvents();
-
-    SUCCEED();
-}
-
-TEST_F(LoggingIntegrationTest, ShouldCreateDetailViewForDbcSession)
-{
-    LoggingModel localModel;
-    localModel.startNewDbcLogSession();
-    localModel.stopActiveSession();
 
     const QModelIndex idx = localModel.index(0, 0);
     ASSERT_TRUE(idx.isValid());

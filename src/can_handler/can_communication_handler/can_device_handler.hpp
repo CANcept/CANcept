@@ -17,7 +17,9 @@
 #include <ifaddrs.h>
 
 #include <CanDriver.hpp>
+#include <chrono>
 #include <list>
+#include <utility>
 
 #include "core/interface/i_settings_registry.hpp"
 using sockcanpp::CanDriver;
@@ -47,7 +49,8 @@ class CanDeviceHandler
      * @brief Checks if new messages were received over the CAN bus.
      * @return A list of received messages
      */
-    [[nodiscard]] auto checkForCanMessage() const -> std::list<CanMessage>;
+    [[nodiscard]] auto checkForCanMessage() const
+        -> std::list<std::pair<CanMessage, std::chrono::nanoseconds>>;
 
     /**
      * @brief Sends a message to the current can driver

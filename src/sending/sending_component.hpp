@@ -15,7 +15,10 @@
 
 #pragma once
 
+#include <QList>
 #include <QPointer>
+#include <QString>
+#include <QTimer>
 #include <QWidget>
 #include <chrono>
 #include <memory>
@@ -28,7 +31,10 @@
 #include "delegate/sending_delegate.hpp"
 #include "model/sending_model.hpp"
 #include "view/sending_view.hpp"
-#include "worker/repeated_sending_worker.hpp"
+#include "worker/repeated_producer_worker.hpp"
+#include "worker/replay_producer_worker.hpp"
+#include "worker/scheduled_item_queue.hpp"
+#include "worker/sending_consumer_worker.hpp"
 
 namespace Sending {
 /**
@@ -50,11 +56,11 @@ class SendingComponent final : public Core::ITabComponent
     /**
      * @brief Constructs the SendingComponent.
      *
-     * Initializes the model, view, and delegate and wires them together.
+     * Initializes the model, view, delegate, and worker pipeline and wires them together.
      *
      * @param broker Event broker used for inter-component communication.
      */
-    explicit SendingComponent(Core::IEventBroker& broker);
+    explicit SendingComponent(Core::IEventBroker& broker, Math::VariableRegistry* registry);
 
     /**
      * @brief Destructor.
@@ -118,21 +124,21 @@ class SendingComponent final : public Core::ITabComponent
      * @brief Publishes a raw CAN message in a worker thread.
      * Thread-safe: copies message before spawning thread.
      */
-    void publishRawMessageAsync(const Core::RawCanMessage& message);
+    void publishRawMessageAsync(const Core::RawCanMessage& message) const;
 
     /**
      * @brief Publishes a DBC CAN message in a worker thread.
      * Thread-safe: copies message before spawning thread.
      */
-    void publishDbcMessageAsync(const Core::DbcCanMessage& message);
+    void publishDbcMessageAsync(const Core::DbcCanMessage& message) const;
 
     /**
-     * @brief Starts repeated sending at the given interval using the worker thread.
+     * @brief Starts the producer/consumer pipeline at the given interval.
      */
-    void startRepeatedSending(int intervalMs) const;
+    void startRepeatedSending(int intervalUs) const;
 
     /**
-     * @brief Stops the repeated sending worker.
+     * @brief Stops the producer/consumer pipeline.
      */
     void stopRepeatedSending() const;
 
@@ -140,6 +146,30 @@ class SendingComponent final : public Core::ITabComponent
      * @brief Sends the current message once (offloaded to a thread).
      */
     void sendOnce() const;
+
+    /** @brief Scans logs/ for .mf4 files and updates the session list in the view. */
+    void scanReplaySessions();
+
+    /** @brief Validates an externally chosen file and appends it to the session list. */
+    void addExternalFile(const QString& filePath);
+
+    /** @brief Starts streaming replay from m_replaySessions[index] at the given speed. */
+    void startReplay(int index, double speedFactor);
+
+    /** @brief Pauses an active replay run. */
+    void pauseReplay();
+
+    /** @brief Resumes a paused replay run. */
+    void resumeReplay();
+
+    /** @brief Stops replay and resets replay controls to ready/disabled. */
+    void stopReplay();
+
+    /** @brief Global variable registry for expression variables. */
+    Math::VariableRegistry* m_variableRegistry = nullptr;
+
+    /** @brief Discovered and user-added replay sessions. */
+    QList<ReplayEntry> m_replaySessions;
 
     /** @brief Model holding CAN sending configuration and data */
     std::unique_ptr<SendingModel> m_model;
@@ -164,14 +194,36 @@ class SendingComponent final : public Core::ITabComponent
     /** @brief Mutex protecting event broker access from multiple threads. */
     mutable std::mutex m_brokerMutex;
 
-    /** @brief Worker thread for repeated (cyclic) CAN message transmission. */
-    std::unique_ptr<RepeatedSendingWorker> m_sendingWorker;
+    /**
+     * @brief Shared channel between producer and consumer.
+     */
+    std::unique_ptr<ScheduledItemQueue> m_queue;
+
+    /** @brief Producer thread for repeated sending. */
+    std::unique_ptr<RepeatedProducerWorker> m_repeatedWorker;
+
+    /** @brief Producer thread for one-shot replay scheduling. */
+    std::unique_ptr<ReplayProducerWorker> m_replayWorker;
+
+    /** @brief Consumer thread for actual sending. */
+    std::unique_ptr<SendingConsumerWorker> m_consumerWorker;
+
+    /** @brief Polls replay progress at ~10 Hz without emitting per-frame signals. */
+    QTimer* m_replayProgressTimer = nullptr;
+
+    /** @brief Total frame count of the active replay run, cached for the timer slot. */
+    int m_replayTotalFrames = 0;
 
     /** @brief Timestamp when the component started, used for diagnostics. */
     std::chrono::steady_clock::time_point m_startTime;
 
     /** @brief Cached state of device readiness to avoid redundant overlay updates. */
     mutable bool m_lastDeviceReadyState = true;
+
+    /**
+     * @brief Fault handler built once per send session (single send or repeated send start).
+     */
+    mutable std::shared_ptr<Core::IFaultHandler> m_activeFaultHandler;
 };
 
 }  // namespace Sending

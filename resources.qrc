@@ -18,6 +18,7 @@
         <file>assets/icon/sending/sending.svg</file>
         <file>assets/icon/sending/raw_based_send_icon.svg</file>
         <file>assets/icon/sending/dbc_based_send_icon.svg</file>
+        <file>assets/icon/sending/replay_send_icon.svg</file>
         <file>assets/icon/sending/send.svg</file>
         <file>assets/icon/sending/can_frame.svg</file>
         <file>assets/icon/sending/messages.svg</file>
@@ -26,6 +27,8 @@
         <file>assets/icon/logging/logging_detail_view.svg</file>
         <file>assets/icon/logging/start_icon.svg</file>
         <file>assets/icon/logging/stop_icon.svg</file>
+        <file>assets/icon/logging/info.svg</file>
+        <file>assets/icon/logging/database.svg</file>
         <file>assets/icon/monitoring/monitoring_tab.svg</file>
         <file>assets/icon/monitoring/signal_graph.svg</file>
         <file>assets/icon/monitoring/bus_config.svg</file>
@@ -34,5 +37,7 @@
         <file>assets/icon/monitoring/arrow_right.svg</file>
         <file>assets/icon/monitoring/arrow_down.svg</file>
         <file>assets/icon/sending/stop.svg</file>
+        <file>assets/icon/math/add.svg</file>
+        <file>assets/icon/save.svg</file>
     </qresource>
 </RCC>

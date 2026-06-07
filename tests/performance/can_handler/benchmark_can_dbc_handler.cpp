@@ -17,6 +17,7 @@
 
 #include "benchmark/benchmark.h"
 #include "can_handler/can_communication_handler/can_dbc_handler.hpp"
+#include "core/event/can_event.hpp"
 #include "core/event/lifecycle_event.hpp"
 #include "event_broker/event_broker.hpp"
 #include "tests/helpers/dbc_examples.hpp"
@@ -49,10 +50,10 @@ static void BM_CanDbcHandler_Send_ParseMessage_ShortDbc(benchmark::State& state)
     Core::DbcCanMessage message = {};
     message.messageId = 0x100;
     message.signalValues = {{"Speed", 0}, {"Temperature", 0}, {"ErrorCode", 0}};
-    Core::SendCanMessageDbcEvent event(message);
+    Core::RawCanMessage encoded = {};
     for (auto _ : state)
     {
-        benchmarkObject.eventBroker->publish(event);
+        benchmarkObject.eventBroker->publish(Core::EncodeCanMessageDbcEvent(message, encoded));
     }
 }
 BENCHMARK(BM_CanDbcHandler_Send_ParseMessage_ShortDbc);
@@ -65,10 +66,10 @@ static void BM_CanDbcHandler_Send_ParseMessage_LongDbc(benchmark::State& state)
     Core::DbcCanMessage message = {};
     message.messageId = 100;
     message.signalValues = {{"Value100", 0}, {"Status100", 0}};
-    Core::SendCanMessageDbcEvent event(message);
+    Core::RawCanMessage encoded = {};
     for (auto _ : state)
     {
-        benchmarkObject.eventBroker->publish(event);
+        benchmarkObject.eventBroker->publish(Core::EncodeCanMessageDbcEvent(message, encoded));
     }
 }
 BENCHMARK(BM_CanDbcHandler_Send_ParseMessage_LongDbc);
@@ -84,10 +85,10 @@ static void BM_CanDbcHandler_Send_ParseMessage_ManySignalsDbc(benchmark::State& 
     {
         message.signalValues.push_back({"Signal" + std::to_string(i), 0});
     }
-    Core::SendCanMessageDbcEvent event(message);
+    Core::RawCanMessage encoded = {};
     for (auto _ : state)
     {
-        benchmarkObject.eventBroker->publish(event);
+        benchmarkObject.eventBroker->publish(Core::EncodeCanMessageDbcEvent(message, encoded));
     }
 }
 BENCHMARK(BM_CanDbcHandler_Send_ParseMessage_ManySignalsDbc);
@@ -100,7 +101,7 @@ static void BM_CanDbcHandler_Receive_ParseMessage_ShortDbc(benchmark::State& sta
     const CanMessage message{0x100, {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0}};
     for (auto _ : state)
     {
-        benchmarkObject.canDbcHandler->parseReceivedMessage(&message);
+        benchmarkObject.canDbcHandler->parseReceivedMessage(&message, std::chrono::nanoseconds(0));
     }
 }
 BENCHMARK(BM_CanDbcHandler_Receive_ParseMessage_ShortDbc);
@@ -113,7 +114,7 @@ static void BM_CanDbcHandler_Receive_ParseMessage_LongDbc(benchmark::State& stat
     const CanMessage message{100, {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0}};
     for (auto _ : state)
     {
-        benchmarkObject.canDbcHandler->parseReceivedMessage(&message);
+        benchmarkObject.canDbcHandler->parseReceivedMessage(&message, std::chrono::nanoseconds(0));
     }
 }
 BENCHMARK(BM_CanDbcHandler_Receive_ParseMessage_LongDbc);
@@ -126,7 +127,7 @@ static void BM_CanDbcHandler_Receive_ParseMessage_ManySignalsDbc(benchmark::Stat
     const CanMessage message{0x100, {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0}};
     for (auto _ : state)
     {
-        benchmarkObject.canDbcHandler->parseReceivedMessage(&message);
+        benchmarkObject.canDbcHandler->parseReceivedMessage(&message, std::chrono::nanoseconds(0));
     }
 }
 BENCHMARK(BM_CanDbcHandler_Receive_ParseMessage_ManySignalsDbc);

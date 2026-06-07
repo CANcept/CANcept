@@ -69,7 +69,7 @@ static void BM_CanRawHandler_Receive_ParseMessage_FullFrame(benchmark::State& st
 
     for (auto _ : state)
     {
-        benchmarkObject.canRawHandler->parseReceivedMessage(&message);
+        benchmarkObject.canRawHandler->parseReceivedMessage(&message, std::chrono::nanoseconds(0));
     }
 }
 BENCHMARK(BM_CanRawHandler_Receive_ParseMessage_FullFrame);
@@ -81,7 +81,7 @@ static void BM_CanRawHandler_Receive_ParseMessage_ShortFrame(benchmark::State& s
 
     for (auto _ : state)
     {
-        benchmarkObject.canRawHandler->parseReceivedMessage(&message);
+        benchmarkObject.canRawHandler->parseReceivedMessage(&message, std::chrono::nanoseconds(0));
     }
 }
 BENCHMARK(BM_CanRawHandler_Receive_ParseMessage_ShortFrame);

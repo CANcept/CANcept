@@ -16,7 +16,10 @@
 #pragma once
 
 #include <QAbstractItemModel>
+#include <QList>
+#include <QString>
 #include <functional>
+#include <mutex>
 #include <optional>
 #include <set>
 #include <string>
@@ -44,7 +47,7 @@ class SendingModel final : public QAbstractItemModel
         Role_SignalValue,
         Role_ActiveMode,
         Role_IsCyclicEnabled,
-        Role_CycleIntervalMs,
+        Role_CycleIntervalUs,
         Role_IsCurrentlySending
     };
 
@@ -73,7 +76,7 @@ class SendingModel final : public QAbstractItemModel
     }
     [[nodiscard]] auto cycleInterval() const -> int
     {
-        return m_cyclicState.intervalMs;
+        return m_cyclicState.intervalUs;
     }
     [[nodiscard]] auto isCurrentlySending() const -> bool
     {
@@ -118,6 +121,17 @@ class SendingModel final : public QAbstractItemModel
     void setSignalValue(uint16_t messageId, const std::string& signalName, double value);
 
     /**
+     * @brief Registers a callable that provides a signal's value dynamically (e.g. from a
+     * ValueFunction). Called on every send cycle in repeated sending for up-to-date values.
+     */
+    using SignalEvaluator = std::function<double()>;
+    void setSignalEvaluator(uint16_t messageId, const std::string& signalName,
+                            SignalEvaluator evaluator);
+
+    /** @brief Removes all evaluators (call before destroying widgets that evaluators reference). */
+    void clearEvaluators();
+
+    /**
      * @brief Gets the current DBC config pointer.
      */
     [[nodiscard]] auto currentDbcConfig() const -> const Core::DbcConfig*
@@ -156,9 +170,19 @@ class SendingModel final : public QAbstractItemModel
     /**
      * @brief Builds pending messages and passes them to the provided handlers.
      */
-    void forEachPendingMessage(
-        const std::function<void(const Core::RawCanMessage&)>& rawHandler,
-        const std::function<void(const Core::DbcCanMessage&)>& dbcHandler) const;
+    void forEachPendingMessage(const std::function<void(Core::RawCanMessage&)>& rawHandler,
+                               const std::function<void(Core::DbcCanMessage&)>& dbcHandler) const;
+
+    /**
+     * @brief Builds the send cache for the current selection.
+     */
+    void buildSendCache();
+
+    /**
+     * @brief Iterates the pre-built message cache, updating signal values and invoking handlers.
+     */
+    void forEachCachedMessage(const std::function<void(Core::RawCanMessage&)>& rawHandler,
+                              const std::function<void(Core::DbcCanMessage&)>& dbcHandler);
 
    private:
     /**
@@ -170,10 +194,13 @@ class SendingModel final : public QAbstractItemModel
     // Navigation & Mode
     Mode m_currentMode = Mode::Raw;
 
+    /** @brief Pre-built messages reused each cycle */
+    std::vector<Core::DbcCanMessage> m_messageCache;
+
     // Cyclic Transmission State
     struct CyclicState {
         bool isEnabled = false;  // The user "intent" to send cyclically
-        int intervalMs = 100;    // Default interval
+        int intervalUs = 1000;   // Default interval
         bool isSending = false;  // Whether the component is actively sending
     } m_cyclicState;
 
@@ -194,6 +221,10 @@ class SendingModel final : public QAbstractItemModel
      * Key: "messageId:signalName" (unique identifier)
      */
     std::set<std::string> m_selectedSignalNames;
+
+    /** @brief Dynamic evaluators per signal (e.g. math expressions). Guarded by m_evalMutex. */
+    mutable std::mutex m_evalMutex;
+    std::map<std::string, SignalEvaluator> m_signalEvaluators;
 
     /** @brief Current DBC config (owned by this model) */
     std::optional<Core::DbcConfig> m_currentDbc;

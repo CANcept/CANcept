@@ -20,10 +20,18 @@
 #include <QPushButton>
 #include <QScrollArea>
 #include <QWidget>
+#include <memory>
 
 #include "components/repeated_sending_card.hpp"
 #include "components/send_message_button.hpp"
+#include "core/interface/i_fault_handler.hpp"
 #include "core/widgets/dbc_message_card.hpp"
+#include "fault_injector/service/fault_handler.hpp"
+#include "fault_injector/ui/view/fault_injector_view.hpp"
+
+namespace Math {
+class VariableRegistry;
+}
 
 namespace Core {
 class CardWidget;
@@ -45,11 +53,9 @@ class DbcSendingSubView final : public QWidget
     ~DbcSendingSubView() override = default;
 
     /**
-     * @brief Populates the view by reading from the model.
-     * Creates message cards and signal rows based on model data.
-     * This maintains MVD separation - View reads Model, doesn't modify it.
+     * @brief Populates the view with message cards and signal rows from the model.
      */
-    void populateFromModel(const SendingModel* model);
+    void populateFromModel(SendingModel* model, Math::VariableRegistry& registry);
 
     /**
      * @brief Clears all message cards.
@@ -64,6 +70,19 @@ class DbcSendingSubView final : public QWidget
     [[nodiscard]] auto repeatedSendingCard() const -> RepeatedSendingCard*
     {
         return m_repeatedSendingCard;
+    }
+
+    /**
+     * @brief Returns a fault handler snapshot if injection is enabled, nullptr otherwise.
+     */
+    [[nodiscard]] auto getFaultHandler() const -> std::shared_ptr<Core::IFaultHandler>
+    {
+        if (m_faultInjector && m_faultInjector->isFaultInjection())
+        {
+            return std::make_shared<FaultInjector::FaultHandler>(
+                m_faultInjector->getFaultHandler());
+        }
+        return nullptr;
     }
 
    signals:
@@ -103,6 +122,7 @@ class DbcSendingSubView final : public QWidget
     QLabel* m_noDbcLabel;
 
     RepeatedSendingCard* m_repeatedSendingCard;
+    FaultInjector::FaultInjectorView* m_faultInjector;
     QPushButton* m_sendButton;
 };
 

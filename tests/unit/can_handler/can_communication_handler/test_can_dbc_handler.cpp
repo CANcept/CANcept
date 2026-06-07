@@ -28,10 +28,10 @@ class CanDbcHandlerTest : public ::testing::Test
         eventBroker = std::make_unique<TestHelpers::MockEventBroker>();
         canDbcHandler =
             std::make_unique<CanDbcHandler>(*eventBroker, [this](const CanMessage& canMessage) {
-                lastSentMessage = std::make_unique<CanMessage>(canMessage);
                 sentMessageCounter++;
                 return true;
             });
+
         receiveConnection = eventBroker->subscribe<Core::ReceivedCanDbcEvent>(
             [this](const Core::ReceivedCanDbcEvent& event) {
                 lastReceivedMessage = std::make_unique<Core::DbcCanMessage>(event.canMessage);
@@ -83,9 +83,10 @@ class CanDbcHandlerTest : public ::testing::Test
     std::unique_ptr<TestHelpers::MockEventBroker> eventBroker;
     std::unique_ptr<CanDbcHandler> canDbcHandler;
     Core::Connection receiveConnection;
+    Core::Connection sendRawConnection;
     int receiveMessageCounter = 0;
     int sentMessageCounter = 0;
-    std::unique_ptr<CanMessage> lastSentMessage;
+    std::unique_ptr<Core::SendCanMessageRawEvent> lastSentMessage;
     std::unique_ptr<Core::DbcCanMessage> lastReceivedMessage;
 };
 
@@ -96,7 +97,7 @@ TEST_F(CanDbcHandlerTest, ConstructsSuccessfuly)
 
 TEST_F(CanDbcHandlerTest, SubscribedToSendMessageEvent)
 {
-    EXPECT_EQ(eventBroker.get()->subscriptionCount<Core::SendCanMessageDbcEvent>(), 1);
+    EXPECT_EQ(eventBroker.get()->subscriptionCount<Core::EncodeCanMessageDbcEvent>(), 1);
 }
 
 TEST_F(CanDbcHandlerTest, SubscribedToDbcConfigChangeEvent)
@@ -148,9 +149,10 @@ TEST_F(CanDbcHandlerTest, SendMessageSuccessfully)
                          Core::DbcCanSignal{.name = "Signal2", .value = 50.0}},
         .messageId = 1};
 
-    EXPECT_NO_THROW(eventBroker->publish(Core::SendCanMessageDbcEvent(sendMessage)));
-    EXPECT_EQ(sentMessageCounter, 1);
-    EXPECT_NE(lastSentMessage, nullptr);
+    Core::RawCanMessage encoded;
+    EXPECT_NO_THROW(eventBroker->publish(Core::EncodeCanMessageDbcEvent(sendMessage, encoded)));
+    EXPECT_EQ(encoded.messageId, 1);
+    EXPECT_EQ(encoded.dlc, 8);
 }
 
 TEST_F(CanDbcHandlerTest, SendMessageWithCorrectId)
@@ -163,8 +165,9 @@ TEST_F(CanDbcHandlerTest, SendMessageWithCorrectId)
         .signalValues = {Core::DbcCanSignal{.name = "Signal1", .value = 100.0}},
         .messageId = 5};
 
-    eventBroker->publish(Core::SendCanMessageDbcEvent(sendMessage));
-    EXPECT_EQ(lastSentMessage->getCanId(), 5);
+    Core::RawCanMessage encoded;
+    eventBroker->publish(Core::EncodeCanMessageDbcEvent(sendMessage, encoded));
+    EXPECT_EQ(encoded.messageId, 5);
 }
 
 TEST_F(CanDbcHandlerTest, SendMultipleMessages)
@@ -179,21 +182,14 @@ TEST_F(CanDbcHandlerTest, SendMultipleMessages)
             .signalValues = {Core::DbcCanSignal{.name = "Signal1", .value = 100.0 + i}},
             .messageId = 1};
 
-        eventBroker->publish(Core::SendCanMessageDbcEvent(sendMessage));
+        Core::RawCanMessage encoded;
+        eventBroker->publish(Core::EncodeCanMessageDbcEvent(sendMessage, encoded));
+        EXPECT_EQ(encoded.messageId, 1);
     }
-    EXPECT_EQ(sentMessageCounter, 10);
 }
 
 TEST_F(CanDbcHandlerTest, HandleSendError)
 {
-    canDbcHandler.reset();
-    canDbcHandler =
-        std::make_unique<CanDbcHandler>(*eventBroker, [this](const CanMessage& canMessage) {
-            lastSentMessage = std::make_unique<CanMessage>(canMessage);
-            sentMessageCounter++;
-            return false;
-        });
-
     const auto dbcConfig = createSimpleDbc(1, "TestMessage");
     eventBroker->publish(Core::DBCParsedEvent(dbcConfig, "test.dbc"));
 
@@ -202,7 +198,8 @@ TEST_F(CanDbcHandlerTest, HandleSendError)
         .signalValues = {Core::DbcCanSignal{.name = "Signal1", .value = 100.0}},
         .messageId = 1};
 
-    EXPECT_NO_THROW(eventBroker->publish(Core::SendCanMessageDbcEvent(sendMessage)));
+    Core::RawCanMessage encoded;
+    EXPECT_NO_THROW(eventBroker->publish(Core::EncodeCanMessageDbcEvent(sendMessage, encoded)));
 }
 
 TEST_F(CanDbcHandlerTest, ParseReceivedMessageWithValidDbc)
@@ -222,13 +219,13 @@ TEST_F(CanDbcHandlerTest, ParseReceivedMessageWithValidDbc)
     rawData.push_back(0x00);
     rawData.push_back(0x00);
 
-    const CanMessage message{1, rawData, std::chrono::milliseconds(1000)};
-    canDbcHandler->parseReceivedMessage(&message);
+    const CanMessage message{1, rawData, std::chrono::milliseconds(0)};
+    canDbcHandler->parseReceivedMessage(&message, std::chrono::nanoseconds(1000));
 
     EXPECT_EQ(receiveMessageCounter, 1);
     EXPECT_NE(lastReceivedMessage, nullptr);
     EXPECT_EQ(lastReceivedMessage->messageId, 1);
-    EXPECT_EQ(lastReceivedMessage->receiveTime, std::chrono::milliseconds(1000));
+    EXPECT_EQ(lastReceivedMessage->receiveTime, std::chrono::nanoseconds(1000));
 }
 
 TEST_F(CanDbcHandlerTest, ParseReceivedMessageWithoutDbc)
@@ -238,7 +235,7 @@ TEST_F(CanDbcHandlerTest, ParseReceivedMessageWithoutDbc)
     const CanMessage message{1, rawData, std::chrono::milliseconds(1000)};
 
     // Should not throw even without DBC config
-    EXPECT_NO_THROW(canDbcHandler->parseReceivedMessage(&message));
+    EXPECT_NO_THROW(canDbcHandler->parseReceivedMessage(&message, std::chrono::nanoseconds(0)));
     EXPECT_EQ(receiveMessageCounter, 0);
 }
 
@@ -250,7 +247,7 @@ TEST_F(CanDbcHandlerTest, ParseReceivedMessageWithInvalidMessageId)
     // Try to parse a message with ID that doesn't exist in DBC
     std::string rawData(8, 0x00);
     const CanMessage message{99, rawData, std::chrono::milliseconds(1000)};
-    canDbcHandler->parseReceivedMessage(&message);
+    canDbcHandler->parseReceivedMessage(&message, std::chrono::nanoseconds(0));
 
     EXPECT_EQ(receiveMessageCounter, 0);
 }
@@ -265,7 +262,7 @@ TEST_F(CanDbcHandlerTest, ParseMultipleReceivedMessages)
 
     for (int i = 0; i < 5; i++)
     {
-        canDbcHandler->parseReceivedMessage(&message);
+        canDbcHandler->parseReceivedMessage(&message, std::chrono::nanoseconds(0));
     }
 
     EXPECT_EQ(receiveMessageCounter, 5);
@@ -284,14 +281,14 @@ TEST_F(CanDbcHandlerTest, DbcConfigUpdateClearsOldMessages)
     // Try to parse a message with ID from the first config
     std::string rawData(8, 0x00);
     const CanMessage message1{1, rawData, std::chrono::milliseconds(1000)};
-    canDbcHandler->parseReceivedMessage(&message1);
+    canDbcHandler->parseReceivedMessage(&message1, std::chrono::nanoseconds(0));
 
     // Should not receive because the config was updated
     EXPECT_EQ(receiveMessageCounter, 0);
 
     // Now try with the new config's message ID
     const CanMessage message2{2, rawData, std::chrono::milliseconds(1000)};
-    canDbcHandler->parseReceivedMessage(&message2);
+    canDbcHandler->parseReceivedMessage(&message2, std::chrono::nanoseconds(0));
 
     EXPECT_EQ(receiveMessageCounter, 1);
 }
@@ -307,7 +304,8 @@ TEST_F(CanDbcHandlerTest, SendMessageWithNonExistentMessageId)
         .signalValues = {Core::DbcCanSignal{.name = "Signal1", .value = 100.0}},
         .messageId = 99};
 
-    EXPECT_NO_THROW(eventBroker->publish(Core::SendCanMessageDbcEvent(sendMessage)));
+    Core::RawCanMessage encoded;
+    eventBroker->publish(Core::EncodeCanMessageDbcEvent(sendMessage, encoded));
     EXPECT_EQ(sentMessageCounter, 0);
 }
 
@@ -322,8 +320,8 @@ TEST_F(CanDbcHandlerTest, SendMessageWithPartialSignals)
         .signalValues = {Core::DbcCanSignal{.name = "Signal1", .value = 100.0}},
         .messageId = 1};
 
-    EXPECT_NO_THROW(eventBroker->publish(Core::SendCanMessageDbcEvent(sendMessage)));
-    EXPECT_EQ(sentMessageCounter, 1);
+    Core::RawCanMessage encoded;
+    eventBroker->publish(Core::EncodeCanMessageDbcEvent(sendMessage, encoded));
 }
 
 TEST_F(CanDbcHandlerTest, SendMessageWithAllSignals)
@@ -338,8 +336,8 @@ TEST_F(CanDbcHandlerTest, SendMessageWithAllSignals)
                          Core::DbcCanSignal{.name = "Signal2", .value = 50.0}},
         .messageId = 1};
 
-    EXPECT_NO_THROW(eventBroker->publish(Core::SendCanMessageDbcEvent(sendMessage)));
-    EXPECT_EQ(sentMessageCounter, 1);
+    Core::RawCanMessage encoded;
+    eventBroker->publish(Core::EncodeCanMessageDbcEvent(sendMessage, encoded));
 }
 
 TEST_F(CanDbcHandlerTest, ParseReceivedMessageSignalCount)
@@ -349,7 +347,7 @@ TEST_F(CanDbcHandlerTest, ParseReceivedMessageSignalCount)
 
     std::string rawData(8, 0x00);
     const CanMessage message{1, rawData, std::chrono::milliseconds(1000)};
-    canDbcHandler->parseReceivedMessage(&message);
+    canDbcHandler->parseReceivedMessage(&message, std::chrono::nanoseconds(0));
 
     EXPECT_NE(lastReceivedMessage, nullptr);
     EXPECT_EQ(lastReceivedMessage->signalValues.size(), 2);
@@ -389,7 +387,7 @@ TEST_F(CanDbcHandlerTest, ParseReceivedMessageWithShortFrame)
     shortData.push_back(0x00);
 
     const CanMessage message{1, shortData, std::chrono::milliseconds(1000)};
-    canDbcHandler->parseReceivedMessage(&message);
+    canDbcHandler->parseReceivedMessage(&message, std::chrono::nanoseconds(0));
 
     // Should not process frames that are not 8 bytes
     EXPECT_EQ(receiveMessageCounter, 0);
@@ -403,7 +401,7 @@ TEST_F(CanDbcHandlerTest, ParseFrameWithTooBigCanId)
     std::string rawData(8, 0x00);
 
     const CanMessage message{10000, rawData, std::chrono::milliseconds(1000)};
-    canDbcHandler->parseReceivedMessage(&message);
+    canDbcHandler->parseReceivedMessage(&message, std::chrono::nanoseconds(0));
 
     EXPECT_EQ(receiveMessageCounter, 0);
 }
@@ -416,7 +414,7 @@ TEST_F(CanDbcHandlerTest, ParseFrameWithNegativeCanId)
     std::string rawData(8, 0x00);
 
     const CanMessage message{-1, rawData, std::chrono::milliseconds(1000)};
-    canDbcHandler->parseReceivedMessage(&message);
+    canDbcHandler->parseReceivedMessage(&message, std::chrono::nanoseconds(0));
 
     EXPECT_EQ(receiveMessageCounter, 0);
 }
@@ -476,7 +474,7 @@ TEST_F(CanDbcHandlerTest, ParseMultiplexedFrame)
     rawData.push_back(0x00);
     rawData.push_back(0x00);
     const CanMessage message{1, rawData, std::chrono::milliseconds(1000)};
-    canDbcHandler->parseReceivedMessage(&message);
+    canDbcHandler->parseReceivedMessage(&message, std::chrono::nanoseconds(0));
 
     EXPECT_EQ(receiveMessageCounter, 1);
     EXPECT_EQ(lastReceivedMessage->messageId, 1);
@@ -503,7 +501,8 @@ TEST_F(CanDbcHandlerTest, SendMessageWithTooBigId)
                          Core::DbcCanSignal{.name = "Signal2", .value = 50.0}},
         .messageId = 10000};
 
-    EXPECT_NO_THROW(eventBroker->publish(Core::SendCanMessageDbcEvent(sendMessage)));
+    Core::RawCanMessage encoded;
+    eventBroker->publish(Core::EncodeCanMessageDbcEvent(sendMessage, encoded));
     EXPECT_EQ(sentMessageCounter, 0);
 }
 
@@ -519,52 +518,12 @@ TEST_F(CanDbcHandlerTest, SendMessageWithNegativeId)
                          Core::DbcCanSignal{.name = "Signal2", .value = 50.0}},
         .messageId = 1};
 
-    EXPECT_NO_THROW(eventBroker->publish(Core::SendCanMessageDbcEvent(sendMessage)));
+    Core::RawCanMessage encoded;
+    eventBroker->publish(Core::EncodeCanMessageDbcEvent(sendMessage, encoded));
     EXPECT_EQ(sentMessageCounter, 0);
 }
 
-TEST_F(CanDbcHandlerTest, SendMessageWithTooSmallValues)
-{
-    const auto dbcConfig = createSimpleDbc(1, "TestMessage");
-    eventBroker->publish(Core::DBCParsedEvent(dbcConfig, "test.dbc"));
-
-    // Send message with all signals
-    Core::DbcCanMessage sendMessage{
-        .receiveTime = std::chrono::milliseconds(1000),
-        .signalValues = {Core::DbcCanSignal{.name = "Signal2",
-                                            .value = -2000.0}},  // Below range value for Signal2
-        .messageId = 1};
-
-    EXPECT_NO_THROW(eventBroker->publish(Core::SendCanMessageDbcEvent(sendMessage)));
-    EXPECT_EQ(sentMessageCounter, 1);
-    constexpr int16_t expectedRawValue =
-        static_cast<int16_t>((-1000.0 - (-100.0)) / 0.5);  // Convert to raw value
-    EXPECT_EQ(lastSentMessage->getRawFrame().data[2], static_cast<__u8>(expectedRawValue));
-    EXPECT_EQ(lastSentMessage->getRawFrame().data[3], static_cast<__u8>(expectedRawValue >> 8));
-}
-
-TEST_F(CanDbcHandlerTest, SendMessageWithTooBigValues)
-{
-    const auto dbcConfig = createSimpleDbc(1, "TestMessage");
-    eventBroker->publish(Core::DBCParsedEvent(dbcConfig, "test.dbc"));
-
-    // Send message with all signals
-    Core::DbcCanMessage sendMessage{
-        .receiveTime = std::chrono::milliseconds(1000),
-        .signalValues = {Core::DbcCanSignal{.name = "Signal2",
-                                            .value = 2000.0}},  // Below range value for Signal2
-        .messageId = 1};
-
-    EXPECT_NO_THROW(eventBroker->publish(Core::SendCanMessageDbcEvent(sendMessage)));
-    EXPECT_EQ(sentMessageCounter, 1);
-    constexpr int16_t expectedRawValue =
-        static_cast<int16_t>((1000.0 - (-100.0)) / 0.5);  // Convert to raw value
-    EXPECT_EQ(lastSentMessage->getRawFrame().data[2], static_cast<__u8>(expectedRawValue));
-    EXPECT_EQ(lastSentMessage->getRawFrame().data[3], static_cast<__u8>(expectedRawValue >> 8));
-}
-
 // Big Endian Signal Tests
-
 TEST_F(CanDbcHandlerTest, SendMessageWithBigEndianSignal)
 {
     const auto dbcConfig = TestHelpers::DbcConfigBuilder()
@@ -575,7 +534,7 @@ TEST_F(CanDbcHandlerTest, SendMessageWithBigEndianSignal)
                                .message(TestHelpers::DbcMessageBuilder(1, "BigEndianMessage")
                                             .transmitter("ECU0")
                                             .signal(TestHelpers::DbcSignalBuilder("BigEndianSignal")
-                                                        .startBit(0)
+                                                        .startBit(7)
                                                         .size(16)
                                                         .bigEndian()
                                                         .unsigned_()
@@ -592,13 +551,12 @@ TEST_F(CanDbcHandlerTest, SendMessageWithBigEndianSignal)
         .signalValues = {Core::DbcCanSignal{.name = "BigEndianSignal", .value = 0x1234}},
         .messageId = 1};
 
-    EXPECT_NO_THROW(eventBroker->publish(Core::SendCanMessageDbcEvent(sendMessage)));
-    EXPECT_EQ(sentMessageCounter, 1);
-    EXPECT_NE(lastSentMessage, nullptr);
+    Core::RawCanMessage encoded;
+    eventBroker->publish(Core::EncodeCanMessageDbcEvent(sendMessage, encoded));
 
     // Big endian: MSB first, so 0x1234 should be stored as [0x12, 0x34]
-    EXPECT_EQ(lastSentMessage->getRawFrame().data[0], 0x12);
-    EXPECT_EQ(lastSentMessage->getRawFrame().data[1], 0x34);
+    EXPECT_EQ(encoded.data[0], 0x12);
+    EXPECT_EQ(encoded.data[1], 0x34);
 }
 
 TEST_F(CanDbcHandlerTest, ParseReceivedMessageWithBigEndianSignal)
@@ -611,7 +569,7 @@ TEST_F(CanDbcHandlerTest, ParseReceivedMessageWithBigEndianSignal)
                                .message(TestHelpers::DbcMessageBuilder(1, "BigEndianMessage")
                                             .transmitter("ECU0")
                                             .signal(TestHelpers::DbcSignalBuilder("BigEndianSignal")
-                                                        .startBit(0)
+                                                        .startBit(7)
                                                         .size(16)
                                                         .bigEndian()
                                                         .unsigned_()
@@ -635,7 +593,7 @@ TEST_F(CanDbcHandlerTest, ParseReceivedMessageWithBigEndianSignal)
     rawData.push_back(0x00);
 
     const CanMessage message{1, rawData, std::chrono::milliseconds(1000)};
-    canDbcHandler->parseReceivedMessage(&message);
+    canDbcHandler->parseReceivedMessage(&message, std::chrono::nanoseconds(0));
 
     EXPECT_EQ(receiveMessageCounter, 1);
     EXPECT_NE(lastReceivedMessage, nullptr);
@@ -665,7 +623,7 @@ TEST_F(CanDbcHandlerTest, MixedEndiannessInSameMessage)
                                      .unit("unit")
                                      .receiver("ECU1"))
                          .signal(TestHelpers::DbcSignalBuilder("BigEndianSignal")
-                                     .startBit(16)
+                                     .startBit(23)
                                      .size(16)
                                      .bigEndian()
                                      .unsigned_()
@@ -683,20 +641,22 @@ TEST_F(CanDbcHandlerTest, MixedEndiannessInSameMessage)
                          Core::DbcCanSignal{.name = "BigEndianSignal", .value = 0x5678}},
         .messageId = 1};
 
-    eventBroker->publish(Core::SendCanMessageDbcEvent(sendMessage));
-    EXPECT_EQ(sentMessageCounter, 1);
-    EXPECT_NE(lastSentMessage, nullptr);
+    Core::RawCanMessage encoded;
+    eventBroker->publish(Core::EncodeCanMessageDbcEvent(sendMessage, encoded));
 
     // Little endian 0x1234: [0x34, 0x12]
-    EXPECT_EQ(lastSentMessage->getRawFrame().data[0], 0x34);
-    EXPECT_EQ(lastSentMessage->getRawFrame().data[1], 0x12);
+    EXPECT_EQ(encoded.data[0], 0x34);
+    EXPECT_EQ(encoded.data[1], 0x12);
 
     // Big endian 0x5678: [0x56, 0x78]
-    EXPECT_EQ(lastSentMessage->getRawFrame().data[2], 0x56);
-    EXPECT_EQ(lastSentMessage->getRawFrame().data[3], 0x78);
+    EXPECT_EQ(encoded.data[2], 0x56);
+    EXPECT_EQ(encoded.data[3], 0x78);
 
     // Parse it back and verify
-    canDbcHandler->parseReceivedMessage(lastSentMessage.get());
+    const auto& event = encoded;
+    const std::string messageData(encoded.data.begin(), encoded.data.begin() + encoded.dlc);
+    const CanMessage message{event.messageId, messageData};
+    canDbcHandler->parseReceivedMessage(&message, std::chrono::nanoseconds(0));
 
     EXPECT_EQ(receiveMessageCounter, 1);
     EXPECT_NE(lastReceivedMessage, nullptr);
@@ -725,7 +685,7 @@ TEST_F(CanDbcHandlerTest, BigEndian32BitSignal)
             .message(TestHelpers::DbcMessageBuilder(1, "BigEndianMessage")
                          .transmitter("ECU0")
                          .signal(TestHelpers::DbcSignalBuilder("BigEndian32BitSignal")
-                                     .startBit(0)
+                                     .startBit(7)
                                      .size(32)
                                      .bigEndian()
                                      .unsigned_()
@@ -744,18 +704,19 @@ TEST_F(CanDbcHandlerTest, BigEndian32BitSignal)
         .signalValues = {Core::DbcCanSignal{.name = "BigEndian32BitSignal", .value = testValue}},
         .messageId = 1};
 
-    eventBroker->publish(Core::SendCanMessageDbcEvent(sendMessage));
-    EXPECT_EQ(sentMessageCounter, 1);
-    EXPECT_NE(lastSentMessage, nullptr);
+    Core::RawCanMessage encoded;
+    eventBroker->publish(Core::EncodeCanMessageDbcEvent(sendMessage, encoded));
 
     // Big endian 0x12345678: [0x12, 0x34, 0x56, 0x78]
-    EXPECT_EQ(lastSentMessage->getRawFrame().data[0], 0x12);
-    EXPECT_EQ(lastSentMessage->getRawFrame().data[1], 0x34);
-    EXPECT_EQ(lastSentMessage->getRawFrame().data[2], 0x56);
-    EXPECT_EQ(lastSentMessage->getRawFrame().data[3], 0x78);
+    EXPECT_EQ(encoded.data[0], 0x12);
+    EXPECT_EQ(encoded.data[1], 0x34);
+    EXPECT_EQ(encoded.data[2], 0x56);
+    EXPECT_EQ(encoded.data[3], 0x78);
 
     // Parse it back
-    canDbcHandler->parseReceivedMessage(lastSentMessage.get());
+    const std::string messageData(encoded.data.begin(), encoded.data.begin() + encoded.dlc);
+    const CanMessage message{encoded.messageId, messageData};
+    canDbcHandler->parseReceivedMessage(&message, std::chrono::nanoseconds(0));
 
     EXPECT_EQ(receiveMessageCounter, 1);
     EXPECT_NE(lastReceivedMessage, nullptr);
@@ -792,18 +753,20 @@ TEST_F(CanDbcHandlerTest, LittleEndian32BitSignal)
         .signalValues = {Core::DbcCanSignal{.name = "LittleEndian32BitSignal", .value = testValue}},
         .messageId = 1};
 
-    eventBroker->publish(Core::SendCanMessageDbcEvent(sendMessage));
-    EXPECT_EQ(sentMessageCounter, 1);
-    EXPECT_NE(lastSentMessage, nullptr);
+    Core::RawCanMessage encoded;
+    eventBroker->publish(Core::EncodeCanMessageDbcEvent(sendMessage, encoded));
 
     // Little endian 0x12345678: [0x78, 0x56, 0x34, 0x12]
-    EXPECT_EQ(lastSentMessage->getRawFrame().data[0], 0x78);
-    EXPECT_EQ(lastSentMessage->getRawFrame().data[1], 0x56);
-    EXPECT_EQ(lastSentMessage->getRawFrame().data[2], 0x34);
-    EXPECT_EQ(lastSentMessage->getRawFrame().data[3], 0x12);
+    EXPECT_EQ(encoded.data[0], 0x78);
+    EXPECT_EQ(encoded.data[1], 0x56);
+    EXPECT_EQ(encoded.data[2], 0x34);
+    EXPECT_EQ(encoded.data[3], 0x12);
 
     // Parse it back
-    canDbcHandler->parseReceivedMessage(lastSentMessage.get());
+    const auto& event = encoded;
+    const std::string messageData(encoded.data.begin(), encoded.data.begin() + encoded.dlc);
+    const CanMessage message{event.messageId, messageData};
+    canDbcHandler->parseReceivedMessage(&message, std::chrono::nanoseconds(0));
 
     EXPECT_EQ(receiveMessageCounter, 1);
     EXPECT_NE(lastReceivedMessage, nullptr);

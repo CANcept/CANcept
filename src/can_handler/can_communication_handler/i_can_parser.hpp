@@ -15,6 +15,7 @@
 
 #pragma once
 #include <CanDriver.hpp>
+#include <chrono>
 using sockcanpp::CanMessage;
 #include "core/interface/i_event_broker.hpp"
 
@@ -38,7 +39,8 @@ class ICanParser
      * @brief Virtual method, that parses a message received over a CAN bus.
      * @param canMessage The received message
      */
-    virtual void parseReceivedMessage(const CanMessage* canMessage) {};
+    virtual void parseReceivedMessage(const CanMessage* canMessage,
+                                      std::chrono::nanoseconds timestamp) {};
 
    protected:
     /**

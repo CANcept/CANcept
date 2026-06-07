@@ -17,6 +17,7 @@
 
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QScreen>
 #include <QScrollArea>
 #include <QScrollBar>
 #include <QVBoxLayout>
@@ -42,6 +43,7 @@ DbcSendingSubView::DbcSendingSubView(QWidget* parent)
       m_cardsLayout(nullptr),
       m_noDbcLabel(nullptr),
       m_repeatedSendingCard(nullptr),
+      m_faultInjector(nullptr),
       m_sendButton(nullptr)
 {
     setupUi();
@@ -93,11 +95,21 @@ void DbcSendingSubView::setupUi()
         messagesCardLayout->addWidget(m_scrollArea);
     }
 
-    mainLayout->addWidget(m_messagesCard, 1);
+    const int messagesCardMaxHeight =
+        static_cast<int>(this->screen()->availableGeometry().height() * 0.6);
+    m_messagesCard->setFixedHeight(messagesCardMaxHeight);
+    mainLayout->addWidget(m_messagesCard);
 
     // Repeated sending configuration
     m_repeatedSendingCard = new RepeatedSendingCard(scrollContent);
     mainLayout->addWidget(m_repeatedSendingCard);
+
+    // fault injector
+    m_faultInjector = new FaultInjector::FaultInjectorView(scrollContent);
+    const int faultInjectorMaxHeight =
+        static_cast<int>(this->screen()->availableGeometry().height() * 0.3);
+    m_faultInjector->setMaximumHeight(faultInjectorMaxHeight);
+    mainLayout->addWidget(m_faultInjector);
 
     mainLayout->addStretch();
 
@@ -144,6 +156,8 @@ void DbcSendingSubView::applyStyle() const
     // Apply vertical scrollbar style
     if (m_scrollArea->verticalScrollBar())
         m_scrollArea->verticalScrollBar()->setStyleSheet(Style::Common::verticalScrollBar());
+    if (m_outerScrollArea->verticalScrollBar())
+        m_outerScrollArea->verticalScrollBar()->setStyleSheet(Style::Common::verticalScrollBar());
 }
 
 bool DbcSendingSubView::event(QEvent* event)
@@ -156,7 +170,7 @@ bool DbcSendingSubView::event(QEvent* event)
     return QWidget::event(event);
 }
 
-void DbcSendingSubView::populateFromModel(const SendingModel* model)
+void DbcSendingSubView::populateFromModel(SendingModel* model, Math::VariableRegistry& registry)
 {
     if (!model)
     {
@@ -199,8 +213,8 @@ void DbcSendingSubView::populateFromModel(const SendingModel* model)
         for (const auto& sigDef : msgDef.signalDescriptions)
         {
             auto* signalRow = new Core::DbcSignalRowWidget(
-                QString::fromStdString(sigDef.signalName), QString::fromStdString(sigDef.unit),
-                sigDef.minimum, sigDef.maximum, card);
+                registry, QString::fromStdString(sigDef.signalName),
+                QString::fromStdString(sigDef.unit), sigDef.minimum, sigDef.maximum, card);
 
             QString signalName = QString::fromStdString(sigDef.signalName);
 
@@ -214,21 +228,14 @@ void DbcSendingSubView::populateFromModel(const SendingModel* model)
                         });
             }
 
-            connect(signalRow->valueEditor(), &QLineEdit::textChanged, this,
-                    [this, msgId, signalName](const QString& text) {
-                        if (text.isEmpty())
-                        {
-                            return;
-                        }
-                        bool ok = false;
-                        const double value = text.toDouble(&ok);
-                        if (ok)
-                        {
-                            emit signalValueChanged(msgId, signalName, value);
-                        }
-                    });
-
             card->addSignalRow(signalRow);
+
+            // Register evaluator: reads the atomic cached value from the signal row's
+            // MathInputView (thread-safe)
+            auto* mathInput = signalRow->valueEditor();
+            std::string sigNameStd = sigDef.signalName;
+            model->setSignalEvaluator(msgId, sigNameStd,
+                                      [mathInput]() { return mathInput->lastValue(); });
         }
 
         card->updateHeaderFromSignals();

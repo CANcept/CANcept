@@ -14,10 +14,6 @@
  */
 
 #pragma once
-#include <array>
-#include <ctime>
-#include <string>
-#include <unordered_map>
 
 #include "core/dto/can_dto.hpp"
 #include "event.hpp"
@@ -40,7 +36,7 @@ struct ReceivedCanDbcEvent final : public Event {
     explicit ReceivedCanDbcEvent(const DbcCanMessage& canMessage) : canMessage(canMessage){};
 };
 /**
- * @brief Structure of the send can event, when an already encoded message should be sent
+ * @brief Requests transmission of a fully encoded raw CAN frame.
  */
 struct SendCanMessageRawEvent final : public Event {
     RawCanMessage canMessage;
@@ -48,12 +44,18 @@ struct SendCanMessageRawEvent final : public Event {
     explicit SendCanMessageRawEvent(const RawCanMessage& canMessage) : canMessage(canMessage){};
 };
 /**
- * @brief Structure of the send can event, when a message should be sent based on the current DBC
- * config
+ * @brief Requests DBC-to-raw encoding of a decoded CAN message.
+ *
+ * The handler encodes canMessage into encodedMessage and returns.
+ * The caller is responsible for subsequently publishing a SendCanMessageRawEvent.
  */
-struct SendCanMessageDbcEvent final : public Event {
-    DbcCanMessage canMessage;
+struct EncodeCanMessageDbcEvent final : public Event {
+    DbcCanMessage& canMessage;
+    RawCanMessage& encodedMessage;
 
-    explicit SendCanMessageDbcEvent(const DbcCanMessage& canMessage) : canMessage(canMessage){};
+    explicit EncodeCanMessageDbcEvent(DbcCanMessage& canMessage, RawCanMessage& encodedMessage)
+        : canMessage(canMessage), encodedMessage(encodedMessage)
+    {
+    }
 };
 };  // namespace Core

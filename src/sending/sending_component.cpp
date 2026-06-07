@@ -15,25 +15,33 @@
 
 #include "sending_component.hpp"
 
-#include <QPointer>
-#include <QtConcurrent/QtConcurrentRun>
+#include <QDateTime>
+#include <QDir>
+#include <QFileInfo>
 
+#include "can_stream/reader/csv_reader.hpp"
+#include "can_stream/reader/mdf4_reader.hpp"
 #include "constants.hpp"
 #include "core/event/can_driver_event.hpp"
-#include "core/event/can_event.hpp"
-#include "core/event/dbc_event.hpp"
 #include "core/event/lifecycle_event.hpp"
 #include "core/macro/console_logging.hpp"
+#include "math/service/variable_registry.hpp"
+#include "sending_functions.hpp"
+#include "view/replay_sending_subview.hpp"
 
 namespace Sending {
 
-SendingComponent::SendingComponent(Core::IEventBroker& broker)
+SendingComponent::SendingComponent(Core::IEventBroker& broker, Math::VariableRegistry* registry)
     : ITabComponent(broker, QString::fromStdString(Constants::MODULE_IDENTIFIER),
                     Constants::TAB_TITLE, QIcon(Constants::SENDING_ICON_PATH)),
+      m_variableRegistry(registry),
       m_model(std::make_unique<SendingModel>()),
       m_view(std::make_unique<SendingView>()),
       m_delegate(new SendingDelegate(this)),
-      m_sendingWorker(std::make_unique<RepeatedSendingWorker>())
+      m_queue(std::make_unique<ScheduledItemQueue>()),
+      m_repeatedWorker(std::make_unique<RepeatedProducerWorker>(*m_queue, this)),
+      m_replayWorker(std::make_unique<ReplayProducerWorker>(*m_queue, m_eventBroker, this)),
+      m_consumerWorker(std::make_unique<SendingConsumerWorker>(*m_queue, this))
 {
     m_view->setModel(m_model.get());
 
@@ -42,6 +50,7 @@ SendingComponent::SendingComponent(Core::IEventBroker& broker)
 
 SendingComponent::~SendingComponent()
 {
+    stopReplay();
     stopRepeatedSending();
     m_parseErrorConn.release();
     m_parseSuccessConn.release();
@@ -61,7 +70,10 @@ void SendingComponent::onStart()
     setupConnections();
     setupBrokerSubscriptions();
 
+    m_consumerWorker->startConsuming();
+
     checkDeviceReadiness();
+    scanReplaySessions();
 
     m_eventBroker.publish<Core::ModuleStartedEvent>(
         Core::ModuleStartedEvent(std::type_index(typeid(*this))));
@@ -72,8 +84,12 @@ void SendingComponent::onStop()
 {
     LOG_INF(Constants::MODULE_IDENTIFIER, "Stopping Sending Component...");
 
-    // Stop any active cyclic transmissions
+    stopReplay();
     stopRepeatedSending();
+
+    m_parseErrorConn.release();
+    m_parseSuccessConn.release();
+    m_canDriverChangeConn.release();
 
     LOG_INF(Constants::MODULE_IDENTIFIER, "Sending Component stopped");
 }
@@ -88,7 +104,11 @@ void SendingComponent::onDbcConfigReceived(const Core::DbcConfig& config)
     LOG_INF(Constants::MODULE_IDENTIFIER, "Processing DBC config on UI thread");
 
     m_model->updateDbcConfig(config);
-    m_view->dbcSubView()->populateFromModel(m_model.get());
+    if (m_variableRegistry)
+    {
+        m_view->dbcSubView()->populateFromModel(m_model.get(), *m_variableRegistry);
+    }
+    m_model->buildSendCache();
 
     LOG_INF(Constants::MODULE_IDENTIFIER, "Created {} message cards",
             config.messageDefinitions.size());
@@ -97,41 +117,160 @@ void SendingComponent::onDbcConfigReceived(const Core::DbcConfig& config)
 
 void SendingComponent::onDbcParseError() const
 {
+    m_model->clearEvaluators();
     m_view->dbcSubView()->clearMessages();
 }
 
-void SendingComponent::publishRawMessageAsync(const Core::RawCanMessage& message)
+void SendingComponent::scanReplaySessions()
 {
-    QPointer<SendingComponent> self = this;
-    (void)QtConcurrent::run([self, message]() {
-        if (!self)
+    QDir logsDir("logs");
+    const QStringList files = logsDir.entryList({"session_*.mf4", "session_*.csv"}, QDir::Files,
+                                                QDir::Name | QDir::Reversed);
+
+    QList<ReplayEntry> entries;
+    for (const QString& fileName : files)
+    {
+        const QString filePath = logsDir.filePath(fileName);
+        const bool isCsv = fileName.endsWith(".csv", Qt::CaseInsensitive);
+
+        uint64_t frameCount = 0;
+        Core::CanFileType fileType = Core::CanFileType::Raw;
+
+        if (isCsv)
+        {
+            CanStream::CsvReader reader;
+            if (!reader.open(filePath.toStdString())) continue;
+            fileType = reader.fileType();
+            frameCount = reader.recordCount();
+        } else
+        {
+            CanStream::Mdf4Reader reader;
+            if (!reader.open(filePath.toStdString())) continue;
+            frameCount = reader.recordCount();
+            fileType = reader.fileType();
+        }
+
+        // Extract epoch-ms from "session_{epochMs}.{ext}"
+        const QString stem = QFileInfo(fileName).completeBaseName();
+        const QString epochStr = stem.mid(QString("session_").length());
+        bool ok = false;
+        const qint64 epochMs = epochStr.toLongLong(&ok);
+        const QString displayName =
+            ok ? QDateTime::fromMSecsSinceEpoch(epochMs).toString("yyyy-MM-dd HH:mm:ss") : stem;
+
+        entries.append(ReplayEntry{.displayName = displayName,
+                                   .filePath = filePath,
+                                   .frameCount = frameCount,
+                                   .fileType = fileType});
+    }
+
+    m_replaySessions = entries;
+    m_view->setLogSessions(m_replaySessions);
+    LOG_INF(Constants::MODULE_IDENTIFIER, "Found {} replay sessions", m_replaySessions.size());
+}
+
+void SendingComponent::addExternalFile(const QString& filePath)
+{
+    const bool isCsv = filePath.endsWith(".csv", Qt::CaseInsensitive);
+
+    uint64_t frameCount = 0;
+    Core::CanFileType fileType = Core::CanFileType::Raw;
+
+    if (isCsv)
+    {
+        CanStream::CsvReader reader;
+        if (!reader.open(filePath.toStdString()))
+        {
+            LOG_WRN(Constants::MODULE_IDENTIFIER, "Could not open external CSV replay file: {}",
+                    filePath.toStdString());
+            return;
+        }
+        fileType = reader.fileType();
+        frameCount = reader.recordCount();
+    } else
+    {
+        CanStream::Mdf4Reader reader;
+        if (!reader.open(filePath.toStdString()))
+        {
+            LOG_WRN(Constants::MODULE_IDENTIFIER, "Could not open external replay file: {}",
+                    filePath.toStdString());
+            return;
+        }
+        frameCount = reader.recordCount();
+        fileType = reader.fileType();
+        reader.close();
+    }
+
+    const QString displayName = QFileInfo(filePath).fileName();
+
+    // Avoid duplicates by file path
+    for (const auto& existing : m_replaySessions)
+    {
+        if (existing.filePath == filePath)
         {
             return;
         }
-        // Subscribers must ensure thread-safety and proper thread affinity.
-        std::scoped_lock lock(self->m_brokerMutex);
-        self->m_eventBroker.publish(Core::SendCanMessageRawEvent(message));
-    });
+    }
+
+    m_replaySessions.append(ReplayEntry{.displayName = displayName,
+                                        .filePath = filePath,
+                                        .frameCount = frameCount,
+                                        .fileType = fileType});
+
+    m_view->setLogSessions(m_replaySessions);
+    LOG_INF(Constants::MODULE_IDENTIFIER, "Added external replay file: {} ({} frames)",
+            filePath.toStdString(), frameCount);
 }
 
-void SendingComponent::publishDbcMessageAsync(const Core::DbcCanMessage& message)
+void SendingComponent::publishRawMessageAsync(const Core::RawCanMessage& message) const
 {
-    QPointer<SendingComponent> self = this;
-    (void)QtConcurrent::run([self, message]() -> void {
-        if (!self)
-        {
-            return;  // Component was destroyed
-        }
+    Core::RawCanMessage mutableMsg = message;
+    if (m_activeFaultHandler)
+    {
+        m_activeFaultHandler->inject(mutableMsg.messageId, mutableMsg.dlc, mutableMsg.data);
+    }
+    const auto [drop, delayOffset] =
+        m_activeFaultHandler ? m_activeFaultHandler->evaluate()
+                             : Core::IFaultHandler::FrameResult{.drop = false, .delayOffset = {}};
+    if (drop) return;
+    auto context = std::make_shared<RawSendContext>(
+        RawSendContext{.broker = &m_eventBroker, .message = mutableMsg});
+    m_queue->push(ScheduledItem{.scheduledAt = Clock::now() + delayOffset,
+                                .onSend = &rawSendImpl,
+                                .context = std::move(context)});
+}
 
-        // Subscribers must ensure thread-safety and proper thread affinity.
-        std::scoped_lock lock(self->m_brokerMutex);
-        self->m_eventBroker.publish(Core::SendCanMessageDbcEvent(message));
-    });
+void SendingComponent::publishDbcMessageAsync(const Core::DbcCanMessage& message) const
+{
+    Core::DbcCanMessage mutableMsg = message;
+    if (m_activeFaultHandler)
+    {
+        m_activeFaultHandler->inject(mutableMsg);
+    }
+    Core::RawCanMessage encoded;
+    m_eventBroker.publish(Core::EncodeCanMessageDbcEvent(mutableMsg, encoded));
+    if (m_activeFaultHandler)
+    {
+        m_activeFaultHandler->inject(encoded.messageId, encoded.dlc, encoded.data);
+    }
+
+    const auto [drop, delayOffset] =
+        m_activeFaultHandler ? m_activeFaultHandler->evaluate()
+                             : Core::IFaultHandler::FrameResult{.drop = false, .delayOffset = {}};
+
+    if (drop)
+    {
+        return;
+    }
+    auto context = std::make_shared<RawSendContext>(
+        RawSendContext{.broker = &m_eventBroker, .message = encoded});
+    m_queue->push(ScheduledItem{.scheduledAt = Clock::now() + delayOffset,
+                                .onSend = &rawSendImpl,
+                                .context = std::move(context)});
 }
 
 void SendingComponent::setupConnections()
 {
-    // Model requests to send raw messages - single path from Model to event broker
     connect(m_model.get(), &SendingModel::requestSendRaw, this,
             [this](const std::string&, const Core::RawCanMessage& message) {
                 LOG_INF(Constants::MODULE_IDENTIFIER, "Raw send requested: ID=0x{:03X}, DLC={}",
@@ -139,7 +278,6 @@ void SendingComponent::setupConnections()
                 publishRawMessageAsync(message);
             });
 
-    // Model requests to send DBC messages - single path from Model to event broker
     connect(m_model.get(), &SendingModel::requestSendDbc, this,
             [this](const std::string&, const Core::DbcCanMessage& message) {
                 LOG_INF(Constants::MODULE_IDENTIFIER, "DBC send requested: ID=0x{:03X}",
@@ -147,7 +285,6 @@ void SendingComponent::setupConnections()
                 publishDbcMessageAsync(message);
             });
 
-    // View requests: single send
     connect(m_view.get(), &SendingView::sendOnceRequested, this, &SendingComponent::sendOnce);
 
     connect(m_view.get(), &SendingView::startRepeatedSendingRequested, this,
@@ -155,9 +292,8 @@ void SendingComponent::setupConnections()
     connect(m_view.get(), &SendingView::stopRepeatedSendingRequested, this,
             &SendingComponent::stopRepeatedSending);
 
-    // Worker error handling
     connect(
-        m_sendingWorker.get(), &RepeatedSendingWorker::errorOccurred, this,
+        m_consumerWorker.get(), &SendingConsumerWorker::errorOccurred, this,
         [this](const QString& error) {
             LOG_ERR(Constants::MODULE_IDENTIFIER, "Repeated sending error: {}",
                     error.toStdString());
@@ -172,50 +308,226 @@ void SendingComponent::setupConnections()
                     .runtime = runtime, .wasError = true, .errorMessage = error.toStdString()}));
         },
         Qt::QueuedConnection);
+
+    connect(m_view->replaySubView(), &ReplaySendingSubView::externalFileSelected, this,
+            [this](const QString& filePath) { addExternalFile(filePath); });
+
+    connect(m_view->replaySubView(), &ReplaySendingSubView::startReplayRequested, this,
+            [this](const int index, const double speedFactor) { startReplay(index, speedFactor); });
+
+    connect(m_view->replaySubView(), &ReplaySendingSubView::pauseReplayRequested, this,
+            [this]() { pauseReplay(); });
+
+    connect(m_view->replaySubView(), &ReplaySendingSubView::resumeReplayRequested, this,
+            [this]() { resumeReplay(); });
+
+    connect(m_view->replaySubView(), &ReplaySendingSubView::stopReplayRequested, this,
+            [this]() { stopReplay(); });
+
+    m_replayProgressTimer = new QTimer(this);
+    m_replayProgressTimer->setInterval(100);
+    connect(m_replayProgressTimer, &QTimer::timeout, this, [this]() {
+        m_view->setReplayProgress(m_replayWorker->scheduledFrameCount(), m_replayTotalFrames);
+    });
+
+    connect(
+        m_replayWorker.get(), &ReplayProducerWorker::replayFinished, this,
+        [this]() { m_view->setReplayPlaybackState(ReplaySendingSubView::PlaybackState::Ready); },
+        Qt::QueuedConnection);
+
+    connect(
+        m_replayWorker.get(), &ReplayProducerWorker::replayStopped, this,
+        [this]() {
+            m_replayProgressTimer->stop();
+            if (m_replayWorker->isRunningReplay())
+            {
+                return;
+            }
+            m_view->setReplayProgress(m_replayWorker->scheduledFrameCount(), m_replayTotalFrames);
+            m_view->setReplayPlaybackState(m_replaySessions.isEmpty()
+                                               ? ReplaySendingSubView::PlaybackState::Disabled
+                                               : ReplaySendingSubView::PlaybackState::Ready);
+        },
+        Qt::QueuedConnection);
+
+    connect(
+        m_replayWorker.get(), &ReplayProducerWorker::errorOccurred, this,
+        [this](const QString& error) {
+            LOG_ERR(Constants::MODULE_IDENTIFIER, "Replay error: {}", error.toStdString());
+            m_view->setReplayPlaybackState(ReplaySendingSubView::PlaybackState::Ready);
+        },
+        Qt::QueuedConnection);
 }
 
-void SendingComponent::startRepeatedSending(const int intervalMs) const
+void SendingComponent::startRepeatedSending(const int intervalUs) const
 {
-    if (m_sendingWorker->isSending())
+    if (m_repeatedWorker->isRunning())
     {
         return;
     }
 
-    LOG_INF(Constants::MODULE_IDENTIFIER, "Starting repeated sending, interval={}ms", intervalMs);
+    if (m_variableRegistry)
+    {
+        m_variableRegistry->reset();
+    }
+    m_activeFaultHandler = m_view->dbcSubView()->getFaultHandler();
 
-    auto callback = [this]() {
-        // Called from worker thread - build messages and publish directly to broker
-        m_model->forEachPendingMessage(
-            [this](const Core::RawCanMessage& message) {
-                std::scoped_lock lock(m_brokerMutex);
-                m_eventBroker.publish(Core::SendCanMessageRawEvent(message));
+    LOG_INF(Constants::MODULE_IDENTIFIER, "Starting repeated sending, interval={}µs", intervalUs);
+
+    m_model->buildSendCache();
+
+    auto callback = [this](const Clock::time_point deadline) -> std::vector<ScheduledItem> {
+        std::vector<ScheduledItem> items;
+        m_model->forEachCachedMessage(
+            [&](Core::RawCanMessage& msg) {
+                if (m_activeFaultHandler)
+                {
+                    m_activeFaultHandler->inject(msg.messageId, msg.dlc, msg.data);
+                    const auto [drop, delayOffset] = m_activeFaultHandler->evaluate();
+                    if (drop) return;
+                    auto context = std::make_shared<RawSendContext>(
+                        RawSendContext{.broker = &m_eventBroker, .message = msg});
+                    items.push_back(ScheduledItem{.scheduledAt = deadline + delayOffset,
+                                                  .onSend = &rawSendImpl,
+                                                  .context = std::move(context)});
+                } else
+                {
+                    auto context = std::make_shared<RawSendContext>(
+                        RawSendContext{.broker = &m_eventBroker, .message = msg});
+                    items.push_back(ScheduledItem{.scheduledAt = deadline,
+                                                  .onSend = &rawSendImpl,
+                                                  .context = std::move(context)});
+                }
             },
-            [this](const Core::DbcCanMessage& message) {
-                std::scoped_lock lock(m_brokerMutex);
-                m_eventBroker.publish(Core::SendCanMessageDbcEvent(message));
+            [&](Core::DbcCanMessage& msg) {
+                if (m_activeFaultHandler) m_activeFaultHandler->inject(msg);
+                Core::RawCanMessage encoded;
+                m_eventBroker.publish(Core::EncodeCanMessageDbcEvent(msg, encoded));
+                if (m_activeFaultHandler)
+                {
+                    m_activeFaultHandler->inject(encoded.messageId, encoded.dlc, encoded.data);
+                    const auto [drop, delayOffset] = m_activeFaultHandler->evaluate();
+                    if (drop) return;
+                    auto context = std::make_shared<RawSendContext>(
+                        RawSendContext{.broker = &m_eventBroker, .message = encoded});
+                    items.push_back(ScheduledItem{.scheduledAt = deadline + delayOffset,
+                                                  .onSend = &rawSendImpl,
+                                                  .context = std::move(context)});
+                } else
+                {
+                    auto context = std::make_shared<RawSendContext>(
+                        RawSendContext{.broker = &m_eventBroker, .message = encoded});
+                    items.push_back(ScheduledItem{.scheduledAt = deadline,
+                                                  .onSend = &rawSendImpl,
+                                                  .context = std::move(context)});
+                }
             });
+        return items;
     };
 
-    m_sendingWorker->startSending(callback, intervalMs);
+    m_repeatedWorker->startCreating(std::move(callback), intervalUs);
     m_model->setTransmissionStatus(true);
 }
 
 void SendingComponent::stopRepeatedSending() const
 {
-    if (!m_sendingWorker->isSending())
+    if (!m_repeatedWorker->isRunning())
     {
         m_model->setTransmissionStatus(false);
         return;
     }
 
     LOG_INF(Constants::MODULE_IDENTIFIER, "Stopping repeated sending");
-    m_sendingWorker->stopSending();
+    m_repeatedWorker->stopCreating();
     m_model->setTransmissionStatus(false);
 }
 
 void SendingComponent::sendOnce() const
 {
+    if (m_variableRegistry)
+    {
+        m_variableRegistry->reset();
+    }
+    m_activeFaultHandler = m_view->dbcSubView()->getFaultHandler();
     m_model->transmitCurrent();
+}
+
+void SendingComponent::startReplay(const int index, const double speedFactor)
+{
+    if (index < 0 || index >= m_replaySessions.size())
+    {
+        return;
+    }
+
+    stopRepeatedSending();
+
+    const ReplayEntry entry = m_replaySessions.at(index);
+
+    const bool isCsv = entry.filePath.endsWith(".csv", Qt::CaseInsensitive);
+    ReplayProducerWorker::ReaderFactory factory = [path = entry.filePath.toStdString(),
+                                                   isCsv]() -> std::unique_ptr<Core::ICanReader> {
+        std::unique_ptr<Core::ICanReader> reader;
+        if (isCsv)
+            reader = std::make_unique<CanStream::CsvReader>();
+        else
+            reader = std::make_unique<CanStream::Mdf4Reader>();
+        if (!reader->open(path)) return nullptr;
+        return reader;
+    };
+
+    auto faultHandler = m_view->replaySubView()->getFaultHandler();
+
+    m_replayTotalFrames = static_cast<int>(entry.frameCount);
+
+    m_view->setReplayPlaybackState(ReplaySendingSubView::PlaybackState::Running);
+    m_view->setReplayProgress(0, m_replayTotalFrames);
+
+    m_replayWorker->startReplay(std::move(factory), entry.frameCount, speedFactor,
+                                std::move(faultHandler));
+    m_replayProgressTimer->start();
+
+    LOG_INF(Constants::MODULE_IDENTIFIER, "Replay started: '{}' at {}x speed",
+            entry.filePath.toStdString(), speedFactor);
+}
+
+void SendingComponent::pauseReplay()
+{
+    if (!m_replayWorker || !m_replayWorker->isRunningReplay())
+    {
+        return;
+    }
+
+    m_replayWorker->pauseReplay();
+    m_view->setReplayPlaybackState(ReplaySendingSubView::PlaybackState::Paused);
+}
+
+void SendingComponent::resumeReplay()
+{
+    if (!m_replayWorker || !m_replayWorker->isPausedReplay())
+    {
+        return;
+    }
+
+    m_replayWorker->resumeReplay();
+    m_view->setReplayPlaybackState(ReplaySendingSubView::PlaybackState::Running);
+}
+
+void SendingComponent::stopReplay()
+{
+    if (m_replayProgressTimer)
+    {
+        m_replayProgressTimer->stop();
+    }
+
+    if (m_replayWorker)
+    {
+        m_replayWorker->stopReplay();
+    }
+
+    m_view->setReplayPlaybackState(m_replaySessions.isEmpty()
+                                       ? ReplaySendingSubView::PlaybackState::Disabled
+                                       : ReplaySendingSubView::PlaybackState::Ready);
+    m_view->setReplayProgress(0, 0);
 }
 
 void SendingComponent::setupBrokerSubscriptions()
@@ -225,12 +537,12 @@ void SendingComponent::setupBrokerSubscriptions()
             LOG_INF(Constants::MODULE_IDENTIFIER, "DBC parse succeeded, queuing to UI thread");
             Core::DbcConfig configCopy = event.config;
             QMetaObject::invokeMethod(
-                this, [this, configCopy]() { onDbcConfigReceived(configCopy); },
+                this, [this, configCopy]() -> void { onDbcConfigReceived(configCopy); },
                 Qt::QueuedConnection);
         });
 
     m_parseErrorConn = m_eventBroker.subscribe<Core::DBCParseErrorEvent>(
-        [this](const Core::DBCParseErrorEvent& event) {
+        [this](const Core::DBCParseErrorEvent& event) -> void {
             LOG_ERR(Constants::MODULE_IDENTIFIER, "DBC parse failed: {}", event.errorMessage);
 
             QMetaObject::invokeMethod(this, &SendingComponent::onDbcParseError,
@@ -238,9 +550,9 @@ void SendingComponent::setupBrokerSubscriptions()
         });
 
     m_canDriverChangeConn = m_eventBroker.subscribe<Core::CanDriverChangeEvent>(
-        [this](const Core::CanDriverChangeEvent&) {
+        [this](const Core::CanDriverChangeEvent&) -> void {
             QMetaObject::invokeMethod(
-                this, [this]() { checkDeviceReadiness(); }, Qt::QueuedConnection);
+                this, [this]() -> void { checkDeviceReadiness(); }, Qt::QueuedConnection);
         });
 }
 

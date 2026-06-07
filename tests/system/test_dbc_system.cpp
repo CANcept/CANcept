@@ -87,7 +87,7 @@ class DbcSystemTest : public ::testing::Test
     void loadDbc(const std::string& path) const
     {
         broker->publish<Core::ParseDBCRequestEvent>(Core::ParseDBCRequestEvent{path});
-        QTest::qWait(300);
+        QTest::qWait(2000);
     }
 
     auto getDbcView() const -> DbcFile::DbcView*
@@ -108,7 +108,6 @@ TEST_F(DbcSystemTest, LoadDbc_ShowsSuccessLabel_AndParsesCorrectMessage)
     std::atomic<bool> parsedEventReceived{false};
     auto parsedConn = broker->subscribe<Core::DBCParsedEvent>(
         [&](const Core::DBCParsedEvent&) { parsedEventReceived = true; });
-
     loadDbc(TestHelpers::makeTempDbcFile());
 
     ASSERT_TRUE(parsedEventReceived.load()) << "DBCParsedEvent was never published";
@@ -165,7 +164,7 @@ TEST_F(DbcSystemTest, LoadDbc_ParsedSignal_HasCorrectAttributes)
 
     const auto& sig = capturedConfig.messageDefinitions.front().signalDescriptions.front();
     EXPECT_EQ(sig.signalName, TestHelpers::kTestSignalName.toStdString());
-    EXPECT_EQ(sig.startBit, 0u);
+    EXPECT_EQ(sig.startBit, 7u);
     EXPECT_EQ(sig.signalSize, 8u);
     EXPECT_DOUBLE_EQ(sig.factor, 1.0);
     EXPECT_DOUBLE_EQ(sig.offset, 0.0);

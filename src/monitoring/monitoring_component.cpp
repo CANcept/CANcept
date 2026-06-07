@@ -29,8 +29,8 @@
 namespace Monitoring {
 
 MonitoringComponent::MonitoringComponent(Core::IEventBroker& broker)
-    : Core::ITabComponent(broker, Constants::MODULE_IDENTIFIER, Constants::TAB_TITLE,
-                          QIcon(Constants::TAB_ICON_PATH)),
+    : Core::ITabComponent(broker, QString::fromStdString(Constants::MODULE_IDENTIFIER),
+                          Constants::TAB_TITLE, QIcon(Constants::TAB_ICON_PATH)),
       m_model(std::make_unique<MonitoringModel>()),
       m_delegate(std::make_unique<MonitoringDelegate>(m_model.get())),
       m_view(std::make_unique<MonitoringView>(m_model.get(), m_delegate.get())),
@@ -74,9 +74,13 @@ void MonitoringComponent::connectSignals()
 void MonitoringComponent::onStart()
 {
     // subscribe to DBC Parsing successes
-    m_parseSuccessConn = m_eventBroker.subscribe<Core::DBCParsedEvent>(
-        [this](const Core::DBCParsedEvent& event) -> void {
-            emit dbcConfigurationChanged(event.config);
+    m_parseSuccessConn =
+        m_eventBroker.subscribe<Core::DBCParsedEvent>([this](const Core::DBCParsedEvent& event) {
+            LOG_INF(Constants::MODULE_IDENTIFIER, "DBC parse succeeded, queuing to UI thread");
+            Core::DbcConfig configCopy = event.config;
+            QMetaObject::invokeMethod(
+                this, [this, configCopy]() { emit dbcConfigurationChanged(configCopy); },
+                Qt::QueuedConnection);
         });
 
     // subscribe to incoming dbc decoded CAN traffic

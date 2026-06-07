@@ -15,7 +15,6 @@
 
 #pragma once
 
-#include <QComboBox>
 #include <QDialog>
 #include <QScrollArea>
 #include <QStringList>
@@ -25,88 +24,62 @@
 #include "core/widgets/card_widget.hpp"
 #include "core/widgets/common/styled_switch.hpp"
 #include "core/widgets/dbc_message_card.hpp"
+#include "core/widgets/dbc_signal_row.hpp"
 #include "logging/model/logging_model.hpp"
+#include "logging/view/components/start_stop_button.hpp"
 
 namespace Logging {
 
 /**
  * @class MessageSelectionDialog
- * @brief A standalone modal window for configuring hardware and message selection.
- * * @details
- * This dialog provides a blocking configuration interface before a log session starts.
- * It features a device selector at the top and a scrollable area for DBC message cards.
+ * @brief Modal dialog for selecting the log session type and DBC signals before starting a session.
  */
 class MessageSelectionDialog final : public QDialog
 {
     Q_OBJECT
 
    public:
-    /**
-     * @brief Constructs the modal configuration window.
-     * @param parent The LoggingView (ensures the dialog stays centered over the tab).
-     */
     explicit MessageSelectionDialog(QWidget* parent = nullptr);
-
-    /** @brief Virtual destructor. */
     ~MessageSelectionDialog() override = default;
 
-    /**
-     * @brief Injects a DBC message card into the scrollable selection list.
-     * @param card Pointer to a DbcMessageCard configured in 'Selection' mode.
-     */
-    void addMessageCard(Core::DbcMessageCard* card);
-
-    /**
-     * @brief Removes and deletes all current message cards.
-     */
-    void clearCards();
-
-    /**
-     * @brief Populates the dialog with messages and signals from a DBC configuration.
-     * @param config The parsed DBC configuration containing message and signal definitions.
-     */
+   public slots:
+    /** @brief Populates the dialog with messages and signals from a DBC configuration. */
     void setDbcConfig(const Core::DbcConfig& config);
 
-    /**
-     * @brief Returns a map of message IDs to their selected signal names.
-     * @return Map where key is message ID and value is list of selected signal names.
-     */
-    std::map<uint32_t, QStringList> getSelectedSignals() const;
-
-    LogSessionType getSelectedLogSessionType() const;
+   signals:
+    /** @brief Emitted when the user confirms the selection; carries session type and selected
+     * signals. */
+    void startRequested(LogSessionType logSessionType,
+                        const std::map<uint32_t, QStringList>& selectedSignals);
 
    protected:
-    bool event(QEvent* event) override;
-    void mousePressEvent(QMouseEvent* event) override;
-    void mouseMoveEvent(QMouseEvent* event) override;
+    auto event(QEvent* event) -> bool override;
 
    private slots:
     void onLogTypeToggle(bool checked);
+    void onStartClicked();
+    void updateStartButton();
 
    private:
-    /** @brief Initializes the structural layout and styling. */
+    void addMessageCard(Core::DbcMessageCard* card) const;
+    void clearCards();
     void setupUi();
     void applyStyle();
 
-    QWidget* m_headerWidget;
-    QWidget* m_innerContainer;
-
+    StartStopButton* m_startBtn{nullptr};
+    QWidget* m_buttonWidget;
     Core::CardWidget* m_messagesCard;
+    QLabel* m_rawPlaceholder;
     QScrollArea* m_scrollArea;
     QWidget* m_scrollContent;
     QVBoxLayout* m_scrollLayout;
-    QWidget* m_buttonWidget;
 
-    // Storage for message cards mapped by message ID
     std::map<uint32_t, Core::DbcMessageCard*> m_messageCards;
-    QLabel* m_titleLabel;
-    QPushButton* m_closeButton;
+    std::map<uint32_t, std::vector<std::pair<QString, Core::DbcSignalRowWidget*>>> m_signalRows;
+
     QLabel* m_rawLabel;
     Core::StyledSwitch* m_logTypeSwitch;
     QLabel* m_dbcLabel;
-
-    // For dragging frameless dialog
-    QPoint m_dragPosition;
 };
 
 }  // namespace Logging

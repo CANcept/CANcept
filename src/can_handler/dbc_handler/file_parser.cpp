@@ -13,9 +13,6 @@
  * limitations under the License.
  */
 
-//
-// Created by flori on 21.01.2026.
-//
 #include "file_parser.hpp"
 
 #include <fstream>

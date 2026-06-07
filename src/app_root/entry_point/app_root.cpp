@@ -53,6 +53,11 @@ void AppRoot::bootstrap()
 {
     LOG_INF("AppRoot", "Starting bootstrap...");
 
+    // fixate std locale
+    std::setlocale(LC_ALL, "C");
+    std::locale::global(std::locale::classic());
+    QLocale::setDefault(QLocale::c());
+
     const auto& THEME = Core::ThemeManager::getInstance();
     const auto& colors = THEME.colors();
     const auto& spacing = THEME.spacing();
@@ -115,6 +120,9 @@ void AppRoot::bootstrap()
     m_dbc_handler = std::make_unique<CanHandler::DbcHandler>(*m_broker);
     m_dbc_handler->registerSettings(*m_settingsService);
 
+    LOG_INF("AppRoot", "Instantiating Variable Registry...");
+    m_variableRegistry = std::make_unique<Math::VariableRegistry>(*m_broker);
+
     LOG_INF("AppRoot", "Instantiating App Root MVD...");
     m_model = std::make_unique<AppRootModel>();
     m_settingsModel = std::make_unique<SettingsModel>(*m_settingsService, *m_broker);
@@ -136,7 +144,7 @@ void AppRoot::bootstrap()
 
     initTab<DbcFile::DbcComponent>();
     initTab<Monitoring::MonitoringComponent>();
-    initTab<Sending::SendingComponent>();
+    initTab<Sending::SendingComponent>(m_variableRegistry.get());
     initTab<Logging::LoggingComponent>();
 
     for (const auto& tab : m_tabs)
@@ -236,6 +244,7 @@ void AppRoot::shutdown()
     m_delegate.reset();
     m_settingsModel.reset();
     m_model.reset();
+    m_variableRegistry.reset();
     m_can_communication_handler.reset();
     m_dbc_handler.reset();
     m_settingsService.reset();

@@ -29,13 +29,38 @@ class DbcHandlerBenchmark
         eventBroker = std::make_unique<TestHelpers::MockEventBroker>();
         dbcHandler = std::make_unique<CanHandler::DbcHandler>(*eventBroker);
         eventBroker->publish(Core::AppStartedEvent{});
+        successConn =
+            eventBroker->subscribe<Core::DBCParsedEvent>([this](const Core::DBCParsedEvent& event) {
+                successCounter++;
+                std::unique_lock<std::mutex> lock(eventMutex);
+                eventCV.notify_one();
+            });
+        errorConn = eventBroker->subscribe<Core::DBCParseErrorEvent>(
+            [this](const Core::DBCParseErrorEvent& event) {
+                failCounter++;
+                std::unique_lock<std::mutex> lock(eventMutex);
+                eventCV.notify_one();
+            });
     }
     ~DbcHandlerBenchmark()
     {
         eventBroker->publish(Core::AppStoppedEvent{});
+        successConn.release();
+        errorConn.release();
         dbcHandler.reset();
         eventBroker.reset();
     }
+    void waitForEvent()
+    {
+        std::unique_lock<std::mutex> lock(eventMutex);
+        eventCV.wait_until(lock, std::chrono::steady_clock::now() + std::chrono::seconds(10));
+    }
+    int successCounter = 0;
+    int failCounter = 0;
+    Core::Connection successConn;
+    Core::Connection errorConn;
+    std::condition_variable eventCV{};
+    std::mutex eventMutex{};
     std::unique_ptr<Core::IEventBroker> eventBroker;
     std::unique_ptr<CanHandler::DbcHandler> dbcHandler;
 };
@@ -103,33 +128,25 @@ BU_: ECU1 ECU2
 static void BM_DbcHandler_Parse_ShortDbc(benchmark::State& state)
 {
     DbcHandlerBenchmark dbcHandler;
-    static int successCounter = 0;
-    static int failCounter = 0;
-    Core::Connection successConn = dbcHandler.eventBroker->subscribe<Core::DBCParsedEvent>(
-        [](const Core::DBCParsedEvent& event) { successCounter++; });
-    Core::Connection errorConn = dbcHandler.eventBroker->subscribe<Core::DBCParseErrorEvent>(
-        [](const Core::DBCParseErrorEvent& event) { failCounter++; });
-    auto file = createTempFile(20);
+    const auto file = createTempFile(20);
     for (auto _ : state)
     {
         dbcHandler.eventBroker->publish(Core::ParseDBCRequestEvent(file.string()));
+        dbcHandler.waitForEvent();
     }
+    dbcHandler.eventBroker->publish(Core::AppStoppedEvent{});
 }
 BENCHMARK(BM_DbcHandler_Parse_ShortDbc);
 
 static void BM_DbcHandler_Parse_LongDbc(benchmark::State& state)
 {
     DbcHandlerBenchmark dbcHandler;
-    static int successCounter = 0;
-    static int failCounter = 0;
-    Core::Connection successConn = dbcHandler.eventBroker->subscribe<Core::DBCParsedEvent>(
-        [](const Core::DBCParsedEvent& event) { successCounter++; });
-    Core::Connection errorConn = dbcHandler.eventBroker->subscribe<Core::DBCParseErrorEvent>(
-        [](const Core::DBCParseErrorEvent& event) { failCounter++; });
-    auto file = createTempFile(2048);
+    const auto file = createTempFile(2048);
     for (auto _ : state)
     {
         dbcHandler.eventBroker->publish(Core::ParseDBCRequestEvent(absolute(file)));
+        dbcHandler.waitForEvent();
     }
+    dbcHandler.eventBroker->publish(Core::AppStoppedEvent{});
 }
-BENCHMARK(BM_DbcHandler_Parse_LongDbc);
+BENCHMARK(BM_DbcHandler_Parse_LongDbc)->Iterations(2);

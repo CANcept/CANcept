@@ -94,11 +94,14 @@ static void BM_CanCommunicationHandler_Send_DbcMessage(benchmark::State& state)
     Core::DbcCanMessage message = {};
     message.messageId = 0x100;
     message.signalValues = {{"Value100", 0}, {"Status100", 0}};
-    const Core::SendCanMessageDbcEvent event(message);
+    Core::RawCanMessage encoded;
+    const Core::EncodeCanMessageDbcEvent event(message, encoded);
+    const Core::SendCanMessageRawEvent messageEvent(encoded);
 
     for (auto _ : state)
     {
         benchmarkObject.eventBroker->publish(event);
+        benchmarkObject.eventBroker->publish(messageEvent);
     }
 }
 BENCHMARK(BM_CanCommunicationHandler_Send_DbcMessage);
@@ -120,11 +123,14 @@ static void BM_CanCommunicationHandler_Send_DbcMessageManySignals(benchmark::Sta
     {
         message.signalValues.push_back({"Signal" + std::to_string(i), 0});
     }
-    const Core::SendCanMessageDbcEvent event(message);
+    Core::RawCanMessage encoded;
+    const Core::EncodeCanMessageDbcEvent event(message, encoded);
+    const Core::SendCanMessageRawEvent messageEvent(encoded);
 
     for (auto _ : state)
     {
         benchmarkObject.eventBroker->publish(event);
+        benchmarkObject.eventBroker->publish(messageEvent);
     }
 }
 BENCHMARK(BM_CanCommunicationHandler_Send_DbcMessageManySignals);

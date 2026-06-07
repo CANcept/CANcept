@@ -90,9 +90,9 @@ void RepeatedSendingCard::setupUi()
     cardLayout->addWidget(m_frequencyLabel);
 
     m_frequencyEditor = new Core::StyledLineEdit(m_card);
-    m_frequencyEditor->setPlaceholderText(QString::number(Constants::DEFAULT_CYCLE_INTERVAL_MS));
+    m_frequencyEditor->setPlaceholderText(QString::number(Constants::DEFAULT_CYCLE_INTERVAL_US));
     const auto* validator =
-        new QIntValidator(Constants::MIN_CYCLE_INTERVAL_MS, Constants::MAX_CYCLE_INTERVAL_MS, this);
+        new QIntValidator(Constants::MIN_CYCLE_INTERVAL_US, Constants::MAX_CYCLE_INTERVAL_US, this);
     m_frequencyEditor->setValidator(validator);
     m_frequencyEditor->setVisible(false);
     cardLayout->addWidget(m_frequencyEditor);

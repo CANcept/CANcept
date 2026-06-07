@@ -15,55 +15,47 @@
 
 #include "dbc_signal_row.hpp"
 
-#include <QDoubleValidator>
-#include <QGridLayout>
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 
 #include "card_widget.hpp"
 #include "common/styled_checkbox.hpp"
-#include "common/styled_line_edit.hpp"
 #include "core/macro/theme.hpp"
 #include "core/theme/style_event.hpp"
 
 namespace Core {
 
-DbcSignalRowWidget::DbcSignalRowWidget(const QString& name, const QString& unit, double min,
-                                       double max, const Config& config, QWidget* parent)
+DbcSignalRowWidget::DbcSignalRowWidget(Math::VariableRegistry& registry, const QString& name,
+                                       const QString& unit, const double min, const double max,
+                                       QWidget* parent)
     : QWidget(parent),
+      m_registry(&registry),
       m_cardContainer(nullptr),
       m_selectionCheckbox(nullptr),
       m_nameLabel(nullptr),
       m_rangeLabel(nullptr),
       m_valueEditor(nullptr),
-      m_unitLabel(nullptr),
-      m_funcToggle(nullptr),
-      m_clampTimer(nullptr),
-      m_minValue(min),
-      m_maxValue(max)
-{
-    setupUi(name, unit, min, max, config);
-}
-
-DbcSignalRowWidget::DbcSignalRowWidget(const QString& name, const QString& unit, const double min,
-                                       const double max, QWidget* parent)
-    : QWidget(parent),
-      m_cardContainer(nullptr),
-      m_selectionCheckbox(nullptr),
-      m_nameLabel(nullptr),
-      m_rangeLabel(nullptr),
-      m_valueEditor(nullptr),
-      m_unitLabel(nullptr),
-      m_funcToggle(nullptr),
-      m_clampTimer(nullptr),
-      m_minValue(min),
-      m_maxValue(max)
+      m_unitLabel(nullptr)
 {
     Config defaultConfig;
     defaultConfig.mode = Mode::Full;
     defaultConfig.showRange = true;
     defaultConfig.showSelectionCheckbox = false;
     setupUi(name, unit, min, max, defaultConfig);
+}
+
+DbcSignalRowWidget::DbcSignalRowWidget(const QString& name, const QString& unit, double min,
+                                       double max, const Config& config, QWidget* parent)
+    : QWidget(parent),
+      m_registry(nullptr),
+      m_cardContainer(nullptr),
+      m_selectionCheckbox(nullptr),
+      m_nameLabel(nullptr),
+      m_rangeLabel(nullptr),
+      m_valueEditor(nullptr),
+      m_unitLabel(nullptr)
+{
+    setupUi(name, unit, min, max, config);
 }
 
 void DbcSignalRowWidget::setupUi(const QString& name, const QString& unit, double min, double max,
@@ -119,48 +111,8 @@ void DbcSignalRowWidget::setupFullMode(const QString& name, const QString& unit,
     cardLayout->addLayout(firstRow);
     cardLayout->addSpacing(spacing.spacingXs);
 
-    auto* secondRow = new QHBoxLayout();
-    secondRow->setSpacing(spacing.spacingSm);
-    secondRow->addSpacing(spacing.spacingMd + spacing.spacingMd);
-
-    // Value edit for the corresponding signal
-    m_valueEditor = new StyledLineEdit(m_cardContainer);
-    m_valueEditor->setFixedHeight(spacing.spacingXl + spacing.spacingMd);
-    m_valueEditor->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-
-    double exampleValue = 0.0;
-    if (min >= 0)
-    {
-        exampleValue = (min + max) / 2.0;
-    } else if (max > 0)
-    {
-        exampleValue = 0.0;
-    } else
-    {
-        exampleValue = (min + max) / 2.0;
-    }
-    m_valueEditor->setPlaceholderText(QString("e.g., %1").arg(exampleValue, 0, 'f', 0));
-    m_valueEditor->setText(QString());
-    m_valueEditor->setPadding(spacing.spacingXs, spacing.spacingMd);
-    auto* validator = new QDoubleValidator(min, max, 6, m_valueEditor);
-    validator->setNotation(QDoubleValidator::StandardNotation);
-    validator->setLocale(QLocale::C);
-    m_valueEditor->setValidator(validator);
-
-    // Create debounce timer for clamping
-    m_clampTimer = new QTimer(this);
-    m_clampTimer->setSingleShot(true);
-    m_clampTimer->setInterval(800);
-    connect(m_clampTimer, &QTimer::timeout, this, &DbcSignalRowWidget::clampInput);
-    connect(m_valueEditor, &QLineEdit::textChanged, this, [this]() { m_clampTimer->start(); });
-
-    secondRow->addWidget(m_valueEditor, 1);
-
-    m_unitLabel = new QLabel(unit, m_cardContainer);
-    m_unitLabel->setMinimumWidth(40);
-    secondRow->addWidget(m_unitLabel);
-
-    cardLayout->addLayout(secondRow);
+    m_valueEditor = new Math::MathInputView(*m_registry, m_cardContainer);
+    cardLayout->addWidget(m_valueEditor);
 
     mainLayout->addWidget(m_cardContainer);
 
@@ -226,11 +178,6 @@ void DbcSignalRowWidget::applyStyle() const
                                        .arg(colors.textSecondary.name())
                                        .arg(spacing.fontSizeSm));
     }
-
-    if (m_valueEditor)
-    {
-        m_valueEditor->setFixedHeight(spacing.spacingXl + spacing.spacingMd);
-    }
 }
 
 bool DbcSignalRowWidget::event(QEvent* event)
@@ -241,41 +188,6 @@ bool DbcSignalRowWidget::event(QEvent* event)
         return true;
     }
     return QWidget::event(event);
-}
-
-void DbcSignalRowWidget::clampInput() const
-{
-    if (!m_valueEditor)
-    {
-        return;
-    }
-
-    const QString text = m_valueEditor->text().trimmed();
-    if (text.isEmpty())
-    {
-        return;
-    }
-
-    bool ok = false;
-    const double value = text.toDouble(&ok);
-
-    if (!ok)
-    {
-        return;
-    }
-
-    // If value exceeds max, clamp it
-    if (value > m_maxValue)
-    {
-        m_valueEditor->blockSignals(true);
-        m_valueEditor->setText(QString::number(m_maxValue, 'f', 2));
-        m_valueEditor->blockSignals(false);
-    } else if (value < m_minValue)
-    {
-        m_valueEditor->blockSignals(true);
-        m_valueEditor->setText(QString::number(m_minValue, 'f', 2));
-        m_valueEditor->blockSignals(false);
-    }
 }
 
 }  // namespace Core

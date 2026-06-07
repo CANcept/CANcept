@@ -39,7 +39,7 @@ class SendingComponentTest : public ::testing::Test
     void SetUp() override
     {
         mockBroker = std::make_unique<MockEventBroker>();
-        component = std::make_unique<Sending::SendingComponent>(*mockBroker);
+        component = std::make_unique<Sending::SendingComponent>(*mockBroker, nullptr);
     }
 
     void TearDown() override

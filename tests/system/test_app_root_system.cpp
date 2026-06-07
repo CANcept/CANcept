@@ -106,7 +106,6 @@ TEST_F(AppRootSystemTest, Bootstrap_RegistersAllFourTabs)
     AppRoot::AppRoot appRoot;
     appRoot.bootstrap();
     QTest::qWait(100);
-
     auto* appRootView = findAppRootView();
     ASSERT_NE(appRootView, nullptr) << "AppRootView not found among top-level widgets";
 

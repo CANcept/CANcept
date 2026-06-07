@@ -21,7 +21,7 @@
 
 namespace Core {
 struct RawCanMessage {
-    std::chrono::milliseconds receiveTime;
+    std::chrono::nanoseconds receiveTime;
     std::array<char, 8> data;
     uint16_t messageId;  // CAN ID: 11-bit standard (0x000-0x7FF)
     uint8_t dlc{8};      // Data Length Code (0-8 bytes)
@@ -31,8 +31,8 @@ struct DbcCanSignal {
     double value;
 };
 struct DbcCanMessage {
-    std::chrono::milliseconds receiveTime;
-    std::list<DbcCanSignal> signalValues;
+    std::chrono::nanoseconds receiveTime;
+    std::vector<DbcCanSignal> signalValues;
     uint16_t messageId;  // CAN ID: 11-bit standard (0x000-0x7FF)
 };
 }  // namespace Core
