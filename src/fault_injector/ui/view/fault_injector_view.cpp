@@ -292,8 +292,18 @@ void FaultInjectorView::onToggleChanged(const bool checked)
     m_faults->setVisible(checked);
     m_tableCardWidget->setVisible(checked);
     m_addRawButton->setVisible(checked);
-    m_addDbcButton->setVisible(checked);
+    m_addDbcButton->setVisible(checked && m_model->mode() == FaultInjectorModel::Mode::Dbc);
     setMinimumHeight(checked ? maximumHeight() : 0);
+}
+
+void FaultInjectorView::setMode(const FaultInjectorModel::Mode mode)
+{
+    m_model->setMode(mode);
+    // Sync button visibility if the toggle is currently on.
+    if (m_toggleSwitch->isChecked())
+    {
+        m_addDbcButton->setVisible(mode == FaultInjectorModel::Mode::Dbc);
+    }
 }
 
 void FaultInjectorView::onFaultClicked(const QModelIndex& index) const

@@ -15,32 +15,27 @@
 
 #pragma once
 
-#include <atomic>
-#include <cstdint>
-#include <functional>
-
-#include "core/event/can_event.hpp"
-#include "core/interface/i_event_broker.hpp"
+#include <QProgressBar>
 
 namespace Sending {
 
-/** @brief Context for every raw CAN frame queued for sending. */
-struct RawSendContext {
-    Core::IEventBroker* broker;
-    Core::RawCanMessage message;
-    std::function<void()> onSent;
-};
-
-/** @brief Publishes the queued raw CAN frame to the bus. Used as the universal send callback. */
-static void rawSendImpl(void* context)
+/**
+ * @class ReplayProgressBar
+ * @brief Themed progress bar used in the replay progress section.
+ */
+class ReplayProgressBar final : public QProgressBar
 {
-    const auto* c = static_cast<RawSendContext*>(context);
+    Q_OBJECT
 
-    c->broker->publish(Core::SendCanMessageRawEvent(c->message));
-    if (c->onSent)
-    {
-        c->onSent();
-    }
-}
+   public:
+    explicit ReplayProgressBar(QWidget* parent = nullptr);
+    ~ReplayProgressBar() override = default;
+
+   protected:
+    auto event(QEvent* event) -> bool override;
+
+   private:
+    void applyStyle();
+};
 
 }  // namespace Sending

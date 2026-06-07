@@ -36,7 +36,19 @@ class FaultInjectorModel final : public QAbstractTableModel
 {
     Q_OBJECT
    public:
+    enum class Mode { Raw, Dbc };
+
     explicit FaultInjectorModel(QObject* parent = nullptr);
+
+    /**
+     * @brief Sets the active mode. Switching to Raw removes all DbcFault entries.
+     */
+    void setMode(Mode mode);
+
+    [[nodiscard]] auto mode() const -> Mode
+    {
+        return m_mode;
+    }
 
     /**
      * @brief Appends a fault to the model.
@@ -68,6 +80,7 @@ class FaultInjectorModel final : public QAbstractTableModel
 
    private:
     std::vector<Fault> m_faults;
+    Mode m_mode = Mode::Dbc;
 };
 
 }  // namespace FaultInjector

@@ -523,46 +523,6 @@ TEST_F(CanDbcHandlerTest, SendMessageWithNegativeId)
     EXPECT_EQ(sentMessageCounter, 0);
 }
 
-TEST_F(CanDbcHandlerTest, SendMessageWithTooSmallValues)
-{
-    const auto dbcConfig = createSimpleDbc(1, "TestMessage");
-    eventBroker->publish(Core::DBCParsedEvent(dbcConfig, "test.dbc"));
-
-    // Send message with all signals
-    Core::DbcCanMessage sendMessage{
-        .receiveTime = std::chrono::milliseconds(1000),
-        .signalValues = {Core::DbcCanSignal{.name = "Signal2",
-                                            .value = -2000.0}},  // Below range value for Signal2
-        .messageId = 1};
-
-    Core::RawCanMessage encoded;
-    eventBroker->publish(Core::EncodeCanMessageDbcEvent(sendMessage, encoded));
-    constexpr int16_t expectedRawValue =
-        static_cast<int16_t>((-1000.0 - (-100.0)) / 0.5);  // Convert to raw value
-    EXPECT_EQ(static_cast<uint8_t>(encoded.data[2]), static_cast<uint8_t>(expectedRawValue));
-    EXPECT_EQ(static_cast<uint8_t>(encoded.data[3]), static_cast<uint8_t>(expectedRawValue >> 8));
-}
-
-TEST_F(CanDbcHandlerTest, SendMessageWithTooBigValues)
-{
-    const auto dbcConfig = createSimpleDbc(1, "TestMessage");
-    eventBroker->publish(Core::DBCParsedEvent(dbcConfig, "test.dbc"));
-
-    // Send message with all signals
-    Core::DbcCanMessage sendMessage{
-        .receiveTime = std::chrono::milliseconds(1000),
-        .signalValues = {Core::DbcCanSignal{.name = "Signal2",
-                                            .value = 2000.0}},  // Below range value for Signal2
-        .messageId = 1};
-
-    Core::RawCanMessage encoded;
-    eventBroker->publish(Core::EncodeCanMessageDbcEvent(sendMessage, encoded));
-    constexpr int16_t expectedRawValue =
-        static_cast<int16_t>((1000.0 - (-100.0)) / 0.5);  // Convert to raw value
-    EXPECT_EQ(static_cast<uint8_t>(encoded.data[2]), static_cast<uint8_t>(expectedRawValue));
-    EXPECT_EQ(static_cast<uint8_t>(encoded.data[3]), static_cast<uint8_t>(expectedRawValue >> 8));
-}
-
 // Big Endian Signal Tests
 TEST_F(CanDbcHandlerTest, SendMessageWithBigEndianSignal)
 {

@@ -15,6 +15,7 @@
 
 #pragma once
 
+#include <QList>
 #include <QStackedWidget>
 #include <QWidget>
 
@@ -22,9 +23,11 @@
 #include "core/widgets/tinted_icon_label.hpp"
 #include "dbc_based_sending_subview.hpp"
 #include "raw_sending_subview.hpp"
+#include "replay_sending_subview.hpp"
 #include "sending/model/sending_model.hpp"
 
 namespace Sending {
+class ReplaySendingSubView;
 
 /**
  * @brief The main container view for the Sending tab.
@@ -39,14 +42,29 @@ class SendingView final : public QWidget
     ~SendingView() override = default;
 
     // Accessors for the Delegate to wire up signals/slots
-    RawSendingSubView* rawSubView() const
+    [[nodiscard]] auto rawSubView() const -> RawSendingSubView*
     {
         return m_rawView;
     }
-    DbcSendingSubView* dbcSubView() const
+    [[nodiscard]] auto dbcSubView() const -> DbcSendingSubView*
     {
         return m_dbcView;
     }
+    [[nodiscard]] auto replaySubView() const -> ReplaySendingSubView*
+    {
+        return m_replayView;
+    }
+
+    /**
+     * @brief Updates the log session list shown in the replay subview.
+     */
+    void setLogSessions(const QList<ReplayEntry>& entries);
+
+    /** @brief Applies replay control-state for start/pause/resume/stop buttons. */
+    void setReplayPlaybackState(ReplaySendingSubView::PlaybackState state);
+
+    /** @brief Updates replay progress footer and progress bar. */
+    void setReplayProgress(int currentFrame, int totalFrames);
 
     /**
      * @brief Binds the View to the Model.
@@ -70,7 +88,7 @@ class SendingView final : public QWidget
 
    public slots:
     /** @brief Switches the visible sub-view (0 for Raw, 1 for DBC) */
-    void displayMode(int index);
+    auto displayMode(int index) -> void;
 
     /** @brief Shows the device not configured overlay */
     void showDeviceNotConfiguredOverlay() const;
@@ -95,6 +113,7 @@ class SendingView final : public QWidget
     QStackedWidget* m_contentStack;
     RawSendingSubView* m_rawView;
     DbcSendingSubView* m_dbcView;
+    ReplaySendingSubView* m_replayView;
 
     // Overlay for device not configured
     QWidget* m_deviceNotConfiguredOverlay;

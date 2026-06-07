@@ -15,7 +15,10 @@
 
 #pragma once
 
+#include <QList>
 #include <QPointer>
+#include <QString>
+#include <QTimer>
 #include <QWidget>
 #include <chrono>
 #include <memory>
@@ -29,6 +32,7 @@
 #include "model/sending_model.hpp"
 #include "view/sending_view.hpp"
 #include "worker/repeated_producer_worker.hpp"
+#include "worker/replay_producer_worker.hpp"
 #include "worker/scheduled_item_queue.hpp"
 #include "worker/sending_consumer_worker.hpp"
 
@@ -143,8 +147,29 @@ class SendingComponent final : public Core::ITabComponent
      */
     void sendOnce() const;
 
+    /** @brief Scans logs/ for .mf4 files and updates the session list in the view. */
+    void scanReplaySessions();
+
+    /** @brief Validates an externally chosen file and appends it to the session list. */
+    void addExternalFile(const QString& filePath);
+
+    /** @brief Starts streaming replay from m_replaySessions[index] at the given speed. */
+    void startReplay(int index, double speedFactor);
+
+    /** @brief Pauses an active replay run. */
+    void pauseReplay();
+
+    /** @brief Resumes a paused replay run. */
+    void resumeReplay();
+
+    /** @brief Stops replay and resets replay controls to ready/disabled. */
+    void stopReplay();
+
     /** @brief Global variable registry for expression variables. */
     Math::VariableRegistry* m_variableRegistry = nullptr;
+
+    /** @brief Discovered and user-added replay sessions. */
+    QList<ReplayEntry> m_replaySessions;
 
     /** @brief Model holding CAN sending configuration and data */
     std::unique_ptr<SendingModel> m_model;
@@ -177,8 +202,17 @@ class SendingComponent final : public Core::ITabComponent
     /** @brief Producer thread for repeated sending. */
     std::unique_ptr<RepeatedProducerWorker> m_repeatedWorker;
 
+    /** @brief Producer thread for one-shot replay scheduling. */
+    std::unique_ptr<ReplayProducerWorker> m_replayWorker;
+
     /** @brief Consumer thread for actual sending. */
     std::unique_ptr<SendingConsumerWorker> m_consumerWorker;
+
+    /** @brief Polls replay progress at ~10 Hz without emitting per-frame signals. */
+    QTimer* m_replayProgressTimer = nullptr;
+
+    /** @brief Total frame count of the active replay run, cached for the timer slot. */
+    int m_replayTotalFrames = 0;
 
     /** @brief Timestamp when the component started, used for diagnostics. */
     std::chrono::steady_clock::time_point m_startTime;

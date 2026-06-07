@@ -42,6 +42,20 @@ void ScheduledItemQueue::push(ScheduledItem item)
     }
 }
 
+auto ScheduledItemQueue::tryPush(ScheduledItem item) -> bool
+{
+    {
+        std::lock_guard lock(m_mutex);
+        if (m_items.size() >= Constants::QUEUE_MAX_CAPACITY)
+        {
+            return false;
+        }
+        m_items.push(std::move(item));
+    }
+    m_semaphore.release();
+    return true;
+}
+
 auto ScheduledItemQueue::pop() -> std::optional<ScheduledItem>
 {
     m_semaphore.acquire();

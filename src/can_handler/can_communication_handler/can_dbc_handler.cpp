@@ -15,6 +15,8 @@
 
 #include "can_dbc_handler.hpp"
 
+#include <cmath>
+
 #include "core/macro/console_logging.hpp"
 
 namespace CanHandler {
@@ -166,7 +168,7 @@ void CanDbcHandler::handleEncodeMessage(const Core::EncodeCanMessageDbcEvent& ev
 
     // Build raw byte array from encoded signals
     uint16_t id = messageToEncode.messageId;
-    uint8_t dlc = 8;
+    uint8_t dlc = static_cast<uint8_t>(currentMessageDescription->messageSize);
     std::array<char, 8> data{};
     for (int i = 0; i < 8; i++)
     {
@@ -188,18 +190,9 @@ void CanDbcHandler::parseSendSignal(const Core::DbcSignalDescription& signal,
                                     u_int64_t& dataLittleEndian, u_int64_t& dataBigEndian,
                                     const double& value)
 {
-    // Clamp value to signal's physical range
-    double clampedValue = value;
-    if (clampedValue < signal.minimum)
-    {
-        clampedValue = signal.minimum;
-    } else if (clampedValue > signal.maximum)
-    {
-        clampedValue = signal.maximum;
-    }
-
     // Convert physical value to raw value
-    const int64_t rawValue = static_cast<int64_t>((clampedValue - signal.offset) / signal.factor);
+    const int64_t rawValue =
+        static_cast<int64_t>(std::round((value - signal.offset) / signal.factor));
 
     // Create mask for signal size
     const uint64_t mask = (signal.signalSize >= 64) ? ~0ULL : ((1ULL << signal.signalSize) - 1);

@@ -15,32 +15,37 @@
 
 #pragma once
 
-#include <atomic>
-#include <cstdint>
-#include <functional>
-
-#include "core/event/can_event.hpp"
-#include "core/interface/i_event_broker.hpp"
+#include <QPushButton>
 
 namespace Sending {
 
-/** @brief Context for every raw CAN frame queued for sending. */
-struct RawSendContext {
-    Core::IEventBroker* broker;
-    Core::RawCanMessage message;
-    std::function<void()> onSent;
-};
-
-/** @brief Publishes the queued raw CAN frame to the bus. Used as the universal send callback. */
-static void rawSendImpl(void* context)
+/**
+ * @class ReplayControlButton
+ * @brief Themed button for replay actions (load/start/pause/resume/stop).
+ */
+class ReplayControlButton final : public QPushButton
 {
-    const auto* c = static_cast<RawSendContext*>(context);
+    Q_OBJECT
 
-    c->broker->publish(Core::SendCanMessageRawEvent(c->message));
-    if (c->onSent)
+   public:
+    enum class Variant { Primary, Secondary, Danger };
+
+    explicit ReplayControlButton(const QString& text, Variant variant, QWidget* parent = nullptr);
+    ~ReplayControlButton() override = default;
+
+    void setVariant(Variant variant);
+    [[nodiscard]] auto variant() const -> Variant
     {
-        c->onSent();
+        return m_variant;
     }
-}
+
+   protected:
+    auto event(QEvent* event) -> bool override;
+
+   private:
+    void applyStyle();
+
+    Variant m_variant;
+};
 
 }  // namespace Sending

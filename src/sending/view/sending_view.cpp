@@ -24,6 +24,7 @@
 #include "core/macro/theme.hpp"
 #include "core/theme/style_event.hpp"
 #include "core/widgets/tinted_icon_label.hpp"
+#include "replay_sending_subview.hpp"
 #include "sending/constants.hpp"
 #include "sending/view/components/repeated_sending_card.hpp"
 #include "sending/view/components/send_message_button.hpp"
@@ -51,6 +52,8 @@ void SendingView::setupUi()
     m_sidebar = new Core::Sidebar(this);
     m_sidebar->addTab(QIcon(Constants::RAW_SENDING_ICON_PATH), Constants::RAW_MODE_BUTTON_TEXT);
     m_sidebar->addTab(QIcon(Constants::DBC_SENDING_ICON_PATH), Constants::DBC_MODE_BUTTON_TEXT);
+    m_sidebar->addTab(QIcon(Constants::REPLAY_SENDING_ICON_PATH),
+                      Constants::REPLAY_MODE_BUTTON_TEXT);
     mainLayout->addWidget(m_sidebar);
 
     m_contentStack = new QStackedWidget(this);
@@ -58,9 +61,11 @@ void SendingView::setupUi()
     // Create sub-views
     m_rawView = new RawSendingSubView(m_contentStack);
     m_dbcView = new DbcSendingSubView(m_contentStack);
+    m_replayView = new ReplaySendingSubView(m_contentStack);
 
-    m_contentStack->addWidget(m_rawView);  // Index 0
-    m_contentStack->addWidget(m_dbcView);  // Index 1
+    m_contentStack->addWidget(m_rawView);     // Index 0
+    m_contentStack->addWidget(m_dbcView);     // Index 1
+    m_contentStack->addWidget(m_replayView);  // Index 2
 
     mainLayout->addWidget(m_contentStack, 1);
 
@@ -94,6 +99,30 @@ void SendingView::setupUi()
     m_deviceNotConfiguredOverlay->raise();
 
     applyStyle();
+}
+
+void SendingView::setLogSessions(const QList<ReplayEntry>& entries)
+{
+    if (m_replayView)
+    {
+        m_replayView->setSessions(entries);
+    }
+}
+
+void SendingView::setReplayPlaybackState(const ReplaySendingSubView::PlaybackState state)
+{
+    if (m_replayView)
+    {
+        m_replayView->setPlaybackState(state);
+    }
+}
+
+void SendingView::setReplayProgress(const int currentFrame, const int totalFrames)
+{
+    if (m_replayView)
+    {
+        m_replayView->setProgress(currentFrame, totalFrames);
+    }
 }
 
 void SendingView::displayMode(const int index)

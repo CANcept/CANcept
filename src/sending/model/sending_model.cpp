@@ -624,17 +624,12 @@ void SendingModel::setRawCanId(const uint16_t canId)
 
 void SendingModel::setRawData(const std::vector<uint8_t>& data)
 {
-    m_rawState.data.clear();
-    m_rawState.dlc = 0;
-    for (size_t i = 0; i < Constants::MAX_CAN_DLC && i < data.size(); ++i)
+    m_rawState.dlc =
+        static_cast<uint8_t>(std::min(data.size(), static_cast<size_t>(Constants::MAX_CAN_DLC)));
+    m_rawState.data.assign(Constants::MAX_CAN_DLC, 0);
+    for (size_t i = 0; i < m_rawState.dlc; ++i)
     {
-        m_rawState.data.push_back(data[i]);
-        m_rawState.dlc++;
-    }
-    // Pad with zeros
-    while (m_rawState.data.size() < Constants::MAX_CAN_DLC)
-    {
-        m_rawState.data.push_back(0);
+        m_rawState.data[i] = data[i];
     }
 }
 

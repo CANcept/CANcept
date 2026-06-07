@@ -37,9 +37,15 @@ class ScheduledItemQueue
    public:
     /**
      * @brief Enqueues an item.
-     * O(log N) complexity. Thread-safe.
+     * O(log N). Thread-safe.
      */
     void push(ScheduledItem item);
+
+    /**
+     * @brief Non-evicting enqueue. Returns false when the queue is at capacity so the
+     * caller can spin-wait without silently dropping frames. O(log N). Thread-safe.
+     */
+    [[nodiscard, gnu::noinline]] auto tryPush(ScheduledItem item) -> bool;
 
     /**
      * @brief Blocks until an item is available, then returns the item
