@@ -44,10 +44,7 @@ build() {
 }
 
 package() {
-  # Install only the application itself. We deliberately do not use
-  # `cmake --install`, because the bundled qwt/libsockcanpp subprojects carry
-  # their own install() rules that would dump static libs, headers and cmake
-  # files into /usr (and conflict with the real qwt/libsockcanpp packages).
+
   install -Dm755 build/CANcept "$pkgdir/usr/bin/CANcept"
   install -Dm644 "$_pkgname/assets/icon/app_root/can_bus.svg" \
     "$pkgdir/usr/share/icons/hicolor/scalable/apps/CANcept.svg"
