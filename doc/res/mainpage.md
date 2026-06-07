@@ -1,4 +1,4 @@
-# CAN Bus Manager 
+# CANcept
 
 ## Purpose of the Project
 This software was developed to provide a high-performance solution for monitoring and simulating Controller Area Network (CAN) traffic. The primary goal is to allow users to decode raw bus data using DBC databases and to simulate Electronic Control Units (ECUs) by sending cyclic or manual messages.

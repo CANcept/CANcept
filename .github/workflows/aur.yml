@@ -1,0 +1,42 @@
+name: Publish to AUR
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to publish (e.g. v1.2.0)'
+        required: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Determine version from tag
+        id: version
+        run: |
+          ref="${{ github.event.inputs.tag || github.ref_name }}"
+          echo "pkgver=${ref#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Sync pkgver into PKGBUILD
+        run: |
+          sed -i "s/^pkgver=.*/pkgver=${{ steps.version.outputs.pkgver }}/" packaging/aur/PKGBUILD
+          sed -i "s/^pkgrel=.*/pkgrel=1/" packaging/aur/PKGBUILD
+
+      - name: Publish to AUR
+        uses: KSXGitHub/github-actions-deploy-aur@v3.0.1
+        with:
+          pkgname: cancept
+          pkgbuild: ./packaging/aur/PKGBUILD
+          commit_username: ${{ secrets.AUR_USERNAME }}
+          commit_email: ${{ secrets.AUR_EMAIL }}
+          ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+          commit_message: "Release v${{ steps.version.outputs.pkgver }}"
+          test: true
+          test_flags: --syncdeps --noconfirm
+          updpkgsums: false

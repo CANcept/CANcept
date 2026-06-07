@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.23)
 
 # 1. Project Configuration
-project(CanBusManager
-        VERSION 1.0.0
+project(CANcept
+        VERSION 1.2.0
         LANGUAGES CXX
 )
 
@@ -50,7 +50,6 @@ add_subdirectory(external/entt)
 add_subdirectory(external/libsockcanpp)
 add_subdirectory(external/qwt)
 
-set(RAPIDCSV_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external/rapidcsv/src")
 set(EXPRTK_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external/exprtk")
 
 # 5. Core Library
@@ -68,7 +67,6 @@ endif()
 
 target_include_directories(${PROJECT_NAME}Lib PUBLIC
         src
-        ${RAPIDCSV_INCLUDE_DIR}
         ${EXPRTK_INCLUDE_DIR}
 )
 
@@ -191,10 +189,10 @@ else()
 endif()
 
 include(GNUInstallDirs)
-install(TARGETS CanBusManager
+install(TARGETS CANcept
         DESTINATION ${CMAKE_INSTALL_BINDIR})
 install(FILES "assets/icon/app_root/can_bus.svg"
         DESTINATION "${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps"
-        RENAME "CanBusManager.svg")
-install(FILES "can_bus_manager.desktop"
+        RENAME "CANcept.svg")
+install(FILES "cancept.desktop"
         DESTINATION "${CMAKE_INSTALL_DATADIR}/applications")
