@@ -4,9 +4,6 @@
 [submodule "external/entt"]
 	path = external/entt
 	url = https://github.com/skypjack/entt.git
-[submodule "external/rapidcsv"]
-	path = external/rapidcsv
-	url = https://github.com/d99kris/rapidcsv.git
 [submodule "external/benchmark"]
 	path = external/benchmark
 	url = https://github.com/google/benchmark.git

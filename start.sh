@@ -3,7 +3,7 @@ set -e
 
 BUILD_DIR="build"
 DOC_DIR="doc"
-PROJECT_NAME="CanBusManager"
+PROJECT_NAME="CANcept"
 CORES=$(nproc 2>/dev/null || echo 4)
 
 CLEAN_BUILD=false

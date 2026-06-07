@@ -1,10 +1,11 @@
-# CAN Bus Simulator
+# CANcept
 
-[![C++ Qt CI](https://github.com/Can-Bus-Manager/Can-Bus-Manager/actions/workflows/ci.yml/badge.svg)](https://github.com/Can-Bus-Manager/Can-Bus-Manager/actions/workflows/ci.yml)
+[![C++ Qt CI](https://github.com/CANcept/CANcept/actions/workflows/ci.yml/badge.svg)](https://github.com/CANcept/CANcept/actions/workflows/ci.yml)
+[![Deploy Doxygen to Pages](https://github.com/CANcept/CANcept/actions/workflows/docs.yml/badge.svg)](https://github.com/CANcept/CANcept/actions/workflows/docs.yml)
 [![Qt 6.7.3+](https://img.shields.io/badge/Qt-6.7.3+-41CD52?logo=qt&logoColor=white)](https://www.qt.io/)
 [![C++20](https://img.shields.io/badge/C++-20-00599C?logo=cplusplus&logoColor=white)](https://isocpp.org/)
 
-A linux desktop application for CAN (Controller Area Network) bus communication, featuring real-time signal monitoring, message transmission, DBC file support, and comprehensive logging capabilities.
+A linux desktop application for CAN (Controller Area Network) bus communication, featuring real-time signal monitoring, message transmission, DBC file support, comprehensive logging, log replay, fault injection, and value-function (formula-based) sending.
 
 ## Preview
 
@@ -27,10 +28,10 @@ A linux desktop application for CAN (Controller Area Network) bus communication,
 The following dependencies are managed as Git submodules:
 - [EnTT](https://github.com/skypjack/entt) - Event dispatcher
 - [spdlog](https://github.com/gabime/spdlog) - Logging library
-- [libsockcanpp](https://github.com/SimonCaworr/libsockcanpp) - CAN socket interface
+- [libsockcanpp](https://github.com/SimonCahill/libsockcanpp) - CAN socket interface
 - [Qwt](https://qwt.sourceforge.io/) - Qt widgets for technical applications
+- [ExprTk](https://github.com/ArashPartow/exprtk) - Math expression engine for value-function sending
 - [GoogleTest](https://github.com/google/googletest) - Testing framework
-- [RapidCSV](https://github.com/d99kris/rapidcsv) - CSV parsing
 
 ## Installation
 
@@ -53,13 +54,25 @@ sudo apt update && sudo apt install -y \
             lcov
 
 # Clone the repository
-git clone --recursive https://github.com/Can-Bus-Manager/Can-Bus-Manager.git
-cd Can-Bus-Manager
+git clone --recursive https://github.com/CANcept/CANcept.git
+cd CANcept
 
 # Build and run
 chmod +x start.sh
 ./start.sh
 ```
+
+### Arch Linux (AUR)
+
+[![AUR version](https://img.shields.io/aur/version/cancept?logo=archlinux&logoColor=white)](https://aur.archlinux.org/packages/cancept)
+
+CANcept is available from the [AUR](https://aur.archlinux.org/packages/cancept) as `cancept`.
+Install it with your favourite AUR helper:
+
+```bash
+yay -S cancept
+```
+
 ## Usage
 
 ### Build Commands
@@ -91,8 +104,11 @@ src/
 ├── core/           # Shared interfaces, events, DTOs, utilities
 ├── event_broker/   # EnTT-based event broker implementation
 ├── can_handler/    # CAN communication layer
+├── can_stream/     # CAN stream reader/writer for logging and replay
 ├── dbc_file/       # DBC file management tab
+├── fault_injector/ # Fault injection (triggers, mutations, effects, strategies)
 ├── logging/        # Message logging tab
+├── math/           # Expression engine for value-function sending
 ├── monitoring/     # Signal monitoring tab
 └── sending/        # CAN message sending tab
 
