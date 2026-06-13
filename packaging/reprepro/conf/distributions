@@ -1,0 +1,7 @@
+Origin: CANcept
+Label: CANcept
+Codename: stable
+Architectures: amd64
+Components: main
+Description: CANcept APT Repository
+SignWith: KEYID

@@ -1,0 +1,122 @@
+name: Publish Debian Package
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to publish (e.g. v1.2.0)'
+        required: true
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Determine version from tag
+        id: version
+        run: |
+          ref="${{ github.event.inputs.tag || github.ref_name }}"
+          echo "version=${ref#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Install build and packaging dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            cmake ninja-build build-essential \
+            qt6-base-dev libqt6svg6-dev \
+            reprepro
+
+      - name: Configure CMake
+        run: |
+          cmake -B build -S . -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX=/usr \
+            -DBUILD_SHARED_LIBS=OFF \
+            -DENABLE_TESTS=OFF \
+            -DENABLE_DOCS=OFF \
+            -DENABLE_CLANG_TIDY=OFF \
+            -Wno-dev
+
+      - name: Build
+        run: cmake --build build -j$(nproc)
+
+      - name: Stage installation
+        run: cmake --install build --prefix /usr --destdir staging
+
+      - name: Create DEBIAN/control
+        run: |
+          mkdir -p staging/DEBIAN
+          sed "s/VERSION/${{ steps.version.outputs.version }}/" \
+            packaging/debian/control > staging/DEBIAN/control
+
+      - name: Build .deb
+        run: |
+          dpkg-deb --build --root-owner-group staging \
+            cancept_${{ steps.version.outputs.version }}_amd64.deb
+
+      - name: Import GPG signing key
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+        run: |
+          echo "$GPG_PRIVATE_KEY" | gpg --batch --import
+          echo "allow-loopback-pinentry" >> ~/.gnupg/gpg-agent.conf
+          gpg-connect-agent reloadagent /bye
+
+      - name: Upload .deb to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
+          files: cancept_${{ steps.version.outputs.version }}_amd64.deb
+
+      - name: Update APT repository branch
+        env:
+          GPG_KEY_ID: ${{ secrets.GPG_KEY_ID }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          WORK=$(mktemp -d)
+
+          # Check out existing apt-repo branch or start a new orphan branch
+          if git fetch origin apt-repo 2>/dev/null; then
+            git worktree add "$WORK" origin/apt-repo
+          else
+            git worktree add --orphan -b apt-repo "$WORK"
+          fi
+
+          # Initialize reprepro conf on first run
+          if [ ! -d "$WORK/conf" ]; then
+            mkdir -p "$WORK/conf"
+            sed "s/KEYID/$GPG_KEY_ID/" \
+              packaging/reprepro/conf/distributions > "$WORK/conf/distributions"
+            gpg --armor --export "$GPG_KEY_ID" > "$WORK/cancept.gpg"
+            {
+              echo '#!/bin/sh'
+              echo 'set -e'
+              echo 'mkdir -p /etc/apt/keyrings'
+              echo 'curl -fsSL https://raw.githubusercontent.com/CANcept/CANcept/apt-repo/cancept.gpg | tee /etc/apt/keyrings/cancept.gpg > /dev/null'
+              echo 'echo "deb [signed-by=/etc/apt/keyrings/cancept.gpg] https://raw.githubusercontent.com/CANcept/CANcept/apt-repo stable main" | tee /etc/apt/sources.list.d/cancept.list'
+              echo 'apt-get update'
+              echo 'echo "Repository added. Run: sudo apt install cancept"'
+            } > "$WORK/setup.sh"
+            chmod +x "$WORK/setup.sh"
+          fi
+
+          # Add the .deb to the repository
+          reprepro -b "$WORK" includedeb stable \
+            cancept_${{ steps.version.outputs.version }}_amd64.deb
+
+          cd "$WORK"
+          git add -A
+          git commit -m "Release cancept ${{ steps.version.outputs.version }}"
+          git push origin HEAD:apt-repo
