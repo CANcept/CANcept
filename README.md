@@ -37,6 +37,18 @@ The following dependencies are managed as Git submodules:
 
 ### Ubuntu / Debian
 
+[![Debian package](https://img.shields.io/github/v/release/CANcept/CANcept?label=deb&logo=debian&logoColor=white&color=A81D33)](https://github.com/CANcept/CANcept/releases/latest)
+
+CANcept is available as a `.deb` package via the APT repository:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/CANcept/CANcept/apt-repo/setup.sh | sudo bash
+sudo apt install cancept
+```
+
+<details>
+<summary>Build from source</summary>
+
 ```bash
 # Install all dependencies
 sudo apt update && sudo apt install -y \
@@ -61,6 +73,8 @@ cd CANcept
 chmod +x start.sh
 ./start.sh
 ```
+
+</details>
 
 ### Arch Linux (AUR)
 
