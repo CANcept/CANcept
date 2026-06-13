@@ -51,7 +51,7 @@ jobs:
         run: cmake --build build -j$(nproc)
 
       - name: Stage installation
-        run: cmake --install build --prefix /usr --destdir staging
+        run: DESTDIR=staging cmake --install build --prefix /usr
 
       - name: Create DEBIAN/control
         run: |
