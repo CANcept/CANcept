@@ -14,6 +14,29 @@ This project is part of the "Praxis der Softwareentwicklung" (PSE) at the Karlsr
 - Lino Wertz
 - Nele Spatzier
 
+## Installation
+
+### Ubuntu / Debian
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/CANcept/CANcept/apt-repo/setup.sh | sudo bash
+sudo apt install cancept
+```
+
+### Arch Linux (AUR)
+
+```bash
+yay -S cancept
+```
+
+### Build from Source
+
+```bash
+git clone --recursive https://github.com/CANcept/CANcept.git
+cd CANcept
+chmod +x start.sh && ./start.sh
+```
+
 ## System Previews
 
 ### Monitoring Interface
