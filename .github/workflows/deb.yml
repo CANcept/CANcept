@@ -65,9 +65,11 @@ jobs:
             cancept_${{ steps.version.outputs.version }}_amd64.deb
 
       - name: Import GPG signing key
+        id: import_gpg
         uses: crazy-max/ghaction-import-gpg@v6
         with:
           gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.GPG_PASSPHRASE }}
 
       - name: Upload .deb to GitHub Release
         uses: softprops/action-gh-release@v2
