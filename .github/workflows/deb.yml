@@ -98,7 +98,7 @@ jobs:
             mkdir -p "$WORK/conf"
             sed "s/KEYID/$GPG_KEY_ID/" \
               packaging/reprepro/conf/distributions > "$WORK/conf/distributions"
-            gpg --armor --export "$GPG_KEY_ID" > "$WORK/cancept.gpg"
+            gpg --export "$GPG_KEY_ID" > "$WORK/cancept.gpg"
             {
               echo '#!/bin/sh'
               echo 'set -e'
