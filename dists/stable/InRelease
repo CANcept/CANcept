@@ -1,0 +1,38 @@
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA512
+
+Origin: CANcept
+Label: CANcept
+Codename: stable
+Date: Sun, 14 Jun 2026 19:30:31 UTC
+Architectures: amd64
+Components: main
+Description: CANcept APT Repository
+MD5Sum:
+ 022a6d42242958f0fbcb0f96fc318a2f 687 main/binary-amd64/Packages
+ f0f386a0db4aa2a88d95143b479761ef 460 main/binary-amd64/Packages.gz
+ 939391e9a30305ec83e51623a0bd272f 103 main/binary-amd64/Release
+SHA1:
+ 1491eb3e9be7d328e9df6152e1a13c210d3f297b 687 main/binary-amd64/Packages
+ e7fdbfb3a55b2e24688ee1875aa7b380c5c7b043 460 main/binary-amd64/Packages.gz
+ 0af3458a00573a02df05966fd224aa6279f1985f 103 main/binary-amd64/Release
+SHA256:
+ 4e29b99f617b7510e812daaa221cfff8ccc0d37bb44ed49a6c15f2f675eb7415 687 main/binary-amd64/Packages
+ 66f967f38c65430548330bbe121152b9dde80cf8c8f0c073886202f2c11c71ad 460 main/binary-amd64/Packages.gz
+ 545e4058dc5ec32bda61bb82ef73291cca58311b932031666b3431ce37bae776 103 main/binary-amd64/Release
+-----BEGIN PGP SIGNATURE-----
+
+iQIzBAEBCgAdFiEEw8ZtstSSmQlFi76AtzvownZNpPoFAmovAVkACgkQtzvownZN
+pPqgcRAA4LuJyGgHeMJQK3tPI/WB/ngGnd/ZuNLd36lrnIUb2lRYfIfEZiNOgcrV
+hl1fN0mitFPSztoGJ1CHDrukLKE8RuetU5N1E//1DMq8gO2fhwKCt0xGUCQjA6d0
+dGb8q5J5dgCBiP/pPxGTmQRSNEesRpUkqaoMiF7LxJrhuaDCzlTaj4SmFr0uPq+N
+SLqtaeo9FcVG++VzivCR0EIyE72AOd5lgOvJ+bF9utu60tAF8/EfXmrLduhGf0UV
+ctGZjlyc04f5MhzHjtwvZOWBZ2g/Saf2w1VAqUiZqWTUvj0ILFlHdNp4jvvni4bO
+azLDJVLq54cetrfsVdABNHvpqr9s1WTSrBoJMzOQOC9X4lrMJbvgEj0MT3x/F3Gh
+tewTcFWOUn7GAGTGNc2QioebojKUkqIADCU1OHr1/gTTyU7ztoLgCm9fNQ4HDRaS
+0yNEz+sswjiQSznah0KDVGUIaF13W3LFlrsUH2uw9rx5Ktim/d1K4WrkYPyL//ub
+wgfrtpKX/DEg04IJDWfqhwO1/Mn1B3fNDuXXL7hO6leGpY22Xu9f8xHytQWQGYly
+aGqiBNTtZuuN0fhpE2GMHcY+waHwGPm+mjHqDMVMDH2jOhKdph1SDctxLdw7VW1F
+vK85gP5tmRKjvocejH3OuhlIFQqAesf7M/PIo3POmuWojH2/RaY=
+=Wojd
+-----END PGP SIGNATURE-----

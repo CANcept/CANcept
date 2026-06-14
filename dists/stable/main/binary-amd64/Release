@@ -1,0 +1,5 @@
+Component: main
+Origin: CANcept
+Label: CANcept
+Architecture: amd64
+Description: CANcept APT Repository
