@@ -43,7 +43,7 @@ DbcSendingSubView::DbcSendingSubView(QWidget* parent)
       m_cardsLayout(nullptr),
       m_noDbcLabel(nullptr),
       m_repeatedSendingCard(nullptr),
-      m_faultInjector(nullptr),
+      m_manipulation(nullptr),
       m_sendButton(nullptr)
 {
     setupUi();
@@ -104,12 +104,12 @@ void DbcSendingSubView::setupUi()
     m_repeatedSendingCard = new RepeatedSendingCard(scrollContent);
     mainLayout->addWidget(m_repeatedSendingCard);
 
-    // fault injector
-    m_faultInjector = new FaultInjector::FaultInjectorView(scrollContent);
-    const int faultInjectorMaxHeight =
+    // manipulation
+    m_manipulation = new Manipulation::ManipulationView(scrollContent);
+    const int manipulationMaxHeight =
         static_cast<int>(this->screen()->availableGeometry().height() * 0.3);
-    m_faultInjector->setMaximumHeight(faultInjectorMaxHeight);
-    mainLayout->addWidget(m_faultInjector);
+    m_manipulation->setMaximumHeight(manipulationMaxHeight);
+    mainLayout->addWidget(m_manipulation);
 
     mainLayout->addStretch();
 

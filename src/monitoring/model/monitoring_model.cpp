@@ -278,26 +278,42 @@ void MonitoringModel::onIncomingDbcFrame(const Core::DbcCanMessage& message)
         return;
     }
 
-    int j = 0;
-    for (auto& signalName : messageValues->at(message.messageId).signalNames)
+    auto& entry = messageValues->at(message.messageId);
+    const auto timestampNs = static_cast<qreal>(message.receiveTime.count());
+
+    if (entry.windowStartNs < 0)
     {
-        bool valueExists = false;
-        for (auto it3 = message.signalValues.begin(); it3 != message.signalValues.end(); ++it3)
+        entry.windowStartNs = timestampNs;
+    }
+
+    int j = 0;
+    for (auto& signalName : entry.signalNames)
+    {
+        for (const auto& [name, value] : message.signalValues)
         {
-            if (signalName == QString::fromStdString(it3->name))
+            if (signalName == QString::fromStdString(name))
             {
-                messageValues->at(message.messageId).signalValues.at(j).push_back(it3->value);
-                valueExists = true;
+                entry.windowSum[j] += value;
+                entry.windowCount[j] += 1;
                 break;
             }
         }
-        if (!valueExists)
-        {
-            messageValues->at(message.messageId).signalValues.at(j).push_back(NAN);
-        }
         j++;
     }
-    messageValues->at(message.messageId).timestamps.push_back(message.receiveTime.count());
+
+    const qreal windowSizeNs = Constants::AGGREGATION_WINDOW_MS * 1'000'000.0;
+    if (timestampNs - entry.windowStartNs >= windowSizeNs)
+    {
+        entry.timestamps.push_back(entry.windowStartNs);
+        for (std::size_t k = 0; k < entry.signalValues.size(); ++k)
+        {
+            entry.signalValues[k].push_back(
+                entry.windowCount[k] > 0 ? entry.windowSum[k] / entry.windowCount[k] : NAN);
+            entry.windowSum[k] = 0.0;
+            entry.windowCount[k] = 0;
+        }
+        entry.windowStartNs = timestampNs;
+    }
 }
 
 void MonitoringModel::onDbcChange(const Core::DbcConfig& config)
@@ -318,8 +334,13 @@ void MonitoringModel::onDbcChange(const Core::DbcConfig& config)
         {
             continue;
         }
-        messageValues->at(messageDefinition.messageId) = MessageTimestamp{
-            .timestamps = {}, .signalValues = signalValues, .signalNames = signalNames};
+        messageValues->at(messageDefinition.messageId) =
+            MessageTimestamp{.timestamps = {},
+                             .signalValues = signalValues,
+                             .signalNames = signalNames,
+                             .windowStartNs = -1,
+                             .windowSum = std::vector<double>(signalValues.size(), 0.0),
+                             .windowCount = std::vector<int>(signalValues.size(), 0)};
     }
 }
 

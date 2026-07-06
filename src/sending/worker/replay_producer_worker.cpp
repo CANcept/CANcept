@@ -37,9 +37,9 @@ ReplayProducerWorker::~ReplayProducerWorker()
     stopReplay();
 }
 
-void ReplayProducerWorker::startReplay(ReaderFactory factory, const uint64_t frameCount,
-                                       const double speedFactor,
-                                       std::shared_ptr<Core::IFaultHandler> faultHandler)
+void ReplayProducerWorker::startReplay(
+    ReaderFactory factory, const uint64_t frameCount, const double speedFactor,
+    std::shared_ptr<Core::IManipulationHandler> manipulationHandler)
 {
     if (m_isActive.load())
     {
@@ -56,7 +56,7 @@ void ReplayProducerWorker::startReplay(ReaderFactory factory, const uint64_t fra
         m_factory = std::move(factory);
         m_totalFrames = frameCount;
         m_speedFactor = std::clamp(speedFactor, 0.1, 8.0);
-        m_faultHandler = std::move(faultHandler);
+        m_manipulationHandler = std::move(manipulationHandler);
     }
 
     m_scheduledCount.store(0);
@@ -117,13 +117,13 @@ void ReplayProducerWorker::run()
         ReaderFactory localFactory;
         uint64_t localTotal;
         double localSpeed;
-        std::shared_ptr<Core::IFaultHandler> localFaultHandler;
+        std::shared_ptr<Core::IManipulationHandler> localManipulationHandler;
         {
             std::scoped_lock lock(m_stateMutex);
             localFactory = m_factory;
             localTotal = m_totalFrames;
             localSpeed = m_speedFactor;
-            localFaultHandler = m_faultHandler;
+            localManipulationHandler = m_manipulationHandler;
         }
 
         using Ns = std::chrono::nanoseconds;
@@ -157,9 +157,9 @@ void ReplayProducerWorker::run()
             }
             Core::DbcCanMessage dbcMsg;
             if (!reader->read(dbcMsg)) return false;
-            if (localFaultHandler)
+            if (localManipulationHandler)
             {
-                localFaultHandler->inject(dbcMsg);
+                localManipulationHandler->inject(dbcMsg);
             }
             out = {};
             out.receiveTime = dbcMsg.receiveTime;
@@ -233,10 +233,10 @@ void ReplayProducerWorker::run()
 
             Core::RawCanMessage mutMsg = msg;
             auto finalScheduledAt = scheduledAt;
-            if (localFaultHandler)
+            if (localManipulationHandler)
             {
-                localFaultHandler->inject(mutMsg.messageId, mutMsg.dlc, mutMsg.data);
-                const auto [drop, delay] = localFaultHandler->evaluate();
+                localManipulationHandler->inject(mutMsg.messageId, mutMsg.dlc, mutMsg.data);
+                const auto [drop, delay] = localManipulationHandler->evaluate();
                 if (drop)
                 {
                     return;

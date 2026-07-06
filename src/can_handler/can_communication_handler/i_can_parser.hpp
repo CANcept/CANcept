@@ -34,7 +34,7 @@ class ICanParser
         : broker(eventBroker), sendFunction(sendFunction)
     {
     }
-    virtual ~ICanParser(){};
+    virtual ~ICanParser() {};
     /**
      * @brief Virtual method, that parses a message received over a CAN bus.
      * @param canMessage The received message

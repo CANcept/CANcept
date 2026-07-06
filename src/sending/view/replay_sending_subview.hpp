@@ -23,10 +23,10 @@
 #include <memory>
 
 #include "core/interface/i_can_reader.hpp"
-#include "core/interface/i_fault_handler.hpp"
+#include "core/interface/i_manipulation_handler.hpp"
 #include "core/widgets/card_widget.hpp"
 #include "core/widgets/common/styled_combo_box.hpp"
-#include "fault_injector/ui/view/fault_injector_view.hpp"
+#include "manipulation/ui/view/manipulation_view.hpp"
 
 namespace Sending {
 
@@ -69,8 +69,10 @@ class ReplaySendingSubView final : public QWidget
     /** @brief Updates enabled state and visibility of the replay controls. */
     void setPlaybackState(PlaybackState state);
 
-    /** @brief Returns a fault handler snapshot if injection is enabled, nullptr otherwise. */
-    [[nodiscard]] auto getFaultHandler() const -> std::shared_ptr<Core::IFaultHandler>;
+    /** @brief Returns a manipulation handler snapshot if injection is enabled, nullptr otherwise.
+     */
+    [[nodiscard]] auto getManipulationHandler() const
+        -> std::shared_ptr<Core::IManipulationHandler>;
 
     /** @brief Updates the progress bar and frame counter label. */
     void setProgress(int currentFrame, int totalFrames);
@@ -100,7 +102,7 @@ class ReplaySendingSubView final : public QWidget
     void setupUi();
     void applyStyle() const;
     void updateSessionDetailsLabel();
-    void updateFaultInjectorMode();
+    void updateManipulationMode();
     [[nodiscard]] auto selectedSpeedFactor() const -> double;
 
     QScrollArea* m_scrollArea;
@@ -110,7 +112,7 @@ class ReplaySendingSubView final : public QWidget
     QLabel* m_sessionDetailsLabel;
     ReplayControlButton* m_browseButton;
 
-    FaultInjector::FaultInjectorView* m_faultInjector;
+    Manipulation::ManipulationView* m_manipulation;
 
     Core::CardWidget* m_playbackCard;
     ReplayControlButton* m_startButton;

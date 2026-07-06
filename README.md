@@ -5,7 +5,7 @@
 [![Qt 6.7.3+](https://img.shields.io/badge/Qt-6.7.3+-41CD52?logo=qt&logoColor=white)](https://www.qt.io/)
 [![C++20](https://img.shields.io/badge/C++-20-00599C?logo=cplusplus&logoColor=white)](https://isocpp.org/)
 
-A linux desktop application for CAN (Controller Area Network) bus communication, featuring real-time signal monitoring, message transmission, DBC file support, comprehensive logging, log replay, fault injection, and value-function (formula-based) sending.
+A linux desktop application for CAN (Controller Area Network) bus communication, featuring real-time signal monitoring, message transmission, DBC file support, comprehensive logging, log replay, manipulation, and value-function (formula-based) sending.
 
 ## Preview
 
@@ -120,7 +120,7 @@ src/
 ├── can_handler/    # CAN communication layer
 ├── can_stream/     # CAN stream reader/writer for logging and replay
 ├── dbc_file/       # DBC file management tab
-├── fault_injector/ # Fault injection (triggers, mutations, effects, strategies)
+├── manipulation/ # Manipulation (triggers, mutations, effects, strategies)
 ├── logging/        # Message logging tab
 ├── math/           # Expression engine for value-function sending
 ├── monitoring/     # Signal monitoring tab

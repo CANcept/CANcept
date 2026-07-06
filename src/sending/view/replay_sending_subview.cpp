@@ -23,7 +23,7 @@
 #include "core/macro/theme.hpp"
 #include "core/theme/style_event.hpp"
 #include "core/widgets/common/styled_combo_box.hpp"
-#include "fault_injector/service/fault_handler.hpp"
+#include "manipulation/service/manipulation_handler.hpp"
 #include "sending/constants.hpp"
 #include "sending/view/components/replay_control_button.hpp"
 #include "sending/view/components/replay_progress_bar.hpp"
@@ -37,7 +37,7 @@ ReplaySendingSubView::ReplaySendingSubView(QWidget* parent)
       m_sessionCombo(nullptr),
       m_sessionDetailsLabel(nullptr),
       m_browseButton(nullptr),
-      m_faultInjector(nullptr),
+      m_manipulation(nullptr),
       m_playbackCard(nullptr),
       m_startButton(nullptr),
       m_pauseButton(nullptr),
@@ -92,10 +92,10 @@ void ReplaySendingSubView::setupUi()
 
     contentLayout->addWidget(m_sessionCard);
 
-    // Section 2: Fault injection
-    m_faultInjector = new FaultInjector::FaultInjectorView(this);
-    m_faultInjector->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Maximum);
-    contentLayout->addWidget(m_faultInjector);
+    // Section 2: Manipulation
+    m_manipulation = new Manipulation::ManipulationView(this);
+    m_manipulation->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Maximum);
+    contentLayout->addWidget(m_manipulation);
 
     // Section 3: Playback controls
     m_playbackCard = new Core::CardWidget(Constants::REPLAY_PLAYBACK_TITLE,
@@ -173,9 +173,9 @@ void ReplaySendingSubView::setupUi()
         {
             setPlaybackState(PlaybackState::Disabled);
         }
-        if (m_faultInjector) m_faultInjector->setEnabled(hasSelection);
+        if (m_manipulation) m_manipulation->setEnabled(hasSelection);
         updateSessionDetailsLabel();
-        updateFaultInjectorMode();
+        updateManipulationMode();
     });
 
     connect(m_browseButton, &QPushButton::clicked, this, [this]() {
@@ -232,25 +232,27 @@ void ReplaySendingSubView::setSessions(const QList<ReplayEntry>& entries)
         m_sessionDetailsLabel->setText(Constants::NO_SESSION_DETAILS_TEXT);
     }
 
-    if (m_faultInjector) m_faultInjector->setEnabled(false);
+    if (m_manipulation) m_manipulation->setEnabled(false);
     setPlaybackState(PlaybackState::Disabled);
     setProgress(0, 0);
     updateSessionDetailsLabel();
-    updateFaultInjectorMode();
+    updateManipulationMode();
 }
 
-auto ReplaySendingSubView::getFaultHandler() const -> std::shared_ptr<Core::IFaultHandler>
+auto ReplaySendingSubView::getManipulationHandler() const
+    -> std::shared_ptr<Core::IManipulationHandler>
 {
-    if (m_faultInjector && m_faultInjector->isFaultInjection())
+    if (m_manipulation && m_manipulation->isManipulation())
     {
-        return std::make_shared<FaultInjector::FaultHandler>(m_faultInjector->getFaultHandler());
+        return std::make_shared<Manipulation::ManipulationHandler>(
+            m_manipulation->getManipulationHandler());
     }
     return nullptr;
 }
 
-void ReplaySendingSubView::updateFaultInjectorMode()
+void ReplaySendingSubView::updateManipulationMode()
 {
-    if (!m_faultInjector)
+    if (!m_manipulation)
     {
         return;
     }
@@ -258,9 +260,9 @@ void ReplaySendingSubView::updateFaultInjectorMode()
     const int index = m_sessionCombo->currentIndex();
     const auto mode = (index >= 0 && index < m_entries.size() &&
                        m_entries.at(index).fileType == Core::CanFileType::Dbc)
-                          ? FaultInjector::FaultInjectorModel::Mode::Dbc
-                          : FaultInjector::FaultInjectorModel::Mode::Raw;
-    m_faultInjector->setMode(mode);
+                          ? Manipulation::ManipulationModel::Mode::Dbc
+                          : Manipulation::ManipulationModel::Mode::Raw;
+    m_manipulation->setMode(mode);
 }
 
 void ReplaySendingSubView::updateSessionDetailsLabel()
@@ -324,7 +326,7 @@ void ReplaySendingSubView::setPlaybackState(const PlaybackState state)
     if (m_speedCombo) m_speedCombo->setEnabled(!isActive);
     if (m_sessionCombo) m_sessionCombo->setEnabled(!isActive);
     if (m_browseButton) m_browseButton->setEnabled(!isActive);
-    if (m_faultInjector) m_faultInjector->setEnabled(!isActive && state != PlaybackState::Disabled);
+    if (m_manipulation) m_manipulation->setEnabled(!isActive && state != PlaybackState::Disabled);
 }
 
 void ReplaySendingSubView::setProgress(const int currentFrame, const int totalFrames)

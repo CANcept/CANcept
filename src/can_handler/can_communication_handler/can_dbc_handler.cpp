@@ -15,6 +15,7 @@
 
 #include "can_dbc_handler.hpp"
 
+#include <algorithm>
 #include <cmath>
 
 #include "core/macro/console_logging.hpp"
@@ -190,9 +191,11 @@ void CanDbcHandler::parseSendSignal(const Core::DbcSignalDescription& signal,
                                     u_int64_t& dataLittleEndian, u_int64_t& dataBigEndian,
                                     const double& value)
 {
+    const double clampedValue = std::min(std::max(value, signal.minimum), signal.maximum);
+
     // Convert physical value to raw value
     const int64_t rawValue =
-        static_cast<int64_t>(std::round((value - signal.offset) / signal.factor));
+        static_cast<int64_t>(std::round((clampedValue - signal.offset) / signal.factor));
 
     // Create mask for signal size
     const uint64_t mask = (signal.signalSize >= 64) ? ~0ULL : ((1ULL << signal.signalSize) - 1);

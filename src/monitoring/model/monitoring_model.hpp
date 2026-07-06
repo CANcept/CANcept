@@ -38,6 +38,10 @@ struct MessageTimestamp {
     QList<qreal> timestamps;
     std::vector<QList<qreal>> signalValues;
     QList<QString> signalNames;
+
+    qreal windowStartNs = -1;
+    std::vector<double> windowSum;
+    std::vector<int> windowCount;
 };
 
 /**
