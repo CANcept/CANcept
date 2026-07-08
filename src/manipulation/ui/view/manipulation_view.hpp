@@ -25,6 +25,10 @@
 #include "manipulation/ui/model/manipulation_model.hpp"
 #include "manipulation/ui/view/manipulation_dialog.hpp"
 
+namespace Math {
+class VariableRegistry;
+}
+
 namespace Manipulation {
 
 class ManipulationView final : public QWidget
@@ -55,6 +59,9 @@ class ManipulationView final : public QWidget
      */
     void setMode(ManipulationModel::Mode mode);
 
+    /** @brief Sets the DBC-aware registry used to populate signal/message dropdowns. */
+    void setVariableRegistry(Math::VariableRegistry* registry);
+
    protected:
     auto event(QEvent* event) -> bool override;
 
@@ -67,8 +74,13 @@ class ManipulationView final : public QWidget
     void onAddDbcClicked() const;
     void onManipulationClicked(const QModelIndex& index) const;
 
+    /** @brief Whether a DBC config is currently available to manipulate against. */
+    [[nodiscard]] auto hasDbcConfig() const -> bool;
+    void updateAddDbcButtonVisibility() const;
+
     ManipulationModel* m_model;
     ManipulationDialog* m_dialog = nullptr;
+    Math::VariableRegistry* m_variableRegistry = nullptr;
 
     Core::CardWidget* m_card = nullptr;
     QLabel* m_titleLabel = nullptr;

@@ -14,7 +14,6 @@
  */
 
 #pragma once
-#include <cassert>
 #include <cstdint>
 
 namespace Manipulation {
@@ -23,16 +22,13 @@ namespace Manipulation {
  * @brief This means the frame is delayed by a certain amount.
  */
 struct DelayedStrategy {
-    uint16_t delayUs;
+    uint32_t delayUs;
 
     /**
-     * @brief Constructs the Strategy and makes sure the delay is in bounds.
+     * @brief Constructs the Strategy.
      * @param delayUs the delay
      */
-    explicit DelayedStrategy(const uint16_t delayUs) : delayUs(delayUs)
-    {
-        assert(delayUs <= UINT16_MAX);
-    }
+    explicit DelayedStrategy(const uint32_t delayUs) : delayUs(delayUs) {}
 };
 
 }  // namespace Manipulation

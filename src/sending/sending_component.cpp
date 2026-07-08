@@ -107,6 +107,7 @@ void SendingComponent::onDbcConfigReceived(const Core::DbcConfig& config)
     if (m_variableRegistry)
     {
         m_view->dbcSubView()->populateFromModel(m_model.get(), *m_variableRegistry);
+        m_view->replaySubView()->setVariableRegistry(m_variableRegistry);
     }
     m_model->buildSendCache();
 
@@ -119,6 +120,7 @@ void SendingComponent::onDbcParseError() const
 {
     m_model->clearEvaluators();
     m_view->dbcSubView()->clearMessages();
+    m_view->dbcSubView()->clearManipulationDbcConfig();
 }
 
 void SendingComponent::scanReplaySessions()
@@ -229,10 +231,14 @@ void SendingComponent::publishRawMessageAsync(const Core::RawCanMessage& message
     {
         m_activeManipulationHandler->inject(mutableMsg.messageId, mutableMsg.dlc, mutableMsg.data);
     }
-    const auto [drop, delayOffset] =
+    const auto [drop, delayOffset, insertions] =
         m_activeManipulationHandler
             ? m_activeManipulationHandler->evaluate()
             : Core::IManipulationHandler::FrameResult{.drop = false, .delayOffset = {}};
+    for (auto& item : buildInsertionItems(insertions, m_eventBroker, Clock::now() + delayOffset))
+    {
+        m_queue->push(std::move(item));
+    }
     if (drop) return;
     auto context = std::make_shared<RawSendContext>(
         RawSendContext{.broker = &m_eventBroker, .message = mutableMsg});
@@ -255,11 +261,15 @@ void SendingComponent::publishDbcMessageAsync(const Core::DbcCanMessage& message
         m_activeManipulationHandler->inject(encoded.messageId, encoded.dlc, encoded.data);
     }
 
-    const auto [drop, delayOffset] =
+    const auto [drop, delayOffset, insertions] =
         m_activeManipulationHandler
             ? m_activeManipulationHandler->evaluate()
             : Core::IManipulationHandler::FrameResult{.drop = false, .delayOffset = {}};
 
+    for (auto& item : buildInsertionItems(insertions, m_eventBroker, Clock::now() + delayOffset))
+    {
+        m_queue->push(std::move(item));
+    }
     if (drop)
     {
         return;
@@ -372,20 +382,30 @@ void SendingComponent::startRepeatedSending(const int intervalUs) const
     {
         m_variableRegistry->reset();
     }
-    m_activeManipulationHandler = m_view->dbcSubView()->getManipulationHandler();
+    const auto sendingMode = m_model->mode();
+    m_activeManipulationHandler = sendingMode == SendingModel::Mode::Raw
+                                      ? m_view->rawSubView()->getManipulationHandler()
+                                      : m_view->dbcSubView()->getManipulationHandler();
 
     LOG_INF(Constants::MODULE_IDENTIFIER, "Starting repeated sending, interval={}µs", intervalUs);
 
     m_model->buildSendCache();
 
-    auto callback = [this](const Clock::time_point deadline) -> std::vector<ScheduledItem> {
+    auto callback = [this,
+                     sendingMode](const Clock::time_point deadline) -> std::vector<ScheduledItem> {
         std::vector<ScheduledItem> items;
         m_model->forEachCachedMessage(
             [&](Core::RawCanMessage& msg) {
                 if (m_activeManipulationHandler)
                 {
                     m_activeManipulationHandler->inject(msg.messageId, msg.dlc, msg.data);
-                    const auto [drop, delayOffset] = m_activeManipulationHandler->evaluate();
+                    const auto [drop, delayOffset, insertions] =
+                        m_activeManipulationHandler->evaluate();
+                    for (auto& item :
+                         buildInsertionItems(insertions, m_eventBroker, deadline + delayOffset))
+                    {
+                        items.push_back(std::move(item));
+                    }
                     if (drop) return;
                     auto context = std::make_shared<RawSendContext>(
                         RawSendContext{.broker = &m_eventBroker, .message = msg});
@@ -409,7 +429,13 @@ void SendingComponent::startRepeatedSending(const int intervalUs) const
                 {
                     m_activeManipulationHandler->inject(encoded.messageId, encoded.dlc,
                                                         encoded.data);
-                    const auto [drop, delayOffset] = m_activeManipulationHandler->evaluate();
+                    const auto [drop, delayOffset, insertions] =
+                        m_activeManipulationHandler->evaluate();
+                    for (auto& item :
+                         buildInsertionItems(insertions, m_eventBroker, deadline + delayOffset))
+                    {
+                        items.push_back(std::move(item));
+                    }
                     if (drop) return;
                     auto context = std::make_shared<RawSendContext>(
                         RawSendContext{.broker = &m_eventBroker, .message = encoded});
@@ -424,7 +450,8 @@ void SendingComponent::startRepeatedSending(const int intervalUs) const
                                                   .onSend = &rawSendImpl,
                                                   .context = std::move(context)});
                 }
-            });
+            },
+            sendingMode);
         return items;
     };
 
@@ -451,7 +478,9 @@ void SendingComponent::sendOnce() const
     {
         m_variableRegistry->reset();
     }
-    m_activeManipulationHandler = m_view->dbcSubView()->getManipulationHandler();
+    m_activeManipulationHandler = m_model->mode() == SendingModel::Mode::Raw
+                                      ? m_view->rawSubView()->getManipulationHandler()
+                                      : m_view->dbcSubView()->getManipulationHandler();
     m_model->transmitCurrent();
 }
 

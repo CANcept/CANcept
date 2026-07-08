@@ -177,6 +177,11 @@ void DbcSendingSubView::populateFromModel(SendingModel* model, Math::VariableReg
         return;
     }
 
+    if (m_manipulation)
+    {
+        m_manipulation->setVariableRegistry(&registry);
+    }
+
     // Clear existing cards
     clearMessages();
 
@@ -272,6 +277,14 @@ void DbcSendingSubView::clearMessages() const
     if (m_noDbcLabel)
     {
         m_noDbcLabel->setVisible(true);
+    }
+}
+
+void DbcSendingSubView::clearManipulationDbcConfig() const
+{
+    if (m_manipulation)
+    {
+        m_manipulation->setVariableRegistry(nullptr);
     }
 }
 

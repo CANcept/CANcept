@@ -28,7 +28,7 @@ void ManipulationHandler::inject(uint16_t& id, uint8_t& dlc, std::array<char, 8>
 {
     for (size_t i = 0; i < m_rawManipulations.size(); ++i)
     {
-        const auto& [trigger, effect, strategy, mutation] = m_rawManipulations[i];
+        const auto& [trigger, strategy, mutation] = m_rawManipulations[i];
 
         if (!m_rawLatched[i])
         {
@@ -40,9 +40,7 @@ void ManipulationHandler::inject(uint16_t& id, uint8_t& dlc, std::array<char, 8>
             if (std::holds_alternative<LatchMutation>(mutation)) m_rawLatched[i] = true;
         }
 
-        std::ranges::for_each(
-            effect, [&](const RawEffect& e) { applyRawEffect(e, id, dlc, data, m_random); });
-        updateFrameStrategy(strategy);
+        applyRawStrategy(strategy, id, dlc, data);
     }
 }
 
@@ -57,7 +55,7 @@ void ManipulationHandler::inject(Core::DbcCanMessage& message)
 
     for (size_t i = 0; i < m_dbcManipulations.size(); ++i)
     {
-        const auto& [trigger, effect, strategy, mutation] = m_dbcManipulations[i];
+        const auto& [trigger, strategy, mutation] = m_dbcManipulations[i];
 
         if (!m_dbcLatched[i])
         {
@@ -69,19 +67,21 @@ void ManipulationHandler::inject(Core::DbcCanMessage& message)
             if (std::holds_alternative<LatchMutation>(mutation)) m_dbcLatched[i] = true;
         }
 
-        std::ranges::for_each(effect,
-                              [&](const DbcEffect& e) { applyDbcEffect(e, signalMap, m_random); });
-        updateFrameStrategy(strategy);
+        applyDbcStrategy(strategy, signalMap, message);
     }
 }
 
-void ManipulationHandler::updateFrameStrategy(const Strategy& strategy)
+void ManipulationHandler::applyRawStrategy(const RawStrategy& strategy, uint16_t& id, uint8_t& dlc,
+                                           std::array<char, 8>& data)
 {
-    if (m_frameDrop) return;
-
     std::visit(entt::overloaded{
-                   [](const ImmediateStrategy&) {},
+                   [&](const RawEffectStrategy& s) {
+                       std::ranges::for_each(s.effects, [&](const RawEffect& e) {
+                           applyRawEffect(e, id, dlc, data, m_random);
+                       });
+                   },
                    [this](const DelayedStrategy& s) {
+                       if (m_frameDrop) return;
                        m_frameMaxDelayUs = std::max(m_frameMaxDelayUs, s.delayUs);
                    },
                    [this](const DropStrategy&) {
@@ -92,13 +92,40 @@ void ManipulationHandler::updateFrameStrategy(const Strategy& strategy)
                strategy);
 }
 
+void ManipulationHandler::applyDbcStrategy(
+    const DbcStrategy& strategy, std::unordered_map<std::string, Core::DbcCanSignal*>& signalMap,
+    const Core::DbcCanMessage& message)
+{
+    std::visit(entt::overloaded{
+                   [&](const DbcEffectStrategy& s) {
+                       std::ranges::for_each(s.effects, [&](const DbcEffect& e) {
+                           applyDbcEffect(e, signalMap, m_random);
+                       });
+                   },
+                   [this](const DelayedStrategy& s) {
+                       if (m_frameDrop) return;
+                       m_frameMaxDelayUs = std::max(m_frameMaxDelayUs, s.delayUs);
+                   },
+                   [this](const DropStrategy&) {
+                       m_frameDrop = true;
+                       m_frameMaxDelayUs = 0;
+                   },
+                   [this, &message](const DbcInsertStrategy& s) {
+                       m_frameInsertions.push_back({std::chrono::microseconds(s.delayUs),
+                                                    s.message ? *s.message : message});
+                   },
+               },
+               strategy);
+}
+
 Core::IManipulationHandler::FrameResult ManipulationHandler::evaluate()
 {
     const bool drop = m_frameDrop;
     const auto delayOffset = std::chrono::microseconds(m_frameMaxDelayUs);
+    auto insertions = std::move(m_frameInsertions);
     m_frameDrop = false;
     m_frameMaxDelayUs = 0;
-    return {.drop = drop, .delayOffset = delayOffset};
+    return {.drop = drop, .delayOffset = delayOffset, .insertions = std::move(insertions)};
 }
 
 }  // namespace Manipulation

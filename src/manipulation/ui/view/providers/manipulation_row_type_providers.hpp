@@ -17,6 +17,7 @@
 #include <memory>
 #include <vector>
 
+#include "core/dto/dbc_dto.hpp"
 #include "i_manipulation_row_type_provider.hpp"
 
 namespace Manipulation {
@@ -25,16 +26,21 @@ namespace Manipulation {
 auto getRawTriggerProviders() -> std::vector<std::unique_ptr<IManipulationRowTypeProvider>>;
 
 /** @brief Providers for DBC triggers */
-auto getDbcTriggerProviders() -> std::vector<std::unique_ptr<IManipulationRowTypeProvider>>;
+auto getDbcTriggerProviders(const Core::DbcConfig* dbcConfig)
+    -> std::vector<std::unique_ptr<IManipulationRowTypeProvider>>;
 
 /** @brief Providers for Raw effects */
 auto getRawEffectProviders() -> std::vector<std::unique_ptr<IManipulationRowTypeProvider>>;
 
 /** @brief Providers for DBC effects */
-auto getDbcEffectProviders() -> std::vector<std::unique_ptr<IManipulationRowTypeProvider>>;
+auto getDbcEffectProviders(const Core::DbcConfig* dbcConfig)
+    -> std::vector<std::unique_ptr<IManipulationRowTypeProvider>>;
 
-/** @brief Providers for strategies */
-auto getStrategyProviders() -> std::vector<std::unique_ptr<IManipulationRowTypeProvider>>;
+/** @brief Providers for Raw strategies */
+auto getRawStrategyProviders() -> std::vector<std::unique_ptr<IManipulationRowTypeProvider>>;
+
+/** @brief Providers for DBC strategies */
+auto getDbcStrategyProviders() -> std::vector<std::unique_ptr<IManipulationRowTypeProvider>>;
 
 /** @brief Providers for mutations */
 auto getMutationProviders() -> std::vector<std::unique_ptr<IManipulationRowTypeProvider>>;

@@ -16,10 +16,10 @@
 #pragma once
 #include <QDoubleSpinBox>
 #include <QHBoxLayout>
-#include <QLineEdit>
 #include <QWidget>
 
 #include "manipulation/constants.hpp"
+#include "manipulation/ui/view/providers/dbc_signal_combo.hpp"
 #include "manipulation/ui/view/providers/i_manipulation_row_type_provider.hpp"
 
 namespace Manipulation {
@@ -27,6 +27,8 @@ namespace Manipulation {
 class ValueSetEffectProvider final : public IManipulationRowTypeProvider
 {
    public:
+    explicit ValueSetEffectProvider(const Core::DbcConfig* dbcConfig) : m_dbcConfig(dbcConfig) {}
+
     [[nodiscard]] auto typeName() const -> QString override
     {
         return "Value Set";
@@ -38,19 +40,22 @@ class ValueSetEffectProvider final : public IManipulationRowTypeProvider
         auto* layout = new QHBoxLayout(container);
         layout->setContentsMargins(0, 0, 0, 0);
 
-        auto* nameEdit = new QLineEdit(container);
-        nameEdit->setObjectName(Constants::PARAM_SIGNAL_NAME_INPUT);
-        nameEdit->setPlaceholderText("signal name");
+        auto* nameCombo = new Core::StyledComboBox(container);
+        nameCombo->setObjectName(Constants::PARAM_SIGNAL_NAME_INPUT);
+        populateSignalNameCombo(nameCombo, m_dbcConfig);
 
         auto* valueSpin = new QDoubleSpinBox(container);
         valueSpin->setObjectName(Constants::PARAM_VALUE_INPUT);
         valueSpin->setRange(-1e9, 1e9);
         valueSpin->setDecimals(3);
 
-        layout->addWidget(nameEdit, 1);
+        layout->addWidget(nameCombo, 1);
         layout->addWidget(valueSpin);
         return container;
     }
+
+   private:
+    const Core::DbcConfig* m_dbcConfig;
 };
 
 }  // namespace Manipulation

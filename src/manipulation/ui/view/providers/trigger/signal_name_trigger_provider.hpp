@@ -14,9 +14,11 @@
  */
 
 #pragma once
-#include <QLineEdit>
+#include <QHBoxLayout>
+#include <QWidget>
 
 #include "manipulation/constants.hpp"
+#include "manipulation/ui/view/providers/dbc_signal_combo.hpp"
 #include "manipulation/ui/view/providers/i_manipulation_row_type_provider.hpp"
 
 namespace Manipulation {
@@ -24,6 +26,8 @@ namespace Manipulation {
 class SignalNameTriggerProvider final : public IManipulationRowTypeProvider
 {
    public:
+    explicit SignalNameTriggerProvider(const Core::DbcConfig* dbcConfig) : m_dbcConfig(dbcConfig) {}
+
     [[nodiscard]] auto typeName() const -> QString override
     {
         return "Signal Name";
@@ -31,11 +35,20 @@ class SignalNameTriggerProvider final : public IManipulationRowTypeProvider
 
     [[nodiscard]] auto createOptionsWidget(QWidget* parent) const -> QWidget* override
     {
-        auto* edit = new QLineEdit(parent);
-        edit->setObjectName(Constants::PARAM_SIGNAL_NAME_INPUT);
-        edit->setPlaceholderText("signal name");
-        return edit;
+        auto* container = new QWidget(parent);
+        auto* layout = new QHBoxLayout(container);
+        layout->setContentsMargins(0, 0, 0, 0);
+
+        auto* combo = new Core::StyledComboBox(container);
+        combo->setObjectName(Constants::PARAM_SIGNAL_NAME_INPUT);
+        populateSignalNameCombo(combo, m_dbcConfig);
+
+        layout->addWidget(combo, 1);
+        return container;
     }
+
+   private:
+    const Core::DbcConfig* m_dbcConfig;
 };
 
 }  // namespace Manipulation

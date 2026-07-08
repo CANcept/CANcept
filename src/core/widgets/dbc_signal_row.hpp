@@ -36,7 +36,10 @@ class StyledCheckBox;
  * @brief Generic signal row widget for DBC signals.
  *
  * Supports multiple display modes:
- * - Full mode (Sending): Signal name, value editor, unit, range, optional function toggle
+ * - Full mode (Sending): Signal name, math expression value editor, unit, range, selection
+ *   checkbox. Always requires a VariableRegistry to evaluate expressions against.
+ * - PlainValue mode (DBC insert strategy): Signal name, plain validated numeric line edit, unit,
+ *   range, selection checkbox. No registry involved - no expression support.
  * - Selection mode (Logging/Monitoring): Signal name and optional selection checkbox
  *
  * The widget automatically adapts its layout based on configuration.
@@ -48,7 +51,7 @@ class DbcSignalRowWidget final : public QWidget
     /**
      * @brief Display mode for the signal row.
      */
-    enum class Mode { Full, Selection };
+    enum class Mode { Full, Selection, PlainValue };
 
     /**
      * @brief Configuration for signal row appearance and behavior.
@@ -60,15 +63,6 @@ class DbcSignalRowWidget final : public QWidget
     };
 
     /**
-     * @brief Constructs a signal row widget with custom configuration.
-     * @param name Signal name (e.g., "EngineRPM")
-     * @param unit Physical unit (e.g., "rpm")
-     * @param min Minimum value
-     * @param max Maximum value
-     * @param config Configuration for signal row behavior
-     * @param parent Parent widget
-     */
-    /**
      * @brief Constructs a full-mode signal row with expression editor (requires registry).
      */
     explicit DbcSignalRowWidget(Math::VariableRegistry& registry, const QString& name,
@@ -76,7 +70,17 @@ class DbcSignalRowWidget final : public QWidget
                                 QWidget* parent = nullptr);
 
     /**
-     * @brief Constructs a signal row in selection mode (no expression editor needed).
+     * @brief Constructs a signal row widget with custom configuration.
+     *
+     * Not valid for Mode::Full, which requires a registry and must go through the other
+     * constructor.
+     *
+     * @param name Signal name (e.g., "EngineRPM")
+     * @param unit Physical unit (e.g., "rpm")
+     * @param min Minimum value
+     * @param max Maximum value
+     * @param config Configuration for signal row behavior
+     * @param parent Parent widget
      */
     explicit DbcSignalRowWidget(const QString& name, const QString& unit, double min, double max,
                                 const Config& config, QWidget* parent = nullptr);
@@ -84,6 +88,12 @@ class DbcSignalRowWidget final : public QWidget
     [[nodiscard]] auto valueEditor() const -> Math::MathInputView*
     {
         return m_valueEditor;
+    }
+
+    /** @brief The plain numeric value editor, only set in Mode::PlainValue. */
+    [[nodiscard]] auto valueLineEdit() const -> StyledLineEdit*
+    {
+        return m_valueLineEdit;
     }
 
     [[nodiscard]] auto selectionCheckbox() const -> StyledCheckBox*
@@ -99,6 +109,8 @@ class DbcSignalRowWidget final : public QWidget
                  const Config& config);
     void setupFullMode(const QString& name, const QString& unit, double min, double max,
                        const Config& config);
+    void setupPlainValueMode(const QString& name, const QString& unit, double min, double max,
+                             const Config& config);
     void setupSelectionMode(const QString& name, const QString& unit, const Config& config);
     void applyStyle() const;
 
@@ -108,6 +120,7 @@ class DbcSignalRowWidget final : public QWidget
     QLabel* m_nameLabel;
     QLabel* m_rangeLabel;
     Math::MathInputView* m_valueEditor;
+    StyledLineEdit* m_valueLineEdit = nullptr;
     QLabel* m_unitLabel;
 };
 

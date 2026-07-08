@@ -41,7 +41,7 @@ class DelayedStrategyProvider final : public IManipulationRowTypeProvider
         auto* label = new QLabel("delay (µs):", container);
         auto* spin = new QSpinBox(container);
         spin->setObjectName(Constants::PARAM_DELAY_INPUT);
-        spin->setRange(0, 65535);
+        spin->setRange(0, 10'000'000);
         spin->setValue(1000);
 
         layout->addWidget(label);

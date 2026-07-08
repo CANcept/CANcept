@@ -55,6 +55,13 @@ class ScheduledItemQueue
     [[nodiscard]] auto pop() -> std::optional<ScheduledItem>;
 
     /**
+     * @brief Returns the scheduledAt of the earliest item without removing it, so a
+     * caller already holding a popped item can check whether a more urgent one has
+     * since been pushed. O(1). Thread-safe.
+     */
+    [[nodiscard]] auto peekFront() const -> std::optional<Clock::time_point>;
+
+    /**
      * @brief Unblocks a waiting pop() call.
      */
     void interrupt();

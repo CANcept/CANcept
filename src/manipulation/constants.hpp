@@ -45,6 +45,18 @@ inline const QString MANIPULATION_DIALOG_STRATEGY_LABEL = "Strategy";
 /** @brief Section label for the mutation configuration area. */
 inline const QString MANIPULATION_DIALOG_MUTATION_LABEL = "Mutation";
 
+/** @brief Section label for the insert-message configuration area. */
+inline const QString MANIPULATION_DIALOG_INSERT_LABEL = "Insert Message";
+
+/** @brief Combo box entry that copies the frame which triggered the manipulation, instead
+ * of a fixed, user-configured message. Selected by default. */
+inline const QString MANIPULATION_DIALOG_INSERT_CURRENT_MESSAGE_LABEL = "Current Message";
+
+/** @brief Hint shown in place of the signal editors when the insert strategy is set to
+ * copy the triggering frame. */
+inline const QString MANIPULATION_DIALOG_INSERT_CURRENT_MESSAGE_HINT =
+    "A copy of the frame that triggered this manipulation will be inserted after the delay.";
+
 /** @brief Label for the add Raw manipulation button. */
 inline const QString MANIPULATION_ADD_RAW_BUTTON_LABEL = "+ Raw";
 

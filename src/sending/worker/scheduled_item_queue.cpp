@@ -72,6 +72,16 @@ auto ScheduledItemQueue::pop() -> std::optional<ScheduledItem>
     return item;
 }
 
+auto ScheduledItemQueue::peekFront() const -> std::optional<Clock::time_point>
+{
+    std::lock_guard lock(m_mutex);
+    if (m_items.empty())
+    {
+        return std::nullopt;
+    }
+    return m_items.top().scheduledAt;
+}
+
 void ScheduledItemQueue::interrupt()
 {
     m_semaphore.release();

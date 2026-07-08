@@ -15,6 +15,8 @@
 
 #pragma once
 #include <random>
+#include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "core/dto/can_dto.hpp"
@@ -22,6 +24,20 @@
 #include "manipulation/types/manipulation.hpp"
 
 namespace Manipulation {
+
+/**
+ * @brief Returns a fresh seed for a ManipulationHandler's RNG.
+ *
+ * Draws from one process-wide generator instead of std::random_device directly, since a
+ * new ManipulationHandler is constructed on every send/evaluate call site, and querying
+ * random_device that often can yield correlated seeds on platforms with a coarse or
+ * low-entropy fallback implementation.
+ */
+inline auto nextManipulationSeed() -> std::mt19937::result_type
+{
+    static std::mt19937 seedSource{std::random_device{}()};
+    return seedSource();
+}
 
 /**
  * @brief Concrete implementation of Core::IManipulationHandler.
@@ -49,7 +65,7 @@ class ManipulationHandler final : public Core::IManipulationHandler
           m_dbcManipulations(std::move(dbcManipulations)),
           m_dbcLatched(m_dbcManipulations.size(), false)
     {
-        m_random.seed(std::random_device()());
+        m_random.seed(nextManipulationSeed());
     }
     ~ManipulationHandler() override = default;
 
@@ -84,13 +100,35 @@ class ManipulationHandler final : public Core::IManipulationHandler
 
    private:
     /**
-     * @brief Updates per-frame strategy state when a manipulation fires.
+     * @brief Applies a fired raw manipulation's strategy.
      *
-     * Priority: Drop wins over everything; among delayed, the maximum delay wins.
+     * For an effect strategy, applies its effects to the raw bytes. For delayed/drop
+     * strategies, updates the per-frame state (priority: drop wins over everything;
+     * among delayed, the maximum delay wins).
      *
      * @param strategy The strategy of the manipulation that just fired.
+     * @param id the identifier
+     * @param dlc the dlc
+     * @param data the data of the message
      */
-    void updateFrameStrategy(const Strategy& strategy);
+    void applyRawStrategy(const RawStrategy& strategy, uint16_t& id, uint8_t& dlc,
+                          std::array<char, 8>& data);
+
+    /**
+     * @brief Applies a fired DBC manipulation's strategy.
+     *
+     * For an effect strategy, applies its effects to the decoded signal values. For
+     * delayed/drop strategies, updates the per-frame state (priority: drop wins over
+     * everything; among delayed, the maximum delay wins).
+     *
+     * @param strategy The strategy of the manipulation that just fired.
+     * @param signalMap Decoded signals of the message, keyed by name.
+     * @param message The decoded message being processed, used verbatim as the inserted
+     * message when the insert strategy is configured to copy the triggering frame.
+     */
+    void applyDbcStrategy(const DbcStrategy& strategy,
+                          std::unordered_map<std::string, Core::DbcCanSignal*>& signalMap,
+                          const Core::DbcCanMessage& message);
 
     std::vector<RawManipulation> m_rawManipulations;
     std::vector<bool> m_rawLatched;
@@ -98,10 +136,13 @@ class ManipulationHandler final : public Core::IManipulationHandler
     std::vector<bool> m_dbcLatched;
     std::mt19937 m_random;
 
-    /** @brief Per-frame drop flag, set by updateFrameStrategy(), cleared by evaluate(). */
+    /** @brief Per-frame drop flag, set by applyRawStrategy()/applyDbcStrategy(), cleared by
+     * evaluate(). */
     bool m_frameDrop{false};
     /** @brief Per-frame maximum requested delay in microseconds, cleared by evaluate(). */
-    uint16_t m_frameMaxDelayUs{0};
+    uint32_t m_frameMaxDelayUs{0};
+    /** @brief Per-frame pending insertions, cleared by evaluate(). */
+    std::vector<Core::IManipulationHandler::PendingInsertion> m_frameInsertions;
 };
 
 }  // namespace Manipulation

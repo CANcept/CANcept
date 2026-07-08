@@ -16,11 +16,11 @@
 #pragma once
 #include <QDoubleSpinBox>
 #include <QHBoxLayout>
-#include <QLineEdit>
 #include <QWidget>
 
 #include "core/widgets/common/styled_combo_box.hpp"
 #include "manipulation/constants.hpp"
+#include "manipulation/ui/view/providers/dbc_signal_combo.hpp"
 #include "manipulation/ui/view/providers/i_manipulation_row_type_provider.hpp"
 
 namespace Manipulation {
@@ -28,6 +28,11 @@ namespace Manipulation {
 class SignalThresholdTriggerProvider final : public IManipulationRowTypeProvider
 {
    public:
+    explicit SignalThresholdTriggerProvider(const Core::DbcConfig* dbcConfig)
+        : m_dbcConfig(dbcConfig)
+    {
+    }
+
     [[nodiscard]] auto typeName() const -> QString override
     {
         return "Signal Threshold";
@@ -39,9 +44,9 @@ class SignalThresholdTriggerProvider final : public IManipulationRowTypeProvider
         auto* layout = new QHBoxLayout(container);
         layout->setContentsMargins(0, 0, 0, 0);
 
-        auto* nameEdit = new QLineEdit(container);
-        nameEdit->setObjectName(Constants::PARAM_SIGNAL_NAME_INPUT);
-        nameEdit->setPlaceholderText("signal name");
+        auto* nameCombo = new Core::StyledComboBox(container);
+        nameCombo->setObjectName(Constants::PARAM_SIGNAL_NAME_INPUT);
+        populateSignalNameCombo(nameCombo, m_dbcConfig);
 
         auto* comparison = new Core::StyledComboBox(container);
         comparison->setObjectName(Constants::PARAM_IS_GREATER_INPUT);
@@ -55,11 +60,14 @@ class SignalThresholdTriggerProvider final : public IManipulationRowTypeProvider
         thresholdSpin->setSingleStep(1.0);
         thresholdSpin->setValue(0.0);
 
-        layout->addWidget(nameEdit, 1);
+        layout->addWidget(nameCombo, 1);
         layout->addWidget(comparison);
         layout->addWidget(thresholdSpin);
         return container;
     }
+
+   private:
+    const Core::DbcConfig* m_dbcConfig;
 };
 
 }  // namespace Manipulation

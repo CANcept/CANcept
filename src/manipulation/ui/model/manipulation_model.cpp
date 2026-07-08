@@ -19,6 +19,7 @@
 
 #include "entt/core/utility.hpp"
 #include "manipulation/service/manipulation_handler.hpp"
+#include "manipulation/ui/delegate/manipulation_display.hpp"
 namespace Manipulation {
 
 ManipulationModel::ManipulationModel(QObject* parent) : QAbstractTableModel(parent) {}
@@ -126,7 +127,7 @@ QVariant ManipulationModel::data(const QModelIndex& index, const int role) const
                                       case ManipulationListColumn::Triggers:
                                           return QVariant::fromValue(f.trigger);
                                       case ManipulationListColumn::Effects:
-                                          return QVariant::fromValue(f.effect);
+                                          return QVariant::fromValue(strategyEffects(f.strategy));
                                       case ManipulationListColumn::Strategy:
                                           return QVariant::fromValue(f.strategy);
                                       case ManipulationListColumn::Mutation:
@@ -142,7 +143,7 @@ QVariant ManipulationModel::data(const QModelIndex& index, const int role) const
                                       case ManipulationListColumn::Triggers:
                                           return QVariant::fromValue(f.trigger);
                                       case ManipulationListColumn::Effects:
-                                          return QVariant::fromValue(f.effect);
+                                          return QVariant::fromValue(strategyEffects(f.strategy));
                                       case ManipulationListColumn::Strategy:
                                           return QVariant::fromValue(f.strategy);
                                       case ManipulationListColumn::Mutation:
@@ -171,7 +172,8 @@ QVariant ManipulationModel::data(const QModelIndex& index, const int role) const
                         case ManipulationListColumn::Triggers:
                             return QStringLiteral("%1 triggers").arg(f.trigger.size());
                         case ManipulationListColumn::Effects:
-                            return QStringLiteral("%1 effects").arg(f.effect.size());
+                            return QStringLiteral("%1 effects")
+                                .arg(strategyEffects(f.strategy).size());
                         case ManipulationListColumn::Strategy:
                             return QStringLiteral("Strategy");
                         case ManipulationListColumn::Mutation:
@@ -187,7 +189,8 @@ QVariant ManipulationModel::data(const QModelIndex& index, const int role) const
                         case ManipulationListColumn::Triggers:
                             return QStringLiteral("%1 triggers").arg(f.trigger.size());
                         case ManipulationListColumn::Effects:
-                            return QStringLiteral("%1 effects").arg(f.effect.size());
+                            return QStringLiteral("%1 effects")
+                                .arg(strategyEffects(f.strategy).size());
                         case ManipulationListColumn::Strategy:
                             return QStringLiteral("Strategy");
                         case ManipulationListColumn::Mutation:

@@ -118,20 +118,73 @@ inline QString mutationLabel(const Mutation& mutation)
 }
 
 /**
- * @brief Returns the display name of a given strategy.
+ * @brief Returns the display name of a given raw strategy.
  *
  * @param strategy the strategy for the name
  * @return the display name
  */
-inline QString strategyLabel(const Strategy& strategy)
+inline QString strategyLabel(const RawStrategy& strategy)
 {
     return std::visit(
         entt::overloaded{
-            [](const ImmediateStrategy&) { return QStringLiteral("Immediate"); },
+            [](const RawEffectStrategy& s) {
+                return QStringLiteral("Effect (%1)").arg(s.effects.size());
+            },
             [](const DelayedStrategy& s) { return QStringLiteral("Delayed %1µs").arg(s.delayUs); },
             [](const DropStrategy&) { return QStringLiteral("Drop"); },
         },
         strategy);
+}
+
+/**
+ * @brief Returns the display name of a given dbc strategy.
+ *
+ * @param strategy the strategy for the name
+ * @return the display name
+ */
+inline QString strategyLabel(const DbcStrategy& strategy)
+{
+    return std::visit(
+        entt::overloaded{
+            [](const DbcEffectStrategy& s) {
+                return QStringLiteral("Effect (%1)").arg(s.effects.size());
+            },
+            [](const DelayedStrategy& s) { return QStringLiteral("Delayed %1µs").arg(s.delayUs); },
+            [](const DropStrategy&) { return QStringLiteral("Drop"); },
+            [](const DbcInsertStrategy& s) {
+                return s.message ? QStringLiteral("Insert 0x%1").arg(s.message->messageId, 0, 16)
+                                 : QStringLiteral("Insert (current message)");
+            },
+        },
+        strategy);
+}
+
+/**
+ * @brief Returns the effect list of a given raw strategy, or an empty list if it isn't
+ * the effect strategy.
+ *
+ * @param strategy the strategy to read effects from
+ * @return the effects
+ */
+inline auto strategyEffects(const RawStrategy& strategy) -> std::vector<RawEffect>
+{
+    return std::holds_alternative<RawEffectStrategy>(strategy)
+               ? std::get<RawEffectStrategy>(strategy).effects
+               : std::vector<RawEffect>{};
+}
+
+/**
+ * @brief Returns the effect list of a given dbc strategy, or an empty list if it isn't
+ * the effect strategy.
+ *
+ * @param strategy the strategy to read effects from
+ * @return the effects
+ */
+inline auto strategyEffects(const DbcStrategy& strategy) -> std::vector<DbcEffect>
+{
+    return std::holds_alternative<DbcEffectStrategy>(strategy)
+               ? std::get<DbcEffectStrategy>(strategy).effects
+               : std::vector<DbcEffect>{};
 }
 
 }  // namespace Manipulation

@@ -14,7 +14,10 @@
  */
 
 #pragma once
+#include <QList>
+#include <map>
 #include <optional>
+#include <string>
 
 #include "manipulation/constants.hpp"
 #include "manipulation/types/manipulation.hpp"
@@ -78,7 +81,7 @@ inline auto buildDbcTrigger(const SectionEntry& entry) -> std::optional<DbcTrigg
                 return std::nullopt;
             }
             const bool isGreater =
-                entry.params.value(Constants::PARAM_IS_GREATER_INPUT, 0).toInt() == 0;
+                entry.params.value(Constants::PARAM_IS_GREATER_INPUT, ">").toString() == ">";
             const double threshold =
                 entry.params.value(Constants::PARAM_THRESHOLD_INPUT, 0.0).toDouble();
             return SignalThresholdTrigger(name.toStdString(), threshold, isGreater);
@@ -174,20 +177,97 @@ inline auto buildMutation(const SectionEntry& entry) -> Mutation
 }
 
 /**
- * @brief Constructs a Strategy based on the entry.
- * @return the strategy
+ * @brief Constructs a RawStrategy based on the entry, building nested effects when the
+ * entry selects the effect strategy.
+ * @param entry the strategy to construct the strategy from
+ * @param effectEntries the staged effect entries, consulted only for the effect strategy
+ * @return the strategy, or std::nullopt if an effect entry is invalid
  */
-inline auto buildStrategy(const SectionEntry& entry) -> Strategy
+inline auto buildRawStrategy(const SectionEntry& entry,
+                             const QList<SectionEntry>& effectEntries) -> std::optional<RawStrategy>
 {
     switch (entry.typeIndex)
     {
         case 1:
-            return DelayedStrategy(static_cast<uint16_t>(
+            return DelayedStrategy(static_cast<uint32_t>(
                 entry.params.value(Constants::PARAM_DELAY_INPUT, 1000).toInt()));
         case 2:
             return DropStrategy{};
-        default:
-            return ImmediateStrategy{};
+        default: {
+            RawEffectStrategy strategy;
+            for (const auto& e : effectEntries)
+            {
+                auto effect = buildRawEffect(e);
+                if (!effect)
+                {
+                    return std::nullopt;
+                }
+                strategy.effects.push_back(*effect);
+            }
+            return strategy;
+        }
+    }
+}
+
+/**
+ * @brief Constructs a DbcStrategy based on the entry, building nested effects when the
+ * entry selects the effect strategy, or the message to insert when it selects the insert
+ * strategy.
+ * @param entry the strategy to construct the strategy from
+ * @param effectEntries the staged effect entries, consulted only for the effect strategy
+ * @param insertUseCurrentMessage if true, the insert strategy copies the frame that
+ * triggered it instead of using insertMessageId/insertSignalValues
+ * @param insertMessageId the message picked for the insert strategy, if any
+ * @param insertSignalValues the staged signal values for the insert strategy's message
+ * @return the strategy, or std::nullopt if an effect entry is invalid or no message was
+ * picked for the insert strategy
+ */
+inline auto buildDbcStrategy(
+    const SectionEntry& entry, const QList<SectionEntry>& effectEntries,
+    bool insertUseCurrentMessage, const std::optional<uint32_t>& insertMessageId,
+    const std::map<std::string, double>& insertSignalValues) -> std::optional<DbcStrategy>
+{
+    switch (entry.typeIndex)
+    {
+        case 1:
+            return DelayedStrategy(static_cast<uint32_t>(
+                entry.params.value(Constants::PARAM_DELAY_INPUT, 1000).toInt()));
+        case 2:
+            return DropStrategy{};
+        case 3: {
+            DbcInsertStrategy strategy;
+            strategy.delayUs = static_cast<uint32_t>(
+                entry.params.value(Constants::PARAM_DELAY_INPUT, 1000).toInt());
+            if (insertUseCurrentMessage)
+            {
+                return strategy;
+            }
+            if (!insertMessageId)
+            {
+                return std::nullopt;
+            }
+            Core::DbcCanMessage message;
+            message.messageId = static_cast<uint16_t>(*insertMessageId);
+            for (const auto& [name, value] : insertSignalValues)
+            {
+                message.signalValues.push_back({.name = name, .value = value});
+            }
+            strategy.message = std::move(message);
+            return strategy;
+        }
+        default: {
+            DbcEffectStrategy strategy;
+            for (const auto& e : effectEntries)
+            {
+                auto effect = buildDbcEffect(e);
+                if (!effect)
+                {
+                    return std::nullopt;
+                }
+                strategy.effects.push_back(*effect);
+            }
+            return strategy;
+        }
     }
 }
 

@@ -16,8 +16,11 @@
 #pragma once
 #include <QList>
 #include <QObject>
+#include <map>
 #include <optional>
+#include <string>
 
+#include "core/dto/dbc_dto.hpp"
 #include "manipulation/types/manipulation.hpp"
 #include "section_entry.hpp"
 
@@ -113,6 +116,23 @@ class ManipulationDialogModel : public QObject
     }
 
     /**
+     * @brief Sets the DBC message to insert for the insert strategy, resetting every
+     * signal's value to its DBC-defined minimum.
+     * @param messageId the message id
+     * @param messageDef the message's DBC definition, used to seed default signal values
+     */
+    void setInsertMessage(uint32_t messageId, const Core::DbcMessageDescription& messageDef);
+
+    /** @brief Replaces a single signal's value for the insert strategy's message. */
+    void setInsertSignalValue(const std::string& signalName, double value);
+
+    /**
+     * @brief Marks the insert strategy to copy the frame that triggered it, instead of a
+     * fixed, user-configured message. Clears any previously picked message/signal values.
+     */
+    void setInsertUseCurrentMessage();
+
+    /**
      * @brief Converts the stored entries to a typed ManipulationEntry and resets the model.
      * @return The built ManipulationEntry, or std::nullopt if any entry is invalid.
      */
@@ -139,6 +159,10 @@ class ManipulationDialogModel : public QObject
     QList<SectionEntry> m_effects;
     SectionEntry m_strategy;
     SectionEntry m_mutation;
+
+    bool m_insertUseCurrentMessage = false;
+    std::optional<uint32_t> m_insertMessageId;
+    std::map<std::string, double> m_insertSignalValues;
 };
 
 }  // namespace Manipulation

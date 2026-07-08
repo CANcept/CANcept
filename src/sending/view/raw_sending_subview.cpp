@@ -17,6 +17,7 @@
 
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QScreen>
 #include <QScrollArea>
 #include <QVBoxLayout>
 
@@ -39,6 +40,7 @@ RawSendingSubView::RawSendingSubView(QWidget* parent)
       m_canIdLabel(nullptr),
       m_messageDataLabel(nullptr),
       m_repeatedSendingCard(nullptr),
+      m_manipulation(nullptr),
       m_sendButton(nullptr)
 {
     setupUi();
@@ -93,6 +95,15 @@ void RawSendingSubView::setupUi()
     // Repeated Sending Card
     m_repeatedSendingCard = new RepeatedSendingCard(this);
     contentLayout->addWidget(m_repeatedSendingCard);
+
+    // Manipulation (raw-only: no DBC context is available on this tab)
+    m_manipulation = new Manipulation::ManipulationView(this);
+    m_manipulation->setMode(Manipulation::ManipulationModel::Mode::Raw);
+    m_manipulation->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Maximum);
+    const int manipulationMaxHeight =
+        static_cast<int>(this->screen()->availableGeometry().height() * 0.3);
+    m_manipulation->setMaximumHeight(manipulationMaxHeight);
+    contentLayout->addWidget(m_manipulation);
 
     contentLayout->addStretch();
 

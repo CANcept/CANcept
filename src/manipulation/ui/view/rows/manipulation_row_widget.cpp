@@ -22,7 +22,6 @@
 #include <QSizePolicy>
 #include <QSpinBox>
 
-#include "core/constants.hpp"
 #include "core/macro/theme.hpp"
 #include "core/theme/style_event.hpp"
 #include "widget_utils.hpp"
@@ -100,6 +99,13 @@ auto ManipulationRowWidget::currentEntry() const -> SectionEntry
                 entry.params[edit->objectName()] = edit->text();
             }
         }
+        for (auto* combo : collectWidgets<QComboBox>(m_currentOptions))
+        {
+            if (!combo->objectName().isEmpty())
+            {
+                entry.params[combo->objectName()] = combo->currentText();
+            }
+        }
     }
 
     return entry;
@@ -140,6 +146,13 @@ void ManipulationRowWidget::setFromEntry(const SectionEntry& entry)
             edit->setText(entry.params[edit->objectName()].toString());
         }
     }
+    for (auto* combo : collectWidgets<QComboBox>(m_currentOptions))
+    {
+        if (entry.params.contains(combo->objectName()))
+        {
+            combo->setCurrentText(entry.params[combo->objectName()].toString());
+        }
+    }
 }
 
 void ManipulationRowWidget::onTypeChanged(const int index)
@@ -168,6 +181,8 @@ void ManipulationRowWidget::onTypeChanged(const int index)
         m_typeCombo->setMaximumWidth(QWIDGETSIZE_MAX);
         m_typeCombo->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     }
+    m_optionsLayout->activate();
+    update();
     emit changed();
 }
 
@@ -191,6 +206,11 @@ void ManipulationRowWidget::connectOptionsSignals() const
     {
         connect(edit, &QLineEdit::textChanged, this, &ManipulationRowWidget::changed);
     }
+    for (const auto* combo : collectWidgets<QComboBox>(m_currentOptions))
+    {
+        connect(combo, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
+                &ManipulationRowWidget::changed);
+    }
 }
 
 void ManipulationRowWidget::applyStyle() const
@@ -198,51 +218,12 @@ void ManipulationRowWidget::applyStyle() const
     const auto& colors = THEME.colors();
     const auto& spacing = THEME.spacing();
 
-    const QString comboStyle = QString(
-                                   "QComboBox {"
-                                   "  background-color: %1;"
-                                   "  color: %2;"
-                                   "  border-radius: %3px;"
-                                   "  padding: %4px %5px;"
-                                   "  font-size: %6px;"
-                                   "}"
-                                   "QComboBox:hover {"
-                                   "  background-color: %7;"
-                                   "}"
-                                   "QComboBox::drop-down {"
-                                   "  border: none;"
-                                   "  width: %8px;"
-                                   "  padding-right: %5px;"
-                                   "}"
-                                   "QComboBox::down-arrow {"
-                                   "  image: url(%10);"
-                                   "}"
-                                   "QComboBox QAbstractItemView {"
-                                   "  background-color: %7;"
-                                   "  color: %2;"
-                                   "  border: none;"
-                                   "  border-radius: %9px;"
-                                   "  outline: none;"
-                                   "  padding: %4px;"
-                                   "}")
-                                   .arg(colors.surfaceSecondary.name())
-                                   .arg(colors.textPrimary.name())
-                                   .arg(spacing.radiusSm)
-                                   .arg(spacing.spacingXs)
-                                   .arg(spacing.spacingSm)
-                                   .arg(spacing.fontSizeSm)
-                                   .arg(colors.surfacePrimary.name())
-                                   .arg(spacing.spacingLg)
-                                   .arg(spacing.radiusSm)
-                                   .arg(Core::Constants::ARROW_DOWN_ICON);
-
-    m_typeCombo->setStyleSheet(comboStyle);
+    m_typeCombo->setFixedHeight(spacing.HeightSm);
 
     if (m_currentOptions)
     {
-        for (auto* combo : m_currentOptions->findChildren<QComboBox*>())
+        for (auto* combo : collectWidgets<QComboBox>(m_currentOptions))
         {
-            combo->setStyleSheet(comboStyle);
             combo->setFixedHeight(spacing.HeightSm);
         }
 

@@ -16,10 +16,10 @@
 #pragma once
 #include <QDoubleSpinBox>
 #include <QHBoxLayout>
-#include <QLineEdit>
 #include <QWidget>
 
 #include "manipulation/constants.hpp"
+#include "manipulation/ui/view/providers/dbc_signal_combo.hpp"
 #include "manipulation/ui/view/providers/i_manipulation_row_type_provider.hpp"
 
 namespace Manipulation {
@@ -27,6 +27,8 @@ namespace Manipulation {
 class NoiseEffectProvider final : public IManipulationRowTypeProvider
 {
    public:
+    explicit NoiseEffectProvider(const Core::DbcConfig* dbcConfig) : m_dbcConfig(dbcConfig) {}
+
     [[nodiscard]] auto typeName() const -> QString override
     {
         return "Noise";
@@ -38,9 +40,9 @@ class NoiseEffectProvider final : public IManipulationRowTypeProvider
         auto* layout = new QHBoxLayout(container);
         layout->setContentsMargins(0, 0, 0, 0);
 
-        auto* nameEdit = new QLineEdit(container);
-        nameEdit->setObjectName(Constants::PARAM_SIGNAL_NAME_INPUT);
-        nameEdit->setPlaceholderText("signal name");
+        auto* nameCombo = new Core::StyledComboBox(container);
+        nameCombo->setObjectName(Constants::PARAM_SIGNAL_NAME_INPUT);
+        populateSignalNameCombo(nameCombo, m_dbcConfig);
 
         auto* ampSpin = new QDoubleSpinBox(container);
         ampSpin->setObjectName(Constants::PARAM_AMPLITUDE_INPUT);
@@ -49,10 +51,13 @@ class NoiseEffectProvider final : public IManipulationRowTypeProvider
         ampSpin->setPrefix("amp ");
         ampSpin->setValue(1.0);
 
-        layout->addWidget(nameEdit, 1);
+        layout->addWidget(nameCombo, 1);
         layout->addWidget(ampSpin);
         return container;
     }
+
+   private:
+    const Core::DbcConfig* m_dbcConfig;
 };
 
 }  // namespace Manipulation

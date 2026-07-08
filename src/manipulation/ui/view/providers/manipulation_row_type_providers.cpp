@@ -24,7 +24,8 @@
 #include "mutation/no_mutation_provider.hpp"
 #include "strategy/delayed_strategy_provider.hpp"
 #include "strategy/drop_strategy_provider.hpp"
-#include "strategy/immediate_strategy_provider.hpp"
+#include "strategy/effect_strategy_provider.hpp"
+#include "strategy/insert_strategy_provider.hpp"
 #include "trigger/dlc_trigger_provider.hpp"
 #include "trigger/id_trigger_provider.hpp"
 #include "trigger/random_trigger_provider.hpp"
@@ -42,11 +43,12 @@ auto getRawTriggerProviders() -> std::vector<std::unique_ptr<IManipulationRowTyp
     return vector;
 }
 
-auto getDbcTriggerProviders() -> std::vector<std::unique_ptr<IManipulationRowTypeProvider>>
+auto getDbcTriggerProviders(const Core::DbcConfig* dbcConfig)
+    -> std::vector<std::unique_ptr<IManipulationRowTypeProvider>>
 {
     std::vector<std::unique_ptr<IManipulationRowTypeProvider>> vector;
-    vector.push_back(std::make_unique<SignalNameTriggerProvider>());
-    vector.push_back(std::make_unique<SignalThresholdTriggerProvider>());
+    vector.push_back(std::make_unique<SignalNameTriggerProvider>(dbcConfig));
+    vector.push_back(std::make_unique<SignalThresholdTriggerProvider>(dbcConfig));
     vector.push_back(std::make_unique<RandomTriggerProvider>());
     return vector;
 }
@@ -59,21 +61,32 @@ auto getRawEffectProviders() -> std::vector<std::unique_ptr<IManipulationRowType
     return vector;
 }
 
-auto getDbcEffectProviders() -> std::vector<std::unique_ptr<IManipulationRowTypeProvider>>
+auto getDbcEffectProviders(const Core::DbcConfig* dbcConfig)
+    -> std::vector<std::unique_ptr<IManipulationRowTypeProvider>>
 {
     std::vector<std::unique_ptr<IManipulationRowTypeProvider>> vector;
-    vector.push_back(std::make_unique<ValueSetEffectProvider>());
-    vector.push_back(std::make_unique<ClampEffectProvider>());
-    vector.push_back(std::make_unique<NoiseEffectProvider>());
+    vector.push_back(std::make_unique<ValueSetEffectProvider>(dbcConfig));
+    vector.push_back(std::make_unique<ClampEffectProvider>(dbcConfig));
+    vector.push_back(std::make_unique<NoiseEffectProvider>(dbcConfig));
     return vector;
 }
 
-auto getStrategyProviders() -> std::vector<std::unique_ptr<IManipulationRowTypeProvider>>
+auto getRawStrategyProviders() -> std::vector<std::unique_ptr<IManipulationRowTypeProvider>>
 {
     std::vector<std::unique_ptr<IManipulationRowTypeProvider>> vector;
-    vector.push_back(std::make_unique<ImmediateStrategyProvider>());
+    vector.push_back(std::make_unique<EffectStrategyProvider>());
     vector.push_back(std::make_unique<DelayedStrategyProvider>());
     vector.push_back(std::make_unique<DropStrategyProvider>());
+    return vector;
+}
+
+auto getDbcStrategyProviders() -> std::vector<std::unique_ptr<IManipulationRowTypeProvider>>
+{
+    std::vector<std::unique_ptr<IManipulationRowTypeProvider>> vector;
+    vector.push_back(std::make_unique<EffectStrategyProvider>());
+    vector.push_back(std::make_unique<DelayedStrategyProvider>());
+    vector.push_back(std::make_unique<DropStrategyProvider>());
+    vector.push_back(std::make_unique<InsertStrategyProvider>());
     return vector;
 }
 

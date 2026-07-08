@@ -21,11 +21,25 @@
 #include <QScrollArea>
 #include <QVBoxLayout>
 #include <optional>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "core/widgets/card_widget.hpp"
+#include "core/widgets/common/styled_combo_box.hpp"
 #include "manipulation/types/manipulation.hpp"
 #include "manipulation/ui/model/manipulation_dialog_model.hpp"
 #include "manipulation/ui/view/rows/manipulation_row_widget.hpp"
+
+namespace Core {
+class DbcMessageCard;
+class DbcSignalRowWidget;
+struct DbcConfig;
+}  // namespace Core
+
+namespace Math {
+class VariableRegistry;
+}  // namespace Math
 
 namespace Manipulation {
 
@@ -51,6 +65,9 @@ class ManipulationDialog : public QDialog
      */
     [[nodiscard]] auto acquire() const -> std::optional<ManipulationEntry>;
 
+    /** @brief Sets the DBC-aware registry used to populate signal/message dropdowns. */
+    void setVariableRegistry(Math::VariableRegistry* registry);
+
    protected:
     auto event(QEvent* event) -> bool override;
 
@@ -62,8 +79,15 @@ class ManipulationDialog : public QDialog
     void onTriggerRemoved(int index);
     void onEffectAdded(int index);
     void onEffectRemoved(int index);
+    void onInsertMessageChanged(int index);
+    void updateStrategySubAreaVisibility();
+    void rebuildStrategyRow(bool isRaw);
+    void populateInsertMessageCombo();
+    [[nodiscard]] auto dbcConfig() const -> const Core::DbcConfig*;
 
     std::unique_ptr<ManipulationDialogModel> m_model;
+    Math::VariableRegistry* m_variableRegistry = nullptr;
+    bool m_dialogHeightLocked = false;
 
     QVBoxLayout* m_layout = nullptr;
 
@@ -83,6 +107,15 @@ class ManipulationDialog : public QDialog
 
     QLabel* m_strategyLabel = nullptr;
     ManipulationRowWidget* m_strategyRow = nullptr;
+
+    Core::CardWidget* m_insertCard = nullptr;
+    Core::StyledComboBox* m_insertMessageCombo = nullptr;
+    QWidget* m_insertMessageContainer = nullptr;
+    QVBoxLayout* m_insertMessageContainerLayout = nullptr;
+    QScrollArea* m_insertMessageScrollArea = nullptr;
+    QLabel* m_insertCurrentMessageHint = nullptr;
+    Core::DbcMessageCard* m_insertMessageCard = nullptr;
+    std::vector<std::pair<std::string, Core::DbcSignalRowWidget*>> m_insertSignalRows;
 
     QLabel* m_mutationLabel = nullptr;
     ManipulationRowWidget* m_mutationRow = nullptr;

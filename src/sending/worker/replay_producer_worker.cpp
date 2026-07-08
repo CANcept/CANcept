@@ -233,18 +233,30 @@ void ReplayProducerWorker::run()
 
             Core::RawCanMessage mutMsg = msg;
             auto finalScheduledAt = scheduledAt;
+            bool drop = false;
+            std::vector<Core::IManipulationHandler::PendingInsertion> insertions;
             if (localManipulationHandler)
             {
                 localManipulationHandler->inject(mutMsg.messageId, mutMsg.dlc, mutMsg.data);
-                const auto [drop, delay] = localManipulationHandler->evaluate();
-                if (drop)
+                const auto result = localManipulationHandler->evaluate();
+                drop = result.drop;
+                if (result.delayOffset.count() > 0)
                 {
-                    return;
+                    finalScheduledAt += result.delayOffset;
                 }
-                if (delay.count() > 0)
+                insertions = result.insertions;
+            }
+
+            for (auto& insertedItem : buildInsertionItems(insertions, m_broker, finalScheduledAt))
+            {
+                while (!m_shouldStop.load() && !m_queue.tryPush(insertedItem))
                 {
-                    finalScheduledAt += delay;
                 }
+            }
+
+            if (drop)
+            {
+                return;
             }
 
             auto context = std::make_shared<RawSendContext>(

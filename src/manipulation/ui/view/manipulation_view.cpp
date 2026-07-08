@@ -26,6 +26,7 @@
 #include "manipulation/ui/delegate/manipulation_dynamic_delegate.hpp"
 #include "manipulation/ui/delegate/manipulation_type_delegate.hpp"
 #include "manipulation/ui/model/manipulation_sort_proxy.hpp"
+#include "math/service/variable_registry.hpp"
 
 namespace Manipulation {
 
@@ -142,7 +143,9 @@ void ManipulationView::setupUi()
         static_cast<int>(ManipulationListColumn::Strategy),
         new ManipulationDynamicDelegate(
             [](const QVariant& v) -> QStringList {
-                return QStringList{strategyLabel(v.value<Strategy>())};
+                if (v.canConvert<RawStrategy>())
+                    return QStringList{strategyLabel(v.value<RawStrategy>())};
+                return QStringList{strategyLabel(v.value<DbcStrategy>())};
             },
             m_manipulations));
     m_manipulations->setItemDelegateForColumn(
@@ -171,6 +174,7 @@ void ManipulationView::setupUi()
     connect(m_addDbcButton, &QPushButton::clicked, this, &ManipulationView::onAddDbcClicked);
     connect(m_manipulations, &QTableView::clicked, this, &ManipulationView::onManipulationClicked);
 
+    updateAddDbcButtonVisibility();
     applyStyle();
 }
 
@@ -290,18 +294,32 @@ void ManipulationView::onToggleChanged(const bool checked)
     m_manipulations->setVisible(checked);
     m_tableCardWidget->setVisible(checked);
     m_addRawButton->setVisible(checked);
-    m_addDbcButton->setVisible(checked && m_model->mode() == ManipulationModel::Mode::Dbc);
+    updateAddDbcButtonVisibility();
     setMinimumHeight(checked ? maximumHeight() : 0);
 }
 
 void ManipulationView::setMode(const ManipulationModel::Mode mode)
 {
     m_model->setMode(mode);
-    // Sync button visibility if the toggle is currently on.
-    if (m_toggleSwitch->isChecked())
-    {
-        m_addDbcButton->setVisible(mode == ManipulationModel::Mode::Dbc);
-    }
+    updateAddDbcButtonVisibility();
+}
+
+void ManipulationView::setVariableRegistry(Math::VariableRegistry* registry)
+{
+    m_variableRegistry = registry;
+    m_dialog->setVariableRegistry(registry);
+    updateAddDbcButtonVisibility();
+}
+
+auto ManipulationView::hasDbcConfig() const -> bool
+{
+    return m_variableRegistry && m_variableRegistry->dbcConfig() != nullptr;
+}
+
+void ManipulationView::updateAddDbcButtonVisibility() const
+{
+    m_addDbcButton->setVisible(m_toggleSwitch->isChecked() &&
+                               m_model->mode() == ManipulationModel::Mode::Dbc && hasDbcConfig());
 }
 
 void ManipulationView::onManipulationClicked(const QModelIndex& index) const

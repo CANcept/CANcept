@@ -28,6 +28,10 @@
 #include "core/widgets/common/styled_combo_box.hpp"
 #include "manipulation/ui/view/manipulation_view.hpp"
 
+namespace Math {
+class VariableRegistry;
+}
+
 namespace Sending {
 
 /**
@@ -76,6 +80,9 @@ class ReplaySendingSubView final : public QWidget
 
     /** @brief Updates the progress bar and frame counter label. */
     void setProgress(int currentFrame, int totalFrames);
+
+    /** @brief Sets the DBC-aware registry used to populate signal/message dropdowns. */
+    void setVariableRegistry(Math::VariableRegistry* registry) const;
 
    signals:
     /**

@@ -26,7 +26,8 @@
 #include "mutation/no_mutation.hpp"
 #include "strategy/delayed_strategy.hpp"
 #include "strategy/drop_strategy.hpp"
-#include "strategy/immediate_strategy.hpp"
+#include "strategy/effect_strategy.hpp"
+#include "strategy/insert_strategy.hpp"
 #include "trigger/dlc_trigger.hpp"
 #include "trigger/id_trigger.hpp"
 #include "trigger/random_trigger.hpp"
@@ -44,7 +45,12 @@ using RawTrigger = std::variant<IDTrigger, DLCTrigger, RandomTrigger>;
 using DbcEffect = std::variant<ValueSetEffect, ClampEffect, NoiseEffect>;
 using RawEffect = std::variant<BitFlipEffect, RandomBitFlipEffect>;
 
-using Strategy = std::variant<ImmediateStrategy, DelayedStrategy, DropStrategy>;
+using RawEffectStrategy = EffectStrategy<RawEffect>;
+using DbcEffectStrategy = EffectStrategy<DbcEffect>;
+
+using RawStrategy = std::variant<RawEffectStrategy, DelayedStrategy, DropStrategy>;
+using DbcStrategy =
+    std::variant<DbcEffectStrategy, DelayedStrategy, DropStrategy, DbcInsertStrategy>;
 
 using Mutation = std::variant<NoMutation, LatchMutation>;
 
@@ -54,8 +60,7 @@ using Mutation = std::variant<NoMutation, LatchMutation>;
  */
 struct RawManipulation {
     std::vector<RawTrigger> trigger;
-    std::vector<RawEffect> effect;
-    Strategy strategy;
+    RawStrategy strategy;
     Mutation mutation;
 };
 
@@ -65,8 +70,7 @@ struct RawManipulation {
  */
 struct DbcManipulation {
     std::vector<DbcTrigger> trigger;
-    std::vector<DbcEffect> effect;
-    Strategy strategy;
+    DbcStrategy strategy;
     Mutation mutation;
 };
 

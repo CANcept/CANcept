@@ -15,11 +15,13 @@
 
 #include "dbc_signal_row.hpp"
 
+#include <QDoubleValidator>
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 
 #include "card_widget.hpp"
 #include "common/styled_checkbox.hpp"
+#include "common/styled_line_edit.hpp"
 #include "core/macro/theme.hpp"
 #include "core/theme/style_event.hpp"
 
@@ -64,6 +66,9 @@ void DbcSignalRowWidget::setupUi(const QString& name, const QString& unit, doubl
     if (config.mode == Mode::Full)
     {
         setupFullMode(name, unit, min, max, config);
+    } else if (config.mode == Mode::PlainValue)
+    {
+        setupPlainValueMode(name, unit, min, max, config);
     } else
     {
         setupSelectionMode(name, unit, config);
@@ -113,6 +118,60 @@ void DbcSignalRowWidget::setupFullMode(const QString& name, const QString& unit,
 
     m_valueEditor = new Math::MathInputView(*m_registry, m_cardContainer);
     cardLayout->addWidget(m_valueEditor);
+
+    mainLayout->addWidget(m_cardContainer);
+
+    applyStyle();
+}
+
+void DbcSignalRowWidget::setupPlainValueMode(const QString& name, const QString& unit,
+                                             const double min, const double max,
+                                             const Config& config)
+{
+    const auto& spacing = THEME.spacing();
+
+    auto* mainLayout = new QVBoxLayout(this);
+    mainLayout->setContentsMargins(0, 0, 0, 0);
+
+    m_cardContainer = new CardWidget(QString(), QString(), QString(), this);
+    auto* cardLayout = m_cardContainer->contentLayout();
+
+    if (!cardLayout)
+    {
+        return;
+    }
+
+    cardLayout->setContentsMargins(spacing.spacingMd, spacing.spacingMd, spacing.spacingMd,
+                                   spacing.spacingMd);
+    cardLayout->setSpacing(spacing.spacingSm);
+
+    auto* firstRow = new QHBoxLayout();
+    firstRow->setSpacing(spacing.spacingMd);
+
+    m_selectionCheckbox = new StyledCheckBox(m_cardContainer);
+    m_selectionCheckbox->setChecked(false);
+    firstRow->addWidget(m_selectionCheckbox);
+
+    m_nameLabel = new QLabel(name, m_cardContainer);
+    firstRow->addWidget(m_nameLabel);
+    firstRow->addStretch();
+
+    if (config.showRange)
+    {
+        const QString rangeText =
+            QString("%1-%2 %3").arg(min, 0, 'f', 0).arg(max, 0, 'f', 0).arg(unit);
+        m_rangeLabel = new QLabel(rangeText, m_cardContainer);
+        firstRow->addWidget(m_rangeLabel);
+    }
+    cardLayout->addLayout(firstRow);
+    cardLayout->addSpacing(spacing.spacingXs);
+
+    m_valueLineEdit = new StyledLineEdit(QString::number(min, 'f', 3), m_cardContainer);
+    auto* validator = new QDoubleValidator(min, max, 3, m_valueLineEdit);
+    validator->setNotation(QDoubleValidator::StandardNotation);
+    validator->setLocale(QLocale::c());
+    m_valueLineEdit->setValidator(validator);
+    cardLayout->addWidget(m_valueLineEdit);
 
     mainLayout->addWidget(m_cardContainer);
 

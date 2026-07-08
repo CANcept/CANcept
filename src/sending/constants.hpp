@@ -151,7 +151,7 @@ inline constexpr int DEFAULT_CYCLE_INTERVAL_US = 1000;
 inline constexpr int MIN_CYCLE_INTERVAL_US = 1;
 
 /** @brief Maximum allowed cyclic interval */
-inline constexpr int MAX_CYCLE_INTERVAL_US = 100000;
+inline constexpr int MAX_CYCLE_INTERVAL_US = 10'000'000;
 
 // HEX INPUT & VALIDATION
 

@@ -347,6 +347,14 @@ void ReplaySendingSubView::setProgress(const int currentFrame, const int totalFr
     }
 }
 
+void ReplaySendingSubView::setVariableRegistry(Math::VariableRegistry* registry) const
+{
+    if (m_manipulation)
+    {
+        m_manipulation->setVariableRegistry(registry);
+    }
+}
+
 auto ReplaySendingSubView::selectedSpeedFactor() const -> double
 {
     if (!m_speedCombo)

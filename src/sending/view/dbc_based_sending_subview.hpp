@@ -62,6 +62,11 @@ class DbcSendingSubView final : public QWidget
      */
     void clearMessages() const;
 
+    /**
+     * @brief Tells the manipulation view no DBC config is available anymore.
+     */
+    void clearManipulationDbcConfig() const;
+
     [[nodiscard]] auto sendButton() const -> QPushButton*
     {
         return m_sendButton;

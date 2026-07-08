@@ -109,6 +109,31 @@ void ManipulationDialogModel::setStrategy(SectionEntry entry)
     m_strategy = std::move(entry);
 }
 
+void ManipulationDialogModel::setInsertMessage(const uint32_t messageId,
+                                               const Core::DbcMessageDescription& messageDef)
+{
+    m_insertUseCurrentMessage = false;
+    m_insertMessageId = messageId;
+    m_insertSignalValues.clear();
+    for (const auto& sig : messageDef.signalDescriptions)
+    {
+        m_insertSignalValues[sig.signalName] = sig.minimum;
+    }
+}
+
+void ManipulationDialogModel::setInsertSignalValue(const std::string& signalName,
+                                                   const double value)
+{
+    m_insertSignalValues[signalName] = value;
+}
+
+void ManipulationDialogModel::setInsertUseCurrentMessage()
+{
+    m_insertUseCurrentMessage = true;
+    m_insertMessageId.reset();
+    m_insertSignalValues.clear();
+}
+
 void ManipulationDialogModel::setMutation(SectionEntry entry)
 {
     m_mutation = std::move(entry);
@@ -116,13 +141,18 @@ void ManipulationDialogModel::setMutation(SectionEntry entry)
 
 auto ManipulationDialogModel::acquire() -> std::optional<ManipulationEntry>
 {
-    const Strategy strategy = buildStrategy(m_strategy);
     const Mutation mutation = buildMutation(m_mutation);
 
     if (m_isRaw)
     {
+        auto strategy = buildRawStrategy(m_strategy, m_effects);
+        if (!strategy)
+        {
+            return std::nullopt;
+        }
+
         RawManipulation manipulation;
-        manipulation.strategy = strategy;
+        manipulation.strategy = std::move(*strategy);
         manipulation.mutation = mutation;
         for (const auto& entry : m_triggers)
         {
@@ -133,21 +163,19 @@ auto ManipulationDialogModel::acquire() -> std::optional<ManipulationEntry>
             }
             manipulation.trigger.push_back(*trigger);
         }
-        for (const auto& entry : m_effects)
-        {
-            auto effect = buildRawEffect(entry);
-            if (!effect)
-            {
-                return std::nullopt;
-            }
-            manipulation.effect.push_back(*effect);
-        }
         clearEntries();
         return ManipulationEntry(std::move(manipulation));
     }
 
+    auto strategy = buildDbcStrategy(m_strategy, m_effects, m_insertUseCurrentMessage,
+                                     m_insertMessageId, m_insertSignalValues);
+    if (!strategy)
+    {
+        return std::nullopt;
+    }
+
     DbcManipulation manipulation;
-    manipulation.strategy = strategy;
+    manipulation.strategy = std::move(*strategy);
     manipulation.mutation = mutation;
     for (const auto& entry : m_triggers)
     {
@@ -157,15 +185,6 @@ auto ManipulationDialogModel::acquire() -> std::optional<ManipulationEntry>
             return std::nullopt;
         }
         manipulation.trigger.push_back(*trigger);
-    }
-    for (const auto& entry : m_effects)
-    {
-        auto effect = buildDbcEffect(entry);
-        if (!effect)
-        {
-            return std::nullopt;
-        }
-        manipulation.effect.push_back(*effect);
     }
     clearEntries();
     return ManipulationEntry(std::move(manipulation));

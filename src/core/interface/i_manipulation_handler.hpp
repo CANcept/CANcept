@@ -16,6 +16,7 @@
 #pragma once
 
 #include <chrono>
+#include <vector>
 
 #include "core/dto/can_dto.hpp"
 
@@ -31,11 +32,21 @@ class IManipulationHandler
 {
    public:
     /**
+     * @brief A brand-new DBC message to be sent after a delay, in addition to the frame
+     * that triggered it.
+     */
+    struct PendingInsertion {
+        std::chrono::microseconds delayOffset;
+        DbcCanMessage message;
+    };
+
+    /**
      * @brief Result of how the frame should be sent or not.
      */
     struct FrameResult {
         bool drop;
         std::chrono::microseconds delayOffset;
+        std::vector<PendingInsertion> insertions;
     };
 
     virtual ~IManipulationHandler() = default;
@@ -45,8 +56,8 @@ class IManipulationHandler
      *
      * Also records the strategy of every manipulation that fires into per-frame state.
      *
-     * @param id   CAN frame identifier
-     * @param dlc  Data Length Code (0–8). May be modified by the handler.
+     * @param id CAN frame identifier
+     * @param dlc Data Length Code (0–8). May be modified by the handler.
      * @param data Raw data bytes. Only bytes [0, dlc) are meaningful.
      */
     virtual void inject(uint16_t& id, uint8_t& dlc, std::array<char, 8>& data) = 0;
@@ -61,8 +72,8 @@ class IManipulationHandler
     virtual void inject(DbcCanMessage& message) = 0;
 
     /**
-     * @brief Returns the aggregated timing decision for the current frame and resets per-frame
-     * state.
+     * @brief Returns the aggregated drop/delay decision and pending insertions for the
+     * current frame, and resets per-frame state.
      */
     virtual auto evaluate() -> FrameResult = 0;
 };
