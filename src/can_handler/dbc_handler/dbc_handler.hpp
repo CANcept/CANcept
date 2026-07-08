@@ -29,7 +29,7 @@ class DbcHandler final : public Core::ILifecycle
 {
    public:
     explicit DbcHandler(Core::IEventBroker& eventBroker)
-        : ILifecycle(eventBroker), parseDBCRequestEvent(""){};
+        : ILifecycle(eventBroker), parseDBCRequestEvent("") {};
     ~DbcHandler() override;
 
    protected:
