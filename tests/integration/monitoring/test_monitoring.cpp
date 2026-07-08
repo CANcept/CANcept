@@ -70,6 +70,7 @@ TEST_F(MonitoringIntegrationTest, DataCycle_ValidatesModelContent)
     QApplication::processEvents();
     Core::DbcCanMessage canMsg;
     canMsg.messageId = config.messageDefinitions.front().messageId;
+    canMsg.receiveTime = std::chrono::milliseconds(0);
 
     Core::DbcCanSignal sig;
     sig.name = config.messageDefinitions.front().signalDescriptions.front().signalName;
@@ -78,6 +79,7 @@ TEST_F(MonitoringIntegrationTest, DataCycle_ValidatesModelContent)
 
     mockBroker.triggerEvent(Core::ReceivedCanDbcEvent(canMsg));
     QApplication::processEvents();
+    model->flushStaleWindows();
 
     QModelIndex msgIdx = model->index(0, 0, QModelIndex());
     QModelIndex sigIdx = model->index(0, 0, msgIdx);
@@ -141,15 +143,18 @@ TEST_F(MonitoringIntegrationTest, SignalUpdatesCorrectlyWithinExistingRow)
 
     Core::DbcCanMessage msg1;
     msg1.messageId = msgId;
+    msg1.receiveTime = std::chrono::milliseconds(0);
     msg1.signalValues.push_back({sigName, 10.0});
     mockBroker.triggerEvent(Core::ReceivedCanDbcEvent(msg1));
 
     Core::DbcCanMessage msg2;
     msg2.messageId = msgId;
+    msg2.receiveTime = std::chrono::milliseconds(100);
     msg2.signalValues.push_back({sigName, 20.0});
     mockBroker.triggerEvent(Core::ReceivedCanDbcEvent(msg2));
 
     QApplication::processEvents();
+    model->flushStaleWindows();
 
     ASSERT_EQ(model->rowCount(QModelIndex()), 1);
 

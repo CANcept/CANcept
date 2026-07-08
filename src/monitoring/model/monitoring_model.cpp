@@ -15,6 +15,7 @@
 
 #include "monitoring_model.hpp"
 
+#include <chrono>
 #include <memory>
 #include <mutex>
 
@@ -286,6 +287,12 @@ void MonitoringModel::onIncomingDbcFrame(const Core::DbcCanMessage& message)
         entry.windowStartNs = timestampNs;
     }
 
+    const qreal windowSizeNs = Constants::AGGREGATION_WINDOW_MS * 1'000'000.0;
+    if (timestampNs - entry.windowStartNs >= windowSizeNs)
+    {
+        flushWindow(entry, timestampNs);
+    }
+
     int j = 0;
     for (auto& signalName : entry.signalNames)
     {
@@ -300,19 +307,39 @@ void MonitoringModel::onIncomingDbcFrame(const Core::DbcCanMessage& message)
         }
         j++;
     }
+}
 
-    const qreal windowSizeNs = Constants::AGGREGATION_WINDOW_MS * 1'000'000.0;
-    if (timestampNs - entry.windowStartNs >= windowSizeNs)
+void MonitoringModel::flushWindow(MessageTimestamp& entry, const qreal newWindowStartNs)
+{
+    entry.timestamps.push_back(entry.windowStartNs);
+    for (std::size_t k = 0; k < entry.signalValues.size(); ++k)
     {
-        entry.timestamps.push_back(entry.windowStartNs);
-        for (std::size_t k = 0; k < entry.signalValues.size(); ++k)
+        entry.signalValues[k].push_back(
+            entry.windowCount[k] > 0 ? entry.windowSum[k] / entry.windowCount[k] : NAN);
+        entry.windowSum[k] = 0.0;
+        entry.windowCount[k] = 0;
+    }
+    entry.windowStartNs = newWindowStartNs;
+}
+
+void MonitoringModel::flushStaleWindows()
+{
+    std::scoped_lock<std::mutex> lock(m_dataMutex);
+    if (!m_currentDbc.has_value() || !deleteOldData)
+    {
+        return;
+    }
+
+    const auto nowNs =
+        static_cast<qreal>(std::chrono::steady_clock::now().time_since_epoch().count());
+    const qreal windowSizeNs = Constants::AGGREGATION_WINDOW_MS * 1'000'000.0;
+
+    for (auto& entry : *messageValues)
+    {
+        if (entry.windowStartNs >= 0 && nowNs - entry.windowStartNs >= windowSizeNs)
         {
-            entry.signalValues[k].push_back(
-                entry.windowCount[k] > 0 ? entry.windowSum[k] / entry.windowCount[k] : NAN);
-            entry.windowSum[k] = 0.0;
-            entry.windowCount[k] = 0;
+            flushWindow(entry, -1);
         }
-        entry.windowStartNs = timestampNs;
     }
 }
 
@@ -348,7 +375,7 @@ void MonitoringModel::eraseOldData()
 {
     std::scoped_lock<std::mutex> lock(m_dataMutex);
     const auto nowNs = std::chrono::duration_cast<std::chrono::nanoseconds>(
-                           std::chrono::system_clock::now().time_since_epoch())
+                           std::chrono::steady_clock::now().time_since_epoch())
                            .count();
     for (auto& messageValue : *messageValues)
     {

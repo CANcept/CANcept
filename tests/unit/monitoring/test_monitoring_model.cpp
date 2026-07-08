@@ -78,6 +78,7 @@ TEST_F(MonitoringModelTest, OnIncomingDbcFrameUpdatesInternalData)
     mockMsg.signalValues.push_back(val);
 
     model->onIncomingDbcFrame(mockMsg);
+    model->flushStaleWindows();
 
     QModelIndex msgIdx = model->index(0, 0, QModelIndex());
     QModelIndex sigIdx = model->index(0, 0, msgIdx);
@@ -258,6 +259,7 @@ TEST_F(MonitoringModelTest, HandlesMissingSignalsInFrame)
     partialMsg.receiveTime = std::chrono::milliseconds(500);
 
     model->onIncomingDbcFrame(partialMsg);
+    model->flushStaleWindows();
 
     QModelIndex msgIdx = model->index(0, 0, QModelIndex());
     QModelIndex sigIdx = model->index(0, 0, msgIdx);

@@ -125,7 +125,17 @@ class MonitoringModel final : public QAbstractItemModel
 
     void eraseOldData();
 
+    /**
+     * @brief Flushes any in-progress aggregation window older than the window size, even
+     * without a newer frame arriving to trigger it. Call periodically (e.g. from the
+     * refresh timer) so signals stop arriving still get their trailing partial window shown.
+     */
+    void flushStaleWindows();
+
    private:
+    /** @brief Pushes the averaged window into signalValues/timestamps and resets it. */
+    void flushWindow(MessageTimestamp& entry, qreal newWindowStartNs);
+
     std::unique_ptr<std::array<MessageTimestamp, 2048>> messageValues;
     std::optional<Core::DbcConfig> m_currentDbc;
     std::atomic<bool> _execute;
