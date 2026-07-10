@@ -75,7 +75,7 @@ struct SelectProviderOptionEvent : public ProviderEvent {
     /** @brief Pointer to a list populated by listeners. */
     std::list<SelectOption>* options;
 
-    explicit SelectProviderOptionEvent(std::list<SelectOption>* options) : options(options){};
+    explicit SelectProviderOptionEvent(std::list<SelectOption>* options) : options(options) {};
 };
 
 }  // namespace Core

@@ -26,7 +26,9 @@
 #include "components/repeated_sending_card.hpp"
 #include "components/send_message_button.hpp"
 #include "core/interface/i_manipulation_handler.hpp"
+#include "core/service/serializer.hpp"
 #include "core/widgets/card_widget.hpp"
+#include "core/widgets/common/link_button.hpp"
 #include "manipulation/service/manipulation_handler.hpp"
 #include "manipulation/ui/view/manipulation_view.hpp"
 #include "sending/view/formatter/hex_data_formatter.hpp"
@@ -103,6 +105,14 @@ class RawSendingSubView final : public QWidget
     void setupCanIdInput() const;
     void setupMessageDataInput();
 
+    /**
+     * @brief Builds a serializer covering the full raw sending configuration: frame,
+     * cyclic settings, and manipulations. Used identically for both save and load.
+     */
+    [[nodiscard]] auto buildStateSerializer() -> Core::Serializer;
+    void onSaveClicked();
+    void onLoadClicked();
+
     // Scroll area
     QScrollArea* m_scrollArea;
 
@@ -122,6 +132,10 @@ class RawSendingSubView final : public QWidget
 
     // Floating Send Button
     QPushButton* m_sendButton;
+
+    // Configuration save/load
+    Core::LinkButton* m_loadButton;
+    Core::LinkButton* m_saveButton;
 };
 
 }  // namespace Sending

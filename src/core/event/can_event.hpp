@@ -24,7 +24,7 @@ namespace Core {
 struct ReceivedCanRawEvent final : public Event {
     RawCanMessage canMessage;
 
-    explicit ReceivedCanRawEvent(const RawCanMessage& canMessage) : canMessage(canMessage){};
+    explicit ReceivedCanRawEvent(const RawCanMessage& canMessage) : canMessage(canMessage) {};
 };
 /**
  * @brief Structure of the received can event when a can message is received and used in dbc decoded
@@ -33,7 +33,7 @@ struct ReceivedCanRawEvent final : public Event {
 struct ReceivedCanDbcEvent final : public Event {
     DbcCanMessage canMessage;
 
-    explicit ReceivedCanDbcEvent(const DbcCanMessage& canMessage) : canMessage(canMessage){};
+    explicit ReceivedCanDbcEvent(const DbcCanMessage& canMessage) : canMessage(canMessage) {};
 };
 /**
  * @brief Requests transmission of a fully encoded raw CAN frame.
@@ -41,7 +41,7 @@ struct ReceivedCanDbcEvent final : public Event {
 struct SendCanMessageRawEvent final : public Event {
     RawCanMessage canMessage;
 
-    explicit SendCanMessageRawEvent(const RawCanMessage& canMessage) : canMessage(canMessage){};
+    explicit SendCanMessageRawEvent(const RawCanMessage& canMessage) : canMessage(canMessage) {};
 };
 /**
  * @brief Requests DBC-to-raw encoding of a decoded CAN message.

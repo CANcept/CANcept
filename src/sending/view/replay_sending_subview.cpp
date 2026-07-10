@@ -17,6 +17,7 @@
 
 #include <QFileDialog>
 #include <QHBoxLayout>
+#include <QMessageBox>
 #include <QVBoxLayout>
 #include <algorithm>
 
@@ -24,6 +25,8 @@
 #include "core/theme/style_event.hpp"
 #include "core/widgets/common/styled_combo_box.hpp"
 #include "manipulation/service/manipulation_handler.hpp"
+#include "manipulation/service/manipulation_serializer.hpp"
+#include "math/service/variable_registry.hpp"
 #include "sending/constants.hpp"
 #include "sending/view/components/replay_control_button.hpp"
 #include "sending/view/components/replay_progress_bar.hpp"
@@ -46,7 +49,9 @@ ReplaySendingSubView::ReplaySendingSubView(QWidget* parent)
       m_speedCombo(nullptr),
       m_progressCard(nullptr),
       m_progressBar(nullptr),
-      m_progressTextLabel(nullptr)
+      m_progressTextLabel(nullptr),
+      m_loadButton(nullptr),
+      m_saveButton(nullptr)
 {
     setupUi();
 }
@@ -122,6 +127,15 @@ void ReplaySendingSubView::setupUi()
     buttonRowLayout->addWidget(m_pauseButton);
     buttonRowLayout->addWidget(m_resumeButton);
     buttonRowLayout->addWidget(m_stopButton);
+
+    buttonRowLayout->addStretch();
+    m_loadButton = new Core::LinkButton(Constants::LOAD_BUTTON_TEXT, buttonRow);
+    m_saveButton = new Core::LinkButton(Constants::SAVE_BUTTON_TEXT, buttonRow);
+    buttonRowLayout->addWidget(m_loadButton);
+    buttonRowLayout->addWidget(m_saveButton);
+
+    connect(m_saveButton, &QPushButton::clicked, this, &ReplaySendingSubView::onSaveClicked);
+    connect(m_loadButton, &QPushButton::clicked, this, &ReplaySendingSubView::onLoadClicked);
 
     playbackLayout->addWidget(buttonRow);
 
@@ -347,8 +361,9 @@ void ReplaySendingSubView::setProgress(const int currentFrame, const int totalFr
     }
 }
 
-void ReplaySendingSubView::setVariableRegistry(Math::VariableRegistry* registry) const
+void ReplaySendingSubView::setVariableRegistry(Math::VariableRegistry* registry)
 {
+    m_registry = registry;
     if (m_manipulation)
     {
         m_manipulation->setVariableRegistry(registry);
@@ -375,6 +390,84 @@ auto ReplaySendingSubView::selectedSpeedFactor() const -> double
         default:
             return 1.0;
     }
+}
+
+auto ReplaySendingSubView::buildStateSerializer() -> Core::Serializer
+{
+    Core::Serializer serializer;
+
+    serializer.addItem(
+        "speedIndex", [this] { return nlohmann::json(m_speedCombo->currentIndex()); },
+        [this](const nlohmann::json& j) { m_speedCombo->setCurrentIndex(j.get<int>()); });
+    serializer.addItem(
+        "manipulationEnabled", [this] { return nlohmann::json(m_manipulation->isManipulation()); },
+        [this](const nlohmann::json& j) { m_manipulation->setManipulationEnabled(j.get<bool>()); });
+    serializer.addItem(
+        "manipulations", [this] { return nlohmann::json(m_manipulation->entries()); },
+        [this](const nlohmann::json& j) {
+            m_manipulation->setManipulations(j.get<std::vector<Manipulation::ManipulationEntry>>());
+        });
+    // Registered after "manipulations" so the check below sees the just-loaded entries: DBC
+    // manipulations reference signal names that only resolve against a loaded DBC config, so
+    // this warns if one isn't loaded, or was saved against a different file.
+    serializer.addItem(
+        "dbcFileName",
+        [this] {
+            const auto* dbc = m_registry ? m_registry->dbcConfig() : nullptr;
+            return nlohmann::json(dbc ? dbc->metaData.fileName : std::string());
+        },
+        [this](const nlohmann::json& j) {
+            const auto savedFileName = j.get<std::string>();
+            const auto* dbc = m_registry ? m_registry->dbcConfig() : nullptr;
+            const auto currentFileName = dbc ? dbc->metaData.fileName : std::string();
+
+            const auto& entries = m_manipulation->entries();
+            const bool hasDbcManipulations =
+                std::any_of(entries.begin(), entries.end(), [](const auto& entry) {
+                    return std::holds_alternative<Manipulation::DbcManipulation>(entry);
+                });
+            if (!hasDbcManipulations)
+            {
+                return;
+            }
+
+            if (currentFileName.empty())
+            {
+                QMessageBox::warning(this, Constants::DBC_MISMATCH_TITLE,
+                                     Constants::DBC_REQUIRED_FOR_MANIPULATIONS_TEXT);
+            } else if (!savedFileName.empty() && savedFileName != currentFileName)
+            {
+                QMessageBox::warning(this, Constants::DBC_MISMATCH_TITLE,
+                                     Constants::DBC_MISMATCH_TEXT_TEMPLATE.arg(
+                                         QString::fromStdString(savedFileName),
+                                         QString::fromStdString(currentFileName)));
+            }
+        });
+
+    return serializer;
+}
+
+void ReplaySendingSubView::onSaveClicked()
+{
+    const QString path = QFileDialog::getSaveFileName(this, Constants::SAVE_REPLAY_STATE_TITLE,
+                                                      Constants::REPLAY_STATE_DEFAULT_FILENAME,
+                                                      Constants::STATE_FILE_FILTER);
+    if (path.isEmpty())
+    {
+        return;
+    }
+    buildStateSerializer().saveToFile(path.toStdString());
+}
+
+void ReplaySendingSubView::onLoadClicked()
+{
+    const QString path = QFileDialog::getOpenFileName(this, Constants::LOAD_REPLAY_STATE_TITLE,
+                                                      QString(), Constants::STATE_FILE_FILTER);
+    if (path.isEmpty())
+    {
+        return;
+    }
+    buildStateSerializer().loadFromFile(path.toStdString());
 }
 
 }  // namespace Sending

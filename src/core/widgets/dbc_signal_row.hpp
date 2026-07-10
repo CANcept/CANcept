@@ -90,6 +90,12 @@ class DbcSignalRowWidget final : public QWidget
         return m_valueEditor;
     }
 
+    /** @brief Returns the signal name this row was constructed with, e.g. for serialization. */
+    [[nodiscard]] auto signalName() const -> QString
+    {
+        return m_signalName;
+    }
+
     /** @brief The plain numeric value editor, only set in Mode::PlainValue. */
     [[nodiscard]] auto valueLineEdit() const -> StyledLineEdit*
     {
@@ -115,6 +121,7 @@ class DbcSignalRowWidget final : public QWidget
     void applyStyle() const;
 
     Math::VariableRegistry* m_registry;
+    QString m_signalName;
     CardWidget* m_cardContainer;
     StyledCheckBox* m_selectionCheckbox;
     QLabel* m_nameLabel;

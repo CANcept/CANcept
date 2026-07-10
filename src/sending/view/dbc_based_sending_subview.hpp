@@ -25,6 +25,8 @@
 #include "components/repeated_sending_card.hpp"
 #include "components/send_message_button.hpp"
 #include "core/interface/i_manipulation_handler.hpp"
+#include "core/service/serializer.hpp"
+#include "core/widgets/common/link_button.hpp"
 #include "core/widgets/dbc_message_card.hpp"
 #include "manipulation/service/manipulation_handler.hpp"
 #include "manipulation/ui/view/manipulation_view.hpp"
@@ -119,6 +121,15 @@ class DbcSendingSubView final : public QWidget
     void setupUi();
     void applyStyle() const;
 
+    /**
+     * @brief Builds a serializer covering the full DBC sending configuration: cyclic settings,
+     * manipulations, and every signal row's value function. Used identically for both save and
+     * load.
+     */
+    [[nodiscard]] auto buildStateSerializer() -> Core::Serializer;
+    void onSaveClicked();
+    void onLoadClicked();
+
     QScrollArea* m_outerScrollArea;
     Core::CardWidget* m_messagesCard;
     QScrollArea* m_scrollArea;
@@ -129,6 +140,14 @@ class DbcSendingSubView final : public QWidget
     RepeatedSendingCard* m_repeatedSendingCard;
     Manipulation::ManipulationView* m_manipulation;
     QPushButton* m_sendButton;
+
+    // Configuration save/load
+    Core::LinkButton* m_loadButton;
+    Core::LinkButton* m_saveButton;
+
+    /** @brief Stored from the last populateFromModel() call, needed to re-acquire variables
+     * when loading value functions. */
+    Math::VariableRegistry* m_registry = nullptr;
 };
 
 }  // namespace Sending

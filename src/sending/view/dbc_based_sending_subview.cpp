@@ -15,12 +15,15 @@
 
 #include "dbc_based_sending_subview.hpp"
 
+#include <QFileDialog>
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QMessageBox>
 #include <QScreen>
 #include <QScrollArea>
 #include <QScrollBar>
 #include <QVBoxLayout>
+#include <set>
 
 #include "core/macro/theme.hpp"
 #include "core/theme/style_event.hpp"
@@ -28,6 +31,9 @@
 #include "core/widgets/common/styled_checkbox.hpp"
 #include "core/widgets/common/styled_line_edit.hpp"
 #include "core/widgets/dbc_signal_row.hpp"
+#include "manipulation/service/manipulation_serializer.hpp"
+#include "math/service/value_function_serializer.hpp"
+#include "math/service/variable_registry.hpp"
 #include "sending/constants.hpp"
 #include "sending/model/sending_model.hpp"
 #include "sending/styles.hpp"
@@ -44,7 +50,9 @@ DbcSendingSubView::DbcSendingSubView(QWidget* parent)
       m_noDbcLabel(nullptr),
       m_repeatedSendingCard(nullptr),
       m_manipulation(nullptr),
-      m_sendButton(nullptr)
+      m_sendButton(nullptr),
+      m_loadButton(nullptr),
+      m_saveButton(nullptr)
 {
     setupUi();
 }
@@ -121,12 +129,19 @@ void DbcSendingSubView::setupUi()
     footerLayout->setContentsMargins(spacing.spacingLg, spacing.spacingSm, spacing.spacingLg,
                                      spacing.spacingLg);
 
+    m_loadButton = new Core::LinkButton(Constants::LOAD_BUTTON_TEXT, footerContainer);
+    m_saveButton = new Core::LinkButton(Constants::SAVE_BUTTON_TEXT, footerContainer);
     m_sendButton = new SendMessageButton(footerContainer);
 
     footerLayout->addStretch();
+    footerLayout->addWidget(m_loadButton);
+    footerLayout->addWidget(m_saveButton);
     footerLayout->addWidget(m_sendButton);
 
     outerLayout->addWidget(footerContainer);
+
+    connect(m_saveButton, &QPushButton::clicked, this, &DbcSendingSubView::onSaveClicked);
+    connect(m_loadButton, &QPushButton::clicked, this, &DbcSendingSubView::onLoadClicked);
 
     applyStyle();
 }
@@ -176,6 +191,8 @@ void DbcSendingSubView::populateFromModel(SendingModel* model, Math::VariableReg
     {
         return;
     }
+
+    m_registry = &registry;
 
     if (m_manipulation)
     {
@@ -286,6 +303,181 @@ void DbcSendingSubView::clearManipulationDbcConfig() const
     {
         m_manipulation->setVariableRegistry(nullptr);
     }
+}
+
+namespace {
+/**
+ * @brief Builds the "<messageId>:<signalName>" key used to identify a signal's value function
+ * in the serialized state.
+ */
+auto valueFunctionKey(const uint32_t messageId, const QString& signalName) -> std::string
+{
+    return std::to_string(messageId) + ":" + signalName.toStdString();
+}
+}  // namespace
+
+auto DbcSendingSubView::buildStateSerializer() -> Core::Serializer
+{
+    Core::Serializer serializer;
+
+    serializer.addItem(
+        "cyclicEnabled",
+        [this] { return nlohmann::json(m_repeatedSendingCard->isRepeatedSendingEnabled()); },
+        [this](const nlohmann::json& j) {
+            m_repeatedSendingCard->setRepeatedSendingEnabled(j.get<bool>());
+        });
+    serializer.addItem(
+        "cyclicIntervalUs",
+        [this] {
+            return nlohmann::json(m_repeatedSendingCard->frequencyEditor()->text().toStdString());
+        },
+        [this](const nlohmann::json& j) {
+            m_repeatedSendingCard->frequencyEditor()->setText(
+                QString::fromStdString(j.get<std::string>()));
+        });
+    serializer.addItem(
+        "dbcFileName",
+        [this] {
+            const auto* dbc = m_registry ? m_registry->dbcConfig() : nullptr;
+            return nlohmann::json(dbc ? dbc->metaData.fileName : std::string());
+        },
+        [this](const nlohmann::json& j) {
+            const auto savedFileName = j.get<std::string>();
+            const auto* dbc = m_registry ? m_registry->dbcConfig() : nullptr;
+            const auto currentFileName = dbc ? dbc->metaData.fileName : std::string();
+            if (!savedFileName.empty() && !currentFileName.empty() &&
+                savedFileName != currentFileName)
+            {
+                QMessageBox::warning(this, Constants::DBC_MISMATCH_TITLE,
+                                     Constants::DBC_MISMATCH_TEXT_TEMPLATE.arg(
+                                         QString::fromStdString(savedFileName),
+                                         QString::fromStdString(currentFileName)));
+            }
+        });
+    serializer.addItem(
+        "selectedSignals",
+        [this] {
+            auto selected = nlohmann::json::array();
+            for (int i = 0; i < m_cardsLayout->count(); ++i)
+            {
+                auto* card =
+                    qobject_cast<Core::DbcMessageCard*>(m_cardsLayout->itemAt(i)->widget());
+                if (!card)
+                {
+                    continue;
+                }
+                for (const auto* row : card->signalRows())
+                {
+                    if (row->selectionCheckbox() && row->selectionCheckbox()->isChecked())
+                    {
+                        selected.push_back(valueFunctionKey(card->messageId(), row->signalName()));
+                    }
+                }
+            }
+            return selected;
+        },
+        [this](const nlohmann::json& j) {
+            std::set<std::string> selectedKeys;
+            for (const auto& key : j)
+            {
+                selectedKeys.insert(key.get<std::string>());
+            }
+
+            for (int i = 0; i < m_cardsLayout->count(); ++i)
+            {
+                auto* card =
+                    qobject_cast<Core::DbcMessageCard*>(m_cardsLayout->itemAt(i)->widget());
+                if (!card)
+                {
+                    continue;
+                }
+                for (auto* row : card->signalRows())
+                {
+                    if (auto* checkbox = row->selectionCheckbox())
+                    {
+                        checkbox->setChecked(selectedKeys.contains(
+                            valueFunctionKey(card->messageId(), row->signalName())));
+                    }
+                }
+            }
+        });
+    serializer.addItem(
+        "manipulationEnabled", [this] { return nlohmann::json(m_manipulation->isManipulation()); },
+        [this](const nlohmann::json& j) { m_manipulation->setManipulationEnabled(j.get<bool>()); });
+    serializer.addItem(
+        "manipulations", [this] { return nlohmann::json(m_manipulation->entries()); },
+        [this](const nlohmann::json& j) {
+            m_manipulation->setManipulations(j.get<std::vector<Manipulation::ManipulationEntry>>());
+        });
+    serializer.addItem(
+        "valueFunctions",
+        [this] {
+            auto functions = nlohmann::json::object();
+            for (int i = 0; i < m_cardsLayout->count(); ++i)
+            {
+                auto* card =
+                    qobject_cast<Core::DbcMessageCard*>(m_cardsLayout->itemAt(i)->widget());
+                if (!card)
+                {
+                    continue;
+                }
+                for (const auto* row : card->signalRows())
+                {
+                    functions[valueFunctionKey(card->messageId(), row->signalName())] =
+                        Math::ValueFunctionSerializer::encode(row->valueEditor()->model());
+                }
+            }
+            return functions;
+        },
+        [this](const nlohmann::json& functions) {
+            if (!m_registry)
+            {
+                return;
+            }
+            for (int i = 0; i < m_cardsLayout->count(); ++i)
+            {
+                auto* card =
+                    qobject_cast<Core::DbcMessageCard*>(m_cardsLayout->itemAt(i)->widget());
+                if (!card)
+                {
+                    continue;
+                }
+                for (auto* row : card->signalRows())
+                {
+                    const auto key = valueFunctionKey(card->messageId(), row->signalName());
+                    if (functions.contains(key))
+                    {
+                        Math::ValueFunctionSerializer::decode(
+                            functions.at(key), row->valueEditor()->model(), *m_registry);
+                    }
+                }
+            }
+        });
+
+    return serializer;
+}
+
+void DbcSendingSubView::onSaveClicked()
+{
+    const QString path = QFileDialog::getSaveFileName(this, Constants::SAVE_DBC_STATE_TITLE,
+                                                      Constants::DBC_STATE_DEFAULT_FILENAME,
+                                                      Constants::STATE_FILE_FILTER);
+    if (path.isEmpty())
+    {
+        return;
+    }
+    buildStateSerializer().saveToFile(path.toStdString());
+}
+
+void DbcSendingSubView::onLoadClicked()
+{
+    const QString path = QFileDialog::getOpenFileName(this, Constants::LOAD_DBC_STATE_TITLE,
+                                                      QString(), Constants::STATE_FILE_FILTER);
+    if (path.isEmpty())
+    {
+        return;
+    }
+    buildStateSerializer().loadFromFile(path.toStdString());
 }
 
 }  // namespace Sending

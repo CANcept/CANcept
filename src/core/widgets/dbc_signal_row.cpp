@@ -63,6 +63,8 @@ DbcSignalRowWidget::DbcSignalRowWidget(const QString& name, const QString& unit,
 void DbcSignalRowWidget::setupUi(const QString& name, const QString& unit, double min, double max,
                                  const Config& config)
 {
+    m_signalName = name;
+
     if (config.mode == Mode::Full)
     {
         setupFullMode(name, unit, min, max, config);

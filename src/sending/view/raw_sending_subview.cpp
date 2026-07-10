@@ -15,6 +15,7 @@
 
 #include "raw_sending_subview.hpp"
 
+#include <QFileDialog>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QScreen>
@@ -25,6 +26,7 @@
 #include "core/macro/theme.hpp"
 #include "core/theme/style_event.hpp"
 #include "core/widgets/common/styled_line_edit.hpp"
+#include "manipulation/service/manipulation_serializer.hpp"
 #include "sending/constants.hpp"
 #include "sending/view/formatter/hex_data_formatter.hpp"
 
@@ -41,7 +43,9 @@ RawSendingSubView::RawSendingSubView(QWidget* parent)
       m_messageDataLabel(nullptr),
       m_repeatedSendingCard(nullptr),
       m_manipulation(nullptr),
-      m_sendButton(nullptr)
+      m_sendButton(nullptr),
+      m_loadButton(nullptr),
+      m_saveButton(nullptr)
 {
     setupUi();
 }
@@ -116,9 +120,17 @@ void RawSendingSubView::setupUi()
                                      spacing.spacingLg);
     buttonLayout->addStretch();
 
+    m_loadButton = new Core::LinkButton(Constants::LOAD_BUTTON_TEXT, buttonContainer);
+    m_saveButton = new Core::LinkButton(Constants::SAVE_BUTTON_TEXT, buttonContainer);
+    buttonLayout->addWidget(m_loadButton);
+    buttonLayout->addWidget(m_saveButton);
+
     m_sendButton = new SendMessageButton(buttonContainer);
     buttonLayout->addWidget(m_sendButton);
     mainLayout->addWidget(buttonContainer);
+
+    connect(m_saveButton, &QPushButton::clicked, this, &RawSendingSubView::onSaveClicked);
+    connect(m_loadButton, &QPushButton::clicked, this, &RawSendingSubView::onLoadClicked);
 
     applyStyle();
 }
@@ -158,6 +170,70 @@ void RawSendingSubView::setupMessageDataInput()
         return;
     }
     m_messageDataFormatter = new HexDataFormatter(m_messageDataEditor, Constants::MAX_CAN_DLC);
+}
+
+auto RawSendingSubView::buildStateSerializer() -> Core::Serializer
+{
+    Core::Serializer serializer;
+
+    serializer.addItem(
+        "canId", [this] { return nlohmann::json(m_canIdEditor->text().toStdString()); },
+        [this](const nlohmann::json& j) {
+            m_canIdEditor->setText(QString::fromStdString(j.get<std::string>()));
+        });
+    serializer.addItem(
+        "data", [this] { return nlohmann::json(m_messageDataEditor->text().toStdString()); },
+        [this](const nlohmann::json& j) {
+            m_messageDataEditor->setText(QString::fromStdString(j.get<std::string>()));
+        });
+    serializer.addItem(
+        "cyclicEnabled",
+        [this] { return nlohmann::json(m_repeatedSendingCard->isRepeatedSendingEnabled()); },
+        [this](const nlohmann::json& j) {
+            m_repeatedSendingCard->setRepeatedSendingEnabled(j.get<bool>());
+        });
+    serializer.addItem(
+        "cyclicIntervalUs",
+        [this] {
+            return nlohmann::json(m_repeatedSendingCard->frequencyEditor()->text().toStdString());
+        },
+        [this](const nlohmann::json& j) {
+            m_repeatedSendingCard->frequencyEditor()->setText(
+                QString::fromStdString(j.get<std::string>()));
+        });
+    serializer.addItem(
+        "manipulationEnabled", [this] { return nlohmann::json(m_manipulation->isManipulation()); },
+        [this](const nlohmann::json& j) { m_manipulation->setManipulationEnabled(j.get<bool>()); });
+    serializer.addItem(
+        "manipulations", [this] { return nlohmann::json(m_manipulation->entries()); },
+        [this](const nlohmann::json& j) {
+            m_manipulation->setManipulations(j.get<std::vector<Manipulation::ManipulationEntry>>());
+        });
+
+    return serializer;
+}
+
+void RawSendingSubView::onSaveClicked()
+{
+    const QString path = QFileDialog::getSaveFileName(this, Constants::SAVE_RAW_STATE_TITLE,
+                                                      Constants::RAW_STATE_DEFAULT_FILENAME,
+                                                      Constants::STATE_FILE_FILTER);
+    if (path.isEmpty())
+    {
+        return;
+    }
+    buildStateSerializer().saveToFile(path.toStdString());
+}
+
+void RawSendingSubView::onLoadClicked()
+{
+    const QString path = QFileDialog::getOpenFileName(this, Constants::LOAD_RAW_STATE_TITLE,
+                                                      QString(), Constants::STATE_FILE_FILTER);
+    if (path.isEmpty())
+    {
+        return;
+    }
+    buildStateSerializer().loadFromFile(path.toStdString());
 }
 
 }  // namespace Sending

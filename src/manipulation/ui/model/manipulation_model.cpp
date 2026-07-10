@@ -61,6 +61,13 @@ void ManipulationModel::removeManipulation(const int row)
     endRemoveRows();
 }
 
+void ManipulationModel::setManipulations(std::vector<ManipulationEntry> manipulations)
+{
+    beginResetModel();
+    m_manipulations = std::move(manipulations);
+    endResetModel();
+}
+
 ManipulationHandler ManipulationModel::get()
 {
     std::vector<RawManipulation> rawManipulations;

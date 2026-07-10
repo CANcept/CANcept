@@ -63,6 +63,19 @@ class ManipulationModel final : public QAbstractTableModel
     void removeManipulation(int row);
 
     /**
+     * @brief Returns the current manipulation list, e.g. for serialization.
+     */
+    [[nodiscard]] auto entries() const -> const std::vector<ManipulationEntry>&
+    {
+        return m_manipulations;
+    }
+
+    /**
+     * @brief Replaces the entire manipulation list, e.g. after deserializing one.
+     */
+    void setManipulations(std::vector<ManipulationEntry> manipulations);
+
+    /**
      * @brief Builds a ManipulationHandler snapshot from the current manipulation list.
      *
      * Partitions the stored manipulations into raw and DBC lists and constructs

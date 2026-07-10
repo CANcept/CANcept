@@ -343,4 +343,19 @@ auto ManipulationView::getManipulationHandler() const -> ManipulationHandler
     return m_model->get();
 }
 
+auto ManipulationView::entries() const -> const std::vector<ManipulationEntry>&
+{
+    return m_model->entries();
+}
+
+void ManipulationView::setManipulations(std::vector<ManipulationEntry> manipulations) const
+{
+    m_model->setManipulations(std::move(manipulations));
+}
+
+void ManipulationView::setManipulationEnabled(const bool enabled) const
+{
+    m_toggleSwitch->setChecked(enabled);
+}
+
 }  // namespace Manipulation

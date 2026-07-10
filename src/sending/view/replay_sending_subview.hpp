@@ -24,7 +24,9 @@
 
 #include "core/interface/i_can_reader.hpp"
 #include "core/interface/i_manipulation_handler.hpp"
+#include "core/service/serializer.hpp"
 #include "core/widgets/card_widget.hpp"
+#include "core/widgets/common/link_button.hpp"
 #include "core/widgets/common/styled_combo_box.hpp"
 #include "manipulation/ui/view/manipulation_view.hpp"
 
@@ -82,7 +84,7 @@ class ReplaySendingSubView final : public QWidget
     void setProgress(int currentFrame, int totalFrames);
 
     /** @brief Sets the DBC-aware registry used to populate signal/message dropdowns. */
-    void setVariableRegistry(Math::VariableRegistry* registry) const;
+    void setVariableRegistry(Math::VariableRegistry* registry);
 
    signals:
     /**
@@ -112,6 +114,14 @@ class ReplaySendingSubView final : public QWidget
     void updateManipulationMode();
     [[nodiscard]] auto selectedSpeedFactor() const -> double;
 
+    /**
+     * @brief Builds a serializer covering the full replay configuration: playback speed and
+     * manipulations. Used identically for both save and load.
+     */
+    [[nodiscard]] auto buildStateSerializer() -> Core::Serializer;
+    void onSaveClicked();
+    void onLoadClicked();
+
     QScrollArea* m_scrollArea;
 
     Core::CardWidget* m_sessionCard;
@@ -132,8 +142,16 @@ class ReplaySendingSubView final : public QWidget
     ReplayProgressBar* m_progressBar;
     QLabel* m_progressTextLabel;
 
+    // Configuration save/load
+    Core::LinkButton* m_loadButton;
+    Core::LinkButton* m_saveButton;
+
     QList<ReplayEntry> m_entries;
     PlaybackState m_playbackState = PlaybackState::Disabled;
+
+    /** @brief Stored from the last setVariableRegistry() call, needed to check whether a DBC
+     * config is loaded when a saved state contains DBC manipulations. */
+    Math::VariableRegistry* m_registry = nullptr;
 };
 
 }  // namespace Sending

@@ -52,6 +52,21 @@ class ManipulationView final : public QWidget
     [[nodiscard]] auto getManipulationHandler() const -> ManipulationHandler;
 
     /**
+     * @brief Returns the current manipulation list, e.g. for serialization.
+     */
+    [[nodiscard]] auto entries() const -> const std::vector<ManipulationEntry>&;
+
+    /**
+     * @brief Replaces the entire manipulation list, e.g. after deserializing one.
+     */
+    void setManipulations(std::vector<ManipulationEntry> manipulations) const;
+
+    /**
+     * @brief Sets whether manipulation is enabled, e.g. after deserializing a saved state.
+     */
+    void setManipulationEnabled(bool enabled) const;
+
+    /**
      * @brief Switches between Raw and Dbc mode.
      *
      * In Raw mode the DBC button is hidden and any existing DbcManipulations are removed.

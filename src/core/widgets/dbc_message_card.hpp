@@ -79,6 +79,18 @@ class DbcMessageCard : public QWidget
     /** @brief Clears all signal rows from the card body. */
     void clearSignalRows();
 
+    /** @brief Returns the CAN message ID this card was constructed with. */
+    [[nodiscard]] auto messageId() const -> uint32_t
+    {
+        return m_messageId;
+    }
+
+    /** @brief Returns the signal row widgets currently in the card body, e.g. for serialization. */
+    [[nodiscard]] auto signalRows() const -> const std::vector<DbcSignalRowWidget*>&
+    {
+        return m_signalRows;
+    }
+
     [[nodiscard]] StyledCheckBox* headerCheckbox() const
     {
         return m_headerCheckbox;
@@ -120,6 +132,7 @@ class DbcMessageCard : public QWidget
     QWidget* m_bodyContainer;
     QVBoxLayout* m_signalsLayout;
     std::vector<DbcSignalRowWidget*> m_signalRows;
+    uint32_t m_messageId = 0;
 };
 
 }  // namespace Core
