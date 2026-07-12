@@ -221,9 +221,9 @@ class SendingComponent final : public Core::ITabComponent
     mutable bool m_lastDeviceReadyState = true;
 
     /**
-     * @brief Fault handler built once per send session (single send or repeated send start).
+     * @brief Manipulation handler built once per send session (single send or repeated send start).
      */
-    mutable std::shared_ptr<Core::IFaultHandler> m_activeFaultHandler;
+    mutable std::shared_ptr<Core::IManipulationHandler> m_activeManipulationHandler;
 };
 
 }  // namespace Sending

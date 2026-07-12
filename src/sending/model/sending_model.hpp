@@ -140,6 +140,14 @@ class SendingModel final : public QAbstractItemModel
     }
 
     /**
+     * @brief Returns whether the Raw or DBC sending tab is currently active.
+     */
+    [[nodiscard]] auto mode() const -> Mode
+    {
+        return m_currentMode;
+    }
+
+    /**
      * @brief Sets the raw CAN ID for transmission.
      */
     void setRawCanId(uint16_t canId);
@@ -180,9 +188,12 @@ class SendingModel final : public QAbstractItemModel
 
     /**
      * @brief Iterates the pre-built message cache, updating signal values and invoking handlers.
+     * @param mode Which cache to iterate; pass the mode captured when sending started, not
+     * mode(), so switching tabs mid-session doesn't change what an active repeated send emits.
      */
     void forEachCachedMessage(const std::function<void(Core::RawCanMessage&)>& rawHandler,
-                              const std::function<void(Core::DbcCanMessage&)>& dbcHandler);
+                              const std::function<void(Core::DbcCanMessage&)>& dbcHandler,
+                              Mode mode);
 
    private:
     /**

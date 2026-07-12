@@ -25,7 +25,7 @@
 
 #include "core/interface/i_can_reader.hpp"
 #include "core/interface/i_event_broker.hpp"
-#include "core/interface/i_fault_handler.hpp"
+#include "core/interface/i_manipulation_handler.hpp"
 #include "sending/worker/scheduled_item_queue.hpp"
 
 namespace Sending {
@@ -62,7 +62,7 @@ class ReplayProducerWorker final : public QThread
      * @param speedFactor Playback speed multiplier (clamped to [0.1, 8.0]).
      */
     void startReplay(ReaderFactory factory, uint64_t frameCount, double speedFactor,
-                     std::shared_ptr<Core::IFaultHandler> faultHandler = nullptr);
+                     std::shared_ptr<Core::IManipulationHandler> manipulationHandler = nullptr);
 
     /** @brief Requests replay pause. Already queued items may still be pending. */
     void pauseReplay();
@@ -126,7 +126,7 @@ class ReplayProducerWorker final : public QThread
     ReaderFactory m_factory;
     uint64_t m_totalFrames = 0;
     double m_speedFactor = 1.0;
-    std::shared_ptr<Core::IFaultHandler> m_faultHandler;
+    std::shared_ptr<Core::IManipulationHandler> m_manipulationHandler;
 
     std::atomic<bool> m_isActive{false};
     std::atomic<bool> m_shouldStop{false};

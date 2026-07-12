@@ -18,9 +18,13 @@
 #include <atomic>
 #include <cstdint>
 #include <functional>
+#include <memory>
+#include <vector>
 
 #include "core/event/can_event.hpp"
 #include "core/interface/i_event_broker.hpp"
+#include "core/interface/i_manipulation_handler.hpp"
+#include "worker/scheduled_item.hpp"
 
 namespace Sending {
 
@@ -41,6 +45,35 @@ static void rawSendImpl(void* context)
     {
         c->onSent();
     }
+}
+
+/**
+ * @brief Encodes each pending insertion and builds a ScheduledItem for it.
+ *
+ * Reuses the same encode-then-schedule pattern every other send path already follows, so
+ * an inserted message is indistinguishable from any other frame once it reaches the queue.
+ *
+ * @param insertions Pending insertions accumulated by a ManipulationHandler this cycle.
+ * @param broker Event broker used to encode the DBC message and later publish it.
+ * @param base Reference time the insertion's delay is relative to.
+ */
+inline auto buildInsertionItems(
+    const std::vector<Core::IManipulationHandler::PendingInsertion>& insertions,
+    Core::IEventBroker& broker, const Clock::time_point base) -> std::vector<ScheduledItem>
+{
+    std::vector<ScheduledItem> items;
+    items.reserve(insertions.size());
+    for (const auto& insertion : insertions)
+    {
+        Core::DbcCanMessage mutableMessage = insertion.message;
+        Core::RawCanMessage encoded;
+        broker.publish(Core::EncodeCanMessageDbcEvent(mutableMessage, encoded));
+        items.push_back(ScheduledItem{.scheduledAt = base + insertion.delayOffset,
+                                      .onSend = &rawSendImpl,
+                                      .context = std::make_shared<RawSendContext>(
+                                          RawSendContext{.broker = &broker, .message = encoded})});
+    }
+    return items;
 }
 
 }  // namespace Sending

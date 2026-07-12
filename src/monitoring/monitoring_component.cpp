@@ -68,7 +68,10 @@ void MonitoringComponent::connectSignals()
     connect(this, &MonitoringComponent::dbcFrameReceived, m_model.get(),
             &MonitoringModel::onIncomingDbcFrame);
 
-    connect(&m_updateTimer, &QTimer::timeout, m_view.get(), &MonitoringView::onUpdateMessages);
+    connect(&m_updateTimer, &QTimer::timeout, this, [this]() {
+        m_model->flushStaleWindows();
+        m_view->onUpdateMessages();
+    });
 }
 
 void MonitoringComponent::onStart()

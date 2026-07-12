@@ -149,4 +149,9 @@ auto RepeatedSendingCard::isRepeatedSendingEnabled() const -> bool
     return m_toggleSwitch->isChecked();
 }
 
+void RepeatedSendingCard::setRepeatedSendingEnabled(const bool enabled) const
+{
+    m_toggleSwitch->setChecked(enabled);
+}
+
 }  // namespace Sending

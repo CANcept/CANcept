@@ -60,6 +60,14 @@ class MathInputView final : public QWidget
     [[nodiscard]] auto isValid() const -> bool;
 
     /**
+     * @brief Returns the underlying model, e.g. for serialization.
+     */
+    [[nodiscard]] auto model() const -> MathInputModel&
+    {
+        return *m_model;
+    }
+
+    /**
      * @brief Adds a token-insertion button to the button bar with the given icon and factory.
      */
     void addNodeButton(const QString& iconPath,

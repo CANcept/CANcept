@@ -15,6 +15,7 @@
 
 #include "sending_consumer_worker.hpp"
 
+#include <algorithm>
 #include <chrono>
 #include <thread>
 
@@ -82,16 +83,39 @@ void SendingConsumerWorker::run()
             continue;
         }
 
-        auto& item = *optItem;
+        auto item = std::move(*optItem);
 
-        if (Clock::now() < item.scheduledAt)
+        while (Clock::now() < item.scheduledAt)
         {
+            if (m_shouldStop.load())
+            {
+                break;
+            }
+
             const long long remainingNs =
                 std::chrono::duration_cast<Ns>(item.scheduledAt - Clock::now()).count();
 
             if (remainingNs > static_cast<long long>(guardNs))
             {
-                const auto sleepTarget = item.scheduledAt - Ns(static_cast<long long>(guardNs));
+                if (const auto earliest = m_queue.peekFront();
+                    earliest && *earliest < item.scheduledAt)
+                {
+                    if (m_queue.tryPush(item))
+                    {
+                        auto requeued = m_queue.pop();
+                        if (!requeued)
+                        {
+                            break;
+                        }
+                        item = std::move(*requeued);
+                        continue;
+                    }
+                }
+
+                const auto fullSleepTarget = item.scheduledAt - Ns(static_cast<long long>(guardNs));
+                const auto sleepTarget =
+                    std::min(fullSleepTarget, Clock::now() + Ns(Constants::MIN_SLEEP_GUARD_NS));
+
                 std::this_thread::sleep_until(sleepTarget);
 
                 const long long overshootNs =
@@ -101,9 +125,7 @@ void SendingConsumerWorker::run()
                     (1.0 - Constants::SLEEP_GUARD_ALPHA) * guardNs;
                 guardNs = std::max({static_cast<double>(Constants::MIN_SLEEP_GUARD_NS),
                                     guardNs * 0.99, newEstimate});
-            }
-
-            while (Clock::now() < item.scheduledAt && !m_shouldStop.load())
+            } else
             {
                 std::this_thread::yield();
             }

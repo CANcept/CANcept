@@ -114,6 +114,36 @@ inline const QString REPLAY_MODE_BUTTON_TEXT = "Replay Logs";
 /** @brief Text displayed on the send message button */
 inline const QString SEND_BUTTON_TEXT = "Send Message";
 
+/** @brief Text for the save-configuration link button. */
+inline const QString SAVE_BUTTON_TEXT = "Save";
+
+/** @brief Text for the load-configuration link button. */
+inline const QString LOAD_BUTTON_TEXT = "Load";
+
+/** @brief File filter for saved sending-configuration JSON files. */
+inline const QString STATE_FILE_FILTER = "JSON Files (*.json)";
+
+/** @brief Dialog title and default filename for saving/loading raw sending configuration. */
+inline const QString SAVE_RAW_STATE_TITLE = "Save Raw Sending Configuration";
+inline const QString LOAD_RAW_STATE_TITLE = "Load Raw Sending Configuration";
+inline const QString RAW_STATE_DEFAULT_FILENAME = "raw_sending.json";
+
+/** @brief Dialog title and default filename for saving/loading DBC sending configuration. */
+inline const QString SAVE_DBC_STATE_TITLE = "Save DBC Sending Configuration";
+inline const QString LOAD_DBC_STATE_TITLE = "Load DBC Sending Configuration";
+inline const QString DBC_STATE_DEFAULT_FILENAME = "dbc_sending.json";
+
+/** @brief Shown when a loaded configuration was saved against a different DBC file. */
+inline const QString DBC_MISMATCH_TITLE = "DBC File Mismatch";
+inline const QString DBC_MISMATCH_TEXT_TEMPLATE =
+    "This configuration was saved for DBC file \"%1\", but \"%2\" is currently loaded. Value "
+    "functions and signal selection may not apply correctly.";
+
+/** @brief Shown when a loaded configuration contains DBC manipulations but no DBC is loaded. */
+inline const QString DBC_REQUIRED_FOR_MANIPULATIONS_TEXT =
+    "This configuration contains DBC-based manipulations, but no DBC file is currently loaded. "
+    "Load the matching DBC file for these manipulations to take effect.";
+
 // PLACEHOLDER TEXT
 
 /** @brief Placeholder for interface selection combo box */
@@ -151,7 +181,7 @@ inline constexpr int DEFAULT_CYCLE_INTERVAL_US = 1000;
 inline constexpr int MIN_CYCLE_INTERVAL_US = 1;
 
 /** @brief Maximum allowed cyclic interval */
-inline constexpr int MAX_CYCLE_INTERVAL_US = 100000;
+inline constexpr int MAX_CYCLE_INTERVAL_US = 10'000'000;
 
 // HEX INPUT & VALIDATION
 
@@ -328,6 +358,11 @@ inline const QString REPLAY_PAUSE_BUTTON_TEXT = "Pause Replay";
 inline const QString REPLAY_RESUME_BUTTON_TEXT = "Resume Replay";
 inline const QString REPLAY_STOP_BUTTON_TEXT = "Stop Replay";
 inline const QString REPLAY_SPEED_LABEL_TEXT = "Playback Speed:";
+
+/** @brief Dialog title and default filename for saving/loading replay configuration. */
+inline const QString SAVE_REPLAY_STATE_TITLE = "Save Replay Configuration";
+inline const QString LOAD_REPLAY_STATE_TITLE = "Load Replay Configuration";
+inline const QString REPLAY_STATE_DEFAULT_FILENAME = "replay.json";
 
 /** @brief Predefined speed option labels for replay speed selector. */
 inline const QString REPLAY_SPEED_OPTION_025X = "0.25x";

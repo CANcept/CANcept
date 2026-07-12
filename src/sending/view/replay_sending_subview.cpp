@@ -17,13 +17,16 @@
 
 #include <QFileDialog>
 #include <QHBoxLayout>
+#include <QMessageBox>
 #include <QVBoxLayout>
 #include <algorithm>
 
 #include "core/macro/theme.hpp"
 #include "core/theme/style_event.hpp"
 #include "core/widgets/common/styled_combo_box.hpp"
-#include "fault_injector/service/fault_handler.hpp"
+#include "manipulation/service/manipulation_handler.hpp"
+#include "manipulation/service/manipulation_serializer.hpp"
+#include "math/service/variable_registry.hpp"
 #include "sending/constants.hpp"
 #include "sending/view/components/replay_control_button.hpp"
 #include "sending/view/components/replay_progress_bar.hpp"
@@ -37,7 +40,7 @@ ReplaySendingSubView::ReplaySendingSubView(QWidget* parent)
       m_sessionCombo(nullptr),
       m_sessionDetailsLabel(nullptr),
       m_browseButton(nullptr),
-      m_faultInjector(nullptr),
+      m_manipulation(nullptr),
       m_playbackCard(nullptr),
       m_startButton(nullptr),
       m_pauseButton(nullptr),
@@ -46,7 +49,9 @@ ReplaySendingSubView::ReplaySendingSubView(QWidget* parent)
       m_speedCombo(nullptr),
       m_progressCard(nullptr),
       m_progressBar(nullptr),
-      m_progressTextLabel(nullptr)
+      m_progressTextLabel(nullptr),
+      m_loadButton(nullptr),
+      m_saveButton(nullptr)
 {
     setupUi();
 }
@@ -92,10 +97,10 @@ void ReplaySendingSubView::setupUi()
 
     contentLayout->addWidget(m_sessionCard);
 
-    // Section 2: Fault injection
-    m_faultInjector = new FaultInjector::FaultInjectorView(this);
-    m_faultInjector->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Maximum);
-    contentLayout->addWidget(m_faultInjector);
+    // Section 2: Manipulation
+    m_manipulation = new Manipulation::ManipulationView(this);
+    m_manipulation->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Maximum);
+    contentLayout->addWidget(m_manipulation);
 
     // Section 3: Playback controls
     m_playbackCard = new Core::CardWidget(Constants::REPLAY_PLAYBACK_TITLE,
@@ -122,6 +127,15 @@ void ReplaySendingSubView::setupUi()
     buttonRowLayout->addWidget(m_pauseButton);
     buttonRowLayout->addWidget(m_resumeButton);
     buttonRowLayout->addWidget(m_stopButton);
+
+    buttonRowLayout->addStretch();
+    m_loadButton = new Core::LinkButton(Constants::LOAD_BUTTON_TEXT, buttonRow);
+    m_saveButton = new Core::LinkButton(Constants::SAVE_BUTTON_TEXT, buttonRow);
+    buttonRowLayout->addWidget(m_loadButton);
+    buttonRowLayout->addWidget(m_saveButton);
+
+    connect(m_saveButton, &QPushButton::clicked, this, &ReplaySendingSubView::onSaveClicked);
+    connect(m_loadButton, &QPushButton::clicked, this, &ReplaySendingSubView::onLoadClicked);
 
     playbackLayout->addWidget(buttonRow);
 
@@ -173,9 +187,9 @@ void ReplaySendingSubView::setupUi()
         {
             setPlaybackState(PlaybackState::Disabled);
         }
-        if (m_faultInjector) m_faultInjector->setEnabled(hasSelection);
+        if (m_manipulation) m_manipulation->setEnabled(hasSelection);
         updateSessionDetailsLabel();
-        updateFaultInjectorMode();
+        updateManipulationMode();
     });
 
     connect(m_browseButton, &QPushButton::clicked, this, [this]() {
@@ -232,25 +246,27 @@ void ReplaySendingSubView::setSessions(const QList<ReplayEntry>& entries)
         m_sessionDetailsLabel->setText(Constants::NO_SESSION_DETAILS_TEXT);
     }
 
-    if (m_faultInjector) m_faultInjector->setEnabled(false);
+    if (m_manipulation) m_manipulation->setEnabled(false);
     setPlaybackState(PlaybackState::Disabled);
     setProgress(0, 0);
     updateSessionDetailsLabel();
-    updateFaultInjectorMode();
+    updateManipulationMode();
 }
 
-auto ReplaySendingSubView::getFaultHandler() const -> std::shared_ptr<Core::IFaultHandler>
+auto ReplaySendingSubView::getManipulationHandler() const
+    -> std::shared_ptr<Core::IManipulationHandler>
 {
-    if (m_faultInjector && m_faultInjector->isFaultInjection())
+    if (m_manipulation && m_manipulation->isManipulation())
     {
-        return std::make_shared<FaultInjector::FaultHandler>(m_faultInjector->getFaultHandler());
+        return std::make_shared<Manipulation::ManipulationHandler>(
+            m_manipulation->getManipulationHandler());
     }
     return nullptr;
 }
 
-void ReplaySendingSubView::updateFaultInjectorMode()
+void ReplaySendingSubView::updateManipulationMode()
 {
-    if (!m_faultInjector)
+    if (!m_manipulation)
     {
         return;
     }
@@ -258,9 +274,9 @@ void ReplaySendingSubView::updateFaultInjectorMode()
     const int index = m_sessionCombo->currentIndex();
     const auto mode = (index >= 0 && index < m_entries.size() &&
                        m_entries.at(index).fileType == Core::CanFileType::Dbc)
-                          ? FaultInjector::FaultInjectorModel::Mode::Dbc
-                          : FaultInjector::FaultInjectorModel::Mode::Raw;
-    m_faultInjector->setMode(mode);
+                          ? Manipulation::ManipulationModel::Mode::Dbc
+                          : Manipulation::ManipulationModel::Mode::Raw;
+    m_manipulation->setMode(mode);
 }
 
 void ReplaySendingSubView::updateSessionDetailsLabel()
@@ -324,7 +340,7 @@ void ReplaySendingSubView::setPlaybackState(const PlaybackState state)
     if (m_speedCombo) m_speedCombo->setEnabled(!isActive);
     if (m_sessionCombo) m_sessionCombo->setEnabled(!isActive);
     if (m_browseButton) m_browseButton->setEnabled(!isActive);
-    if (m_faultInjector) m_faultInjector->setEnabled(!isActive && state != PlaybackState::Disabled);
+    if (m_manipulation) m_manipulation->setEnabled(!isActive && state != PlaybackState::Disabled);
 }
 
 void ReplaySendingSubView::setProgress(const int currentFrame, const int totalFrames)
@@ -342,6 +358,15 @@ void ReplaySendingSubView::setProgress(const int currentFrame, const int totalFr
     {
         m_progressTextLabel->setText(
             Constants::REPLAY_PROGRESS_TEXT_TEMPLATE.arg(safeCurrent).arg(safeTotal));
+    }
+}
+
+void ReplaySendingSubView::setVariableRegistry(Math::VariableRegistry* registry)
+{
+    m_registry = registry;
+    if (m_manipulation)
+    {
+        m_manipulation->setVariableRegistry(registry);
     }
 }
 
@@ -365,6 +390,84 @@ auto ReplaySendingSubView::selectedSpeedFactor() const -> double
         default:
             return 1.0;
     }
+}
+
+auto ReplaySendingSubView::buildStateSerializer() -> Core::Serializer
+{
+    Core::Serializer serializer;
+
+    serializer.addItem(
+        "speedIndex", [this] { return nlohmann::json(m_speedCombo->currentIndex()); },
+        [this](const nlohmann::json& j) { m_speedCombo->setCurrentIndex(j.get<int>()); });
+    serializer.addItem(
+        "manipulationEnabled", [this] { return nlohmann::json(m_manipulation->isManipulation()); },
+        [this](const nlohmann::json& j) { m_manipulation->setManipulationEnabled(j.get<bool>()); });
+    serializer.addItem(
+        "manipulations", [this] { return nlohmann::json(m_manipulation->entries()); },
+        [this](const nlohmann::json& j) {
+            m_manipulation->setManipulations(j.get<std::vector<Manipulation::ManipulationEntry>>());
+        });
+    // Registered after "manipulations" so the check below sees the just-loaded entries: DBC
+    // manipulations reference signal names that only resolve against a loaded DBC config, so
+    // this warns if one isn't loaded, or was saved against a different file.
+    serializer.addItem(
+        "dbcFileName",
+        [this] {
+            const auto* dbc = m_registry ? m_registry->dbcConfig() : nullptr;
+            return nlohmann::json(dbc ? dbc->metaData.fileName : std::string());
+        },
+        [this](const nlohmann::json& j) {
+            const auto savedFileName = j.get<std::string>();
+            const auto* dbc = m_registry ? m_registry->dbcConfig() : nullptr;
+            const auto currentFileName = dbc ? dbc->metaData.fileName : std::string();
+
+            const auto& entries = m_manipulation->entries();
+            const bool hasDbcManipulations =
+                std::any_of(entries.begin(), entries.end(), [](const auto& entry) {
+                    return std::holds_alternative<Manipulation::DbcManipulation>(entry);
+                });
+            if (!hasDbcManipulations)
+            {
+                return;
+            }
+
+            if (currentFileName.empty())
+            {
+                QMessageBox::warning(this, Constants::DBC_MISMATCH_TITLE,
+                                     Constants::DBC_REQUIRED_FOR_MANIPULATIONS_TEXT);
+            } else if (!savedFileName.empty() && savedFileName != currentFileName)
+            {
+                QMessageBox::warning(this, Constants::DBC_MISMATCH_TITLE,
+                                     Constants::DBC_MISMATCH_TEXT_TEMPLATE.arg(
+                                         QString::fromStdString(savedFileName),
+                                         QString::fromStdString(currentFileName)));
+            }
+        });
+
+    return serializer;
+}
+
+void ReplaySendingSubView::onSaveClicked()
+{
+    const QString path = QFileDialog::getSaveFileName(this, Constants::SAVE_REPLAY_STATE_TITLE,
+                                                      Constants::REPLAY_STATE_DEFAULT_FILENAME,
+                                                      Constants::STATE_FILE_FILTER);
+    if (path.isEmpty())
+    {
+        return;
+    }
+    buildStateSerializer().saveToFile(path.toStdString());
+}
+
+void ReplaySendingSubView::onLoadClicked()
+{
+    const QString path = QFileDialog::getOpenFileName(this, Constants::LOAD_REPLAY_STATE_TITLE,
+                                                      QString(), Constants::STATE_FILE_FILTER);
+    if (path.isEmpty())
+    {
+        return;
+    }
+    buildStateSerializer().loadFromFile(path.toStdString());
 }
 
 }  // namespace Sending

@@ -60,6 +60,8 @@ DbcMessageCard::DbcMessageCard(const QString& name, uint32_t id, int signalCount
 void DbcMessageCard::setupUi(const QString& name, const uint32_t id, const int signalCount,
                              const Config& config)
 {
+    m_messageId = id;
+
     const auto& spacing = THEME.spacing();
 
     auto* mainLayout = new QVBoxLayout(this);
