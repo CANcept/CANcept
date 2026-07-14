@@ -101,6 +101,8 @@ const int REFRESH_INTERVAL_MS = 1000;
 
 const int HOLDING_SECONDS_IN_MODEL = 60;
 
+const int AGGREGATION_WINDOW_MS = 50;
+
 }  // namespace Monitoring::Constants
 
 // namespace Sending

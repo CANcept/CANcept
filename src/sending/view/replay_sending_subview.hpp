@@ -23,10 +23,16 @@
 #include <memory>
 
 #include "core/interface/i_can_reader.hpp"
-#include "core/interface/i_fault_handler.hpp"
+#include "core/interface/i_manipulation_handler.hpp"
+#include "core/service/serializer.hpp"
 #include "core/widgets/card_widget.hpp"
+#include "core/widgets/common/link_button.hpp"
 #include "core/widgets/common/styled_combo_box.hpp"
-#include "fault_injector/ui/view/fault_injector_view.hpp"
+#include "manipulation/ui/view/manipulation_view.hpp"
+
+namespace Math {
+class VariableRegistry;
+}
 
 namespace Sending {
 
@@ -69,11 +75,16 @@ class ReplaySendingSubView final : public QWidget
     /** @brief Updates enabled state and visibility of the replay controls. */
     void setPlaybackState(PlaybackState state);
 
-    /** @brief Returns a fault handler snapshot if injection is enabled, nullptr otherwise. */
-    [[nodiscard]] auto getFaultHandler() const -> std::shared_ptr<Core::IFaultHandler>;
+    /** @brief Returns a manipulation handler snapshot if injection is enabled, nullptr otherwise.
+     */
+    [[nodiscard]] auto getManipulationHandler() const
+        -> std::shared_ptr<Core::IManipulationHandler>;
 
     /** @brief Updates the progress bar and frame counter label. */
     void setProgress(int currentFrame, int totalFrames);
+
+    /** @brief Sets the DBC-aware registry used to populate signal/message dropdowns. */
+    void setVariableRegistry(Math::VariableRegistry* registry);
 
    signals:
     /**
@@ -100,8 +111,16 @@ class ReplaySendingSubView final : public QWidget
     void setupUi();
     void applyStyle() const;
     void updateSessionDetailsLabel();
-    void updateFaultInjectorMode();
+    void updateManipulationMode();
     [[nodiscard]] auto selectedSpeedFactor() const -> double;
+
+    /**
+     * @brief Builds a serializer covering the full replay configuration: playback speed and
+     * manipulations. Used identically for both save and load.
+     */
+    [[nodiscard]] auto buildStateSerializer() -> Core::Serializer;
+    void onSaveClicked();
+    void onLoadClicked();
 
     QScrollArea* m_scrollArea;
 
@@ -110,7 +129,7 @@ class ReplaySendingSubView final : public QWidget
     QLabel* m_sessionDetailsLabel;
     ReplayControlButton* m_browseButton;
 
-    FaultInjector::FaultInjectorView* m_faultInjector;
+    Manipulation::ManipulationView* m_manipulation;
 
     Core::CardWidget* m_playbackCard;
     ReplayControlButton* m_startButton;
@@ -123,8 +142,16 @@ class ReplaySendingSubView final : public QWidget
     ReplayProgressBar* m_progressBar;
     QLabel* m_progressTextLabel;
 
+    // Configuration save/load
+    Core::LinkButton* m_loadButton;
+    Core::LinkButton* m_saveButton;
+
     QList<ReplayEntry> m_entries;
     PlaybackState m_playbackState = PlaybackState::Disabled;
+
+    /** @brief Stored from the last setVariableRegistry() call, needed to check whether a DBC
+     * config is loaded when a saved state contains DBC manipulations. */
+    Math::VariableRegistry* m_registry = nullptr;
 };
 
 }  // namespace Sending

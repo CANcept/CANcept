@@ -50,6 +50,9 @@ add_subdirectory(external/entt)
 add_subdirectory(external/libsockcanpp)
 add_subdirectory(external/qwt)
 
+set(JSON_BuildTests OFF CACHE INTERNAL "")
+add_subdirectory(external/json)
+
 set(EXPRTK_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external/exprtk")
 
 # 5. Core Library
@@ -78,6 +81,7 @@ target_link_libraries(${PROJECT_NAME}Lib PUBLIC
         qwt
         Threads::Threads
         spdlog::spdlog
+        nlohmann_json::nlohmann_json
 )
 
 target_compile_definitions(${PROJECT_NAME}Lib

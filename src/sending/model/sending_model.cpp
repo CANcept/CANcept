@@ -442,9 +442,10 @@ void SendingModel::buildSendCache()
 }
 
 void SendingModel::forEachCachedMessage(const std::function<void(Core::RawCanMessage&)>& rawHandler,
-                                        const std::function<void(Core::DbcCanMessage&)>& dbcHandler)
+                                        const std::function<void(Core::DbcCanMessage&)>& dbcHandler,
+                                        const Mode mode)
 {
-    if (m_currentMode == Mode::Raw)
+    if (mode == Mode::Raw)
     {
         Core::RawCanMessage message{};
         message.messageId = static_cast<uint16_t>(m_rawState.id & Constants::MAX_CAN_ID);

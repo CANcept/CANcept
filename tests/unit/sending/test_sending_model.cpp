@@ -732,7 +732,8 @@ TEST_F(SendingModelTestBase, SetDataClampsCycleIntervalToMaximum)
     const QModelIndex idx = model->index(0, 0);
     ASSERT_TRUE(idx.isValid());
 
-    const bool result = model->setData(idx, 200000, Sending::SendingModel::Role_CycleIntervalUs);
+    const bool result = model->setData(idx, Sending::Constants::MAX_CYCLE_INTERVAL_US + 1,
+                                       Sending::SendingModel::Role_CycleIntervalUs);
     EXPECT_TRUE(result);
 
     const QVariant interval = model->data(idx, Sending::SendingModel::Role_CycleIntervalUs);

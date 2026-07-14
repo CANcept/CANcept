@@ -46,6 +46,11 @@ class RepeatedSendingCard final : public QWidget
     [[nodiscard]] auto isRepeatedSendingEnabled() const -> bool;
 
     /**
+     * @brief Sets whether repeated sending is enabled, e.g. after deserializing a saved state.
+     */
+    void setRepeatedSendingEnabled(bool enabled) const;
+
+    /**
      * @brief Returns the frequency input field.
      * @return Pointer to the frequency line edit widget.
      */

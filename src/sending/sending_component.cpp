@@ -107,6 +107,7 @@ void SendingComponent::onDbcConfigReceived(const Core::DbcConfig& config)
     if (m_variableRegistry)
     {
         m_view->dbcSubView()->populateFromModel(m_model.get(), *m_variableRegistry);
+        m_view->replaySubView()->setVariableRegistry(m_variableRegistry);
     }
     m_model->buildSendCache();
 
@@ -119,6 +120,7 @@ void SendingComponent::onDbcParseError() const
 {
     m_model->clearEvaluators();
     m_view->dbcSubView()->clearMessages();
+    m_view->dbcSubView()->clearManipulationDbcConfig();
 }
 
 void SendingComponent::scanReplaySessions()
@@ -225,13 +227,18 @@ void SendingComponent::addExternalFile(const QString& filePath)
 void SendingComponent::publishRawMessageAsync(const Core::RawCanMessage& message) const
 {
     Core::RawCanMessage mutableMsg = message;
-    if (m_activeFaultHandler)
+    if (m_activeManipulationHandler)
     {
-        m_activeFaultHandler->inject(mutableMsg.messageId, mutableMsg.dlc, mutableMsg.data);
+        m_activeManipulationHandler->inject(mutableMsg.messageId, mutableMsg.dlc, mutableMsg.data);
     }
-    const auto [drop, delayOffset] =
-        m_activeFaultHandler ? m_activeFaultHandler->evaluate()
-                             : Core::IFaultHandler::FrameResult{.drop = false, .delayOffset = {}};
+    const auto [drop, delayOffset, insertions] =
+        m_activeManipulationHandler
+            ? m_activeManipulationHandler->evaluate()
+            : Core::IManipulationHandler::FrameResult{.drop = false, .delayOffset = {}};
+    for (auto& item : buildInsertionItems(insertions, m_eventBroker, Clock::now() + delayOffset))
+    {
+        m_queue->push(std::move(item));
+    }
     if (drop) return;
     auto context = std::make_shared<RawSendContext>(
         RawSendContext{.broker = &m_eventBroker, .message = mutableMsg});
@@ -243,21 +250,26 @@ void SendingComponent::publishRawMessageAsync(const Core::RawCanMessage& message
 void SendingComponent::publishDbcMessageAsync(const Core::DbcCanMessage& message) const
 {
     Core::DbcCanMessage mutableMsg = message;
-    if (m_activeFaultHandler)
+    if (m_activeManipulationHandler)
     {
-        m_activeFaultHandler->inject(mutableMsg);
+        m_activeManipulationHandler->inject(mutableMsg);
     }
     Core::RawCanMessage encoded;
     m_eventBroker.publish(Core::EncodeCanMessageDbcEvent(mutableMsg, encoded));
-    if (m_activeFaultHandler)
+    if (m_activeManipulationHandler)
     {
-        m_activeFaultHandler->inject(encoded.messageId, encoded.dlc, encoded.data);
+        m_activeManipulationHandler->inject(encoded.messageId, encoded.dlc, encoded.data);
     }
 
-    const auto [drop, delayOffset] =
-        m_activeFaultHandler ? m_activeFaultHandler->evaluate()
-                             : Core::IFaultHandler::FrameResult{.drop = false, .delayOffset = {}};
+    const auto [drop, delayOffset, insertions] =
+        m_activeManipulationHandler
+            ? m_activeManipulationHandler->evaluate()
+            : Core::IManipulationHandler::FrameResult{.drop = false, .delayOffset = {}};
 
+    for (auto& item : buildInsertionItems(insertions, m_eventBroker, Clock::now() + delayOffset))
+    {
+        m_queue->push(std::move(item));
+    }
     if (drop)
     {
         return;
@@ -370,20 +382,30 @@ void SendingComponent::startRepeatedSending(const int intervalUs) const
     {
         m_variableRegistry->reset();
     }
-    m_activeFaultHandler = m_view->dbcSubView()->getFaultHandler();
+    const auto sendingMode = m_model->mode();
+    m_activeManipulationHandler = sendingMode == SendingModel::Mode::Raw
+                                      ? m_view->rawSubView()->getManipulationHandler()
+                                      : m_view->dbcSubView()->getManipulationHandler();
 
     LOG_INF(Constants::MODULE_IDENTIFIER, "Starting repeated sending, interval={}µs", intervalUs);
 
     m_model->buildSendCache();
 
-    auto callback = [this](const Clock::time_point deadline) -> std::vector<ScheduledItem> {
+    auto callback = [this,
+                     sendingMode](const Clock::time_point deadline) -> std::vector<ScheduledItem> {
         std::vector<ScheduledItem> items;
         m_model->forEachCachedMessage(
             [&](Core::RawCanMessage& msg) {
-                if (m_activeFaultHandler)
+                if (m_activeManipulationHandler)
                 {
-                    m_activeFaultHandler->inject(msg.messageId, msg.dlc, msg.data);
-                    const auto [drop, delayOffset] = m_activeFaultHandler->evaluate();
+                    m_activeManipulationHandler->inject(msg.messageId, msg.dlc, msg.data);
+                    const auto [drop, delayOffset, insertions] =
+                        m_activeManipulationHandler->evaluate();
+                    for (auto& item :
+                         buildInsertionItems(insertions, m_eventBroker, deadline + delayOffset))
+                    {
+                        items.push_back(std::move(item));
+                    }
                     if (drop) return;
                     auto context = std::make_shared<RawSendContext>(
                         RawSendContext{.broker = &m_eventBroker, .message = msg});
@@ -400,13 +422,20 @@ void SendingComponent::startRepeatedSending(const int intervalUs) const
                 }
             },
             [&](Core::DbcCanMessage& msg) {
-                if (m_activeFaultHandler) m_activeFaultHandler->inject(msg);
+                if (m_activeManipulationHandler) m_activeManipulationHandler->inject(msg);
                 Core::RawCanMessage encoded;
                 m_eventBroker.publish(Core::EncodeCanMessageDbcEvent(msg, encoded));
-                if (m_activeFaultHandler)
+                if (m_activeManipulationHandler)
                 {
-                    m_activeFaultHandler->inject(encoded.messageId, encoded.dlc, encoded.data);
-                    const auto [drop, delayOffset] = m_activeFaultHandler->evaluate();
+                    m_activeManipulationHandler->inject(encoded.messageId, encoded.dlc,
+                                                        encoded.data);
+                    const auto [drop, delayOffset, insertions] =
+                        m_activeManipulationHandler->evaluate();
+                    for (auto& item :
+                         buildInsertionItems(insertions, m_eventBroker, deadline + delayOffset))
+                    {
+                        items.push_back(std::move(item));
+                    }
                     if (drop) return;
                     auto context = std::make_shared<RawSendContext>(
                         RawSendContext{.broker = &m_eventBroker, .message = encoded});
@@ -421,7 +450,8 @@ void SendingComponent::startRepeatedSending(const int intervalUs) const
                                                   .onSend = &rawSendImpl,
                                                   .context = std::move(context)});
                 }
-            });
+            },
+            sendingMode);
         return items;
     };
 
@@ -448,7 +478,9 @@ void SendingComponent::sendOnce() const
     {
         m_variableRegistry->reset();
     }
-    m_activeFaultHandler = m_view->dbcSubView()->getFaultHandler();
+    m_activeManipulationHandler = m_model->mode() == SendingModel::Mode::Raw
+                                      ? m_view->rawSubView()->getManipulationHandler()
+                                      : m_view->dbcSubView()->getManipulationHandler();
     m_model->transmitCurrent();
 }
 
@@ -475,7 +507,7 @@ void SendingComponent::startReplay(const int index, const double speedFactor)
         return reader;
     };
 
-    auto faultHandler = m_view->replaySubView()->getFaultHandler();
+    auto manipulationHandler = m_view->replaySubView()->getManipulationHandler();
 
     m_replayTotalFrames = static_cast<int>(entry.frameCount);
 
@@ -483,7 +515,7 @@ void SendingComponent::startReplay(const int index, const double speedFactor)
     m_view->setReplayProgress(0, m_replayTotalFrames);
 
     m_replayWorker->startReplay(std::move(factory), entry.frameCount, speedFactor,
-                                std::move(faultHandler));
+                                std::move(manipulationHandler));
     m_replayProgressTimer->start();
 
     LOG_INF(Constants::MODULE_IDENTIFIER, "Replay started: '{}' at {}x speed",
