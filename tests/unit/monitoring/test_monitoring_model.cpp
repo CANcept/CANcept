@@ -70,7 +70,9 @@ TEST_F(MonitoringModelTest, OnIncomingDbcFrameUpdatesInternalData)
     uint32_t targetId = config.messageDefinitions.begin()->messageId;
     Core::DbcCanMessage mockMsg;
     mockMsg.messageId = targetId;
-    mockMsg.receiveTime = std::chrono::milliseconds(1000);
+    mockMsg.receiveTime = std::chrono::duration_cast<std::chrono::nanoseconds>(
+                              std::chrono::system_clock::now().time_since_epoch()) -
+                          std::chrono::milliseconds(200);
 
     Core::DbcCanSignal val;
     val.name = config.messageDefinitions.begin()->signalDescriptions.begin()->signalName;
