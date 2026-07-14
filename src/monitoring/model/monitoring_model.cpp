@@ -331,7 +331,7 @@ void MonitoringModel::flushStaleWindows()
     }
 
     const auto nowNs =
-        static_cast<qreal>(std::chrono::steady_clock::now().time_since_epoch().count());
+        static_cast<qreal>(std::chrono::system_clock::now().time_since_epoch().count());
     const qreal windowSizeNs = Constants::AGGREGATION_WINDOW_MS * 1'000'000.0;
 
     for (auto& entry : *messageValues)
@@ -375,7 +375,7 @@ void MonitoringModel::eraseOldData()
 {
     std::scoped_lock<std::mutex> lock(m_dataMutex);
     const auto nowNs = std::chrono::duration_cast<std::chrono::nanoseconds>(
-                           std::chrono::steady_clock::now().time_since_epoch())
+                           std::chrono::system_clock::now().time_since_epoch())
                            .count();
     for (auto& messageValue : *messageValues)
     {

@@ -1,6 +1,30 @@
 # Changelog
 
 All notable changes to this project will be documented in this file.
+
+## [1.3.0] - 2026-07-14
+
+### Added
+
+#### Manipulation (CBS-172)
+- Renamed and generalized the fault injection module into **Manipulation**, reflecting its broader scope of deliberately altering CAN/DBC traffic rather than just simulating faults.
+- New **insert strategy**: a manipulation can now insert a brand-new DBC message (or a copy of the frame that triggered it) onto the bus after a configurable delay, in addition to mutating the triggering frame.
+- Manipulation profiles (triggers, mutations, strategies, effects) can now be **saved and loaded as JSON**, so configurations persist across sessions.
+- Replay now integrates with manipulation profiles end-to-end, including scheduling manipulation-inserted frames alongside replayed ones.
+
+#### Sending & Replay
+- Reworked the replay scheduling pipeline (producer worker and scheduled item queue) to support manipulation-driven frame insertion during replay.
+- Added a value-function serializer so math-expression-based signal values used in sending can be saved and restored.
+
+### Changed
+
+#### Core
+- Added a generic `Serializer` service used to persist manipulation and sending configuration.
+- Added a reusable `LinkButton` widget, with small enhancements to `DbcMessageCard` and `DbcSignalRow`.
+
+#### Packaging (CBS-171)
+- Added Debian package repository infrastructure (reprepro) and CI pipeline fixes for building and publishing releases.
+
 ## [1.2.0] - 2026-06-07
 
 ### Added
