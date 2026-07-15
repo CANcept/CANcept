@@ -21,6 +21,7 @@ option(ENABLE_DOCS "Enable the documentation target" ON)
 option(ENABLE_COVERAGE "Enable code coverage reporting" OFF)
 option(DISABLE_TEST_LOGGING "Disable console logging during tests" ON)
 option(FORCE_LOGGING_OFF "Force logging level to 0 regardless of other settings" OFF)
+option(PORTABLE_BUILD "Force native settings off, to enable a portable build." OFF)
 
 # Compiler Flags
 if(ENABLE_COVERAGE)
@@ -88,13 +89,12 @@ target_compile_definitions(${PROJECT_NAME}Lib
         PUBLIC
         LOGGING_LEVEL=$<IF:$<BOOL:${FORCE_LOGGING_OFF}>,0,$<IF:$<BOOL:${ENABLE_TESTS}>,$<IF:$<BOOL:${DISABLE_TEST_LOGGING}>,0,$<IF:$<CONFIG:Debug>,2,1>>,$<IF:$<CONFIG:Debug>,2,1>>>
 )
-
-target_compile_options(${PROJECT_NAME}Lib PRIVATE
-        -O3
-        -march=native
-        -ffast-math
-        -w
-)
+if (PORTABLE_BUILD)
+    set(COMPILE_FLAGS -O2 -w)
+else ()
+    set(COMPILE_FLAGS -O3 -march=native -ffast-math -w)
+endif()
+target_compile_options(${PROJECT_NAME}Lib PRIVATE ${COMPILE_FLAGS})
 
 # 6. Executable
 add_executable(${PROJECT_NAME} ${ENTRY_POINT_FILE} ${RESOURCE_FILE})
