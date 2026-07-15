@@ -2,7 +2,7 @@
 
 [![C++ Qt CI](https://github.com/CANcept/CANcept/actions/workflows/ci.yml/badge.svg)](https://github.com/CANcept/CANcept/actions/workflows/ci.yml)
 [![Deploy Doxygen to Pages](https://github.com/CANcept/CANcept/actions/workflows/docs.yml/badge.svg)](https://github.com/CANcept/CANcept/actions/workflows/docs.yml)
-[![Qt 6.7.3+](https://img.shields.io/badge/Qt-6.7.3+-41CD52?logo=qt&logoColor=white)](https://www.qt.io/)
+[![Qt 6.4+](https://img.shields.io/badge/Qt-6.4+-41CD52?logo=qt&logoColor=white)](https://www.qt.io/)
 [![C++20](https://img.shields.io/badge/C++-20-00599C?logo=cplusplus&logoColor=white)](https://isocpp.org/)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21364738.svg)](https://doi.org/10.5281/zenodo.21364738)
 
