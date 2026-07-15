@@ -1,16 +1,16 @@
 Package: cancept
-Version: 1.3.0
+Version: 1.3.1
 Architecture: amd64
 Depends: libqt6core6t64 | libqt6core6, libqt6gui6t64 | libqt6gui6, libqt6widgets6t64 | libqt6widgets6, libqt6svg6t64 | libqt6svg6
 Maintainer: jemand <linowertz@web.de>
 Homepage: https://github.com/CANcept/CANcept
 Priority: optional
 Section: devel
-Filename: pool/main/c/cancept/cancept_1.3.0_amd64.deb
-Size: 3381608
-SHA256: b1dcbd262831640ef198a5b56544ed1bc744e4d3311e02455caca08352a975ab
-SHA1: 2da353c8785e4372dedd043b5d1e39d9d0fc2142
-MD5sum: c256edc7cbf276ae64079c8339eb11cf
+Filename: pool/main/c/cancept/cancept_1.3.1_amd64.deb
+Size: 3270048
+SHA256: aae93c2e2c65e3bd8a32a40626335e212c948341cbe8a89e49c500d44a0aa891
+SHA1: 27cacbf4bb4145889eb583b7b5c64a5e14e031a9
+MD5sum: 7809fe2d0bc7ef5e3f5d7043a3d795ba
 Description: CAN-Centric Environment for Automotive Bus Testing and Analysis
  CANcept is a comprehensive tool for CAN bus testing, analysis,
  and simulation.
