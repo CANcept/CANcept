@@ -4,6 +4,7 @@
 [![Deploy Doxygen to Pages](https://github.com/CANcept/CANcept/actions/workflows/docs.yml/badge.svg)](https://github.com/CANcept/CANcept/actions/workflows/docs.yml)
 [![Qt 6.7.3+](https://img.shields.io/badge/Qt-6.7.3+-41CD52?logo=qt&logoColor=white)](https://www.qt.io/)
 [![C++20](https://img.shields.io/badge/C++-20-00599C?logo=cplusplus&logoColor=white)](https://isocpp.org/)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21364738.svg)](https://doi.org/10.5281/zenodo.21364738)
 
 A linux desktop application for CAN (Controller Area Network) bus communication, featuring real-time signal monitoring, message transmission, DBC file support, comprehensive logging, log replay, manipulation, and value-function (formula-based) sending.
 
@@ -16,12 +17,12 @@ A linux desktop application for CAN (Controller Area Network) bus communication,
 
 ## Requirements
 
-| Component | Version                            |
-|-----------|------------------------------------|
-| CMake | 3.23+                              |
+| Component | Version                          |
+|-----------|----------------------------------|
+| CMake | 3.23+                            |
 | C++ Compiler | C++20 support (GCC 10+, Clang 12+) |
-| Qt | 6.7.3+                             |
-| Ninja | Latest (recommended)               |
+| Qt | 6.4+                             |
+| Ninja | Latest (recommended)             |
 
 ### Dependencies
 
@@ -43,7 +44,7 @@ CANcept is available as a `.deb` package via the APT repository:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/CANcept/CANcept/apt-repo/setup.sh | sudo bash
-sudo apt install cancept
+sudo apt install CANcept
 ```
 
 <details>

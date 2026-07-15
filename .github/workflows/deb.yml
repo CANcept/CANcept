@@ -43,6 +43,7 @@ jobs:
             -DCMAKE_INSTALL_PREFIX=/usr \
             -DBUILD_SHARED_LIBS=OFF \
             -DENABLE_TESTS=OFF \
+            -DPORTABLE_BUILD=ON \
             -DENABLE_DOCS=OFF \
             -DENABLE_CLANG_TIDY=OFF \
             -Wno-dev
