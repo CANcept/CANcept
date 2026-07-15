@@ -17,12 +17,12 @@ A linux desktop application for CAN (Controller Area Network) bus communication,
 
 ## Requirements
 
-| Component | Version                            |
-|-----------|------------------------------------|
-| CMake | 3.23+                              |
+| Component | Version                          |
+|-----------|----------------------------------|
+| CMake | 3.23+                            |
 | C++ Compiler | C++20 support (GCC 10+, Clang 12+) |
-| Qt | 6.7.3+                             |
-| Ninja | Latest (recommended)               |
+| Qt | 6.4+                             |
+| Ninja | Latest (recommended)             |
 
 ### Dependencies
 
